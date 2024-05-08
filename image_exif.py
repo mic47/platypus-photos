@@ -238,7 +238,7 @@ def parse_datetime(s: t.Optional[str], offset: t.Optional[str]) -> t.Optional[da
             pass
 
     try:
-        return datetime.strptime("2024:02:13 13:46:19", "%Y:%m:%d %H:%M:%S") - td
+        return datetime.strptime(s, "%Y:%m:%d %H:%M:%S") - td
     except:
         pass
     return None
