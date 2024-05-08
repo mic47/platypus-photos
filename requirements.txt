@@ -1,3 +1,4 @@
 dataclasses_json
+exif
 transformers
 ultralytics

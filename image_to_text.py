@@ -3,36 +3,32 @@ import itertools
 from ultralytics import YOLO
 from dataclasses import dataclass
 import typing as t
-from dataclasses_json import dataclass_json
+from dataclasses_json import DataClassJsonMixin
 from transformers import pipeline
+from cache import HasImage
 
 
-
-@dataclass_json
 @dataclass
-class Box:
+class Box(DataClassJsonMixin):
     classification: str
     confidence: float
     xyxy: t.List[float]
 
 
-@dataclass_json
 @dataclass
-class Classification:
+class Classification(DataClassJsonMixin):
     name: str
     confidence: float
 
 
-@dataclass_json
 @dataclass
-class BoxClassification:
+class BoxClassification(DataClassJsonMixin):
     box: Box
     classifications: t.List[Classification]
 
 
-@dataclass_json
 @dataclass
-class ImageClassification:
+class ImageClassification(HasImage):
     image: str
     captions: t.List[str]
     boxes: t.List[BoxClassification]
@@ -60,6 +56,7 @@ def remove_consecutive_words(sentence: str) -> str:
         out.append(word)
     return " ".join(out)
 
+
 class Models:
     def __init__(self):
         self.predict_model = YOLO("yolov8x.pt")
@@ -67,7 +64,10 @@ class Models:
         self.captioner = pipeline("image-to-text", model="Salesforce/blip-image-captioning-base")
 
     def process_image_batch(
-        self: 'Models', paths: t.Iterable[str], gap_threshold: float = 0.2, discard_threshold: float = 0.1
+        self: "Models",
+        paths: t.Iterable[str],
+        gap_threshold: float = 0.2,
+        discard_threshold: float = 0.1,
     ) -> t.Iterable[ImageClassification]:
         images = [(path, Image.open(path)) for path in paths]
         captions = self.captioner([image for (_, image) in images])
@@ -81,7 +81,13 @@ class Models:
                 confidence = float(box.conf[0])
                 xyxy = list(float(x) for x in box.xyxy[0])
                 boxes_to_classify.append(
-                    (path, image, box_id, caption, Box(classification, confidence, xyxy))
+                    (
+                        path,
+                        image,
+                        box_id,
+                        caption,
+                        Box(classification, confidence, xyxy),
+                    )
                 )
 
         if boxes_to_classify:
@@ -91,7 +97,12 @@ class Models:
                     self.classify_model(
                         [
                             image.crop(
-                                (int(box.xyxy[0]), int(box.xyxy[1]), int(box.xyxy[2]), int(box.xyxy[3]))
+                                (
+                                    int(box.xyxy[0]),
+                                    int(box.xyxy[1]),
+                                    int(box.xyxy[2]),
+                                    int(box.xyxy[3]),
+                                )
                             )
                             for (_, image, _, _, box) in boxes_to_classify
                         ],
@@ -134,4 +145,3 @@ class Models:
                 if t is not None:
                     captions.add(remove_consecutive_words(t))
             yield ImageClassification(path, list(captions), [])
-
