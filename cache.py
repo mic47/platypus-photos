@@ -49,6 +49,6 @@ class JsonlCache(t.Generic[T]):
         self._do_write(data)
 
     def _do_write(self, data: T):
-        self._file.write(data.to_json())
+        self._file.write(data.to_json(ensure_ascii=False))
         self._file.write("\n")
         self._file.flush()

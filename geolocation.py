@@ -34,6 +34,6 @@ class Geolocator:
         city = None
         raw_add = ret.raw.get("address")
         if raw_add is not None:
-            city = raw_add.get("city")
+            city = raw_add.get("city") or raw_add.get("village") or raw_add.get("town")
             country = raw_add.get("country")
         return GeoAddress(image, ret.address, country, city)
