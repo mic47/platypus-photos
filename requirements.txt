@@ -1,4 +1,5 @@
 dataclasses_json
 exif
+geopy
 transformers
 ultralytics
