@@ -17,6 +17,7 @@ class GeoAddress(HasImage):
     country: t.Optional[str]
     name: t.Optional[str]
     raw: str
+    query: str
     # TODO: add points of interestis -- i.e. home, work, ...
 
 
@@ -35,9 +36,10 @@ class Geolocator:
         if from_last_call < RATE_LIMIT_SECONDS:
             time.sleep(RATE_LIMIT_SECONDS - from_last_call)
         retries_left = RETRIES
+        query = f"{lat}, {lon}"
         while True:
             try:
-                ret = self.geolocator.reverse(f"{lat}, {lon}", language="en")
+                ret = self.geolocator.reverse(query, language="en")
                 break
             except:
                 if retries_left <= 0:
@@ -65,7 +67,7 @@ class Geolocator:
                 or None # In case of empty string
             )
             country = raw_add.get("country")
-        return GeoAddress(image, ret.address, country, name, raw_data)
+        return GeoAddress(image, ret.address, country, name, raw_data, query)
 
 
 @dataclass
