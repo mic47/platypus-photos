@@ -2,6 +2,7 @@ from geopy.distance import distance
 from geopy.geocoders import Nominatim
 from dataclasses_json import DataClassJsonMixin
 from dataclasses import dataclass
+import json
 import time
 import sys
 import typing as t
@@ -15,6 +16,7 @@ class GeoAddress(HasImage):
     address: str
     country: t.Optional[str]
     name: t.Optional[str]
+    raw: str
     # TODO: add points of interestis -- i.e. home, work, ...
 
 
@@ -50,12 +52,20 @@ class Geolocator:
         country = None
         name = None
         raw_add = ret.raw.get("address")
+        try:
+            raw_data = json.dumps(ret.raw, ensure_ascii=False)
+        except:
+            raw_data = str(ret.raw)
         if raw_add is not None:
             name = str(
-                raw_add.get("city") or raw_add.get("village") or raw_add.get("town") or ret.raw.get("name")
+                raw_add.get("city")
+                or raw_add.get("village")
+                or raw_add.get("town")
+                or ret.raw.get("name")
+                or None # In case of empty string
             )
             country = raw_add.get("country")
-        return GeoAddress(image, ret.address, country, name)
+        return GeoAddress(image, ret.address, country, name, raw_data)
 
 
 @dataclass
