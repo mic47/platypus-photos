@@ -25,7 +25,7 @@ if __name__ == "__main__":
     exif = Exif()
     geolocator = Geolocator()
     paths = sys.argv[1:]
-    itt_cache = JsonlCache("output-image-to-text.jsonl", ImageClassification, ["output.jsonl"])
+    itt_cache = JsonlCache("output-image-to-text.jsonl", ImageClassification)
     exif_cache = JsonlCache("output-exif.jsonl", ImageExif)
     geo_cache = JsonlCache("output-geo.jsonl", GeoAddress)
 

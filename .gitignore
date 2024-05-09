@@ -1,2 +1,4 @@
 yolo*.pt
 __pycache__/
+data/
+output-*.jsonl
