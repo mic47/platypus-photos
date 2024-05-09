@@ -1,5 +1,6 @@
+from geopy.distance import distance
 from geopy.geocoders import Nominatim
-from dataclasses_json import dataclass_json
+from dataclasses_json import DataClassJsonMixin
 from dataclasses import dataclass
 import time
 import typing as t
@@ -12,7 +13,7 @@ class GeoAddress(HasImage):
     image: str
     address: str
     country: t.Optional[str]
-    city: t.Optional[str]
+    name: t.Optional[str]
     # TODO: add points of interestis -- i.e. home, work, ...
 
 
@@ -29,11 +30,45 @@ class Geolocator:
         from_last_call = max(0, now - self.last_api)
         if from_last_call < RATE_LIMIT_SECONDS:
             time.sleep(RATE_LIMIT_SECONDS - from_last_call)
-        ret = self.geolocator.reverse(f"{lat}, {lon}")
+        ret = self.geolocator.reverse(f"{lat}, {lon}", language="en")
         country = None
-        city = None
+        name = None
         raw_add = ret.raw.get("address")
         if raw_add is not None:
-            city = raw_add.get("city") or raw_add.get("village") or raw_add.get("town")
+            name = str(
+                raw_add.get("city") or raw_add.get("village") or raw_add.get("town") or ret.raw.get("name")
+            )
             country = raw_add.get("country")
-        return GeoAddress(image, ret.address, country, city)
+        return GeoAddress(image, ret.address, country, name)
+
+
+@dataclass
+class POI(DataClassJsonMixin):
+    name: str
+    latitude: float
+    longitude: float
+
+
+@dataclass
+class NearestPOI(HasImage):
+    image: str
+    poi: POI
+    distance: float
+
+
+class POIDetector:
+    def __init__(self, pois: t.Iterable[POI]):
+        self._max_distance = 0.25
+        self._pois = list(pois)
+
+    def find(self, image: str, latitude: float, longitude: float) -> t.Optional[NearestPOI]:
+        if not self._pois:
+            return None
+        best = min(
+            [(distance((poi.latitude, poi.longitude), (latitude, longitude)), poi) for poi in self._pois],
+            key=lambda x: x[0],
+        )
+        distance, poi = best
+        if distance > self._max_distance:
+            return None
+        return NearestPOI(image, poi, distance)
