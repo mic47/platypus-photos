@@ -31,6 +31,7 @@ class Geolocator:
         if from_last_call < RATE_LIMIT_SECONDS:
             time.sleep(RATE_LIMIT_SECONDS - from_last_call)
         ret = self.geolocator.reverse(f"{lat}, {lon}", language="en")
+        self.last_api = time.time()
         country = None
         name = None
         raw_add = ret.raw.get("address")
