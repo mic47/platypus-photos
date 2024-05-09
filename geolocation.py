@@ -59,11 +59,13 @@ class Geolocator:
         except:
             raw_data = str(ret.raw)
         if raw_add is not None:
-            name = str(
-                raw_add.get("city")
-                or raw_add.get("village")
-                or raw_add.get("town")
-                or ret.raw.get("name")
+            name = (
+                str(
+                    raw_add.get("city")
+                    or raw_add.get("village")
+                    or raw_add.get("town")
+                    or ret.raw.get("name")
+                )
                 or None  # In case of empty string
             )
             country = raw_add.get("country")
