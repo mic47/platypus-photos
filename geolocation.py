@@ -3,6 +3,7 @@ from geopy.geocoders import Nominatim
 from dataclasses_json import DataClassJsonMixin
 from dataclasses import dataclass
 import time
+import sys
 import typing as t
 
 from cache import HasImage
@@ -18,6 +19,7 @@ class GeoAddress(HasImage):
 
 
 RATE_LIMIT_SECONDS = 1
+RETRIES = 10
 
 
 class Geolocator:
@@ -30,7 +32,20 @@ class Geolocator:
         from_last_call = max(0, now - self.last_api)
         if from_last_call < RATE_LIMIT_SECONDS:
             time.sleep(RATE_LIMIT_SECONDS - from_last_call)
-        ret = self.geolocator.reverse(f"{lat}, {lon}", language="en")
+        retries_left = RETRIES
+        while True:
+            try:
+                ret = self.geolocator.reverse(f"{lat}, {lon}", language="en")
+                break
+            except:
+                if retries_left <= 0:
+                    raise
+                print(
+                    f"Gelolocation request for {image} failed. Retrying ({retries_left} left)",
+                    file=sys.stderr,
+                )
+                retries_left -= 1
+                time.sleep(10)
         self.last_api = time.time()
         country = None
         name = None
