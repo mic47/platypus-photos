@@ -64,7 +64,7 @@ class Geolocator:
                 or raw_add.get("village")
                 or raw_add.get("town")
                 or ret.raw.get("name")
-                or None # In case of empty string
+                or None  # In case of empty string
             )
             country = raw_add.get("country")
         return GeoAddress(image, ret.address, country, name, raw_data, query)
