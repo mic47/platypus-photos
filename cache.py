@@ -17,6 +17,17 @@ class HasImage(DataClassJsonMixin):
     def current_version() -> int:
         raise NotImplementedError
 
+    def _set_from_cache(self) -> None:
+        self._from_cache = True
+
+    def is_from_cache(self) -> bool:
+        if hasattr(self, '_from_cache'):
+            return self._from_cache
+        return False
+
+    def changed(self) -> bool:
+        return not self.is_from_cache()
+
 
 T = t.TypeVar("T", bound=HasImage)
 
@@ -58,6 +69,7 @@ class JsonlCache(t.Generic[T], Cache[T]):
                         j["version"] = DEFAULT_VERSION
                     cimg = loader.from_dict(j)
                     if cimg.version == self._current_version:
+                        cimg._set_from_cache()
                         self._data[cimg.image] = cimg
         self._file = open(path, "a")
         if path != read_path:

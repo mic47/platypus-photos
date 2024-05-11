@@ -37,9 +37,9 @@ class Geolocator:
         self.geolocator = Nominatim(user_agent="Mic's photo lookups")
         self.last_api = time.time() - 10
 
-    def address(self, image: str, lat: float, lon: float) -> GeoAddress:
+    def address(self, image: str, lat: float, lon: float, recompute: bool = False) -> GeoAddress:
         ret = self._cache.get(image)
-        if ret is not None:
+        if ret is not None and not recompute:
             return ret
         return self._cache.add(self.address_impl(image, lat, lon))
 
