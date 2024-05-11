@@ -6,7 +6,7 @@ from dataclasses_json import DataClassJsonMixin
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 
-from cache import HasImage
+from cache import HasImage, Cache
 
 
 IGNORED_TAGS = [
@@ -260,10 +260,16 @@ class ImageExif(HasImage):
 
 
 class Exif:
-    def __init__(self) -> None:
-        pass
+    def __init__(self, cache: Cache[ImageExif]) -> None:
+        self._cache = cache
 
-    def process_image(self: "Exif", path: str) -> ImageExif:
+    def process_image(self, path: str) -> ImageExif:
+        ret = self._cache.get(path)
+        if ret is not None:
+            return ret
+        return self.process_image(path)
+
+    def process_image_impl(self: "Exif", path: str) -> ImageExif:
         img = exif.Image(path)
         d = UnparsedTags()
         for tag in img.list_all():

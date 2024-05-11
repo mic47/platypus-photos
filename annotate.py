@@ -40,11 +40,11 @@ if __name__ == "__main__":
 
     path_to_date = PathDateExtractor(config.directory_matching)
     models = Models()
-    exif = Exif()
+    exif_cache = JsonlCache("output-exif.jsonl", ImageExif)
+    exif = Exif(exif_cache)
     geolocator = Geolocator()
     md5 = MD5er()
     itt_cache = JsonlCache("output-image-to-text.jsonl", ImageClassification)
-    exif_cache = JsonlCache("output-exif.jsonl", ImageExif)
     geo_cache = JsonlCache("output-geo.jsonl", GeoAddress)
     md5_cache = JsonlCache("output-md5.jsonl", MD5Annot)
 
@@ -56,13 +56,8 @@ if __name__ == "__main__":
 
     try:
         for path in tqdm(paths, total=len(paths), desc="Image batches"):
-            exif_item_m = exif_cache.get(path)
-            if exif_item_m is None:
-                exif_item = exif.process_image(path)
-                exif_cache.add(exif_item)
-            else:
-                # Because typecheck
-                exif_item = exif_item_m
+            exif_item = exif.process_image(path)
+
             geo = geo_cache.get(path)
             if geo is None and exif_item.gps is not None:
                 geo = geolocator.address(path, exif_item.gps.latitude, exif_item.gps.longitude)
@@ -84,3 +79,4 @@ if __name__ == "__main__":
         del itt_cache
         del exif_cache
         del geo_cache
+        del md5_cache

@@ -21,8 +21,21 @@ T = t.TypeVar("T", bound=HasImage)
 
 DEFAULT_VERSION = 0
 
+class Cache(t.Generic[T]):
+    def get(self, key: str) -> t.Optional[T]:
+        raise NotImplementedError
 
-class JsonlCache(t.Generic[T]):
+    def add(self, data: T) -> None:
+        raise NotImplementedError
+
+class NoCache(t.Generic[T], Cache[T]):
+    def get(self, key: str) -> t.Optional[T]:
+        pass
+
+    def add(self, data: T) -> None:
+        pass
+
+class JsonlCache(t.Generic[T], Cache[T]):
     def __init__(self, path: str, loader: t.Type[T], old_paths: t.List[str] = []):
         self._data = {}
         self._current_version = loader.current_version()
