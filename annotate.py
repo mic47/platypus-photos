@@ -14,25 +14,11 @@ from image_exif import Exif, ImageExif
 from md5_annot import MD5er, MD5Annot
 from geolocation import Geolocator, GeoAddress
 from cache import JsonlCache, HasImage
+from image_annotation import ImageAnnotator, ImageAnnotations
 from filename_to_date import PathDateExtractor
 from config import Config
 
 VERSION = 0
-
-
-@dataclass
-class ImageAnnotations(HasImage):
-    image: str
-    version: int
-    md5: str
-    exif: ImageExif
-    address: t.Optional[GeoAddress]
-    text_classification: t.Optional[ImageClassification]
-    date_from_path: t.Optional[datetime]
-
-    @staticmethod
-    def current_version() -> int:
-        return VERSION
 
 
 if __name__ == "__main__":
@@ -52,6 +38,9 @@ if __name__ == "__main__":
     md5_cache = JsonlCache("output-md5.jsonl", MD5Annot)
     md5 = MD5er(md5_cache)
 
+    annotator_cache = JsonlCache("output-all.jsonl", ImageAnnotations)
+    annotator = ImageAnnotator(annotator_cache)
+
     paths = [
         file
         for pattern in tqdm(config.input_patterns, desc="Listing files")
@@ -69,10 +58,11 @@ if __name__ == "__main__":
             itt = list(models.process_image_batch([path]))[0]
             md5hsh = md5.process(path)
             path_date = path_to_date.extract_date(path)
-            img = ImageAnnotations(path, VERSION, md5hsh.md5, exif_item, geo, itt, path_date)
+            img = annotator.process(path, md5hsh, exif_item, geo, itt, path_date)
         print(img)
     finally:
         del models_cache
         del exif_cache
         del geolocator_cache
         del md5_cache
+        del annotator_cache

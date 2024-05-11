@@ -83,8 +83,6 @@ class JsonlCache(t.Generic[T], Cache[T]):
         return self._data.get(key)
 
     def add(self, data: T) -> T:
-        if data.image in self._data:
-            return data
         if data.version != self._current_version:
             print(
                 "Trying to add wrong version of feature",
