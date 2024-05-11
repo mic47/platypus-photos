@@ -1,7 +1,11 @@
-import sys
-from tqdm import tqdm
+import os
+import glob
+import re
 import itertools
 import typing as t
+from datetime import datetime
+
+from tqdm import tqdm
 from dataclasses_json import dataclass_json
 from dataclasses import dataclass
 
@@ -10,6 +14,8 @@ from image_exif import Exif, ImageExif
 from md5_annot import MD5er, MD5Annot
 from geolocation import Geolocator, GeoAddress
 from cache import JsonlCache, HasImage
+from filename_to_date import PathDateExtractor
+from config import Config
 
 
 @dataclass
@@ -19,18 +25,27 @@ class ImageAnnotations(HasImage):
     exif: ImageExif
     address: t.Optional[GeoAddress]
     text_classification: t.Optional[ImageClassification]
+    date_from_path: t.Optional[datetime]
 
 
 if __name__ == "__main__":
+    config = Config.load("config.yaml")
+
+    path_to_date = PathDateExtractor(config.directory_matching)
     models = Models()
     exif = Exif()
     geolocator = Geolocator()
     md5 = MD5er()
-    paths = sys.argv[1:]
     itt_cache = JsonlCache("output-image-to-text.jsonl", ImageClassification)
     exif_cache = JsonlCache("output-exif.jsonl", ImageExif)
     geo_cache = JsonlCache("output-geo.jsonl", GeoAddress)
     md5_cache = JsonlCache("output-md5.jsonl", MD5Annot)
+
+    paths = [
+        file
+        for pattern in tqdm(config.input_patterns, desc="Listing files")
+        for file in glob.glob(re.sub("^~/", os.environ["HOME"] + "/", pattern))
+    ]
 
     try:
         for path in tqdm(paths, total=len(paths), desc="Image batches"):
@@ -55,7 +70,8 @@ if __name__ == "__main__":
                 md5_cache.add(md5hsh)
             else:
                 md5hsh = md5hsh_ret
-            img = ImageAnnotations(path, md5hsh.md5, exif_item, geo, itt)
+            path_date = path_to_date.extract_date(path)
+            img = ImageAnnotations(path, md5hsh.md5, exif_item, geo, itt, path_date)
         print(img)
     finally:
         del itt_cache

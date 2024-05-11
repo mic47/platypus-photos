@@ -3,3 +3,5 @@ exif
 geopy
 transformers
 ultralytics
+tqdm
+types-tqdm

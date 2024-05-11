@@ -2,3 +2,5 @@ yolo*.pt
 __pycache__/
 data/
 output-*.jsonl
+config.yaml
+config.json

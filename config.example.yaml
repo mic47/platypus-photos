@@ -1,0 +1,12 @@
+---
+input_patterns:
+  - ~/Downloads/*jpg
+  - ~/Pictures/*jpg
+
+directory_matching:
+  date_directory_filters:
+    - /home/user/Pictures/(?P<year>20[0-9][0-9])/(?P<month>[01][0-9])/(?P<day>[0123][0-9])/*jpg
+  no_date_in_path_filters:
+    - Photos/NoDateInPath
+  path_to_date:
+    /MyWedding/: 2047-11-23
