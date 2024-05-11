@@ -114,9 +114,9 @@ async def read_item(request: Request, tag: str = "", cls: str = "", addr: str = 
                 "addr": add_comma(addr),
             },
             "top": {
-                "tag": top_tags[:5],
+                "tag": top_tags[:15],
                 "cls": top_cls[:5],
-                "addr": top_addr[:5],
+                "addr": top_addr[:15],
             },
         },
     )
