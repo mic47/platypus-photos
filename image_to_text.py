@@ -147,9 +147,9 @@ class Models:
             captions = set()
             for (_, _image, box_id, caption, box), result in group:
                 for c in caption:
-                    t = c.get("generated_text")
-                    if t is not None:
-                        captions.add(remove_consecutive_words(t))
+                    gt = c.get("generated_text")
+                    if gt is not None:
+                        captions.add(remove_consecutive_words(gt))
                 names = result.names
                 classifications = []
                 prev_conf = 0.0
@@ -168,7 +168,7 @@ class Models:
             visited.add(path)
             captions = set()
             for c in caption:
-                t = c.get("generated_text")
-                if t is not None:
-                    captions.add(remove_consecutive_words(t))
+                gt = c.get("generated_text")
+                if gt is not None:
+                    captions.add(remove_consecutive_words(gt))
             yield ImageClassification(path, VERSION, list(captions), [])
