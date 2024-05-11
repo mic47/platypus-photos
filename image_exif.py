@@ -263,26 +263,25 @@ class Exif:
     def __init__(self) -> None:
         pass
 
-    def process_image_batch(self: "Exif", paths: t.Iterable[str]) -> t.Iterable[ImageExif]:
-        for path in paths:
-            img = exif.Image(path)
-            d = UnparsedTags()
-            for tag in img.list_all():
-                if tag in IGNORED_TAGS:
-                    continue
-                # Just temporary until I find all the tags
-                value = img.get(tag)
-                if value is None:
-                    continue
-                if tag not in EXTRACT_TAGS:
-                    print("ERR: UNKNOWN TAG", tag, value, file=sys.stderr)
-                d.insert(tag, value)
+    def process_image(self: "Exif", path: str) -> ImageExif:
+        img = exif.Image(path)
+        d = UnparsedTags()
+        for tag in img.list_all():
+            if tag in IGNORED_TAGS:
+                continue
+            # Just temporary until I find all the tags
+            value = img.get(tag)
+            if value is None:
+                continue
+            if tag not in EXTRACT_TAGS:
+                print("ERR: UNKNOWN TAG", tag, value, file=sys.stderr)
+            d.insert(tag, value)
 
-            gps = GPSCoord.from_tags(d)
-            camera = Camera.from_tags(d)
-            date = Date.from_tags(d)
+        gps = GPSCoord.from_tags(d)
+        camera = Camera.from_tags(d)
+        date = Date.from_tags(d)
 
-            for tag, value in d.all().items():
-                print("ERR: unprocessed tag", tag, value, type(value), file=sys.stderr)
+        for tag, value in d.all().items():
+            print("ERR: unprocessed tag", tag, value, type(value), file=sys.stderr)
 
-            yield ImageExif(path, VERSION, gps, camera, date)
+        return ImageExif(path, VERSION, gps, camera, date)

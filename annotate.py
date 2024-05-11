@@ -58,7 +58,7 @@ if __name__ == "__main__":
         for path in tqdm(paths, total=len(paths), desc="Image batches"):
             exif_item_m = exif_cache.get(path)
             if exif_item_m is None:
-                exif_item = list(exif.process_image_batch([path]))[0]
+                exif_item = exif.process_image(path)
                 exif_cache.add(exif_item)
             else:
                 # Because typecheck
