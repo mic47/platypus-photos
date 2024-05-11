@@ -5,3 +5,8 @@ transformers
 ultralytics
 tqdm
 types-tqdm
+
+# For browser
+
+fastapi
+jinja2
