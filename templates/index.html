@@ -55,19 +55,33 @@ div.gallery_item:hover {
   </form>
 </div>
 <div>
-  Found {{ images | length }} matches. <br>
+  Found {{ total }} matches. <br>
   Top tags: 
   {% for tag in top.tag %}
-    <a href="?tag={{inputsep.tag}}{{tag[0]}}&cls={{input.cls}}&addr={{input.addr}}">{{tag[0]}} ({{tag[1]}})</a>
+    <a href="?tag={{inputsep.tag}}{{tag[0]}}&cls={{input.cls}}&addr={{input.addr}}&page={{page}}&paging={{paging}}">{{tag[0]}} ({{tag[1]}})</a>
   {% endfor %} <br/>
   Top texts: 
   {% for t in top.cls %}
-    <a href="?tag={{input.tag}}&cls={{t[0]}}&addr={{input.addr}}">{{t[0]}} ({{t[1]}})</a>
+    <a href="?tag={{input.tag}}&cls={{t[0]}}&addr={{input.addr}}&page={{page}}&paging={{paging}}">{{t[0]}} ({{t[1]}})</a>
   {% endfor %} <br/>
   Top locs: 
   {% for t in top.addr %}
-    <a href="?tag={{input.tag}}&cls={{input.cls}}&addr={{t[0]}}">{{t[0]}} ({{t[1]}})</a>
+    <a href="?tag={{input.tag}}&cls={{input.cls}}&addr={{t[0]}}&page={{page}}&paging={{paging}}">{{t[0]}} ({{t[1]}})</a>
   {% endfor %} <br/>
+  {% if page > 0 %}
+  <a href="?tag={{input.tag}}&cls={{input.cls}}&addr={{input.addr}}&page={{page - 1}}&paging={{paging}}">
+  {% endif %}
+    Prev Page
+  {% if page > 0 %}
+  </a>
+  {% endif %}
+  {% if (page+1) * paging < total %}
+  <a href="?tag={{input.tag}}&cls={{input.cls}}&addr={{input.addr}}&page={{page + 1}}&paging={{paging}}">
+  {% endif %}
+    Next Page
+  {% if (page+1) * paging < total %}
+  </a>
+  {% endif %}
 </div>
 <div>
 
@@ -79,14 +93,14 @@ div.gallery_item:hover {
     {{ image.classifications}} <br/>
     {% for tag in image.tags %}
     <span class="tag">
-      <a href="?tag={{inputsep.tag}}{{tag}}&cls={{input.cls}}&addr={{input.addr}}">
+      <a href="?tag={{inputsep.tag}}{{tag}}&cls={{input.cls}}&addr={{input.addr}}&page={{page}}&paging={{paging}}">
       {{tag}}
       </a>
     </span>
     {% endfor %}
     {% if image.address | length > 0 %}
     <div class="location">
-      <a href="?tag={{input.tag}}&cls={{input.cls}}&addr={{image.address}}">
+      <a href="?tag={{input.tag}}&cls={{input.cls}}&addr={{image.address}}&page={{page}}&paging={{paging}}">
       {{ image.address }}
       </a>
     </div>
@@ -94,6 +108,23 @@ div.gallery_item:hover {
 
   </div>
 {% endfor %}
+</div>
+<br>
+<div style="float: left; background: #CCCCCC; height: 10em;">
+  {% if page > 0 %}
+  <a href="?tag={{input.tag}}&cls={{input.cls}}&addr={{input.addr}}&page={{page - 1}}&paging={{paging}}">
+  {% endif %}
+    Prev Page
+  {% if page > 0 %}
+  </a>
+  {% endif %}
+  {% if (page+1) * paging < total %}
+  <a href="?tag={{input.tag}}&cls={{input.cls}}&addr={{input.addr}}&page={{page + 1}}&paging={{paging}}">
+  {% endif %}
+    Next Page
+  {% if (page+1) * paging < total %}
+  </a>
+  {% endif %}
 </div>
 </body>
 </html>

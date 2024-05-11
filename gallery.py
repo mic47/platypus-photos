@@ -37,7 +37,7 @@ with open("output-all.jsonl") as f:
         200: {"description": "photo", "content": {"image/jpeg": {"example": "No example available."}}}
     },
 )
-def image_endpoint(hsh: int):
+def image_endpoint(hsh: int) -> t.Any:
     file_path = os.path.join(HASH_TO_IMAGE[hsh])
     if os.path.exists(file_path):
         # TODO: fix media type
@@ -47,11 +47,13 @@ def image_endpoint(hsh: int):
 
 @app.get("/index.html", response_class=HTMLResponse)
 @app.get("/", response_class=HTMLResponse)
-async def read_item(request: Request, tag: str = "", cls: str = "", addr: str = ""):
+async def read_item(
+    request: Request, tag: str = "", cls: str = "", addr: str = "", page: int = 0, paging: int = 100
+) -> HTMLResponse:
     images = []
-    tag_cnt = Counter()
-    classifications_cnt = Counter()
-    address_cnt = Counter()
+    tag_cnt: t.Counter[str] = Counter()
+    classifications_cnt: t.Counter[str] = Counter()
+    address_cnt: t.Counter[str] = Counter()
     for image in IMAGES:
         tags = sorted(
             list(
@@ -102,7 +104,10 @@ async def read_item(request: Request, tag: str = "", cls: str = "", addr: str = 
         name="index.html",
         context={
             "id": id,
-            "images": images,
+            "images": images[page * paging : (page + 1) * paging],
+            "total": len(images),
+            "page": page,
+            "paging": paging,
             "input": {
                 "tag": tag,
                 "cls": cls,
