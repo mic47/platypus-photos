@@ -26,7 +26,7 @@ RETRIES = 10
 
 
 class Geolocator:
-    def __init__(self):
+    def __init__(self) -> None:
         self.geolocator = Nominatim(user_agent="Mic's photo lookups")
         self.last_api = time.time() - 10
 
@@ -96,7 +96,7 @@ class POIDetector:
             return None
         best = min(
             [(distance((poi.latitude, poi.longitude), (latitude, longitude)), poi) for poi in self._pois],
-            key=lambda x: x[0],
+            key=lambda x: t.cast(float, x[0]),
         )
         distance, poi = best
         if distance > self._max_distance:

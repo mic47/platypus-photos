@@ -11,7 +11,7 @@ class MD5Annot(HasImage):
 
 
 class MD5er:
-    def __init__(self):
+    def __init__(self) -> None:
         pass
 
     def process(self, image: str) -> MD5Annot:

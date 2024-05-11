@@ -76,15 +76,14 @@ class PathDateExtractor:
 
 
 def parse_date(d: t.Union[date, datetime, str]) -> datetime:
-    if isinstance(d, date):
-        return datetime(d.year, d.month, d.day)
     if isinstance(d, datetime):
         return d
-    else:
-        return datetime.strptime(d, "%Y-%m-%d")
+    if isinstance(d, date):
+        return datetime(d.year, d.month, d.day)
+    return datetime.strptime(d, "%Y-%m-%d")
 
 
-def verify_filter(pattern: re.Pattern) -> re.Pattern:
+def verify_filter(pattern: re.Pattern[str]) -> re.Pattern[str]:
     assert pattern.groupindex.get("year") is not None, f"Missing `year` in date patter in {pattern.pattern}"
     assert pattern.groupindex.get("month") is not None, f"Missing `month` in date patter in {pattern.pattern}"
     assert pattern.groupindex.get("day") is not None, f"Missing `day` in date patter in {pattern.pattern}"

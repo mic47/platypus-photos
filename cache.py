@@ -14,7 +14,7 @@ T = t.TypeVar("T", bound=HasImage)
 
 
 class JsonlCache(t.Generic[T]):
-    def __init__(self, path: str, loader: t.Type[T], old_paths=[]):
+    def __init__(self, path: str, loader: t.Type[T], old_paths: t.List[str] = []):
         self._data = {}
 
         read_path = None
@@ -36,19 +36,19 @@ class JsonlCache(t.Generic[T]):
             for d in self._data.values():
                 self._do_write(d)
 
-    def __del__(self):
+    def __del__(self) -> None:
         self._file.close()
 
     def get(self, key: str) -> t.Optional[T]:
         return self._data.get(key)
 
-    def add(self, data: T):
+    def add(self, data: T) -> None:
         if data.image in self._data:
             return
         self._data[data.image] = data
         self._do_write(data)
 
-    def _do_write(self, data: T):
+    def _do_write(self, data: T) -> None:
         self._file.write(data.to_json(ensure_ascii=False))
         self._file.write("\n")
         self._file.flush()

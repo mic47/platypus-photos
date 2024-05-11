@@ -33,7 +33,7 @@ class ImageClassification(HasImage):
     captions: t.List[str]
     boxes: t.List[BoxClassification]
 
-    def print(self):
+    def print(self) -> None:
         print(self.image)
         for caption in self.captions:
             print(" ", caption)
@@ -58,7 +58,7 @@ def remove_consecutive_words(sentence: str) -> str:
 
 
 class Models:
-    def __init__(self):
+    def __init__(self) -> None:
         self.predict_model = YOLO("yolov8x.pt")
         self.classify_model = YOLO("yolov8x-cls.pt")
         self.captioner = pipeline("image-to-text", model="Salesforce/blip-image-captioning-base")
@@ -114,7 +114,7 @@ class Models:
             results = []
 
         visited = set()
-        for (path, group) in itertools.groupby(results, lambda x: (x[0][0])):
+        for (path, group) in itertools.groupby(results, lambda x: t.cast(str, x[0][0])):
             visited.add(path)
             box_class = []
             captions = set()

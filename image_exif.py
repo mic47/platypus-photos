@@ -105,20 +105,20 @@ EXTRACT_TAGS = [
 
 
 class UnparsedTags:
-    def __init__(self):
-        self._d = {}
+    def __init__(self) -> None:
+        self._d: t.Dict[str, t.Any] = {}
 
-    def insert(self, key, value):
+    def insert(self, key: str, value: t.Any) -> None:
         self._d[key] = value
 
-    def get(self, key):
+    def get(self, key: str) -> t.Any:
         if key not in self._d:
             return None
         ret = self._d[key]
         del self._d[key]
         return ret
 
-    def all(self):
+    def all(self) -> t.Dict[str, t.Any]:
         ret = self._d
         self._d = {}
         return ret
@@ -194,10 +194,9 @@ def gps_to_datetime(
         return datetime(y, m, d, h, mn, s)
     except:
         return None
-    return None
 
 
-def loc_to_number(x) -> t.Optional[float]:
+def loc_to_number(x: t.Any) -> t.Optional[float]:
     if type(x) != tuple:
         return None
     if len(x) != 3:
@@ -206,7 +205,7 @@ def loc_to_number(x) -> t.Optional[float]:
     ret = a + b / 60 + c / 3600
     if ret == 0:
         return None
-    return ret
+    return float(ret)
 
 
 @dataclass
@@ -253,7 +252,7 @@ class ImageExif(HasImage):
 
 
 class Exif:
-    def __init__(self):
+    def __init__(self) -> None:
         pass
 
     def process_image_batch(self: "Exif", paths: t.Iterable[str]) -> t.Iterable[ImageExif]:
