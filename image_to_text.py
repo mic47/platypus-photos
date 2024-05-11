@@ -27,9 +27,13 @@ class BoxClassification(DataClassJsonMixin):
     classifications: t.List[Classification]
 
 
+VERSION = 0
+
+
 @dataclass
 class ImageClassification(HasImage):
     image: str
+    version: int
     captions: t.List[str]
     boxes: t.List[BoxClassification]
 
@@ -41,6 +45,10 @@ class ImageClassification(HasImage):
             print(" ", box.box.classification, box.box.confidence)
             for c in box.classifications:
                 print("   ", c.name, c.confidence)
+
+    @staticmethod
+    def current_version() -> int:
+        return VERSION
 
 
 def remove_consecutive_words(sentence: str) -> str:
@@ -134,7 +142,7 @@ class Models:
                     prev_conf = conf
                     classifications.append(Classification(names[index], float(conf)))
                 box_class.append(BoxClassification(box, classifications))
-            yield ImageClassification(path, list(captions), box_class)
+            yield ImageClassification(path, VERSION, list(captions), box_class)
         for ((path, image), captions, _) in all_input:
             if path in visited:
                 continue
@@ -144,4 +152,4 @@ class Models:
                 t = c.get("generated_text")
                 if t is not None:
                     captions.add(remove_consecutive_words(t))
-            yield ImageClassification(path, list(captions), [])
+            yield ImageClassification(path, VERSION, list(captions), [])

@@ -1,5 +1,7 @@
 import os
+import sys
 import typing as t
+import json
 
 from dataclasses_json import DataClassJsonMixin
 from dataclasses import dataclass
@@ -8,14 +10,22 @@ from dataclasses import dataclass
 @dataclass
 class HasImage(DataClassJsonMixin):
     image: str
+    version: int
+
+    @staticmethod
+    def current_version() -> int:
+        raise NotImplementedError
 
 
 T = t.TypeVar("T", bound=HasImage)
+
+DEFAULT_VERSION = 0
 
 
 class JsonlCache(t.Generic[T]):
     def __init__(self, path: str, loader: t.Type[T], old_paths: t.List[str] = []):
         self._data = {}
+        self._current_version = loader.current_version()
 
         read_path = None
         if not os.path.exists(path):
@@ -29,8 +39,13 @@ class JsonlCache(t.Generic[T]):
             print("LOADING", read_path)
             with open(read_path, "r") as f:
                 for line in f:
-                    cimg = loader.from_json(line)
-                    self._data[cimg.image] = cimg
+                    j = json.loads(line)
+                    # Defaulting all versions to 0
+                    if "version" not in j:
+                        j["version"] = DEFAULT_VERSION
+                    cimg = loader.from_dict(j)
+                    if cimg.version == self._current_version:
+                        self._data[cimg.image] = cimg
         self._file = open(path, "a")
         if path != read_path:
             for d in self._data.values():
@@ -44,6 +59,15 @@ class JsonlCache(t.Generic[T]):
 
     def add(self, data: T) -> None:
         if data.image in self._data:
+            return
+        if data.version != self._current_version:
+            print(
+                "Trying to add wrong version of feature",
+                data.version,
+                self._current_version,
+                data,
+                file=sys.stderr,
+            )
             return
         self._data[data.image] = data
         self._do_write(data)

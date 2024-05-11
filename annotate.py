@@ -17,15 +17,22 @@ from cache import JsonlCache, HasImage
 from filename_to_date import PathDateExtractor
 from config import Config
 
+VERSION = 0
+
 
 @dataclass
 class ImageAnnotations(HasImage):
     image: str
+    version: int
     md5: str
     exif: ImageExif
     address: t.Optional[GeoAddress]
     text_classification: t.Optional[ImageClassification]
     date_from_path: t.Optional[datetime]
+
+    @staticmethod
+    def current_version() -> int:
+        return VERSION
 
 
 if __name__ == "__main__":
@@ -71,7 +78,7 @@ if __name__ == "__main__":
             else:
                 md5hsh = md5hsh_ret
             path_date = path_to_date.extract_date(path)
-            img = ImageAnnotations(path, md5hsh.md5, exif_item, geo, itt, path_date)
+            img = ImageAnnotations(path, VERSION, md5hsh.md5, exif_item, geo, itt, path_date)
         print(img)
     finally:
         del itt_cache

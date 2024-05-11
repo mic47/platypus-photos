@@ -3,11 +3,18 @@ from cache import HasImage
 import hashlib
 from dataclasses import dataclass
 
+VERSION = 0
+
 
 @dataclass
 class MD5Annot(HasImage):
     image: str
+    version: int
     md5: str
+
+    @staticmethod
+    def current_version() -> int:
+        return VERSION
 
 
 class MD5er:
@@ -15,4 +22,4 @@ class MD5er:
         pass
 
     def process(self, image: str) -> MD5Annot:
-        return MD5Annot(image, hashlib.md5(open("output-exif.jsonl", "rb").read()).hexdigest())
+        return MD5Annot(image, VERSION, hashlib.md5(open("output-exif.jsonl", "rb").read()).hexdigest())

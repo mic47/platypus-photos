@@ -243,12 +243,20 @@ def parse_datetime(s: t.Optional[str], offset: t.Optional[str]) -> t.Optional[da
     return None
 
 
+VERSION = 0
+
+
 @dataclass
 class ImageExif(HasImage):
     image: str
+    version: int
     gps: t.Optional[GPSCoord]
     camera: Camera
     date: t.Optional[Date]
+
+    @staticmethod
+    def current_version() -> int:
+        return VERSION
 
 
 class Exif:
@@ -277,4 +285,4 @@ class Exif:
             for tag, value in d.all().items():
                 print("ERR: unprocessed tag", tag, value, type(value), file=sys.stderr)
 
-            yield ImageExif(path, gps, camera, date)
+            yield ImageExif(path, VERSION, gps, camera, date)

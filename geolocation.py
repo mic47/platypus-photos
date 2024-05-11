@@ -9,6 +9,8 @@ import typing as t
 
 from cache import HasImage
 
+VERSION = 0
+
 
 @dataclass
 class GeoAddress(HasImage):
@@ -19,6 +21,10 @@ class GeoAddress(HasImage):
     raw: str
     query: str
     # TODO: add points of interestis -- i.e. home, work, ...
+
+    @staticmethod
+    def current_version() -> int:
+        return VERSION
 
 
 RATE_LIMIT_SECONDS = 1
@@ -69,7 +75,7 @@ class Geolocator:
                 or None  # In case of empty string
             )
             country = raw_add.get("country")
-        return GeoAddress(image, ret.address, country, name, raw_data, query)
+        return GeoAddress(image, VERSION, ret.address, country, name, raw_data, query)
 
 
 @dataclass
@@ -101,4 +107,4 @@ class POIDetector:
         distance, poi = best
         if distance > self._max_distance:
             return None
-        return NearestPOI(image, poi, distance)
+        return NearestPOI(image, VERSION, poi, distance)
