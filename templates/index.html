@@ -6,6 +6,9 @@
 Gallery
   </title>
 <style>
+body {
+  font-family: monospace;
+}
 .gallery_item {
   float: left;
   width: 15em;
@@ -18,13 +21,25 @@ div.gallery_item:hover {
 .gallery_image {
   width: 15em;
 }
+.tag a {
+  color: black;
+  text-decoration: none;
+}
 .tag {
   background-color: #00BB0033;
-  margin: 0.1em;
+  border-radius: 1em;
+  padding: 0.1em;
+  margin: 0.2em;
 }
 .location {
   background-color: #BB000033;
-  margin: 0.1em;
+  border-radius: 1em;
+  padding: 0.1em;
+  margin: 0.2em;
+}
+.location a {
+  color: black;
+  text-decoration: none;
 }
 </style>
 
@@ -63,9 +78,19 @@ div.gallery_item:hover {
     </div>
     {{ image.classifications}} <br/>
     {% for tag in image.tags %}
-    <span class="tag">{{tag}}</span>
+    <span class="tag">
+      <a href="?tag={{inputsep.tag}}{{tag}}&cls={{input.cls}}&addr={{input.addr}}">
+      {{tag}}
+      </a>
+    </span>
     {% endfor %}
-    <div class="location">{{ image.address }}</div>
+    {% if image.address | length > 0 %}
+    <div class="location">
+      <a href="?tag={{input.tag}}&cls={{input.cls}}&addr={{image.address}}">
+      {{ image.address }}
+      </a>
+    </div>
+    {% endif %}
 
   </div>
 {% endfor %}

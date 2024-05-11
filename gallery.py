@@ -46,6 +46,7 @@ def image_endpoint(hsh: int):
 
 
 @app.get("/index.html", response_class=HTMLResponse)
+@app.get("/", response_class=HTMLResponse)
 async def read_item(request: Request, tag: str = "", cls: str = "", addr: str = ""):
     images = []
     tag_cnt = Counter()
@@ -78,7 +79,7 @@ async def read_item(request: Request, tag: str = "", cls: str = "", addr: str = 
 
         address = ", ".join(address_parts)
         if addr:
-            if re.search(addr, address) is None:
+            if re.search(addr.lower(), address.lower()) is None:
                 continue
 
         images.append(
