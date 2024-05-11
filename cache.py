@@ -2,6 +2,7 @@ import os
 import sys
 import typing as t
 import json
+from tqdm import tqdm
 
 from dataclasses_json import DataClassJsonMixin
 from dataclasses import dataclass
@@ -49,9 +50,8 @@ class JsonlCache(t.Generic[T], Cache[T]):
         else:
             read_path = path
         if read_path is not None:
-            print("LOADING", read_path)
             with open(read_path, "r") as f:
-                for line in f:
+                for line in tqdm(f, desc=f"LOADING: {read_path}"):
                     j = json.loads(line)
                     # Defaulting all versions to 0
                     if "version" not in j:
