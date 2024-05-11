@@ -99,7 +99,7 @@ async def read_item(
     top_cls = sorted(classifications_cnt.items(), key=lambda x: -x[1])
     top_addr = sorted(address_cnt.items(), key=lambda x: -x[1])
 
-    if page * paging < len(images):
+    if page * paging >= len(images):
         page = len(images) // paging
 
     return templates.TemplateResponse(
