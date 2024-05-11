@@ -1,5 +1,5 @@
 from dataclasses_json import DataClassJsonMixin
-from cache import HasImage
+from cache import HasImage, Cache
 import hashlib
 from dataclasses import dataclass
 
@@ -18,8 +18,13 @@ class MD5Annot(HasImage):
 
 
 class MD5er:
-    def __init__(self) -> None:
-        pass
+    def __init__(self, cache: Cache[MD5Annot]) -> None:
+        self._cache = cache
 
     def process(self, image: str) -> MD5Annot:
-        return MD5Annot(image, VERSION, hashlib.md5(open("output-exif.jsonl", "rb").read()).hexdigest())
+        ret = self._cache.get(image)
+        if ret is not None:
+            return ret
+        return self._cache.add(
+            MD5Annot(image, VERSION, hashlib.md5(open("output-exif.jsonl", "rb").read()).hexdigest())
+        )

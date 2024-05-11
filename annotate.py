@@ -49,8 +49,8 @@ if __name__ == "__main__":
     geolocator_cache = JsonlCache("output-geo.jsonl", GeoAddress)
     geolocator = Geolocator(geolocator_cache)
 
-    md5 = MD5er()
     md5_cache = JsonlCache("output-md5.jsonl", MD5Annot)
+    md5 = MD5er(md5_cache)
 
     paths = [
         file
@@ -65,12 +65,7 @@ if __name__ == "__main__":
             if exif_item.gps is not None:
                 geo = geolocator.address(path, exif_item.gps.latitude, exif_item.gps.longitude)
             itt = list(models.process_image_batch([path]))[0]
-            md5hsh_ret = md5_cache.get(path)
-            if md5hsh_ret is None:
-                md5hsh = md5.process(path)
-                md5_cache.add(md5hsh)
-            else:
-                md5hsh = md5hsh_ret
+            md5hsh = md5.process(path)
             path_date = path_to_date.extract_date(path)
             img = ImageAnnotations(path, VERSION, md5hsh.md5, exif_item, geo, itt, path_date)
         print(img)
