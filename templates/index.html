@@ -12,6 +12,9 @@ Gallery
   background-color: #0000BB33;
   margin: 0.5em;
 }
+div.gallery_item:hover {
+  border: 1px solid #777;
+}
 .gallery_image {
   width: 15em;
 }
@@ -55,7 +58,9 @@ Gallery
 
 {% for image in images %}
   <div class="gallery_item">
+    <div>
     <img src="/static/{{image.path}}" class="gallery_image"/>
+    </div>
     {{ image.classifications}} <br/>
     {% for tag in image.tags %}
     <span class="tag">{{tag}}</span>
