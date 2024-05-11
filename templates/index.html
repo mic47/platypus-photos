@@ -44,11 +44,11 @@ Gallery
   {% endfor %} <br/>
   Top texts: 
   {% for t in top.cls %}
-    <a href="?tag={{input.cls}}&cls={{t[0]}}&addr={{input.addr}}">{{t[0]}} ({{t[1]}})</a>
+    <a href="?tag={{input.tag}}&cls={{t[0]}}&addr={{input.addr}}">{{t[0]}} ({{t[1]}})</a>
   {% endfor %} <br/>
   Top locs: 
   {% for t in top.addr %}
-    <a href="?tag={{input.cls}}&cls={{input.cls}}&addr={{t[0]}}">{{t[0]}} ({{t[1]}})</a>
+    <a href="?tag={{input.tag}}&cls={{input.cls}}&addr={{t[0]}}">{{t[0]}} ({{t[1]}})</a>
   {% endfor %} <br/>
 </div>
 <div>
