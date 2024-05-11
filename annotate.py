@@ -42,10 +42,10 @@ if __name__ == "__main__":
     models = Models()
     exif_cache = JsonlCache("output-exif.jsonl", ImageExif)
     exif = Exif(exif_cache)
-    geolocator = Geolocator()
+    geo_cache = JsonlCache("output-geo.jsonl", GeoAddress)
+    geolocator = Geolocator(geo_cache)
     md5 = MD5er()
     itt_cache = JsonlCache("output-image-to-text.jsonl", ImageClassification)
-    geo_cache = JsonlCache("output-geo.jsonl", GeoAddress)
     md5_cache = JsonlCache("output-md5.jsonl", MD5Annot)
 
     paths = [
@@ -57,11 +57,9 @@ if __name__ == "__main__":
     try:
         for path in tqdm(paths, total=len(paths), desc="Image batches"):
             exif_item = exif.process_image(path)
-
-            geo = geo_cache.get(path)
-            if geo is None and exif_item.gps is not None:
+            geo = None
+            if exif_item.gps is not None:
                 geo = geolocator.address(path, exif_item.gps.latitude, exif_item.gps.longitude)
-                geo_cache.add(geo)
             itt = itt_cache.get(path)
             if itt is None:
                 itt = list(models.process_image_batch([path]))[0]

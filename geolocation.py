@@ -7,7 +7,7 @@ import time
 import sys
 import typing as t
 
-from cache import HasImage
+from cache import HasImage, Cache
 
 VERSION = 0
 
@@ -32,11 +32,18 @@ RETRIES = 10
 
 
 class Geolocator:
-    def __init__(self) -> None:
+    def __init__(self, cache: Cache[GeoAddress]) -> None:
+        self._cache = cache
         self.geolocator = Nominatim(user_agent="Mic's photo lookups")
         self.last_api = time.time() - 10
 
     def address(self, image: str, lat: float, lon: float) -> GeoAddress:
+        ret = self._cache.get(image)
+        if ret is not None:
+            return ret
+        return self.address_impl(image, lat, lon)
+
+    def address_impl(self, image: str, lat: float, lon: float) -> GeoAddress:
         now = time.time()
         from_last_call = max(0, now - self.last_api)
         if from_last_call < RATE_LIMIT_SECONDS:
