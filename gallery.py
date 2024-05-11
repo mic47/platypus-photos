@@ -1,11 +1,12 @@
 import json
 import typing as t
+import os
 from collections import Counter
 import sys
 import re
 
 from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
@@ -13,17 +14,35 @@ from image_annotation import ImageAnnotations
 
 app = FastAPI()
 # TODO: serve these differenty
-app.mount("/static", StaticFiles(directory="/"), name="static")
+app.mount("/static", StaticFiles(directory="static/"), name="static")
 templates = Jinja2Templates(directory="templates")
 
 
 IMAGES: t.List[ImageAnnotations] = []
+HASH_TO_IMAGE: t.Dict[int, str] = {}
+
 with open("output-all.jsonl") as f:
     for line in f:
         j = json.loads(line)
         if (j.get("version") or 0) != ImageAnnotations.current_version():
             continue
-        IMAGES.append(ImageAnnotations.from_dict(j))
+        _image = ImageAnnotations.from_dict(j)
+        IMAGES.append(_image)
+        HASH_TO_IMAGE[hash(_image.image)] = _image.image
+
+
+@app.get(
+    "/img",
+    responses={
+        200: {"description": "photo", "content": {"image/jpeg": {"example": "No example available."}}}
+    },
+)
+def image_endpoint(hsh: int):
+    file_path = os.path.join(HASH_TO_IMAGE[hsh])
+    if os.path.exists(file_path):
+        # TODO: fix media type
+        return FileResponse(file_path, media_type="image/jpeg", filename=file_path.split("/")[-1])
+    return {"error": "File not found!"}
 
 
 @app.get("/index.html", response_class=HTMLResponse)
@@ -64,7 +83,7 @@ async def read_item(request: Request, tag: str = "", cls: str = "", addr: str = 
 
         images.append(
             {
-                "path": image.image,
+                "hsh": hash(image.image),
                 "classifications": classifications,
                 "tags": tags,
                 "address": address,

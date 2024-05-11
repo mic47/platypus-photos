@@ -59,7 +59,7 @@ div.gallery_item:hover {
 {% for image in images %}
   <div class="gallery_item">
     <div>
-    <img src="/static/{{image.path}}" class="gallery_image"/>
+    <img src="/img?hsh={{image.hsh}}" class="gallery_image"/>
     </div>
     {{ image.classifications}} <br/>
     {% for tag in image.tags %}
