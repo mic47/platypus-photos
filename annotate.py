@@ -39,13 +39,17 @@ if __name__ == "__main__":
     config = Config.load("config.yaml")
 
     path_to_date = PathDateExtractor(config.directory_matching)
-    models = Models()
+
+    models_cache = JsonlCache("output-image-to-text.jsonl", ImageClassification)
+    models = Models(models_cache)
+
     exif_cache = JsonlCache("output-exif.jsonl", ImageExif)
     exif = Exif(exif_cache)
-    geo_cache = JsonlCache("output-geo.jsonl", GeoAddress)
-    geolocator = Geolocator(geo_cache)
+
+    geolocator_cache = JsonlCache("output-geo.jsonl", GeoAddress)
+    geolocator = Geolocator(geolocator_cache)
+
     md5 = MD5er()
-    itt_cache = JsonlCache("output-image-to-text.jsonl", ImageClassification)
     md5_cache = JsonlCache("output-md5.jsonl", MD5Annot)
 
     paths = [
@@ -60,10 +64,7 @@ if __name__ == "__main__":
             geo = None
             if exif_item.gps is not None:
                 geo = geolocator.address(path, exif_item.gps.latitude, exif_item.gps.longitude)
-            itt = itt_cache.get(path)
-            if itt is None:
-                itt = list(models.process_image_batch([path]))[0]
-                itt_cache.add(itt)
+            itt = list(models.process_image_batch([path]))[0]
             md5hsh_ret = md5_cache.get(path)
             if md5hsh_ret is None:
                 md5hsh = md5.process(path)
@@ -74,7 +75,7 @@ if __name__ == "__main__":
             img = ImageAnnotations(path, VERSION, md5hsh.md5, exif_item, geo, itt, path_date)
         print(img)
     finally:
-        del itt_cache
+        del models_cache
         del exif_cache
-        del geo_cache
+        del geolocator_cache
         del md5_cache

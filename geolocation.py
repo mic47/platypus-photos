@@ -41,7 +41,7 @@ class Geolocator:
         ret = self._cache.get(image)
         if ret is not None:
             return ret
-        return self.address_impl(image, lat, lon)
+        return self._cache.add(self.address_impl(image, lat, lon))
 
     def address_impl(self, image: str, lat: float, lon: float) -> GeoAddress:
         now = time.time()

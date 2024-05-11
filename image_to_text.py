@@ -5,7 +5,7 @@ from dataclasses import dataclass
 import typing as t
 from dataclasses_json import DataClassJsonMixin
 from transformers import pipeline
-from cache import HasImage
+from cache import HasImage, Cache
 
 
 @dataclass
@@ -66,7 +66,8 @@ def remove_consecutive_words(sentence: str) -> str:
 
 
 class Models:
-    def __init__(self) -> None:
+    def __init__(self, cache: Cache[ImageClassification]) -> None:
+        self._cache = cache
         self.predict_model = YOLO("yolov8x.pt")
         self.classify_model = YOLO("yolov8x-cls.pt")
         self.captioner = pipeline("image-to-text", model="Salesforce/blip-image-captioning-base")
@@ -76,6 +77,24 @@ class Models:
         paths: t.Iterable[str],
         gap_threshold: float = 0.2,
         discard_threshold: float = 0.1,
+    ) -> t.Iterable[ImageClassification]:
+        not_cached = []
+        for path in paths:
+            x = self._cache.get(path)
+            if x is None:
+                not_cached.append(path)
+            else:
+                yield x
+        if not_cached:
+            for p in self.process_image_batch_impl(not_cached, gap_threshold, discard_threshold):
+                self._cache.add(p)
+                yield p
+
+    def process_image_batch_impl(
+        self: "Models",
+        paths: t.Iterable[str],
+        gap_threshold: float,
+        discard_threshold: float,
     ) -> t.Iterable[ImageClassification]:
         images = [(path, Image.open(path)) for path in paths]
         captions = self.captioner([image for (_, image) in images])

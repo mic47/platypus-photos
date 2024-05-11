@@ -267,7 +267,7 @@ class Exif:
         ret = self._cache.get(path)
         if ret is not None:
             return ret
-        return self.process_image(path)
+        return self._cache.add(self.process_image(path))
 
     def process_image_impl(self: "Exif", path: str) -> ImageExif:
         img = exif.Image(path)

@@ -26,15 +26,15 @@ class Cache(t.Generic[T]):
     def get(self, key: str) -> t.Optional[T]:
         raise NotImplementedError
 
-    def add(self, data: T) -> None:
+    def add(self, data: T) -> T:
         raise NotImplementedError
 
 class NoCache(t.Generic[T], Cache[T]):
     def get(self, key: str) -> t.Optional[T]:
         pass
 
-    def add(self, data: T) -> None:
-        pass
+    def add(self, data: T) -> T:
+        return data
 
 class JsonlCache(t.Generic[T], Cache[T]):
     def __init__(self, path: str, loader: t.Type[T], old_paths: t.List[str] = []):
@@ -70,9 +70,9 @@ class JsonlCache(t.Generic[T], Cache[T]):
     def get(self, key: str) -> t.Optional[T]:
         return self._data.get(key)
 
-    def add(self, data: T) -> None:
+    def add(self, data: T) -> T:
         if data.image in self._data:
-            return
+            return data
         if data.version != self._current_version:
             print(
                 "Trying to add wrong version of feature",
@@ -81,9 +81,10 @@ class JsonlCache(t.Generic[T], Cache[T]):
                 data,
                 file=sys.stderr,
             )
-            return
+            return data
         self._data[data.image] = data
         self._do_write(data)
+        return data
 
     def _do_write(self, data: T) -> None:
         self._file.write(data.to_json(ensure_ascii=False))
