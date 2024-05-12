@@ -86,6 +86,8 @@ class UrlParameters:
         add_tag: t.Optional[str] = None,
         cls: t.Optional[str] = None,
         addr: t.Optional[str] = None,
+        datefrom: t.Optional[datetime] = None,
+        dateto: t.Optional[datetime] = None,
         page: t.Optional[int] = None,
         paging: t.Optional[int] = None,
     ) -> str:
@@ -99,9 +101,9 @@ class UrlParameters:
         addr = addr or self.addr
         page = page or self.page
         paging = paging or self.paging
-        datefrom = maybe_datetime_to_date(self.datefrom) or ""
-        dateto = maybe_datetime_to_date(self.dateto) or ""
-        return f"?tag={tag}&cls={cls}&addr={addr}&datefrom={datefrom}&dateto={dateto}&page={page}&paging={paging}"
+        datefrom_ = maybe_datetime_to_date(datefrom or self.datefrom) or ""
+        dateto_ = maybe_datetime_to_date(dateto or self.dateto) or ""
+        return f"?tag={tag}&cls={cls}&addr={addr}&datefrom={datefrom_}&dateto={dateto_}&page={page}&paging={paging}"
 
     def prev_url(self) -> t.Optional[str]:
         if self.page <= 0:
@@ -117,20 +119,58 @@ class UrlParameters:
 @app.get("/index.html", response_class=HTMLResponse)
 @app.get("/", response_class=HTMLResponse)
 async def read_item(
-    request: Request, tag: str = "", cls: str = "", addr: str = "", page: int = 0, paging: int = 100
+    request: Request,
+    tag: str = "",
+    cls: str = "",
+    addr: str = "",
+    page: int = 0,
+    paging: int = 100,
+    datefrom: str = "",
+    dateto: str = "",
 ) -> HTMLResponse:
-    url = UrlParameters(tag, cls, addr, None, None, page, paging)
+    print(datefrom, dateto)
+    url = UrlParameters(
+        tag,
+        cls,
+        addr,
+        datetime.strptime(datefrom, "%Y-%m-%d") if datefrom else None,
+        datetime.strptime(dateto, "%Y-%m-%d") if dateto else None,
+        page,
+        paging,
+    )
     del tag
     del cls
     del addr
     del page
     del paging
+    del datefrom
+    del dateto
     images = []
     tag_cnt: t.Counter[str] = Counter()
     classifications_cnt: t.Counter[str] = Counter()
     address_cnt: t.Counter[str] = Counter()
     for image in IMAGES:
         tags: t.Dict[str, float] = defaultdict(lambda: 0.0)
+
+        date = None
+        if image.exif.date is not None:
+            date = image.exif.date.datetime
+        date = date or image.date_from_path
+
+        if date is not None:
+            to_compare = date.replace(tzinfo=None)
+            if url.datefrom is not None and to_compare < url.datefrom:
+                continue
+            if url.dateto is not None:
+                to_compare -= timedelta(days=1)
+                if to_compare > url.dateto:
+                    continue
+
+        else:
+            if url.datefrom is not None or url.dateto is not None:
+                # Datetime filter is on, so skipping stuff without date
+                continue
+
         for boxes in image.text_classification.boxes:
             confidence = boxes.box.confidence
             for classification in boxes.classifications:
@@ -158,10 +198,6 @@ async def read_item(
                 continue
 
         max_tag = min(1, max(tags.values(), default=1.0))
-        date = None
-        if image.exif.date is not None:
-            date = image.exif.date.datetime
-        date = date or image.date_from_path
         images.append(
             {
                 "hsh": hash(image.image),
@@ -171,7 +207,10 @@ async def read_item(
                     for tg, x in sorted(tags.items(), key=lambda x: -x[1])
                 ],
                 "addrs": [{"address": a, "url": url.to_url(addr=a or None)} for a in address_parts],
-                "date": maybe_datetime_to_date(date),
+                "date": {
+                    "date": maybe_datetime_to_date(date),
+                    "url": url.to_url(datefrom=date, dateto=date),
+                },
             }
         )
         classifications_cnt.update(x.lower() for x in image.text_classification.captions)
@@ -199,6 +238,8 @@ async def read_item(
                 "tag": url.tag,
                 "cls": url.cls,
                 "addr": url.addr,
+                "datefrom": maybe_datetime_to_date(url.datefrom) or "",
+                "dateto": maybe_datetime_to_date(url.dateto) or "",
             },
             "top": {
                 "tag": [(tg, s, url.to_url(add_tag=tg)) for tg, s in top_tags[:15]],
