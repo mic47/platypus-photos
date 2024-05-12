@@ -4,6 +4,9 @@ import os
 from collections import Counter, defaultdict
 import sys
 import re
+import copy
+from datetime import datetime, timedelta
+from dataclasses import dataclass
 
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, FileResponse
@@ -61,11 +64,67 @@ def classify_tag(value: float) -> str:
     return "🗑️"
 
 
+def maybe_datetime_to_date(value: t.Optional[datetime]) -> t.Optional[str]:
+    if value is None:
+        return None
+    return f"{value.year}-{value.month:02d}-{value.day:02d}"
+
+
+@dataclass
+class UrlParameters:
+    tag: str
+    cls: str
+    addr: str
+    datefrom: t.Optional[datetime]
+    dateto: t.Optional[datetime]
+    page: int
+    paging: int
+
+    def to_url(
+        self,
+        tag: t.Optional[str] = None,
+        add_tag: t.Optional[str] = None,
+        cls: t.Optional[str] = None,
+        addr: t.Optional[str] = None,
+        page: t.Optional[int] = None,
+        paging: t.Optional[int] = None,
+    ) -> str:
+        tag = tag or self.tag
+        if add_tag:
+            if tag:
+                tag = f"{tag},{add_tag}"
+            else:
+                tag = add_tag or ""
+        cls = cls or self.cls
+        addr = addr or self.addr
+        page = page or self.page
+        paging = paging or self.paging
+        datefrom = maybe_datetime_to_date(self.datefrom) or ""
+        dateto = maybe_datetime_to_date(self.dateto) or ""
+        return f"?tag={tag}&cls={cls}&addr={addr}&datefrom={datefrom}&dateto={dateto}&page={page}&paging={paging}"
+
+    def prev_url(self) -> t.Optional[str]:
+        if self.page <= 0:
+            return None
+        return self.to_url(page=self.page - 1)
+
+    def next_url(self, total_images: int) -> t.Optional[str]:
+        if (self.page + 1) * self.paging >= total_images:
+            return None
+        return self.to_url(page=self.page + 1)
+
+
 @app.get("/index.html", response_class=HTMLResponse)
 @app.get("/", response_class=HTMLResponse)
 async def read_item(
     request: Request, tag: str = "", cls: str = "", addr: str = "", page: int = 0, paging: int = 100
 ) -> HTMLResponse:
+    url = UrlParameters(tag, cls, addr, None, None, page, paging)
+    del tag
+    del cls
+    del addr
+    del page
+    del paging
     images = []
     tag_cnt: t.Counter[str] = Counter()
     classifications_cnt: t.Counter[str] = Counter()
@@ -78,12 +137,12 @@ async def read_item(
                 name = classification.name.replace("_", " ").lower()
                 tags[name] += confidence * classification.confidence
 
-        if tag:
-            if any(not in_tags(tt, tags.keys()) for tt in tag.split(",") if tt):
+        if url.tag:
+            if any(not in_tags(tt, tags.keys()) for tt in url.tag.split(",") if tt):
                 continue
         classifications = ";".join(image.text_classification.captions).lower()
-        if cls:
-            if re.search(cls, classifications) is None:
+        if url.cls:
+            if re.search(url.cls, classifications) is None:
                 continue
 
         address_parts = []
@@ -94,17 +153,25 @@ async def read_item(
                 address_parts.append(image.address.country)
 
         address = ", ".join(address_parts)
-        if addr:
-            if re.search(addr.lower(), address.lower()) is None:
+        if url.addr:
+            if re.search(url.addr.lower(), address.lower()) is None:
                 continue
 
         max_tag = min(1, max(tags.values(), default=1.0))
+        date = None
+        if image.exif.date is not None:
+            date = image.exif.date.datetime
+        date = date or image.date_from_path
         images.append(
             {
                 "hsh": hash(image.image),
                 "classifications": classifications,
-                "tags": [(tg, classify_tag(x / max_tag)) for tg, x in sorted(tags.items(), key=lambda x: -x[1])],
-                "address": address,
+                "tags": [
+                    (tg, classify_tag(x / max_tag), url.to_url(add_tag=tg))
+                    for tg, x in sorted(tags.items(), key=lambda x: -x[1])
+                ],
+                "addrs": [{"address": a, "url": url.to_url(addr=a or None)} for a in address_parts],
+                "date": maybe_datetime_to_date(date),
             }
         )
         classifications_cnt.update(x.lower() for x in image.text_classification.captions)
@@ -114,32 +181,29 @@ async def read_item(
     top_cls = sorted(classifications_cnt.items(), key=lambda x: -x[1])
     top_addr = sorted(address_cnt.items(), key=lambda x: -x[1])
 
-    if page * paging >= len(images):
-        page = len(images) // paging
+    if url.page * url.paging >= len(images):
+        url.page = len(images) // url.paging
 
     return templates.TemplateResponse(
         request=request,
         name="index.html",
         context={
             "id": id,
-            "images": images[page * paging : (page + 1) * paging],
+            "images": images[url.page * url.paging : (url.page + 1) * url.paging],
             "total": len(images),
-            "page": page,
-            "paging": paging,
-            "input": {
-                "tag": tag,
-                "cls": cls,
-                "addr": addr,
+            "urls": {
+                "next": url.next_url(len(images)),
+                "prev": url.prev_url(),
             },
-            "inputsep": {
-                "tag": add_comma(tag),
-                "cls": add_comma(cls),
-                "addr": add_comma(addr),
+            "input": {
+                "tag": url.tag,
+                "cls": url.cls,
+                "addr": url.addr,
             },
             "top": {
-                "tag": top_tags[:15],
-                "cls": top_cls[:5],
-                "addr": top_addr[:15],
+                "tag": [(tg, s, url.to_url(add_tag=tg)) for tg, s in top_tags[:15]],
+                "cls": [(cl, s, url.to_url(cls=cl)) for cl, s in top_cls[:5]],
+                "addr": [(ad, s, url.to_url(addr=ad)) for ad, s in top_addr[:15]],
             },
         },
     )
