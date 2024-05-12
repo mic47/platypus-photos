@@ -9,6 +9,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from tqdm import tqdm
 
 from image_annotation import ImageAnnotations
 
@@ -22,7 +23,7 @@ IMAGES: t.List[ImageAnnotations] = []
 HASH_TO_IMAGE: t.Dict[int, str] = {}
 
 with open("output-all.jsonl") as f:
-    for line in f:
+    for line in tqdm(f, desc="Loading images"):
         j = json.loads(line)
         if (j.get("version") or 0) != ImageAnnotations.current_version():
             continue
