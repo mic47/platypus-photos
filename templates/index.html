@@ -94,8 +94,8 @@ div.gallery_item:hover {
     {{ image.classifications}} <br/>
     {% for tag in image.tags %}
     <span class="tag">
-      <a href="?tag={{inputsep.tag}}{{tag}}&cls={{input.cls}}&addr={{input.addr}}&page={{page}}&paging={{paging}}">
-      {{tag}}
+      <a href="?tag={{inputsep.tag}}{{tag[0]}}&cls={{input.cls}}&addr={{input.addr}}&page={{page}}&paging={{paging}}">
+      {{tag[1]}}{{tag[0]}}
       </a>
     </span>
     {% endfor %}

@@ -1,7 +1,7 @@
 import json
 import typing as t
 import os
-from collections import Counter
+from collections import Counter, defaultdict
 import sys
 import re
 
@@ -45,11 +45,21 @@ def image_endpoint(hsh: int) -> t.Any:
         return FileResponse(file_path, media_type="image/jpeg", filename=file_path.split("/")[-1])
     return {"error": "File not found!"}
 
-def in_tags(what: str, tags: t.List[str]) -> bool:
+
+def in_tags(what: str, tags: t.Iterable[str]) -> bool:
     for tag in tags:
         if what in tag:
             return True
     return False
+
+
+def classify_tag(value: float) -> str:
+    if value >= 0.5:
+        return ""
+    if value >= 0.2:
+        return "🤷"
+    return "🗑️"
+
 
 @app.get("/index.html", response_class=HTMLResponse)
 @app.get("/", response_class=HTMLResponse)
@@ -61,17 +71,15 @@ async def read_item(
     classifications_cnt: t.Counter[str] = Counter()
     address_cnt: t.Counter[str] = Counter()
     for image in IMAGES:
-        tags = sorted(
-            list(
-                set(
-                    classification.name.replace("_", " ").lower()
-                    for boxes in image.text_classification.boxes
-                    for classification in boxes.classifications
-                )
-            )
-        )
+        tags: t.Dict[str, float] = defaultdict(lambda: 0.0)
+        for boxes in image.text_classification.boxes:
+            confidence = boxes.box.confidence
+            for classification in boxes.classifications:
+                name = classification.name.replace("_", " ").lower()
+                tags[name] += confidence * classification.confidence
+
         if tag:
-            if any(not in_tags(tt, tags) for tt in tag.split(",") if tt):
+            if any(not in_tags(tt, tags.keys()) for tt in tag.split(",") if tt):
                 continue
         classifications = ";".join(image.text_classification.captions).lower()
         if cls:
@@ -90,16 +98,17 @@ async def read_item(
             if re.search(addr.lower(), address.lower()) is None:
                 continue
 
+        max_tag = min(1, max(tags.values(), default=1.0))
         images.append(
             {
                 "hsh": hash(image.image),
                 "classifications": classifications,
-                "tags": tags,
+                "tags": [(tg, classify_tag(x / max_tag)) for tg, x in sorted(tags.items(), key=lambda x: -x[1])],
                 "address": address,
             }
         )
         classifications_cnt.update(x.lower() for x in image.text_classification.captions)
-        tag_cnt.update(tags)
+        tag_cnt.update(tags.keys())
         address_cnt.update(address_parts)
     top_tags = sorted(tag_cnt.items(), key=lambda x: -x[1])
     top_cls = sorted(classifications_cnt.items(), key=lambda x: -x[1])
