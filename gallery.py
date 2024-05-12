@@ -45,6 +45,11 @@ def image_endpoint(hsh: int) -> t.Any:
         return FileResponse(file_path, media_type="image/jpeg", filename=file_path.split("/")[-1])
     return {"error": "File not found!"}
 
+def in_tags(what: str, tags: t.List[str]) -> bool:
+    for tag in tags:
+        if what in tag:
+            return True
+    return False
 
 @app.get("/index.html", response_class=HTMLResponse)
 @app.get("/", response_class=HTMLResponse)
@@ -66,7 +71,7 @@ async def read_item(
             )
         )
         if tag:
-            if any(tt not in tags for tt in tag.split(",") if tt):
+            if any(not in_tags(tt, tags) for tt in tag.split(",") if tt):
                 continue
         classifications = ";".join(image.text_classification.captions).lower()
         if cls:
