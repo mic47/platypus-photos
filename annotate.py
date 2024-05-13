@@ -49,16 +49,20 @@ if __name__ == "__main__":
 
     try:
         for path in tqdm(paths, total=len(paths), desc="Image batches"):
-            exif_item = exif.process_image(path)
-            geo = None
-            if exif_item.gps is not None:
-                geo = geolocator.address(
-                    path, exif_item.gps.latitude, exif_item.gps.longitude, recompute=exif_item.changed()
-                )
-            itt = list(models.process_image_batch([path]))[0]
-            md5hsh = md5.process(path)
-            path_date = path_to_date.extract_date(path)
-            img = annotator.process(path, md5hsh, exif_item, geo, itt, path_date)
+            try:
+                exif_item = exif.process_image(path)
+                geo = None
+                if exif_item.gps is not None:
+                    geo = geolocator.address(
+                        path, exif_item.gps.latitude, exif_item.gps.longitude, recompute=exif_item.changed()
+                    )
+                itt = list(models.process_image_batch([path]))[0]
+                md5hsh = md5.process(path)
+                path_date = path_to_date.extract_date(path)
+                img = annotator.process(path, md5hsh, exif_item, geo, itt, path_date)
+            except:
+                print("Error while processing path", path, file=sys.stderr)
+                raise
         print(img)
     finally:
         del models_cache
