@@ -15,14 +15,45 @@ body {
   background-color: #0000BB33;
   margin: 0.5em;
   border: 1px solid #fff;
+  text-align: center;
 }
 div.gallery_item:hover {
   border: 1px solid #777;
+}
+.gallery_container {
+  display: flex;
+  justify-content: center;
+
+}
+.overlay .gallery_container {
+  display: flex;
+  justify-content: center;
+  max-height: 90%;
+
+}
+.gallery_item_nav{
+  display: none;
+}
+.overlay .gallery_item_nav {
+  display: block;
 }
 .gallery_image {
   max-width: 15em;
   max-height: 15em;
 }
+.overlay .gallery_image {
+  max-width: 100%;
+  max-height: 100%;
+}
+.overlay {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background: #ffffffDD;
+}
+
 .tag a {
   color: black;
   text-decoration: none;
@@ -90,7 +121,12 @@ div.gallery_item:hover {
 
 {% for image in images %}
   <div class="gallery_item">
-    <div>
+    <div class="gallery_item_nav">
+        <a href="#" onclick="this.parentElement.parentElement.previousElementSibling.classList.add('overlay');this.parentElement.parentElement.classList.remove('overlay')">prev</a>
+        <a href="#" onclick="this.parentElement.parentElement.classList.remove('overlay')">close</a>
+        <a href="#" onclick="this.parentElement.parentElement.nextElementSibling.classList.add('overlay');this.parentElement.parentElement.classList.remove('overlay')">next</a>
+    </div>
+    <div class="gallery_container" onclick="this.parentElement.classList.add('overlay')">
     <img src="/img?hsh={{image.hsh}}" class="gallery_image"/>
     </div>
     {{ image.classifications}} <br/>
