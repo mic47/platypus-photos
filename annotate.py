@@ -22,6 +22,11 @@ from config import Config
 VERSION = 0
 
 
+def walk_tree(path: str, extensions: t.List[str] = ["jpg", "jpeg", "JPG", "JEPG"]) -> t.Iterable[str]:
+    for directory, _subdirs, files in os.walk(path):
+        yield from (f"{directory}/{file}" for file in files if file.split(".")[-1] in extensions)
+
+
 if __name__ == "__main__":
     config = Config.load("config.yaml")
 
@@ -47,6 +52,8 @@ if __name__ == "__main__":
         for pattern in tqdm(config.input_patterns, desc="Listing files")
         for file in glob.glob(re.sub("^~/", os.environ["HOME"] + "/", pattern))
     ]
+    for directory in tqdm(config.input_directories, desc="Listing directories"):
+        paths.extend(walk_tree(re.sub("^~/", os.environ["HOME"] + "/", directory)))
 
     try:
         for path in tqdm(paths, total=len(paths), desc="Image batches"):
@@ -61,9 +68,8 @@ if __name__ == "__main__":
                 md5hsh = md5.process(path)
                 path_date = path_to_date.extract_date(path)
                 img = annotator.process(path, md5hsh, exif_item, geo, itt, path_date)
-            except:
-                print("Error while processing path", path, file=sys.stderr)
-                raise
+            except Exception as e:
+                print("Error while processing path", path, e, file=sys.stderr)
         print(img)
     finally:
         del models_cache

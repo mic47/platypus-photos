@@ -17,6 +17,7 @@ class DirectoryMatchingConfig(DataClassJsonMixin):
 @dataclass
 class Config(DataClassJsonMixin):
     input_patterns: t.List[str]
+    input_directories: t.List[str]
     directory_matching: DirectoryMatchingConfig
 
     @staticmethod
