@@ -86,6 +86,37 @@ div.gallery_item:hover {
   text-decoration: none;
 }
 </style>
+<script>
+function changeState(index) {
+  var url = new URL(window.location.href);
+  if (index == null) {
+    url.searchParams.delete("oi");
+  } else {
+    url.searchParams.set("oi", index);
+  }
+  if (window.history.replaceState) {
+    window.history.replaceState(window.history.state, "", url.href);
+  }
+}
+function overlay(element, index) {
+  element.parentElement.classList.add('overlay');
+  changeState(index);
+}
+function overlay_close(element) {
+  element.parentElement.parentElement.classList.remove('overlay');
+  changeState(null);
+}
+function overlay_prev(element, index) {
+  element.parentElement.parentElement.previousElementSibling.classList.add('overlay');
+  element.parentElement.parentElement.classList.remove('overlay');
+  changeState(index - 1);
+}
+function overlay_next(element, index) {
+  element.parentElement.parentElement.nextElementSibling.classList.add('overlay');
+  element.parentElement.parentElement.classList.remove('overlay');
+  changeState(index + 1);
+}
+</script>
 
 </head>
 <body>
@@ -121,13 +152,25 @@ div.gallery_item:hover {
 <div>
 
 {% for image in images %}
+  {% if loop.index0 == oi %}
+  <div class="gallery_item overlay">
+  {% else %}
   <div class="gallery_item">
+  {% endif %}
     <div class="gallery_item_nav">
-        <a href="#" onclick="this.parentElement.parentElement.previousElementSibling.classList.add('overlay');this.parentElement.parentElement.classList.remove('overlay')">prev</a>
-        <a href="#" onclick="this.parentElement.parentElement.classList.remove('overlay')">close</a>
-        <a href="#" onclick="this.parentElement.parentElement.nextElementSibling.classList.add('overlay');this.parentElement.parentElement.classList.remove('overlay')">next</a>
+        {% if loop.index0 == 0 %}
+        {% if urls.prev_overlay %}<a href="{{urls.prev_overlay}}">prev</a>{% else %} prev {% endif %}
+        {% else %}
+        <a href="#" onclick="overlay_prev(this, {{ loop.index0 }})">prev</a>
+        {% endif %}
+        <a href="#" onclick="overlay_close(this)">close</a>
+        {% if loop.index == images|length %}
+        {% if urls.next_overlay %}<a href="{{urls.next_overlay}}">next</a>{% else %} next {% endif %}
+        {% else %}
+        <a href="#" onclick="overlay_next(this, {{ loop.index0 }})">next</a>
+        {% endif %}
     </div>
-    <div class="gallery_container" onclick="this.parentElement.classList.add('overlay')">
+    <div class="gallery_container" onclick="overlay(this, {{ loop.index0 }})">
     <img src="/img?hsh={{image.hsh}}" class="gallery_image"/>
     </div>
     {{ image.classifications}} <br/>

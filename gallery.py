@@ -90,6 +90,7 @@ class UrlParameters:
         dateto: t.Optional[datetime] = None,
         page: t.Optional[int] = None,
         paging: t.Optional[int] = None,
+        oi: t.Optional[int] = None,
     ) -> str:
         tag = tag or self.tag
         if add_tag:
@@ -99,21 +100,32 @@ class UrlParameters:
                 tag = add_tag or ""
         cls = cls or self.cls
         addr = addr or self.addr
-        page = page or self.page
+        page = page if page is not None else self.page
         paging = paging or self.paging
         datefrom_ = maybe_datetime_to_date(datefrom or self.datefrom) or ""
         dateto_ = maybe_datetime_to_date(dateto or self.dateto) or ""
-        return f"?tag={tag}&cls={cls}&addr={addr}&datefrom={datefrom_}&dateto={dateto_}&page={page}&paging={paging}"
+        ret = f"?tag={tag}&cls={cls}&addr={addr}&datefrom={datefrom_}&dateto={dateto_}&page={page}&paging={paging}"
+        if oi is not None:
+            ret = f"{ret}&oi={oi}"
+        return ret
 
-    def prev_url(self) -> t.Optional[str]:
+    def prev_url(self, overlay: bool = False) -> t.Optional[str]:
         if self.page <= 0:
             return None
-        return self.to_url(page=self.page - 1)
+        if overlay:
+            oi = self.paging - 1
+        else:
+            oi = None
+        return self.to_url(page=self.page - 1, oi=oi)
 
-    def next_url(self, total_images: int) -> t.Optional[str]:
+    def next_url(self, total_images: int, overlay: bool = False) -> t.Optional[str]:
         if (self.page + 1) * self.paging >= total_images:
             return None
-        return self.to_url(page=self.page + 1)
+        if overlay:
+            oi = 0
+        else:
+            oi = None
+        return self.to_url(page=self.page + 1, oi=oi)
 
 
 @app.get("/index.html", response_class=HTMLResponse)
@@ -127,6 +139,7 @@ async def read_item(
     paging: int = 100,
     datefrom: str = "",
     dateto: str = "",
+    oi: t.Optional[int] = None,
 ) -> HTMLResponse:
     print(datefrom, dateto)
     url = UrlParameters(
@@ -227,12 +240,14 @@ async def read_item(
         request=request,
         name="index.html",
         context={
-            "id": id,
+            "oi": oi,
             "images": images[url.page * url.paging : (url.page + 1) * url.paging],
             "total": len(images),
             "urls": {
                 "next": url.next_url(len(images)),
+                "next_overlay": url.next_url(len(images), overlay=True),
                 "prev": url.prev_url(),
+                "prev_overlay": url.prev_url(overlay=True),
             },
             "input": {
                 "tag": url.tag,
