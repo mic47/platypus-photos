@@ -18,7 +18,7 @@ class ImageAnnotations(HasImage):
     md5: str
     exif: ImageExif
     address: t.Optional[GeoAddress]
-    text_classification: ImageClassification
+    text_classification: t.Optional[ImageClassification]
     date_from_path: t.Optional[datetime]
 
     @staticmethod
@@ -36,7 +36,7 @@ class ImageAnnotator:
         md5: MD5Annot,
         exif: ImageExif,
         address: t.Optional[GeoAddress],
-        text_classification: ImageClassification,
+        text_classification: t.Optional[ImageClassification],
         date: t.Optional[datetime],
     ) -> ImageAnnotations:
         # TODO: datetime is not chaced
@@ -59,7 +59,7 @@ class ImageAnnotator:
         md5: str,
         exif: ImageExif,
         address: t.Optional[GeoAddress],
-        text_classification: ImageClassification,
+        text_classification: t.Optional[ImageClassification],
         date: t.Optional[datetime],
     ) -> ImageAnnotations:
         return ImageAnnotations(image, VERSION, md5, exif, address, text_classification, date)

@@ -184,16 +184,19 @@ async def read_item(
                 # Datetime filter is on, so skipping stuff without date
                 continue
 
-        for boxes in image.text_classification.boxes:
-            confidence = boxes.box.confidence
-            for classification in boxes.classifications:
-                name = classification.name.replace("_", " ").lower()
-                tags[name] += confidence * classification.confidence
+        if image.text_classification is not None:
+            for boxes in image.text_classification.boxes:
+                confidence = boxes.box.confidence
+                for classification in boxes.classifications:
+                    name = classification.name.replace("_", " ").lower()
+                    tags[name] += confidence * classification.confidence
 
         if url.tag:
             if any(not in_tags(tt, tags.keys()) for tt in url.tag.split(",") if tt):
                 continue
-        classifications = ";".join(image.text_classification.captions).lower()
+        classifications = ";".join(
+            [] if image.text_classification is None else image.text_classification.captions
+        ).lower()
         if url.cls:
             if re.search(url.cls, classifications) is None:
                 continue
@@ -226,7 +229,10 @@ async def read_item(
                 },
             }
         )
-        classifications_cnt.update(x.lower() for x in image.text_classification.captions)
+        classifications_cnt.update(
+            x.lower()
+            for x in ([] if image.text_classification is None else image.text_classification.captions)
+        )
         tag_cnt.update(tags.keys())
         address_cnt.update(address_parts)
     top_tags = sorted(tag_cnt.items(), key=lambda x: -x[1])

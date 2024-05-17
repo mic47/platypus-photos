@@ -3,7 +3,7 @@ yolo classify -> annotations
 hugginface text to description -> to text
 
 TODO
-* [ ] Single image overlay
+* [x] Single image overlay
 * [ ] Map overview for gallery
 * [ ] Date overview for gallery
 * [ ] Separate annotations (expensive from less expensive)? -- point is that  managing location + date + directory is more useful than YOLO
