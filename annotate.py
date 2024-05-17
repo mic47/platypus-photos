@@ -55,19 +55,32 @@ if __name__ == "__main__":
     for directory in tqdm(config.input_directories, desc="Listing directories"):
         paths.extend(walk_tree(re.sub("^~/", os.environ["HOME"] + "/", directory)))
 
+    def process_path(path: str, skip_image_to_text: bool) -> ImageAnnotations:
+        exif_item = exif.process_image(path)
+        geo = None
+        if exif_item.gps is not None:
+            geo = geolocator.address(
+                path, exif_item.gps.latitude, exif_item.gps.longitude, recompute=exif_item.changed()
+            )
+        if skip_image_to_text:
+            itt = None
+        else:
+            itt = list(models.process_image_batch([path]))[0]
+        md5hsh = md5.process(path)
+        path_date = path_to_date.extract_date(path)
+        img = annotator.process(path, md5hsh, exif_item, geo, itt, path_date)
+        return img
+
     try:
-        for path in tqdm(paths, total=len(paths), desc="Image batches"):
+        for path in tqdm(paths, total=len(paths), desc="Cheap features"):
             try:
-                exif_item = exif.process_image(path)
-                geo = None
-                if exif_item.gps is not None:
-                    geo = geolocator.address(
-                        path, exif_item.gps.latitude, exif_item.gps.longitude, recompute=exif_item.changed()
-                    )
-                itt = list(models.process_image_batch([path]))[0]
-                md5hsh = md5.process(path)
-                path_date = path_to_date.extract_date(path)
-                img = annotator.process(path, md5hsh, exif_item, geo, itt, path_date)
+                img = process_path(path, skip_image_to_text=True)
+            except Exception as e:
+                print("Error while processing path", path, e, file=sys.stderr)
+        print(img)
+        for path in tqdm(paths, total=len(paths), desc="Expensive features"):
+            try:
+                img = process_path(path, skip_image_to_text=False)
             except Exception as e:
                 print("Error while processing path", path, e, file=sys.stderr)
         print(img)

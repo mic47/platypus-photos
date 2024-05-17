@@ -23,6 +23,7 @@ templates = Jinja2Templates(directory="templates")
 
 
 IMAGES: t.List[ImageAnnotations] = []
+IMAGE_TO_INDEX: t.Dict[str, int] = {}
 HASH_TO_IMAGE: t.Dict[int, str] = {}
 
 with open("output-all.jsonl") as f:
@@ -31,7 +32,13 @@ with open("output-all.jsonl") as f:
         if (j.get("version") or 0) != ImageAnnotations.current_version():
             continue
         _image = ImageAnnotations.from_dict(j)
-        IMAGES.append(_image)
+        # TODO: handle duplicates
+        _index = IMAGE_TO_INDEX.get(_image.image)
+        if _index is None:
+            IMAGE_TO_INDEX[_image.image] = len(IMAGES)
+            IMAGES.append(_image)
+        else:
+            IMAGES[_index] = _image
         HASH_TO_IMAGE[hash(_image.image)] = _image.image
 
 

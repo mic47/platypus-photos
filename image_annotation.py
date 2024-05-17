@@ -48,8 +48,22 @@ class ImageAnnotator:
             or (text_classification is not None and text_classification.changed())
         )
         cached = self._cache.get(image)
-        if changed or cached is None:
-            return self._cache.add(self.process_impl(image, md5.md5, exif, address, text_classification, date))
+        if (
+            changed
+            or cached is None
+            or (
+                cached is not None
+                and (
+                    md5.md5 != cached.md5
+                    or exif != cached.exif
+                    or (address is not None and address != cached.address)
+                    or (text_classification is not None and text_classification != cached.text_classification)
+                )
+            )
+        ):
+            return self._cache.add(
+                self.process_impl(image, md5.md5, exif, address, text_classification, date)
+            )
         else:
             return cached
 
