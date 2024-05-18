@@ -130,6 +130,13 @@ def load(image: ImageAnnotations) -> None:
     HASH_TO_IMAGE[hash(omg.path)] = omg.path
 
 
+def get_matching_images(url: "UrlParameters") -> t.Iterable[Image]:
+    global IMAGES
+    for image in IMAGES:
+        if image.match_url(url):
+            yield image
+
+
 LOADER = Loader("output-all.jsonl", ImageAnnotations, load)
 
 
@@ -272,9 +279,7 @@ async def read_item(
     tag_cnt: t.Counter[str] = Counter()
     classifications_cnt: t.Counter[str] = Counter()
     address_cnt: t.Counter[str] = Counter()
-    for omg in IMAGES:
-        if not omg.match_url(url):
-            continue
+    for omg in get_matching_images(url):
 
         max_tag = min(1, max((omg.tags or {}).values(), default=1.0))
         images.append(
