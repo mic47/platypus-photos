@@ -32,20 +32,34 @@ FILE = open("output-all.jsonl")
 
 @app.on_event("startup")
 async def on_startup() -> None:
-    load_data(show_progress=True)
+    load_data(load, show_progress=True)
     asyncio.create_task(auto_load())
 
 
 async def auto_load() -> None:
     while True:
-        load_data(show_progress=True)
+        load_data(load, show_progress=True)
         await asyncio.sleep(1)
 
 
-def load_data(show_progress: bool) -> None:
+def load(line: str) -> None:
     global IMAGES
     global IMAGE_TO_INDEX
     global HASH_TO_IMAGE
+    j = json.loads(line)
+    if (j.get("version") or 0) != ImageAnnotations.current_version():
+        return
+    _image = ImageAnnotations.from_dict(j)
+    _index = IMAGE_TO_INDEX.get(_image.image)
+    if _index is None:
+        IMAGE_TO_INDEX[_image.image] = len(IMAGES)
+        IMAGES.append(_image)
+    else:
+        IMAGES[_index] = _image
+    HASH_TO_IMAGE[hash(_image.image)] = _image.image
+
+
+def load_data(loader: t.Callable[[str], None], show_progress: bool) -> None:
     global FILE_POSITION
     global FILE
     FILE.seek(0, 2)
@@ -62,18 +76,7 @@ def load_data(show_progress: bool) -> None:
                 if not line:
                     # End of file reached
                     break
-                j = json.loads(line)
-                if (j.get("version") or 0) != ImageAnnotations.current_version():
-                    continue
-                _image = ImageAnnotations.from_dict(j)
-                _index = IMAGE_TO_INDEX.get(_image.image)
-                if _index is None:
-                    IMAGE_TO_INDEX[_image.image] = len(IMAGES)
-                    IMAGES.append(_image)
-                else:
-                    IMAGES[_index] = _image
-                HASH_TO_IMAGE[hash(_image.image)] = _image.image
-                # DO STUFF
+                loader(line)
             except Exception as e:
                 # Revert position in the file
                 FILE_POSITION = position
