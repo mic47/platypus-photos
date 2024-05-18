@@ -85,7 +85,9 @@ class Loader(t.Generic[T]):
                         # End of file reached
                         break
                     j = json.loads(line)
-                    if (j.get("version") or 0) != self._type.current_version():
+                    if "version" not in j:
+                        j["version"] = DEFAULT_VERSION
+                    if j.get("version", 0) != self._type.current_version():
                         continue
                     data = self._type.from_dict(j)
                     self._loader(data)
