@@ -18,11 +18,6 @@ from tqdm import tqdm
 from image_annotation import ImageAnnotations
 from cache import Loader
 
-app = FastAPI()
-# TODO: serve these differenty
-app.mount("/static", StaticFiles(directory="static/"), name="static")
-templates = Jinja2Templates(directory="templates")
-
 
 @dataclass
 class Image:
@@ -110,88 +105,6 @@ class Image:
         return re.search(addr.lower(), self.address_full.lower()) is not None
 
 
-class ImageDB:
-    def __init__(self, file: str):
-        self._loader = Loader(file, ImageAnnotations, lambda x: self.load_image(x))
-        self._images: t.List[Image] = []
-        self._image_to_index: t.Dict[str, int] = {}
-        self._hash_to_image: t.Dict[int, str] = {}
-
-    def load(self, show_progress: bool) -> None:
-        self._loader.load(show_progress=show_progress)
-
-    def load_image(self, image: ImageAnnotations) -> None:
-
-        omg = Image.from_annotation(image)
-        _index = self._image_to_index.get(omg.path)
-        if _index is None:
-            self._image_to_index[omg.path] = len(self._images)
-            self._images.append(omg)
-        else:
-            self._images[_index] = omg
-        self._hash_to_image[hash(omg.path)] = omg.path
-
-    def get_matching_images(self, url: "UrlParameters") -> t.Iterable[Image]:
-        for image in self._images:
-            if image.match_url(url):
-                yield image
-
-    def get_path_from_hash(self, hsh: int) -> str:
-        return self._hash_to_image[hsh]
-
-
-DB = ImageDB("output-all.jsonl")
-
-
-@app.on_event("startup")
-async def on_startup() -> None:
-    global DB
-    DB.load(show_progress=True)
-    asyncio.create_task(auto_load())
-
-
-async def auto_load() -> None:
-    global DB
-    while True:
-        DB.load(show_progress=False)
-        await asyncio.sleep(1)
-
-
-@app.get(
-    "/img",
-    responses={
-        200: {"description": "photo", "content": {"image/jpeg": {"example": "No example available."}}}
-    },
-)
-def image_endpoint(hsh: int) -> t.Any:
-    file_path = DB.get_path_from_hash(hsh)
-    if os.path.exists(file_path):
-        # TODO: fix media type
-        return FileResponse(file_path, media_type="image/jpeg", filename=file_path.split("/")[-1])
-    return {"error": "File not found!"}
-
-
-def in_tags(what: str, tags: t.Iterable[str]) -> bool:
-    for tag in tags:
-        if what in tag:
-            return True
-    return False
-
-
-def classify_tag(value: float) -> str:
-    if value >= 0.5:
-        return ""
-    if value >= 0.2:
-        return "🤷"
-    return "🗑️"
-
-
-def maybe_datetime_to_date(value: t.Optional[datetime]) -> t.Optional[str]:
-    if value is None:
-        return None
-    return f"{value.year}-{value.month:02d}-{value.day:02d}"
-
-
 @dataclass
 class UrlParameters:
     tag: str
@@ -248,6 +161,70 @@ class UrlParameters:
         else:
             oi = None
         return self.to_url(page=self.page + 1, oi=oi)
+
+
+class ImageDB:
+    def __init__(self, file: str):
+        self._loader = Loader(file, ImageAnnotations, lambda x: self.load_image(x))
+        self._images: t.List[Image] = []
+        self._image_to_index: t.Dict[str, int] = {}
+        self._hash_to_image: t.Dict[int, str] = {}
+
+    def load(self, show_progress: bool) -> None:
+        self._loader.load(show_progress=show_progress)
+
+    def load_image(self, image: ImageAnnotations) -> None:
+        omg = Image.from_annotation(image)
+        _index = self._image_to_index.get(omg.path)
+        if _index is None:
+            self._image_to_index[omg.path] = len(self._images)
+            self._images.append(omg)
+        else:
+            self._images[_index] = omg
+        self._hash_to_image[hash(omg.path)] = omg.path
+
+    def get_matching_images(self, url: "UrlParameters") -> t.Iterable[Image]:
+        for image in self._images:
+            if image.match_url(url):
+                yield image
+
+    def get_path_from_hash(self, hsh: int) -> str:
+        return self._hash_to_image[hsh]
+
+
+app = FastAPI()
+# TODO: serve these differenty
+app.mount("/static", StaticFiles(directory="static/"), name="static")
+templates = Jinja2Templates(directory="templates")
+DB = ImageDB("output-all.jsonl")
+
+
+@app.on_event("startup")
+async def on_startup() -> None:
+    global DB
+    DB.load(show_progress=True)
+    asyncio.create_task(auto_load())
+
+
+async def auto_load() -> None:
+    global DB
+    while True:
+        DB.load(show_progress=False)
+        await asyncio.sleep(1)
+
+
+@app.get(
+    "/img",
+    responses={
+        200: {"description": "photo", "content": {"image/jpeg": {"example": "No example available."}}}
+    },
+)
+def image_endpoint(hsh: int) -> t.Any:
+    file_path = DB.get_path_from_hash(hsh)
+    if os.path.exists(file_path):
+        # TODO: fix media type
+        return FileResponse(file_path, media_type="image/jpeg", filename=file_path.split("/")[-1])
+    return {"error": "File not found!"}
 
 
 @app.get("/index.html", response_class=HTMLResponse)
@@ -343,3 +320,24 @@ async def read_item(
             },
         },
     )
+
+
+def in_tags(what: str, tags: t.Iterable[str]) -> bool:
+    for tag in tags:
+        if what in tag:
+            return True
+    return False
+
+
+def classify_tag(value: float) -> str:
+    if value >= 0.5:
+        return ""
+    if value >= 0.2:
+        return "🤷"
+    return "🗑️"
+
+
+def maybe_datetime_to_date(value: t.Optional[datetime]) -> t.Optional[str]:
+    if value is None:
+        return None
+    return f"{value.year}-{value.month:02d}-{value.day:02d}"
