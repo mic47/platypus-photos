@@ -24,7 +24,7 @@ app.mount("/static", StaticFiles(directory="static/"), name="static")
 templates = Jinja2Templates(directory="templates")
 
 
-IMAGES: t.List[ImageAnnotations] = []
+IMAGES: t.List["Image"] = []
 IMAGE_TO_INDEX: t.Dict[str, int] = {}
 HASH_TO_IMAGE: t.Dict[int, str] = {}
 
@@ -119,13 +119,15 @@ def load(image: ImageAnnotations) -> None:
     global IMAGES
     global IMAGE_TO_INDEX
     global HASH_TO_IMAGE
-    _index = IMAGE_TO_INDEX.get(image.image)
+
+    omg = Image.from_annotation(image)
+    _index = IMAGE_TO_INDEX.get(omg.path)
     if _index is None:
-        IMAGE_TO_INDEX[image.image] = len(IMAGES)
-        IMAGES.append(image)
+        IMAGE_TO_INDEX[omg.path] = len(IMAGES)
+        IMAGES.append(omg)
     else:
-        IMAGES[_index] = image
-    HASH_TO_IMAGE[hash(image.image)] = image.image
+        IMAGES[_index] = omg
+    HASH_TO_IMAGE[hash(omg.path)] = omg.path
 
 
 LOADER = Loader("output-all.jsonl", ImageAnnotations, load)
@@ -270,16 +272,14 @@ async def read_item(
     tag_cnt: t.Counter[str] = Counter()
     classifications_cnt: t.Counter[str] = Counter()
     address_cnt: t.Counter[str] = Counter()
-    for image in IMAGES:
-        omg = Image.from_annotation(image)
-
+    for omg in IMAGES:
         if not omg.match_url(url):
             continue
 
         max_tag = min(1, max((omg.tags or {}).values(), default=1.0))
         images.append(
             {
-                "hsh": hash(image.image),
+                "hsh": hash(omg.path),
                 "classifications": omg.classifications or "",
                 "tags": [
                     (tg, classify_tag(x / max_tag), url.to_url(add_tag=tg))
