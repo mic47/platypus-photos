@@ -35,8 +35,9 @@ class Image:
     date: t.Optional[datetime]
     tags: t.Optional[t.Dict[str, float]]
     classifications: t.Optional[str]
-    address_city: t.Optional[str]
+    address_country: t.Optional[str]
     address_name: t.Optional[str]
+    address_full: t.Optional[str]
 
     @staticmethod
     def from_annotation(image: ImageAnnotations) -> "Image":
@@ -59,13 +60,22 @@ class Image:
             [] if image.text_classification is None else image.text_classification.captions
         ).lower()
 
-        return Image(image.image, date, tags, classifications, None, None)
+        address_country = None
+        address_name = None
+        address_full = None
+        if image.address is not None:
+            address_country = image.address.country
+            address_name = image.address.name
+            address_full = ", ".join(x for x in [address_name, address_country] if x)
+
+        return Image(image.image, date, tags, classifications, address_country, address_name, address_full)
 
     def match_url(self, url: "UrlParameters") -> bool:
         return (
             self.match_date(url.datefrom, url.dateto)
             and self.match_tags(url.tag)
             and self.match_classifications(url.cls)
+            and self.match_address(url.addr)
         )
 
     def match_date(self, datefrom: t.Optional[datetime], dateto: t.Optional[datetime]) -> bool:
@@ -96,6 +106,13 @@ class Image:
         if self.classifications is None:
             return False
         return re.search(classifications, self.classifications) is not None
+
+    def match_address(self, addr: str) -> bool:
+        if not addr:
+            return True
+        if self.address_full is None:
+            return False
+        return re.search(addr.lower(), self.address_full.lower()) is not None
 
 
 def load(image: ImageAnnotations) -> None:
@@ -259,18 +276,6 @@ async def read_item(
         if not omg.match_url(url):
             continue
 
-        address_parts = []
-        if image.address is not None:
-            if image.address.name is not None:
-                address_parts.append(image.address.name)
-            if image.address.country is not None:
-                address_parts.append(image.address.country)
-
-        address = ", ".join(address_parts)
-        if url.addr:
-            if re.search(url.addr.lower(), address.lower()) is None:
-                continue
-
         max_tag = min(1, max((omg.tags or {}).values(), default=1.0))
         images.append(
             {
@@ -280,7 +285,11 @@ async def read_item(
                     (tg, classify_tag(x / max_tag), url.to_url(add_tag=tg))
                     for tg, x in sorted((omg.tags or {}).items(), key=lambda x: -x[1])
                 ],
-                "addrs": [{"address": a, "url": url.to_url(addr=a or None)} for a in address_parts],
+                "addrs": [
+                    {"address": a, "url": url.to_url(addr=a or None)}
+                    for a in [omg.address_name, omg.address_country]
+                    if a
+                ],
                 "date": {
                     "date": maybe_datetime_to_date(omg.date),
                     "url": url.to_url(datefrom=omg.date, dateto=omg.date),
@@ -289,7 +298,7 @@ async def read_item(
         )
         classifications_cnt.update([] if omg.classifications is None else omg.classifications.split(";"))
         tag_cnt.update((omg.tags or {}).keys())
-        address_cnt.update(address_parts)
+        address_cnt.update(a for a in [omg.address_name, omg.address_country] if a)
     top_tags = sorted(tag_cnt.items(), key=lambda x: -x[1])
     top_cls = sorted(classifications_cnt.items(), key=lambda x: -x[1])
     top_addr = sorted(address_cnt.items(), key=lambda x: -x[1])
