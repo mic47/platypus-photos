@@ -337,6 +337,7 @@ async def read_item(
                     "date": maybe_datetime_to_date(omg.date),
                     "url": url.to_url(datefrom=omg.date, dateto=omg.date),
                 },
+                "timestamp": maybe_datetime_to_timestamp(omg.date) or 0.0,
             }
         )
         classifications_cnt.update([] if omg.classifications is None else omg.classifications.split(";"))
@@ -348,6 +349,8 @@ async def read_item(
 
     if url.page * url.paging >= len(images):
         url.page = len(images) // url.paging
+
+    images.sort(key=lambda x: t.cast(float, x.get("timestamp", 0)), reverse=True)
 
     return templates.TemplateResponse(
         request=request,
@@ -397,3 +400,9 @@ def maybe_datetime_to_date(value: t.Optional[datetime]) -> t.Optional[str]:
     if value is None:
         return None
     return f"{value.year}-{value.month:02d}-{value.day:02d}"
+
+
+def maybe_datetime_to_timestamp(value: t.Optional[datetime]) -> t.Optional[float]:
+    if value is None:
+        return None
+    return value.timestamp()
