@@ -28,6 +28,41 @@ IMAGES: t.List[ImageAnnotations] = []
 IMAGE_TO_INDEX: t.Dict[str, int] = {}
 HASH_TO_IMAGE: t.Dict[int, str] = {}
 
+
+@dataclass
+class Image:
+    path: str
+    date: t.Optional[datetime]
+    tags: t.Optional[t.Dict[str, float]]
+    classifications: t.Optional[str]
+    address_city: t.Optional[str]
+    address_name: t.Optional[str]
+
+    @staticmethod
+    def from_annotation(image: ImageAnnotations) -> "Image":
+        date = None
+        if image.exif.date is not None:
+            date = image.exif.date.datetime
+        date = date or image.date_from_path
+
+        return Image(image.image, date, None, None, None, None)
+
+    def match_date(self, datefrom: t.Optional[datetime], dateto: t.Optional[datetime]) -> bool:
+        if self.date is not None:
+            to_compare = self.date.replace(tzinfo=None)
+            if datefrom is not None and to_compare < datefrom:
+                return False
+            if dateto is not None:
+                to_compare -= timedelta(days=1)
+                if to_compare > dateto:
+                    return False
+        else:
+            if datefrom is not None or dateto is not None:
+                # Datetime filter is on, so skipping stuff without date
+                return False
+        return True
+
+
 def load(image: ImageAnnotations) -> None:
     global IMAGES
     global IMAGE_TO_INDEX
@@ -40,7 +75,9 @@ def load(image: ImageAnnotations) -> None:
         IMAGES[_index] = image
     HASH_TO_IMAGE[hash(image.image)] = image.image
 
+
 LOADER = Loader("output-all.jsonl", ImageAnnotations, load)
+
 
 @app.on_event("startup")
 async def on_startup() -> None:
@@ -52,7 +89,6 @@ async def auto_load() -> None:
     while True:
         LOADER.load(show_progress=False)
         await asyncio.sleep(1)
-
 
 
 @app.get(
@@ -185,24 +221,9 @@ async def read_item(
     for image in IMAGES:
         tags: t.Dict[str, float] = defaultdict(lambda: 0.0)
 
-        date = None
-        if image.exif.date is not None:
-            date = image.exif.date.datetime
-        date = date or image.date_from_path
-
-        if date is not None:
-            to_compare = date.replace(tzinfo=None)
-            if url.datefrom is not None and to_compare < url.datefrom:
-                continue
-            if url.dateto is not None:
-                to_compare -= timedelta(days=1)
-                if to_compare > url.dateto:
-                    continue
-
-        else:
-            if url.datefrom is not None or url.dateto is not None:
-                # Datetime filter is on, so skipping stuff without date
-                continue
+        omg = Image.from_annotation(image)
+        if not omg.match_date(url.datefrom, url.dateto):
+            continue
 
         if image.text_classification is not None:
             for boxes in image.text_classification.boxes:
@@ -244,8 +265,8 @@ async def read_item(
                 ],
                 "addrs": [{"address": a, "url": url.to_url(addr=a or None)} for a in address_parts],
                 "date": {
-                    "date": maybe_datetime_to_date(date),
-                    "url": url.to_url(datefrom=date, dateto=date),
+                    "date": maybe_datetime_to_date(omg.date),
+                    "url": url.to_url(datefrom=omg.date, dateto=omg.date),
                 },
             }
         )
