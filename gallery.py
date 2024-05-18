@@ -61,6 +61,13 @@ class Image:
 
         return Image(image.image, date, tags, classifications, None, None)
 
+    def match_url(self, url: "UrlParameters") -> bool:
+        return (
+            self.match_date(url.datefrom, url.dateto)
+            and self.match_tags(url.tag)
+            and self.match_classifications(url.cls)
+        )
+
     def match_date(self, datefrom: t.Optional[datetime], dateto: t.Optional[datetime]) -> bool:
         if self.date is not None:
             to_compare = self.date.replace(tzinfo=None)
@@ -77,11 +84,15 @@ class Image:
         return True
 
     def match_tags(self, tag: str) -> bool:
+        if not tag:
+            return True
         if self.tags is None:
             return False
         return not any(not in_tags(tt, self.tags.keys()) for tt in tag.split(",") if tt)
 
     def match_classifications(self, classifications: str) -> bool:
+        if not classifications:
+            return True
         if self.classifications is None:
             return False
         return re.search(classifications, self.classifications) is not None
@@ -245,15 +256,8 @@ async def read_item(
     for image in IMAGES:
         omg = Image.from_annotation(image)
 
-        if not omg.match_date(url.datefrom, url.dateto):
+        if not omg.match_url(url):
             continue
-        if url.tag:
-            if not omg.match_tags(url.tag):
-                continue
-
-        if url.cls:
-            if not omg.match_classifications(url.cls):
-                continue
 
         address_parts = []
         if image.address is not None:
