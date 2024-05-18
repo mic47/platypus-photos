@@ -45,7 +45,21 @@ class Image:
             date = image.exif.date.datetime
         date = date or image.date_from_path
 
-        return Image(image.image, date, None, None, None, None)
+        tags: t.Dict[str, float] = {}
+        if image.text_classification is not None:
+            for boxes in image.text_classification.boxes:
+                confidence = boxes.box.confidence
+                for classification in boxes.classifications:
+                    name = classification.name.replace("_", " ").lower()
+                    if name not in tags:
+                        tags[name] = 0.0
+                    tags[name] += confidence * classification.confidence
+
+        classifications = ";".join(
+            [] if image.text_classification is None else image.text_classification.captions
+        ).lower()
+
+        return Image(image.image, date, tags, classifications, None, None)
 
     def match_date(self, datefrom: t.Optional[datetime], dateto: t.Optional[datetime]) -> bool:
         if self.date is not None:
@@ -61,6 +75,16 @@ class Image:
                 # Datetime filter is on, so skipping stuff without date
                 return False
         return True
+
+    def match_tags(self, tag: str) -> bool:
+        if self.tags is None:
+            return False
+        return not any(not in_tags(tt, self.tags.keys()) for tt in tag.split(",") if tt)
+
+    def match_classifications(self, classifications: str) -> bool:
+        if self.classifications is None:
+            return False
+        return re.search(classifications, self.classifications) is not None
 
 
 def load(image: ImageAnnotations) -> None:
@@ -219,27 +243,16 @@ async def read_item(
     classifications_cnt: t.Counter[str] = Counter()
     address_cnt: t.Counter[str] = Counter()
     for image in IMAGES:
-        tags: t.Dict[str, float] = defaultdict(lambda: 0.0)
-
         omg = Image.from_annotation(image)
+
         if not omg.match_date(url.datefrom, url.dateto):
             continue
-
-        if image.text_classification is not None:
-            for boxes in image.text_classification.boxes:
-                confidence = boxes.box.confidence
-                for classification in boxes.classifications:
-                    name = classification.name.replace("_", " ").lower()
-                    tags[name] += confidence * classification.confidence
-
         if url.tag:
-            if any(not in_tags(tt, tags.keys()) for tt in url.tag.split(",") if tt):
+            if not omg.match_tags(url.tag):
                 continue
-        classifications = ";".join(
-            [] if image.text_classification is None else image.text_classification.captions
-        ).lower()
+
         if url.cls:
-            if re.search(url.cls, classifications) is None:
+            if not omg.match_classifications(url.cls):
                 continue
 
         address_parts = []
@@ -254,14 +267,14 @@ async def read_item(
             if re.search(url.addr.lower(), address.lower()) is None:
                 continue
 
-        max_tag = min(1, max(tags.values(), default=1.0))
+        max_tag = min(1, max((omg.tags or {}).values(), default=1.0))
         images.append(
             {
                 "hsh": hash(image.image),
-                "classifications": classifications,
+                "classifications": omg.classifications or "",
                 "tags": [
                     (tg, classify_tag(x / max_tag), url.to_url(add_tag=tg))
-                    for tg, x in sorted(tags.items(), key=lambda x: -x[1])
+                    for tg, x in sorted((omg.tags or {}).items(), key=lambda x: -x[1])
                 ],
                 "addrs": [{"address": a, "url": url.to_url(addr=a or None)} for a in address_parts],
                 "date": {
@@ -270,11 +283,8 @@ async def read_item(
                 },
             }
         )
-        classifications_cnt.update(
-            x.lower()
-            for x in ([] if image.text_classification is None else image.text_classification.captions)
-        )
-        tag_cnt.update(tags.keys())
+        classifications_cnt.update([] if omg.classifications is None else omg.classifications.split(";"))
+        tag_cnt.update((omg.tags or {}).keys())
         address_cnt.update(address_parts)
     top_tags = sorted(tag_cnt.items(), key=lambda x: -x[1])
     top_cls = sorted(classifications_cnt.items(), key=lambda x: -x[1])
