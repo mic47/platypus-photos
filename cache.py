@@ -70,7 +70,13 @@ class Loader(t.Generic[T]):
         last_position = self._position
         if self._position == end_of_file:
             return
-        with tqdm(total=end_of_file - last_position, disable=not show_progress) as pbar:
+        with tqdm(
+            desc=self._type.__name__,
+            total=end_of_file - last_position,
+            disable=not show_progress,
+            unit="bytes",
+            unit_scale=True,
+        ) as pbar:
             while True:
                 position = self._file.tell()
                 try:
