@@ -15,10 +15,18 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from tqdm import tqdm
 
+from image_to_text import ImageClassification
+from image_exif import ImageExif
+from geolocation import GeoAddress
 from image_annotation import ImageAnnotations
 from cache import Loader
 
 
+# This is using
+# exif
+# date_from_path
+# text_classification
+# address
 @dataclass
 class Image:
     path: str
@@ -30,15 +38,25 @@ class Image:
     address_full: t.Optional[str]
 
     @staticmethod
-    def from_annotation(image: ImageAnnotations) -> "Image":
+    def from_path(path: str) -> "Image":
+        return Image(path, None, None, None, None, None, None)
+
+    @staticmethod
+    def from_updates(
+        path: str,
+        exif: t.Optional[ImageExif],
+        address: t.Optional[GeoAddress],
+        text_classification: t.Optional[ImageClassification],
+        date_from_path: t.Optional[datetime],
+    ) -> "Image":
         date = None
-        if image.exif.date is not None:
-            date = image.exif.date.datetime
-        date = date or image.date_from_path
+        if exif is not None and exif.date is not None:
+            date = exif.date.datetime
+        date = date or date_from_path
 
         tags: t.Dict[str, float] = {}
-        if image.text_classification is not None:
-            for boxes in image.text_classification.boxes:
+        if text_classification is not None:
+            for boxes in text_classification.boxes:
                 confidence = boxes.box.confidence
                 for classification in boxes.classifications:
                     name = classification.name.replace("_", " ").lower()
@@ -47,18 +65,24 @@ class Image:
                     tags[name] += confidence * classification.confidence
 
         classifications = ";".join(
-            [] if image.text_classification is None else image.text_classification.captions
+            [] if text_classification is None else text_classification.captions
         ).lower()
 
         address_country = None
         address_name = None
         address_full = None
-        if image.address is not None:
-            address_country = image.address.country
-            address_name = image.address.name
+        if address is not None:
+            address_country = address.country
+            address_name = address.name
             address_full = ", ".join(x for x in [address_name, address_country] if x)
 
-        return Image(image.image, date, tags, classifications, address_country, address_name, address_full)
+        return Image(path, date, tags, classifications, address_country, address_name, address_full)
+
+    @staticmethod
+    def from_annotation(image: ImageAnnotations) -> "Image":
+        return Image.from_updates(
+            image.image, image.exif, image.address, image.text_classification, image.date_from_path
+        )
 
     def match_url(self, url: "UrlParameters") -> bool:
         return (
