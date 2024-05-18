@@ -15,7 +15,6 @@ from image_exif import Exif, ImageExif
 from md5_annot import MD5er, MD5Annot
 from geolocation import Geolocator, GeoAddress
 from cache import JsonlCache, HasImage
-from image_annotation import ImageAnnotator, ImageAnnotations
 from filename_to_date import PathDateExtractor
 from config import Config
 
@@ -44,9 +43,6 @@ if __name__ == "__main__":
     md5_cache = JsonlCache("output-md5.jsonl", MD5Annot)
     md5 = MD5er(md5_cache)
 
-    annotator_cache = JsonlCache("output-all.jsonl", ImageAnnotations)
-    annotator = ImageAnnotator(annotator_cache)
-
     paths = [
         file
         for pattern in tqdm(config.input_patterns, desc="Listing files")
@@ -55,7 +51,7 @@ if __name__ == "__main__":
     for directory in tqdm(config.input_directories, desc="Listing directories"):
         paths.extend(walk_tree(re.sub("^~/", os.environ["HOME"] + "/", directory)))
 
-    def process_path(path: str, skip_image_to_text: bool) -> ImageAnnotations:
+    def process_path(path: str, skip_image_to_text: bool) -> t.Any:
         exif_item = exif.process_image(path)
         geo = None
         if exif_item.gps is not None:
@@ -68,8 +64,7 @@ if __name__ == "__main__":
             itt = list(models.process_image_batch([path]))[0]
         md5hsh = md5.process(path)
         path_date = path_to_date.extract_date(path)
-        img = annotator.process(path, md5hsh, exif_item, geo, itt, path_date)
-        return img
+        return (path, md5hsh, exif_item, geo, itt, path_date)
 
     try:
         for path in tqdm(paths, total=len(paths), desc="Cheap features"):
@@ -89,4 +84,3 @@ if __name__ == "__main__":
         del exif_cache
         del geolocator_cache
         del md5_cache
-        del annotator_cache
