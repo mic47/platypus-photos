@@ -16,6 +16,7 @@ from fastapi.templating import Jinja2Templates
 from tqdm import tqdm
 
 from image_annotation import ImageAnnotations
+from cache import Loader
 
 app = FastAPI()
 # TODO: serve these differenty
@@ -26,67 +27,32 @@ templates = Jinja2Templates(directory="templates")
 IMAGES: t.List[ImageAnnotations] = []
 IMAGE_TO_INDEX: t.Dict[str, int] = {}
 HASH_TO_IMAGE: t.Dict[int, str] = {}
-FILE_POSITION = 0
-FILE = open("output-all.jsonl")
 
+def load(image: ImageAnnotations) -> None:
+    global IMAGES
+    global IMAGE_TO_INDEX
+    global HASH_TO_IMAGE
+    _index = IMAGE_TO_INDEX.get(image.image)
+    if _index is None:
+        IMAGE_TO_INDEX[image.image] = len(IMAGES)
+        IMAGES.append(image)
+    else:
+        IMAGES[_index] = image
+    HASH_TO_IMAGE[hash(image.image)] = image.image
+
+LOADER = Loader("output-all.jsonl", ImageAnnotations, load)
 
 @app.on_event("startup")
 async def on_startup() -> None:
-    load_data(load, show_progress=True)
+    LOADER.load(show_progress=True)
     asyncio.create_task(auto_load())
 
 
 async def auto_load() -> None:
     while True:
-        load_data(load, show_progress=True)
+        LOADER.load(show_progress=False)
         await asyncio.sleep(1)
 
-
-def load(line: str) -> None:
-    global IMAGES
-    global IMAGE_TO_INDEX
-    global HASH_TO_IMAGE
-    j = json.loads(line)
-    if (j.get("version") or 0) != ImageAnnotations.current_version():
-        return
-    _image = ImageAnnotations.from_dict(j)
-    _index = IMAGE_TO_INDEX.get(_image.image)
-    if _index is None:
-        IMAGE_TO_INDEX[_image.image] = len(IMAGES)
-        IMAGES.append(_image)
-    else:
-        IMAGES[_index] = _image
-    HASH_TO_IMAGE[hash(_image.image)] = _image.image
-
-
-def load_data(loader: t.Callable[[str], None], show_progress: bool) -> None:
-    global FILE_POSITION
-    global FILE
-    FILE.seek(0, 2)
-    end_of_file = FILE.tell()
-    FILE.seek(FILE_POSITION, 0)
-    last_position = FILE_POSITION
-    if FILE_POSITION == end_of_file:
-        return
-    with tqdm(total=end_of_file - last_position, disable=not show_progress) as pbar:
-        while True:
-            position = FILE.tell()
-            try:
-                line = FILE.readline()
-                if not line:
-                    # End of file reached
-                    break
-                loader(line)
-            except Exception as e:
-                # Revert position in the file
-                FILE_POSITION = position
-                FILE.seek(FILE_POSITION, 0)
-                print("Error while loading input", e, file=sys.stderr)
-                break
-            # Advance position in the file
-            FILE_POSITION = FILE.tell()
-            pbar.update(FILE_POSITION - last_position)
-            last_position = FILE_POSITION
 
 
 @app.get(

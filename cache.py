@@ -21,7 +21,7 @@ class HasImage(DataClassJsonMixin):
         self._from_cache = True
 
     def is_from_cache(self) -> bool:
-        if hasattr(self, '_from_cache'):
+        if hasattr(self, "_from_cache"):
             return self._from_cache
         return False
 
@@ -33,19 +33,71 @@ T = t.TypeVar("T", bound=HasImage)
 
 DEFAULT_VERSION = 0
 
-class Cache(t.Generic[T]):
+
+class ReadCache(t.Generic[T]):
     def get(self, key: str) -> t.Optional[T]:
         raise NotImplementedError
 
+
+class WriteCache(t.Generic[T]):
     def add(self, data: T) -> T:
         raise NotImplementedError
 
-class NoCache(t.Generic[T], Cache[T]):
+
+class Cache(t.Generic[T], ReadCache[T], WriteCache[T]):
+    pass
+
+
+class NoCache(t.Generic[T], ReadCache[T], WriteCache[T]):
     def get(self, key: str) -> t.Optional[T]:
         pass
 
     def add(self, data: T) -> T:
         return data
+
+
+class Loader(t.Generic[T]):
+    def __init__(self, path: str, type_: t.Type[T], loader: t.Callable[[T], None]):
+        self._position = 0
+        self._file = open(path)
+        self._loader = loader
+        self._type = type_
+
+    def load(self, show_progress: bool) -> None:
+        self._file.seek(0, 2)
+        end_of_file = self._file.tell()
+        self._file.seek(self._position, 0)
+        last_position = self._position
+        if self._position == end_of_file:
+            return
+        with tqdm(total=end_of_file - last_position, disable=not show_progress) as pbar:
+            while True:
+                position = self._file.tell()
+                try:
+                    line = self._file.readline()
+                    if not line:
+                        # End of file reached
+                        break
+                    j = json.loads(line)
+                    if (j.get("version") or 0) != self._type.current_version():
+                        continue
+                    data = self._type.from_dict(j)
+                    self._loader(data)
+                except Exception as e:
+                    # Revert position in the file
+                    self._position = position
+                    self._file.seek(self._position, 0)
+                    print("Error while loading input", e, file=sys.stderr)
+                    break
+                finally:
+                    # Advance position in the file
+                    self._position = self._file.tell()
+                    pbar.update(self._position - last_position)
+                    last_position = self._position
+
+    def __del__(self) -> None:
+        self._file.close()
+
 
 class JsonlCache(t.Generic[T], Cache[T]):
     def __init__(self, path: str, loader: t.Type[T], old_paths: t.List[str] = []):
