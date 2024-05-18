@@ -24,11 +24,6 @@ app.mount("/static", StaticFiles(directory="static/"), name="static")
 templates = Jinja2Templates(directory="templates")
 
 
-IMAGES: t.List["Image"] = []
-IMAGE_TO_INDEX: t.Dict[str, int] = {}
-HASH_TO_IMAGE: t.Dict[int, str] = {}
-
-
 @dataclass
 class Image:
     path: str
@@ -115,40 +110,50 @@ class Image:
         return re.search(addr.lower(), self.address_full.lower()) is not None
 
 
-def load(image: ImageAnnotations) -> None:
-    global IMAGES
-    global IMAGE_TO_INDEX
-    global HASH_TO_IMAGE
+class ImageDB:
+    def __init__(self, file: str):
+        self._loader = Loader(file, ImageAnnotations, lambda x: self.load_image(x))
+        self._images: t.List[Image] = []
+        self._image_to_index: t.Dict[str, int] = {}
+        self._hash_to_image: t.Dict[int, str] = {}
 
-    omg = Image.from_annotation(image)
-    _index = IMAGE_TO_INDEX.get(omg.path)
-    if _index is None:
-        IMAGE_TO_INDEX[omg.path] = len(IMAGES)
-        IMAGES.append(omg)
-    else:
-        IMAGES[_index] = omg
-    HASH_TO_IMAGE[hash(omg.path)] = omg.path
+    def load(self, show_progress: bool) -> None:
+        self._loader.load(show_progress=show_progress)
+
+    def load_image(self, image: ImageAnnotations) -> None:
+
+        omg = Image.from_annotation(image)
+        _index = self._image_to_index.get(omg.path)
+        if _index is None:
+            self._image_to_index[omg.path] = len(self._images)
+            self._images.append(omg)
+        else:
+            self._images[_index] = omg
+        self._hash_to_image[hash(omg.path)] = omg.path
+
+    def get_matching_images(self, url: "UrlParameters") -> t.Iterable[Image]:
+        for image in self._images:
+            if image.match_url(url):
+                yield image
+
+    def get_path_from_hash(self, hsh: int) -> str:
+        return self._hash_to_image[hsh]
 
 
-def get_matching_images(url: "UrlParameters") -> t.Iterable[Image]:
-    global IMAGES
-    for image in IMAGES:
-        if image.match_url(url):
-            yield image
-
-
-LOADER = Loader("output-all.jsonl", ImageAnnotations, load)
+DB = ImageDB("output-all.jsonl")
 
 
 @app.on_event("startup")
 async def on_startup() -> None:
-    LOADER.load(show_progress=True)
+    global DB
+    DB.load(show_progress=True)
     asyncio.create_task(auto_load())
 
 
 async def auto_load() -> None:
+    global DB
     while True:
-        LOADER.load(show_progress=False)
+        DB.load(show_progress=False)
         await asyncio.sleep(1)
 
 
@@ -159,7 +164,7 @@ async def auto_load() -> None:
     },
 )
 def image_endpoint(hsh: int) -> t.Any:
-    file_path = os.path.join(HASH_TO_IMAGE[hsh])
+    file_path = DB.get_path_from_hash(hsh)
     if os.path.exists(file_path):
         # TODO: fix media type
         return FileResponse(file_path, media_type="image/jpeg", filename=file_path.split("/")[-1])
@@ -279,7 +284,7 @@ async def read_item(
     tag_cnt: t.Counter[str] = Counter()
     classifications_cnt: t.Counter[str] = Counter()
     address_cnt: t.Counter[str] = Counter()
-    for omg in get_matching_images(url):
+    for omg in DB.get_matching_images(url):
 
         max_tag = min(1, max((omg.tags or {}).values(), default=1.0))
         images.append(
@@ -338,9 +343,3 @@ async def read_item(
             },
         },
     )
-
-
-def add_comma(x: str) -> str:
-    if x:
-        return f"{x},"
-    return x
