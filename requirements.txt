@@ -1,3 +1,4 @@
+asyncio
 dataclasses_json
 exif
 geopy
