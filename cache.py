@@ -3,9 +3,10 @@ import sys
 import typing as t
 import json
 from tqdm import tqdm
+import sqlite3
 
-from dataclasses_json import DataClassJsonMixin
 from dataclasses import dataclass
+from dataclasses_json import DataClassJsonMixin
 
 
 @dataclass
@@ -107,6 +108,102 @@ class Loader(t.Generic[T]):
         self._file.close()
 
 
+class SQLiteCache(t.Generic[T], Cache[T]):
+    def __init__(self, path: t.Union[str, sqlite3.Connection], loader: t.Type[T]) -> None:
+        if isinstance(path, str):
+            self._con = sqlite3.connect(path)
+        else:
+            self._con = path
+        self._loader = loader
+        self._type = loader.__name__
+        self._data: t.Dict[str, t.Tuple[int, T]] = {}
+        self._current_version = loader.current_version()
+        self._init_db()
+
+    def get(self, key: str) -> t.Optional[T]:
+        cached = self._data.get(key)
+        res = self._con.execute(
+            "SELECT rowid, payload FROM features WHERE type = ? AND file = ?", (self._type, key)
+        ).fetchone()
+        if res is None:
+            return None
+        (rowid, payload) = res
+        if cached is not None and cached[0] == rowid:
+            return cached[1]
+        parsed = self._loader.from_json(payload)
+        self._data[key] = (rowid, parsed)
+        return parsed
+
+    def get_with_last_update(self, key: str) -> t.Optional[t.Tuple[T, int]]:
+        cached = self._data.get(key)
+        res = self._con.execute(
+            "SELECT rowid, payload, last_update FROM features WHERE type = ? AND file = ?", (self._type, key)
+        ).fetchone()
+        if res is None:
+            return None
+        (rowid, payload, last_update) = res
+        if cached is not None and cached[0] == rowid:
+            return (cached[1], last_update)
+        parsed = self._loader.from_json(payload)
+        self._data[key] = (rowid, parsed)
+        return (parsed, last_update)
+
+    def add(self, data: T) -> T:
+        if data.version != self._current_version:
+            print(
+                "Trying to add wrong version of feature",
+                data.version,
+                self._current_version,
+                data,
+                file=sys.stderr,
+            )
+            return data
+        self._con.execute(
+            """
+INSERT INTO features VALUES (?, ?, ?, strftime('%s'), 1, ?)
+ON CONFLICT(type, file) DO UPDATE SET
+  version=excluded.version,
+  last_update=excluded.last_update,
+  dirty=excluded.dirty,
+  payload=excluded.payload
+WHERE excluded.version > features.version""",
+            (self._type, data.image, data.version, data.to_json(ensure_ascii=False).encode("utf-8")),
+        )
+        self._con.commit()
+        # NOTE: local cache is just for fetching
+        return data
+
+    def _init_db(self) -> None:
+        self._con.execute(
+            """
+CREATE TABLE IF NOT EXISTS features (
+  type TEXT NOT NULL,
+  file TEXT NOT NULL,
+  version INT NOT NULL,
+  last_update INTEGER NOT NULL,
+  dirty INTEGER NOT NULL,
+  payload BLOB NOT NULL,
+  PRIMARY KEY (type, file)
+) STRICT;
+        """
+        )
+        self._con.execute(
+            """
+CREATE INDEX IF NOT EXISTS features_idx_type_file ON features (type, file);
+        """
+        )
+        self._con.execute(
+            """
+CREATE INDEX IF NOT EXISTS features_idx_file ON features (file);
+        """
+        )
+        self._con.execute(
+            """
+CREATE INDEX IF NOT EXISTS features_idx_last_update ON features (last_update);
+        """
+        )
+
+
 class JsonlCache(t.Generic[T], Cache[T]):
     def __init__(self, path: str, loader: t.Type[T], old_paths: t.List[str] = []):
         self._data = {}
@@ -160,3 +257,23 @@ class JsonlCache(t.Generic[T], Cache[T]):
         self._file.write(data.to_json(ensure_ascii=False))
         self._file.write("\n")
         self._file.flush()
+
+
+if __name__ == "__main__":
+    from image_to_text import ImageClassification
+    from image_exif import ImageExif
+    from geolocation import GeoAddress
+
+    to_iter: t.List[t.Tuple[str, t.Type[HasImage]]] = [
+        ("output-exif.jsonl", ImageExif),
+        ("output-geo.jsonl", GeoAddress),
+        ("output-image-to-text.jsonl", ImageClassification),
+    ]
+    for path, type_ in to_iter:
+        jsonl = JsonlCache(path, type_)
+        sql = SQLiteCache("output.db", type_)
+        for path in tqdm(jsonl._data.keys()):
+            data = jsonl.get(path)
+            if data is None:
+                continue
+            sql.add(data)

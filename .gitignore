@@ -2,5 +2,7 @@ yolo*.pt
 __pycache__/
 data/
 output-*.jsonl
+output*.db
+test.db
 config.yaml
 config.json
