@@ -13,6 +13,7 @@ from geolocation import GeoAddress
 from filename_to_date import PathDateExtractor
 from cache import Loader, SQLiteCache
 
+from db.sql import FeaturesTable
 from gallery.url import UrlParameters
 from gallery.image import Image, ImageAggregation
 from gallery.utils import maybe_datetime_to_timestamp
@@ -20,14 +21,32 @@ from gallery.utils import maybe_datetime_to_timestamp
 T = t.TypeVar("T")
 
 
-class ImageSqlDB:
+class OmgDB(ABC):
+    @abstractmethod
+    def load(self, show_progress: bool) -> None:
+        pass
+
+    @abstractmethod
+    def get_matching_images(self, url: "UrlParameters") -> t.Iterable[Image]:
+        pass
+
+    @abstractmethod
+    def get_aggregate_stats(self, url: "UrlParameters") -> ImageAggregation:
+        ...
+
+    @abstractmethod
+    def get_path_from_hash(self, hsh: int) -> str:
+        pass
+
+
+class ImageSqlDB(OmgDB):
     def __init__(self, path_to_date: PathDateExtractor) -> None:
         # TODO: this should be a feature with loader
         self._path_to_date = path_to_date
         self._con = sqlite3.connect("output.db")
-        self._exif = SQLiteCache(self._con, ImageExif)
-        self._address = SQLiteCache(self._con, GeoAddress)
-        self._text_classification = SQLiteCache(self._con, ImageClassification)
+        self._exif = SQLiteCache(FeaturesTable(self._con), ImageExif)
+        self._address = SQLiteCache(FeaturesTable(self._con), GeoAddress)
+        self._text_classification = SQLiteCache(FeaturesTable(self._con), ImageClassification)
         self._hash_to_image: t.Dict[int, str] = {}
         self._init_db()
 
@@ -88,6 +107,10 @@ WHERE excluded.feature_last_update > gallery_index.feature_last_update""",
         )
         self._con.commit()
 
+    def get_aggregate_stats(self, url: "UrlParameters") -> ImageAggregation:
+        # do aggregate query
+        pass
+
     def get_matching_images(self, url: "UrlParameters") -> t.Iterable[Image]:
         # TODO: aggregations could be done separately
         # TODO: sorting and stuff
@@ -144,13 +167,9 @@ WHERE excluded.feature_last_update > gallery_index.feature_last_update""",
                 )
 
     def load(self, show_progress: bool) -> None:
-        if not show_progress:
-            return
-        for loader in self._loaders:
-            loader.load(show_progress=show_progress)
-        for path in tqdm(self._dirty_paths, desc="Re-index", disable=not show_progress):
-            self._reindex(path)
-        self._dirty_paths.clear()
+        # Check those that have dirty flag & not newwer image
+        # Maybe on start do something else
+        pass
 
     def _reindex(self, path: str) -> None:
         max_last_update = 0.0
@@ -174,23 +193,6 @@ WHERE excluded.feature_last_update > gallery_index.feature_last_update""",
         self._insert(omg, max_last_update)
         # TODO: move this elsewhere?
         self._hash_to_image[hash(omg.path)] = omg.path
-
-class OmgDB(ABC):
-    @abstractmethod
-    def load(self, show_progress: bool) -> None:
-        pass
-
-    @abstractmethod
-    def get_matching_images(self, url: "UrlParameters") -> t.Iterable[Image]:
-        pass
-
-    @abstractmethod
-    def get_aggregate_stats(self, url: "UrlParameters") -> ImageAggregation:
-        pass
-
-    @abstractmethod
-    def get_path_from_hash(self, hsh: int) -> str:
-        pass
 
 
 class ImageDB(OmgDB):
