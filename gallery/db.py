@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from collections import Counter
+import copy
 import typing as t
 from tqdm import tqdm
 
@@ -64,9 +65,14 @@ class ImageDB(OmgDB):
             if image.match_url(url):
                 out.append(image)
         out.sort(key=lambda x: maybe_datetime_to_timestamp(x.date) or 0.0, reverse=True)
-        yield from out
+        if url.paging:
+            yield from out[url.page * url.paging : (url.page + 1) * url.paging]
+        else:
+            yield from out
 
     def get_aggregate_stats(self, url: "UrlParameters") -> ImageAggregation:
+        url = copy.copy(url)
+        url.paging = 0
         tag_cnt: t.Counter[str] = Counter()
         classifications_cnt: t.Counter[str] = Counter()
         address_cnt: t.Counter[str] = Counter()

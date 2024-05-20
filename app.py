@@ -97,6 +97,10 @@ async def read_item(
     del datefrom
     del dateto
     images = []
+    aggr = DB.get_aggregate_stats(url)
+    if url.page * url.paging >= aggr.total:
+        url.page = aggr.total // url.paging
+
     for omg in DB.get_matching_images(url):
 
         max_tag = min(1, max((omg.tags or {}).values(), default=1.0))
@@ -120,20 +124,16 @@ async def read_item(
                 "timestamp": maybe_datetime_to_timestamp(omg.date) or 0.0,
             }
         )
-    aggr = DB.get_aggregate_stats(url)
     top_tags = sorted(aggr.tag.items(), key=lambda x: -x[1])
     top_cls = sorted(aggr.classification.items(), key=lambda x: -x[1])
     top_addr = sorted(aggr.address.items(), key=lambda x: -x[1])
-
-    if url.page * url.paging >= aggr.total:
-        url.page = aggr.total // url.paging
 
     return templates.TemplateResponse(
         request=request,
         name="index.html",
         context={
             "oi": oi,
-            "images": images[url.page * url.paging : (url.page + 1) * url.paging],
+            "images": images,
             "total": aggr.total,
             "urls": {
                 "next": url.next_url(aggr.total),
