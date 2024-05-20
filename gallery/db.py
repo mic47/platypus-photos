@@ -11,6 +11,7 @@ from cache import Loader
 
 from gallery.url import UrlParameters
 from gallery.image import Image, ImageAggregation
+from gallery.utils import maybe_datetime_to_timestamp
 
 
 class OmgDB(ABC):
@@ -58,9 +59,12 @@ class ImageDB(OmgDB):
         self._dirty_paths.clear()
 
     def get_matching_images(self, url: "UrlParameters") -> t.Iterable[Image]:
+        out = []
         for image in self._images:
             if image.match_url(url):
-                yield image
+                out.append(image)
+        out.sort(key=lambda x: maybe_datetime_to_timestamp(x.date) or 0.0, reverse=True)
+        yield from out
 
     def get_aggregate_stats(self, url: "UrlParameters") -> ImageAggregation:
         tag_cnt: t.Counter[str] = Counter()

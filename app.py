@@ -128,8 +128,6 @@ async def read_item(
     if url.page * url.paging >= len(images):
         url.page = len(images) // url.paging
 
-    images.sort(key=lambda x: t.cast(float, x.get("timestamp", 0)), reverse=True)
-
     return templates.TemplateResponse(
         request=request,
         name="index.html",
