@@ -22,7 +22,7 @@ from geolocation import GeoAddress
 from image_exif import ImageExif
 from image_to_text import ImageClassification
 
-from gallery.db import ImageDB
+from gallery.db import ImageDB, OmgDB
 from gallery.image import Image
 from gallery.url import UrlParameters
 from gallery.utils import maybe_datetime_to_date, maybe_datetime_to_timestamp
@@ -34,7 +34,7 @@ app.mount("/static", StaticFiles(directory="static/"), name="static")
 templates = Jinja2Templates(directory="templates")
 
 config = Config.load("config.yaml")
-DB = ImageDB(PathDateExtractor(config.directory_matching))
+DB: OmgDB = ImageDB(PathDateExtractor(config.directory_matching))
 del config
 
 
@@ -97,9 +97,6 @@ async def read_item(
     del datefrom
     del dateto
     images = []
-    tag_cnt: t.Counter[str] = Counter()
-    classifications_cnt: t.Counter[str] = Counter()
-    address_cnt: t.Counter[str] = Counter()
     for omg in DB.get_matching_images(url):
 
         max_tag = min(1, max((omg.tags or {}).values(), default=1.0))
@@ -123,12 +120,10 @@ async def read_item(
                 "timestamp": maybe_datetime_to_timestamp(omg.date) or 0.0,
             }
         )
-        classifications_cnt.update([] if omg.classifications is None else omg.classifications.split(";"))
-        tag_cnt.update((omg.tags or {}).keys())
-        address_cnt.update(a for a in [omg.address_name, omg.address_country] if a)
-    top_tags = sorted(tag_cnt.items(), key=lambda x: -x[1])
-    top_cls = sorted(classifications_cnt.items(), key=lambda x: -x[1])
-    top_addr = sorted(address_cnt.items(), key=lambda x: -x[1])
+    aggr = DB.get_aggregate_stats(url)
+    top_tags = sorted(aggr.tag.items(), key=lambda x: -x[1])
+    top_cls = sorted(aggr.classification.items(), key=lambda x: -x[1])
+    top_addr = sorted(aggr.address.items(), key=lambda x: -x[1])
 
     if url.page * url.paging >= len(images):
         url.page = len(images) // url.paging

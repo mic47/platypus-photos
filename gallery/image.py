@@ -9,6 +9,11 @@ from geolocation import GeoAddress
 
 from gallery.url import UrlParameters
 
+@dataclass
+class ImageAggregation:
+    address: t.Dict[str, int]
+    tag: t.Dict[str, int]
+    classification: t.Dict[str, int]
 
 @dataclass
 class Image:

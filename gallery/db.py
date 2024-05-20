@@ -1,3 +1,5 @@
+from abc import ABC, abstractmethod
+from collections import Counter
 import typing as t
 from tqdm import tqdm
 
@@ -8,9 +10,28 @@ from filename_to_date import PathDateExtractor
 from cache import Loader
 
 from gallery.url import UrlParameters
-from gallery.image import Image
+from gallery.image import Image, ImageAggregation
 
-class ImageDB:
+
+class OmgDB(ABC):
+    @abstractmethod
+    def load(self, show_progress: bool) -> None:
+        pass
+
+    @abstractmethod
+    def get_matching_images(self, url: "UrlParameters") -> t.Iterable[Image]:
+        pass
+
+    @abstractmethod
+    def get_aggregate_stats(self, url: "UrlParameters") -> ImageAggregation:
+        pass
+
+    @abstractmethod
+    def get_path_from_hash(self, hsh: int) -> str:
+        pass
+
+
+class ImageDB(OmgDB):
     def __init__(self, path_to_date: PathDateExtractor) -> None:
         # TODO: this should be a feature with loader
         self._path_to_date = path_to_date
@@ -40,6 +61,16 @@ class ImageDB:
         for image in self._images:
             if image.match_url(url):
                 yield image
+
+    def get_aggregate_stats(self, url: "UrlParameters") -> ImageAggregation:
+        tag_cnt: t.Counter[str] = Counter()
+        classifications_cnt: t.Counter[str] = Counter()
+        address_cnt: t.Counter[str] = Counter()
+        for omg in self.get_matching_images(url):
+            classifications_cnt.update([] if omg.classifications is None else omg.classifications.split(";"))
+            tag_cnt.update((omg.tags or {}).keys())
+            address_cnt.update(a for a in [omg.address_name, omg.address_country] if a)
+        return ImageAggregation(address=address_cnt, tag=tag_cnt, classification=classifications_cnt)
 
     def get_path_from_hash(self, hsh: int) -> str:
         return self._hash_to_image[hsh]
@@ -71,4 +102,3 @@ class ImageDB:
     def _load_text_classification(self, annot: ImageClassification) -> None:
         self._text_classification[annot.image] = annot
         self._dirty_paths.add(annot.image)
-
