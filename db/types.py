@@ -1,13 +1,19 @@
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-import re
 import typing as t
+import re
 
-from image_to_text import ImageClassification
-from image_exif import ImageExif
-from geolocation import GeoAddress
-
+from data_model.features import ImageExif, GeoAddress, ImageClassification
 from gallery.url import UrlParameters
+
+T = t.TypeVar("T")
+
+@dataclass
+class FeaturePayload(t.Generic[T]):
+    payload: T
+    version: int
+    last_update: int
+    rowid: int
 
 
 @dataclass
@@ -27,10 +33,7 @@ class Image:
     address_country: t.Optional[str]
     address_name: t.Optional[str]
     address_full: t.Optional[str]
-
-    @staticmethod
-    def from_path(path: str) -> "Image":
-        return Image(path, None, None, None, None, None, None)
+    dependent_features_last_update: float
 
     @staticmethod
     def from_updates(
@@ -39,6 +42,7 @@ class Image:
         address: t.Optional[GeoAddress],
         text_classification: t.Optional[ImageClassification],
         date_from_path: t.Optional[datetime],
+        max_last_update: float,
     ) -> "Image":
         date = None
         if exif is not None and exif.date is not None:
@@ -67,9 +71,9 @@ class Image:
             address_name = address.name
             address_full = ", ".join(x for x in [address_name, address_country] if x)
 
-        return Image(path, date, tags, classifications, address_country, address_name, address_full)
+        return Image(path, date, tags, classifications, address_country, address_name, address_full, max_last_update)
 
-    def match_url(self, url: "UrlParameters") -> bool:
+    def match_url(self, url: UrlParameters) -> bool:
         return (
             self.match_date(url.datefrom, url.dateto)
             and self.match_tags(url.tag)

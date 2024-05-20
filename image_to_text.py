@@ -7,48 +7,7 @@ from dataclasses_json import DataClassJsonMixin
 from transformers import pipeline
 from cache import HasImage, Cache
 
-
-@dataclass
-class Box(DataClassJsonMixin):
-    classification: str
-    confidence: float
-    xyxy: t.List[float]
-
-
-@dataclass
-class Classification(DataClassJsonMixin):
-    name: str
-    confidence: float
-
-
-@dataclass
-class BoxClassification(DataClassJsonMixin):
-    box: Box
-    classifications: t.List[Classification]
-
-
-VERSION = 0
-
-
-@dataclass
-class ImageClassification(HasImage):
-    image: str
-    version: int
-    captions: t.List[str]
-    boxes: t.List[BoxClassification]
-
-    def print(self) -> None:
-        print(self.image)
-        for caption in self.captions:
-            print(" ", caption)
-        for box in self.boxes:
-            print(" ", box.box.classification, box.box.confidence)
-            for c in box.classifications:
-                print("   ", c.name, c.confidence)
-
-    @staticmethod
-    def current_version() -> int:
-        return VERSION
+from data_model.features import ImageClassification, BoxClassification, Classification, Box
 
 
 def remove_consecutive_words(sentence: str) -> str:
@@ -71,6 +30,7 @@ class Models:
         self.predict_model = YOLO("yolov8x.pt")
         self.classify_model = YOLO("yolov8x-cls.pt")
         self.captioner = pipeline("image-to-text", model="Salesforce/blip-image-captioning-base")
+        self._version = ImageClassification.current_version()
 
     def process_image_batch(
         self: "Models",
@@ -161,7 +121,7 @@ class Models:
                     prev_conf = conf
                     classifications.append(Classification(names[index], float(conf)))
                 box_class.append(BoxClassification(box, classifications))
-            yield ImageClassification(path, VERSION, list(captions), box_class)
+            yield ImageClassification(path, self._version, list(captions), box_class)
         for ((path, image), captions, _) in all_input:
             if path in visited:
                 continue
@@ -171,4 +131,4 @@ class Models:
                 gt = c.get("generated_text")
                 if gt is not None:
                     captions.add(remove_consecutive_words(gt))
-            yield ImageClassification(path, VERSION, list(captions), [])
+            yield ImageClassification(path, self._version, list(captions), [])

@@ -22,8 +22,8 @@ from geolocation import GeoAddress
 from image_exif import ImageExif
 from image_to_text import ImageClassification
 
-from gallery.db import ImageDB, OmgDB
-from gallery.image import Image
+from gallery.db import ImageDB, OmgDB, ImageSqlDB
+from db.types import Image
 from gallery.url import UrlParameters
 from gallery.utils import maybe_datetime_to_date, maybe_datetime_to_timestamp
 
@@ -34,7 +34,8 @@ app.mount("/static", StaticFiles(directory="static/"), name="static")
 templates = Jinja2Templates(directory="templates")
 
 config = Config.load("config.yaml")
-DB: OmgDB = ImageDB(PathDateExtractor(config.directory_matching))
+#DB: OmgDB = ImageDB(PathDateExtractor(config.directory_matching))
+DB: OmgDB = ImageSqlDB(PathDateExtractor(config.directory_matching))
 del config
 
 

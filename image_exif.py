@@ -6,6 +6,7 @@ from dataclasses_json import DataClassJsonMixin
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 
+from data_model.features import ImageExif, Date, Camera, GPSCoord
 from cache import HasImage, Cache
 
 
@@ -124,61 +125,44 @@ class UnparsedTags:
         return ret
 
 
-@dataclass
-class Camera(DataClassJsonMixin):
-    make: str
-    model: str
-    serial_number: str
-    software: str
-
-    @staticmethod
-    def from_tags(tags: UnparsedTags) -> "Camera":
-        return Camera(
-            tags.get("make") or "",
-            tags.get("model") or "",
-            tags.get("body_serial_number") or "",
-            tags.get("software") or "",
-        )
+def camera_from_tags(tags: UnparsedTags) -> "Camera":
+    return Camera(
+        tags.get("make") or "",
+        tags.get("model") or "",
+        tags.get("body_serial_number") or "",
+        tags.get("software") or "",
+    )
 
 
-@dataclass
-class GPSCoord(DataClassJsonMixin):
-    latitude: float
-    longitude: float
-    altitude: t.Optional[float]
-    date: t.Optional[datetime]
+def gpscoord_from_tags(tags: UnparsedTags) -> "t.Optional[GPSCoord]":
+    # TODO: distinguish missing vs wrong
+    altitude_ref = 1 if tags.get("gps_altitude_ref") == exif.GpsAltitudeRef.ABOVE_SEA_LEVEL else -1
+    latitude_ref = 1 if tags.get("gps_latitude_ref") == "N" else -1
+    longitude_ref = 1 if tags.get("gps_longitude_ref") == "E" else -1
+    latitude = loc_to_number(tags.get("gps_latitude"))
+    longitude = loc_to_number(tags.get("gps_longitude"))
+    altitude = loc_to_number(tags.get("gps_altitude"))
+    date = gps_to_datetime(tags.get("gps_datestamp"), tags.get("gps_timestamp"))
 
-    @staticmethod
-    def from_tags(tags: UnparsedTags) -> "t.Optional[GPSCoord]":
-        # TODO: distinguish missing vs wrong
-        altitude_ref = 1 if tags.get("gps_altitude_ref") == exif.GpsAltitudeRef.ABOVE_SEA_LEVEL else -1
-        latitude_ref = 1 if tags.get("gps_latitude_ref") == "N" else -1
-        longitude_ref = 1 if tags.get("gps_longitude_ref") == "E" else -1
-        latitude = loc_to_number(tags.get("gps_latitude"))
-        longitude = loc_to_number(tags.get("gps_longitude"))
-        altitude = loc_to_number(tags.get("gps_altitude"))
-        date = gps_to_datetime(tags.get("gps_datestamp"), tags.get("gps_timestamp"))
+    if latitude is None or longitude is None:
+        return None
 
-        if latitude is None or longitude is None:
-            return None
+    # TODO
+    # https://exiftool.org/TagNames/GPS.html
+    tags.get("gps_speed_ref")
+    tags.get("gps_speed")
+    tags.get("gps_img_direction_ref")
+    tags.get("gps_img_direction")
+    tags.get("gps_dest_bearing_ref")
+    tags.get("gps_dest_bearing")
+    tags.get("gps_horizontal_positioning_error")
 
-        # TODO
-        # https://exiftool.org/TagNames/GPS.html
-        tags.get("gps_speed_ref")
-        tags.get("gps_speed")
-        tags.get("gps_img_direction_ref")
-        tags.get("gps_img_direction")
-        tags.get("gps_dest_bearing_ref")
-        tags.get("gps_dest_bearing")
-        tags.get("gps_horizontal_positioning_error")
-
-        return GPSCoord(
-            latitude * latitude_ref,
-            longitude * longitude_ref,
-            altitude * altitude_ref if altitude is not None else None,
-            date,
-        )
-        pass
+    return GPSCoord(
+        latitude * latitude_ref,
+        longitude * longitude_ref,
+        altitude * altitude_ref if altitude is not None else None,
+        date,
+    )
 
 
 def gps_to_datetime(
@@ -208,20 +192,14 @@ def loc_to_number(x: t.Any) -> t.Optional[float]:
     return float(ret)
 
 
-@dataclass
-class Date(DataClassJsonMixin):
-    datetime: t.Optional[datetime]
-    time_str: t.Optional[str]
-
-    @staticmethod
-    def from_tags(t: UnparsedTags) -> "t.Optional[Date]":
-        datetime = parse_datetime(t.get("datetime"), t.get("offset_time"))
-        datetime_digitized = parse_datetime(t.get("datetime_digitized"), t.get("offset_time_digitized"))
-        datetime_original = parse_datetime(t.get("datetime_original"), t.get("offset_time_original"))
-        date = datetime_original or datetime_digitized or datetime
-        if date is None:
-            return None
-        return Date(date, date.isoformat())
+def date_from_tags(t: UnparsedTags) -> "t.Optional[Date]":
+    datetime = parse_datetime(t.get("datetime"), t.get("offset_time"))
+    datetime_digitized = parse_datetime(t.get("datetime_digitized"), t.get("offset_time_digitized"))
+    datetime_original = parse_datetime(t.get("datetime_original"), t.get("offset_time_original"))
+    date = datetime_original or datetime_digitized or datetime
+    if date is None:
+        return None
+    return Date(date, date.isoformat())
 
 
 def parse_datetime(s: t.Optional[str], offset: t.Optional[str]) -> t.Optional[datetime]:
@@ -243,25 +221,10 @@ def parse_datetime(s: t.Optional[str], offset: t.Optional[str]) -> t.Optional[da
     return None
 
 
-VERSION = 0
-
-
-@dataclass
-class ImageExif(HasImage):
-    image: str
-    version: int
-    gps: t.Optional[GPSCoord]
-    camera: Camera
-    date: t.Optional[Date]
-
-    @staticmethod
-    def current_version() -> int:
-        return VERSION
-
-
 class Exif:
     def __init__(self, cache: Cache[ImageExif]) -> None:
         self._cache = cache
+        self._version = ImageExif.current_version()
 
     def process_image(self, path: str) -> ImageExif:
         ret = self._cache.get(path)
@@ -283,11 +246,11 @@ class Exif:
                 print("ERR: UNKNOWN TAG", tag, value, file=sys.stderr)
             d.insert(tag, value)
 
-        gps = GPSCoord.from_tags(d)
-        camera = Camera.from_tags(d)
-        date = Date.from_tags(d)
+        gps = gpscoord_from_tags(d)
+        camera = camera_from_tags(d)
+        date = date_from_tags(d)
 
         for tag, value in d.all().items():
             print("ERR: unprocessed tag", tag, value, type(value), file=sys.stderr)
 
-        return ImageExif(path, VERSION, gps, camera, date)
+        return ImageExif(path, self._version, gps, camera, date)

@@ -7,28 +7,9 @@ from tqdm import tqdm
 from dataclasses import dataclass
 from dataclasses_json import DataClassJsonMixin
 
+from data_model.features import HasImage
 from db.sql import FeaturesTable
 
-
-@dataclass
-class HasImage(DataClassJsonMixin):
-    image: str
-    version: int
-
-    @staticmethod
-    def current_version() -> int:
-        raise NotImplementedError
-
-    def _set_from_cache(self) -> None:
-        self._from_cache = True
-
-    def is_from_cache(self) -> bool:
-        if hasattr(self, "_from_cache"):
-            return self._from_cache
-        return False
-
-    def changed(self) -> bool:
-        return not self.is_from_cache()
 
 
 T = t.TypeVar("T", bound=HasImage)
@@ -137,7 +118,7 @@ class SQLiteCache(t.Generic[T], Cache[T]):
             return (cached[1], cached[0])
         parsed = self._loader.from_json(res.payload)
         self._data[key] = (res.rowid, parsed)
-        return parsed, res.rowid
+        return parsed, res.last_update
 
     def add(self, data: T) -> T:
         if data.version != self._current_version:

@@ -7,24 +7,8 @@ import time
 import sys
 import typing as t
 
+from data_model.features import GeoAddress, POI, NearestPOI
 from cache import HasImage, Cache
-
-VERSION = 0
-
-
-@dataclass
-class GeoAddress(HasImage):
-    image: str
-    address: str
-    country: t.Optional[str]
-    name: t.Optional[str]
-    raw: str
-    query: str
-    # TODO: add points of interestis -- i.e. home, work, ...
-
-    @staticmethod
-    def current_version() -> int:
-        return VERSION
 
 
 RATE_LIMIT_SECONDS = 1
@@ -36,6 +20,7 @@ class Geolocator:
         self._cache = cache
         self.geolocator = Nominatim(user_agent="Mic's photo lookups")
         self.last_api = time.time() - 10
+        self._version = GeoAddress.current_version()
 
     def address(self, image: str, lat: float, lon: float, recompute: bool = False) -> GeoAddress:
         ret = self._cache.get(image)
@@ -82,27 +67,14 @@ class Geolocator:
                 or None  # In case of empty string
             )
             country = raw_add.get("country")
-        return GeoAddress(image, VERSION, ret.address, country, name, raw_data, query)
-
-
-@dataclass
-class POI(DataClassJsonMixin):
-    name: str
-    latitude: float
-    longitude: float
-
-
-@dataclass
-class NearestPOI(HasImage):
-    image: str
-    poi: POI
-    distance: float
+        return GeoAddress(image, self._version, ret.address, country, name, raw_data, query)
 
 
 class POIDetector:
     def __init__(self, pois: t.Iterable[POI]):
         self._max_distance = 0.25
         self._pois = list(pois)
+        self._version = NearestPOI.current_version()
 
     def find(self, image: str, latitude: float, longitude: float) -> t.Optional[NearestPOI]:
         if not self._pois:
@@ -114,4 +86,4 @@ class POIDetector:
         distance, poi = best
         if distance > self._max_distance:
             return None
-        return NearestPOI(image, VERSION, poi, distance)
+        return NearestPOI(image, self._version, poi, distance)
