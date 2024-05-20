@@ -70,11 +70,13 @@ class ImageDB(OmgDB):
         tag_cnt: t.Counter[str] = Counter()
         classifications_cnt: t.Counter[str] = Counter()
         address_cnt: t.Counter[str] = Counter()
+        total = 0
         for omg in self.get_matching_images(url):
+            total += 1
             classifications_cnt.update([] if omg.classifications is None else omg.classifications.split(";"))
             tag_cnt.update((omg.tags or {}).keys())
             address_cnt.update(a for a in [omg.address_name, omg.address_country] if a)
-        return ImageAggregation(address=address_cnt, tag=tag_cnt, classification=classifications_cnt)
+        return ImageAggregation(total, address=address_cnt, tag=tag_cnt, classification=classifications_cnt)
 
     def get_path_from_hash(self, hsh: int) -> str:
         return self._hash_to_image[hsh]

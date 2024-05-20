@@ -125,8 +125,8 @@ async def read_item(
     top_cls = sorted(aggr.classification.items(), key=lambda x: -x[1])
     top_addr = sorted(aggr.address.items(), key=lambda x: -x[1])
 
-    if url.page * url.paging >= len(images):
-        url.page = len(images) // url.paging
+    if url.page * url.paging >= aggr.total:
+        url.page = aggr.total // url.paging
 
     return templates.TemplateResponse(
         request=request,
@@ -134,10 +134,10 @@ async def read_item(
         context={
             "oi": oi,
             "images": images[url.page * url.paging : (url.page + 1) * url.paging],
-            "total": len(images),
+            "total": aggr.total,
             "urls": {
-                "next": url.next_url(len(images)),
-                "next_overlay": url.next_url(len(images), overlay=True),
+                "next": url.next_url(aggr.total),
+                "next_overlay": url.next_url(aggr.total, overlay=True),
                 "prev": url.prev_url(),
                 "prev_overlay": url.prev_url(overlay=True),
             },
