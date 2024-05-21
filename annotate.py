@@ -2,19 +2,15 @@ import os
 import sys
 import glob
 import re
-import itertools
 import typing as t
-from datetime import datetime
 
 from tqdm import tqdm
-from dataclasses_json import dataclass_json
-from dataclasses import dataclass
 
 from image_to_text import Models, ImageClassification
 from image_exif import Exif, ImageExif
 from md5_annot import MD5er, MD5Annot
 from geolocation import Geolocator, GeoAddress
-from cache import JsonlCache, HasImage
+from cache import JsonlCache
 from filename_to_date import PathDateExtractor
 from config import Config
 

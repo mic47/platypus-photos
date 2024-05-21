@@ -1,7 +1,6 @@
 from dataclasses_json import DataClassJsonMixin
 from dataclasses import dataclass
 import json
-import os
 import yaml
 
 import typing as t

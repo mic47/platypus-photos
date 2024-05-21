@@ -10,7 +10,6 @@ max-line-length=110
 [tool.pylint."MESSAGES CONTROL"]
 
 disable = '''
-  unused-import,
   invalid-name,
   redefined-outer-name,
   wrong-import-order,

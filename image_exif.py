@@ -1,13 +1,10 @@
 import exif
-import itertools
 import typing as t
 import sys
-from dataclasses_json import DataClassJsonMixin
-from dataclasses import dataclass
 from datetime import datetime, timedelta
 
 from data_model.features import ImageExif, Date, Camera, GPSCoord
-from cache import HasImage, Cache
+from cache import Cache
 
 
 IGNORED_TAGS = [

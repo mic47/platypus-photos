@@ -1,4 +1,3 @@
-from dataclasses_json import DataClassJsonMixin
 from cache import HasImage, Cache
 import hashlib
 from dataclasses import dataclass

@@ -1,11 +1,10 @@
+import typing as t
+
 from PIL import Image
 import itertools
 from ultralytics import YOLO
-from dataclasses import dataclass
-import typing as t
-from dataclasses_json import DataClassJsonMixin
 from transformers import pipeline
-from cache import HasImage, Cache
+from cache import Cache
 
 from data_model.features import ImageClassification, BoxClassification, Classification, Box
 

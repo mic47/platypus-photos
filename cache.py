@@ -4,9 +4,6 @@ import typing as t
 import json
 from tqdm import tqdm
 
-from dataclasses import dataclass
-from dataclasses_json import DataClassJsonMixin
-
 from data_model.features import HasImage
 from db.sql import FeaturesTable
 

@@ -1,14 +1,13 @@
-from geopy.distance import distance
-from geopy.geocoders import Nominatim
-from dataclasses_json import DataClassJsonMixin
-from dataclasses import dataclass
 import json
 import time
 import sys
 import typing as t
 
+from geopy.distance import distance
+from geopy.geocoders import Nominatim
+
 from data_model.features import GeoAddress, POI, NearestPOI
-from cache import HasImage, Cache
+from cache import Cache
 
 
 RATE_LIMIT_SECONDS = 1
@@ -83,7 +82,7 @@ class POIDetector:
             ((distance((poi.latitude, poi.longitude), (latitude, longitude)), poi) for poi in self._pois),
             key=lambda x: t.cast(float, x[0]),
         )
-        distance, poi = best
-        if distance > self._max_distance:
+        best_distance, poi = best
+        if best_distance > self._max_distance:
             return None
-        return NearestPOI(image, self._version, poi, distance)
+        return NearestPOI(image, self._version, poi, best_distance)

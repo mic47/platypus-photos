@@ -1,6 +1,6 @@
 import typing as t
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from gallery.utils import maybe_datetime_to_date
 
