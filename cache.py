@@ -82,18 +82,44 @@ class Loader(t.Generic[T]):
         self._file.close()
 
 
+class JsonlWriter:
+    def __init__(self, path: t.Optional[str]):
+        if path is None:
+            self._file = None
+        else:
+            # pylint: disable=consider-using-with
+            self._file = open(path, "a", encoding="utf-8")
+
+    def append(self, data: str) -> None:
+        if self._file is None:
+            return
+        self._file.write(data)
+        self._file.write("\n")
+        self._file.flush()
+
+
 class SQLiteCache(t.Generic[T], Cache[T]):
-    def __init__(self, features_table: FeaturesTable, loader: t.Type[T]) -> None:
+    def __init__(
+        self,
+        features_table: FeaturesTable,
+        loader: t.Type[T],
+        jsonl_path: t.Optional[str] = None,
+        enforce_version: bool = False,
+    ) -> None:
         self._features_table = features_table
         self._loader = loader
         self._type = loader.__name__
         self._data: t.Dict[str, t.Tuple[int, T]] = {}
         self._current_version = loader.current_version()
+        self._enforce_version = enforce_version
+        self._jsonl = JsonlWriter(jsonl_path)
 
     def get(self, key: str) -> t.Optional[T]:
         cached = self._data.get(key)
         res = self._features_table.get_payload(self._type, key)
         if res is None:
+            return None
+        if self._enforce_version and res.version != self._current_version:
             return None
         if cached is not None and cached[0] == res.rowid:
             return cached[1]
@@ -122,12 +148,14 @@ class SQLiteCache(t.Generic[T], Cache[T]):
                 file=sys.stderr,
             )
             return data
+        d = data.to_json(ensure_ascii=False)
         self._features_table.add(
-            data.to_json(ensure_ascii=False).encode("utf-8"),
+            d.encode("utf-8"),
             self._type,
             data.image,
             data.version,
         )
+        self._jsonl.append(d)
         # NOTE: local cache is just for fetching
         return data
 
@@ -203,10 +231,14 @@ def main() -> None:
     # pylint: disable=import-outside-toplevel
     from data_model.features import GeoAddress
 
+    # pylint: disable=import-outside-toplevel
+    from md5_annot import MD5Annot
+
     to_iter: t.List[t.Tuple[str, t.Type[HasImage]]] = [
         ("output-exif.jsonl", ImageExif),
         ("output-geo.jsonl", GeoAddress),
         ("output-image-to-text.jsonl", ImageClassification),
+        ("output-md5.jsonl", MD5Annot),
     ]
     for path, type_ in to_iter:
         jsonl = JsonlCache(path, type_)

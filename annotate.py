@@ -10,9 +10,10 @@ from image_to_text import Models, ImageClassification
 from image_exif import Exif, ImageExif
 from md5_annot import MD5er, MD5Annot
 from geolocation import Geolocator, GeoAddress
-from cache import JsonlCache
+from cache import SQLiteCache
 from filename_to_date import PathDateExtractor
 from config import Config
+from db.sql import FeaturesTable
 
 VERSION = 0
 
@@ -26,19 +27,22 @@ def walk_tree(path: str, extensions: t.Optional[t.List[str]] = None) -> t.Iterab
 
 def main() -> None:
     config = Config.load("config.yaml")
+    features = FeaturesTable("output.db")
 
     path_to_date = PathDateExtractor(config.directory_matching)
 
-    models_cache = JsonlCache("output-image-to-text.jsonl", ImageClassification)
+    models_cache = SQLiteCache(
+        features, ImageClassification, "output-image-to-text.jsonl", enforce_version=True
+    )
     models = Models(models_cache)
 
-    exif_cache = JsonlCache("output-exif.jsonl", ImageExif)
+    exif_cache = SQLiteCache(features, ImageExif, "output-exif.jsonl", enforce_version=True)
     exif = Exif(exif_cache)
 
-    geolocator_cache = JsonlCache("output-geo.jsonl", GeoAddress)
+    geolocator_cache = SQLiteCache(features, GeoAddress, "output-geo.jsonl", enforce_version=True)
     geolocator = Geolocator(geolocator_cache)
 
-    md5_cache = JsonlCache("output-md5.jsonl", MD5Annot)
+    md5_cache = SQLiteCache(features, MD5Annot, "output-md5.jsonl", enforce_version=True)
     md5 = MD5er(md5_cache)
 
     paths = [
