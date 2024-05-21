@@ -48,7 +48,7 @@ def main() -> None:
     paths = [
         file
         for pattern in tqdm(config.input_patterns, desc="Listing files")
-        for file in glob.glob(re.sub("^~/", os.environ["HOME"] + "/", pattern))
+        for file in tqdm(glob.glob(re.sub("^~/", os.environ["HOME"] + "/", pattern)), desc=pattern)
     ]
     for directory in tqdm(config.input_directories, desc="Listing directories"):
         paths.extend(walk_tree(re.sub("^~/", os.environ["HOME"] + "/", directory)))
@@ -57,6 +57,7 @@ def main() -> None:
         exif_item = exif.process_image(path)
         geo = None
         if exif_item.gps is not None:
+            # TODO: do recomputation based on the last_update
             geo = geolocator.address(path, exif_item.gps.latitude, exif_item.gps.longitude, recompute=False)
         if skip_image_to_text:
             itt = None
