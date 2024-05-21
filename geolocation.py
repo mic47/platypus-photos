@@ -38,11 +38,13 @@ class Geolocator:
             try:
                 ret = self.geolocator.reverse(query, language="en")
                 break
-            except:
+            # pylint: disable = broad-exception-caught
+            except Exception as e:
                 if retries_left <= 0:
                     raise
                 print(
                     f"Gelolocation request for {image} failed. Retrying ({retries_left} left)",
+                    e,
                     file=sys.stderr,
                 )
                 retries_left -= 1
@@ -53,7 +55,8 @@ class Geolocator:
         raw_add = ret.raw.get("address")
         try:
             raw_data = json.dumps(ret.raw, ensure_ascii=False)
-        except:
+        # pylint: disable = broad-exception-caught
+        except Exception as _:
             raw_data = str(ret.raw)
         if raw_add is not None:
             name = (

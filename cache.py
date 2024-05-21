@@ -65,6 +65,7 @@ class Loader(t.Generic[T]):
                         continue
                     data = self._type.from_dict(j)
                     self._loader(data)
+                # pylint: disable = broad-exception-caught
                 except Exception as e:
                     # Revert position in the file
                     self._position = position

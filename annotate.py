@@ -68,12 +68,14 @@ def main() -> None:
         for path in tqdm(paths, total=len(paths), desc="Cheap features"):
             try:
                 img = process_path(path, skip_image_to_text=True)
+            # pylint: disable = broad-exception-caught
             except Exception as e:
                 print("Error while processing path", path, e, file=sys.stderr)
         print(img)
         for path in tqdm(paths, total=len(paths), desc="Expensive features"):
             try:
                 img = process_path(path, skip_image_to_text=False)
+            # pylint: disable = broad-exception-caught
             except Exception as e:
                 print("Error while processing path", path, e, file=sys.stderr)
         print(img)

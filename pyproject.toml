@@ -10,9 +10,6 @@ max-line-length=110
 [tool.pylint."MESSAGES CONTROL"]
 
 disable = '''
-  bare-except,
-  broad-exception-caught,
-
   missing-function-docstring,
   missing-class-docstring,
   missing-module-docstring,

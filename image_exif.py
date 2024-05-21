@@ -174,7 +174,8 @@ def gps_to_datetime(
             return datetime(y, m, d)
         h, mn, s = [int(x) for x in time]
         return datetime(y, m, d, h, mn, s)
-    except:
+    # pylint: disable = broad-exception-caught
+    except Exception as _:
         return None
 
 
@@ -209,12 +210,14 @@ def parse_datetime(s: t.Optional[str], offset: t.Optional[str]) -> t.Optional[da
         try:
             h, m = [int(x) for x in offset.split(":")]
             td = timedelta(0, m * 60 + h * 3600)
-        except:
+        # pylint: disable = broad-exception-caught
+        except Exception as _:
             pass
 
     try:
         return datetime.strptime(s, "%Y:%m:%d %H:%M:%S") - td
-    except:
+    # pylint: disable = broad-exception-caught
+    except Exception as _:
         pass
     return None
 
