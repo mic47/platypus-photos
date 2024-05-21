@@ -35,7 +35,11 @@ async def on_startup() -> None:
 
 async def auto_load() -> None:
     while True:
-        DB.load(show_progress=False)
+        try:
+            DB.load(show_progress=False)
+        # pylint: disable = broad-exception-caught
+        except Exception as e:
+            print("Error while trying to refresh data in db", e)
         await asyncio.sleep(1)
 
 
