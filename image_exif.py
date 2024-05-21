@@ -189,14 +189,14 @@ def loc_to_number(x: t.Any) -> t.Optional[float]:
     return float(ret)
 
 
-def date_from_tags(t: UnparsedTags) -> "t.Optional[Date]":
-    datetime = parse_datetime(t.get("datetime"), t.get("offset_time"))
-    datetime_digitized = parse_datetime(t.get("datetime_digitized"), t.get("offset_time_digitized"))
-    datetime_original = parse_datetime(t.get("datetime_original"), t.get("offset_time_original"))
-    date = datetime_original or datetime_digitized or datetime
-    if date is None:
+def date_from_tags(ut: UnparsedTags) -> t.Optional[Date]:
+    datetime_ = parse_datetime(ut.get("datetime"), ut.get("offset_time"))
+    datetime_digitized = parse_datetime(ut.get("datetime_digitized"), ut.get("offset_time_digitized"))
+    datetime_original = parse_datetime(ut.get("datetime_original"), ut.get("offset_time_original"))
+    date_ = datetime_original or datetime_digitized or datetime_
+    if date_ is None:
         return None
-    return Date(date, date.isoformat())
+    return Date(date_, date_.isoformat())
 
 
 def parse_datetime(s: t.Optional[str], offset: t.Optional[str]) -> t.Optional[datetime]:

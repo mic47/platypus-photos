@@ -43,7 +43,7 @@ class PathDateExtractor:
         match = DATE_TIME_FILE_REGEX.match(filename)
         try:
             if match is not None:
-                date = datetime(
+                date_ = datetime(
                     int(match.group("year")),
                     int(match.group("month")),
                     int(match.group("day")),
@@ -51,24 +51,24 @@ class PathDateExtractor:
                     int(match.group("minute")),
                     int(match.group("second")),
                 )
-                return date
+                return date_
         except Exception as e:
             print("ERR", filename, e, file=sys.stderr)
         for ddf in self._dated_directory:
             try:
                 match = ddf.match(file)
                 if match is not None:
-                    date = datetime(
+                    date_ = datetime(
                         int(match.group("year")),
                         int(match.group("month")),
                         int(match.group("day")),
                     )
-                    return date
+                    return date_
             except Exception as e:
                 print("ERR", filename, e, ddf, file=sys.stderr)
-        for s, date in self._path_to_date:
+        for s, date_ in self._path_to_date:
             if s.search(file) is not None:
-                return date
+                return date_
         return None
 
     def should_be_ignored(self, file: str) -> bool:
@@ -89,8 +89,7 @@ def verify_filter(pattern: re.Pattern[str]) -> re.Pattern[str]:
     assert pattern.groupindex.get("day") is not None, f"Missing `day` in date patter in {pattern.pattern}"
     return pattern
 
-
-if __name__ == "__main__":
+def main() -> None:
     config = Config.load("config.yaml")
     ex = PathDateExtractor(config.directory_matching)
 
@@ -117,3 +116,6 @@ if __name__ == "__main__":
         f"with_date {100*with_date/total:5.2f}% without_date {100*without_date/total:5.2f} unclassifiable {100*unclassifiable/total:5.2f}"
     )
     print(f"{unclassifiable} out of {total} left")
+
+if __name__ == "__main__":
+    main()
