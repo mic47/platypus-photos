@@ -1,6 +1,7 @@
 import os
 import sys
 import glob
+import random
 import re
 import typing as t
 
@@ -75,6 +76,8 @@ def main() -> None:
             except Exception as e:
                 print("Error while processing path", path, e, file=sys.stderr)
         print(img)
+        # Shuffle paths, so expensive features are more uniform
+        random.shuffle(paths)
         for path in tqdm(paths, total=len(paths), desc="Expensive features"):
             try:
                 img = process_path(path, skip_image_to_text=False)
