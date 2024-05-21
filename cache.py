@@ -11,7 +11,6 @@ from data_model.features import HasImage
 from db.sql import FeaturesTable
 
 
-
 T = t.TypeVar("T", bound=HasImage)
 
 DEFAULT_VERSION = 0

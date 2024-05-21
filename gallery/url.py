@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 
 from gallery.utils import maybe_datetime_to_date
 
+
 @dataclass
 class UrlParameters:
     tag: str

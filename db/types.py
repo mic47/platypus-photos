@@ -8,6 +8,7 @@ from gallery.url import UrlParameters
 
 T = t.TypeVar("T")
 
+
 @dataclass
 class FeaturePayload(t.Generic[T]):
     payload: T
@@ -71,7 +72,9 @@ class Image:
             address_name = address.name
             address_full = ", ".join(x for x in [address_name, address_country] if x)
 
-        return Image(path, date, tags, classifications, address_country, address_name, address_full, max_last_update)
+        return Image(
+            path, date, tags, classifications, address_country, address_name, address_full, max_last_update
+        )
 
     def match_url(self, url: UrlParameters) -> bool:
         return (

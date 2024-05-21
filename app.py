@@ -34,7 +34,7 @@ app.mount("/static", StaticFiles(directory="static/"), name="static")
 templates = Jinja2Templates(directory="templates")
 
 config = Config.load("config.yaml")
-#DB: OmgDB = ImageDB(PathDateExtractor(config.directory_matching))
+# DB: OmgDB = ImageDB(PathDateExtractor(config.directory_matching))
 DB: OmgDB = ImageSqlDB(PathDateExtractor(config.directory_matching))
 del config
 
