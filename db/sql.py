@@ -51,7 +51,7 @@ class FeaturesTable:
             path,
             str,
         ):
-            self._con = sqlite3.connect(path)
+            self._con = sqlite3.connect(path, timeout=120)
         else:
             self._con = path
         self._init_db()
@@ -192,7 +192,7 @@ class GalleryIndexTable:
             path,
             str,
         ):
-            self._con = sqlite3.connect(path)
+            self._con = sqlite3.connect(path, timeout=120)
         else:
             self._con = path
         self._init_db()

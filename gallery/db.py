@@ -42,7 +42,7 @@ class ImageSqlDB(OmgDB):
     def __init__(self, path_to_date: PathDateExtractor) -> None:
         # TODO: this should be a feature with loader
         self._path_to_date = path_to_date
-        self._con = sqlite3.connect("output.db")
+        self._con = sqlite3.connect("output.db", timeout=120)
         self._features_table = FeaturesTable(self._con)
         self._exif = SQLiteCache(self._features_table, ImageExif)
         self._address = SQLiteCache(self._features_table, GeoAddress)

@@ -242,7 +242,7 @@ def main() -> None:
         ("output-image-to-text.jsonl", ImageClassification),
         ("output-md5.jsonl", MD5Annot),
     ]
-    conn = sqlite3.connect("output.db")
+    conn = sqlite3.connect("output.db", timeout=120)
     conn.execute("PRAGMA synchronous=OFF;")
     for path, type_ in to_iter:
         sql = SQLiteCache(FeaturesTable(conn), type_)
