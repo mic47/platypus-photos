@@ -241,13 +241,14 @@ def main() -> None:
         ("output-md5.jsonl", MD5Annot),
     ]
     for path, type_ in to_iter:
-        jsonl = JsonlCache(path, type_)
         sql = SQLiteCache(FeaturesTable("output.db"), type_)
-        for path in tqdm(jsonl.keys()):
-            data = jsonl.get(path)
-            if data is None:
-                continue
-            sql.add(data)
+
+        def load(x: HasImage) -> None:
+            # pylint: disable = cell-var-from-loop
+            sql.add(x)
+
+        loader = Loader(path, type_, load)
+        loader.load(show_progress=True)
 
 
 if __name__ == "__main__":
