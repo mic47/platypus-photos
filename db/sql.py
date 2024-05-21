@@ -33,6 +33,12 @@ from db.types import (
 # 6. Cleanup after removal
 
 
+class WrongAggregateTypeReturned(Exception):
+    def __init__(self, type_: str) -> None:
+        super().__init__(f"Wrong aggregate type returned: {type_}")
+        self.type = type_
+
+
 class FeaturesTable:
     def __init__(
         self,
@@ -361,7 +367,7 @@ SELECT "addrc", address_country, COUNT(1) FROM matched_images WHERE address_coun
                 ]:
                     address_cnt[value] += count
                 else:
-                    raise Exception(f"Wrong type returned {type_}")
+                    raise WrongAggregateTypeReturned(type_)
 
     def get_matching_images(
         self,
