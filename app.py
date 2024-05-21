@@ -22,8 +22,8 @@ from geolocation import GeoAddress
 from image_exif import ImageExif
 from image_to_text import ImageClassification
 
-from gallery.db import ImageDB, OmgDB, ImageSqlDB
 from db.types import Image
+from gallery.db import ImageDB, OmgDB, ImageSqlDB
 from gallery.url import UrlParameters
 from gallery.utils import maybe_datetime_to_date, maybe_datetime_to_timestamp
 
@@ -41,13 +41,11 @@ del config
 
 @app.on_event("startup")
 async def on_startup() -> None:
-    global DB
     DB.load(show_progress=True)
     asyncio.create_task(auto_load())
 
 
 async def auto_load() -> None:
-    global DB
     while True:
         DB.load(show_progress=False)
         await asyncio.sleep(1)

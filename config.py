@@ -22,7 +22,7 @@ class Config(DataClassJsonMixin):
 
     @staticmethod
     def load(file: str) -> "Config":
-        with open(file) as f:
+        with open(file, encoding="utf-8") as f:
             if file.endswith(".yaml"):
                 data = yaml.load(f)
             elif file.endswith(".json"):

@@ -2,10 +2,9 @@ from abc import ABC, abstractmethod
 from collections import Counter
 import copy
 import typing as t
-from tqdm import tqdm
-from datetime import datetime
 
 import sqlite3
+from tqdm import tqdm
 
 from image_to_text import ImageClassification
 from image_exif import ImageExif

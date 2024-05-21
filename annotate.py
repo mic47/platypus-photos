@@ -21,12 +21,14 @@ from config import Config
 VERSION = 0
 
 
-def walk_tree(path: str, extensions: t.List[str] = ["jpg", "jpeg", "JPG", "JEPG"]) -> t.Iterable[str]:
+def walk_tree(path: str, extensions: t.Optional[t.List[str]] = None) -> t.Iterable[str]:
+    if extensions is None:
+        extensions = ["jpg", "jpeg", "JPG", "JEPG"]
     for directory, _subdirs, files in os.walk(path):
         yield from (f"{directory}/{file}" for file in files if file.split(".")[-1] in extensions)
 
 
-if __name__ == "__main__":
+def main() -> None:
     config = Config.load("config.yaml")
 
     path_to_date = PathDateExtractor(config.directory_matching)
@@ -84,3 +86,7 @@ if __name__ == "__main__":
         del exif_cache
         del geolocator_cache
         del md5_cache
+
+
+if __name__ == "__main__":
+    main()

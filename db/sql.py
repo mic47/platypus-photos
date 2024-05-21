@@ -3,12 +3,6 @@ from collections import (
 )
 import typing as t
 import sqlite3
-from dataclasses import (
-    dataclass,
-)
-from dataclasses_json import (
-    DataClassJsonMixin,
-)
 from datetime import (
     datetime,
     timedelta,

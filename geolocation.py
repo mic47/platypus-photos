@@ -80,7 +80,7 @@ class POIDetector:
         if not self._pois:
             return None
         best = min(
-            [(distance((poi.latitude, poi.longitude), (latitude, longitude)), poi) for poi in self._pois],
+            ((distance((poi.latitude, poi.longitude), (latitude, longitude)), poi) for poi in self._pois),
             key=lambda x: t.cast(float, x[0]),
         )
         distance, poi = best

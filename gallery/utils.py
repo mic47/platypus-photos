@@ -1,5 +1,5 @@
 import typing as t
-from datetime import datetime, timedelta
+from datetime import datetime
 
 
 def maybe_datetime_to_date(value: t.Optional[datetime]) -> t.Optional[str]:

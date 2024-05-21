@@ -16,21 +16,15 @@ T = t.TypeVar("T", bound=HasImage)
 DEFAULT_VERSION = 0
 
 
-class ReadCache(t.Generic[T]):
+class Cache(t.Generic[T]):
     def get(self, key: str) -> t.Optional[T]:
         raise NotImplementedError
 
-
-class WriteCache(t.Generic[T]):
     def add(self, data: T) -> T:
         raise NotImplementedError
 
 
-class Cache(t.Generic[T], ReadCache[T], WriteCache[T]):
-    pass
-
-
-class NoCache(t.Generic[T], ReadCache[T], WriteCache[T]):
+class NoCache(t.Generic[T], Cache[T]):
     def get(self, key: str) -> t.Optional[T]:
         pass
 
@@ -41,7 +35,8 @@ class NoCache(t.Generic[T], ReadCache[T], WriteCache[T]):
 class Loader(t.Generic[T]):
     def __init__(self, path: str, type_: t.Type[T], loader: t.Callable[[T], None]):
         self._position = 0
-        self._file = open(path)
+        # pylint: disable=consider-using-with
+        self._file = open(path, encoding="utf-8")
         self._loader = loader
         self._type = type_
 
@@ -140,7 +135,9 @@ class SQLiteCache(t.Generic[T], Cache[T]):
 
 
 class JsonlCache(t.Generic[T], Cache[T]):
-    def __init__(self, path: str, loader: t.Type[T], old_paths: t.List[str] = []):
+    def __init__(self, path: str, loader: t.Type[T], old_paths: t.Optional[t.List[str]] = None):
+        if old_paths is None:
+            old_paths = []
         self._data = {}
         self._current_version = loader.current_version()
 
@@ -153,7 +150,7 @@ class JsonlCache(t.Generic[T], Cache[T]):
         else:
             read_path = path
         if read_path is not None:
-            with open(read_path, "r") as f:
+            with open(read_path, "r", encoding="utf-8") as f:
                 for line in tqdm(f, desc=f"LOADING: {read_path}"):
                     j = json.loads(line)
                     # Defaulting all versions to 0
@@ -163,7 +160,8 @@ class JsonlCache(t.Generic[T], Cache[T]):
                     if cimg.version == self._current_version:
                         cimg._set_from_cache()
                         self._data[cimg.image] = cimg
-        self._file = open(path, "a")
+        # pylint: disable=consider-using-with
+        self._file = open(path, "a", encoding="utf-8")
         if path != read_path:
             for d in self._data.values():
                 self._do_write(d)
@@ -188,6 +186,9 @@ class JsonlCache(t.Generic[T], Cache[T]):
         self._do_write(data)
         return data
 
+    def keys(self) -> t.Iterable[str]:
+        yield from self._data.keys()
+
     def _do_write(self, data: T) -> None:
         self._file.write(data.to_json(ensure_ascii=False))
         self._file.write("\n")
@@ -207,7 +208,7 @@ if __name__ == "__main__":
     for path, type_ in to_iter:
         jsonl = JsonlCache(path, type_)
         sql = SQLiteCache(FeaturesTable("output.db"), type_)
-        for path in tqdm(jsonl._data.keys()):
+        for path in tqdm(jsonl.keys()):
             data = jsonl.get(path)
             if data is None:
                 continue

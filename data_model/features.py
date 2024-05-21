@@ -14,6 +14,7 @@ class HasImage(DataClassJsonMixin):
         raise NotImplementedError
 
     def _set_from_cache(self) -> None:
+        # pylint: disable= attribute-defined-outside-init
         self._from_cache = True
 
     def is_from_cache(self) -> bool:

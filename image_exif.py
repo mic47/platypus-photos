@@ -181,7 +181,7 @@ def gps_to_datetime(
 
 
 def loc_to_number(x: t.Any) -> t.Optional[float]:
-    if type(x) != tuple:
+    if not isinstance(x, tuple):
         return None
     if len(x) != 3:
         return None
