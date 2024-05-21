@@ -118,11 +118,15 @@ class SQLiteCache(t.Generic[T], Cache[T]):
         cached = self._data.get(key)
         res = self._features_table.get_payload(self._type, key)
         if res is None:
+            print("miss", self._type, key)
             return None
         if self._enforce_version and res.version != self._current_version:
+            print("wtype", self._type, key)
             return None
         if cached is not None and cached[0] == res.rowid:
+            print("cached", self._type, key)
             return cached[1]
+        print("parsed", self._type, key)
         parsed = self._loader.from_json(res.payload)
         self._data[key] = (res.rowid, parsed)
         return parsed
