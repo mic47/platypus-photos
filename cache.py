@@ -5,7 +5,7 @@ import json
 from tqdm import tqdm
 
 from data_model.features import HasImage
-from db.sql import FeaturesTable
+from db.sql import FeaturesTable, connect
 
 
 T = t.TypeVar("T", bound=HasImage)
@@ -234,15 +234,13 @@ def main() -> None:
     # pylint: disable=import-outside-toplevel
     from md5_annot import MD5Annot
 
-    import sqlite3
-
     to_iter: t.List[t.Tuple[str, t.Type[HasImage]]] = [
         ("output-exif.jsonl", ImageExif),
         ("output-geo.jsonl", GeoAddress),
         ("output-image-to-text.jsonl", ImageClassification),
         ("output-md5.jsonl", MD5Annot),
     ]
-    conn = sqlite3.connect("output.db", timeout=120)
+    conn = connect("output.db")
     conn.execute("PRAGMA synchronous=OFF;")
     for path, type_ in to_iter:
         sql = SQLiteCache(FeaturesTable(conn), type_)

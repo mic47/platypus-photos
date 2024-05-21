@@ -33,6 +33,13 @@ from db.types import (
 # 6. Cleanup after removal
 
 
+def connect(path: str, timeout: int = 120) -> sqlite3.Connection:
+    conn = sqlite3.connect(path, timeout=timeout)
+    conn.execute("PRAGMA journal_mode=WAL;")
+    conn.execute("PRAGMA synchronous=NORMAL;")
+    return conn
+
+
 class WrongAggregateTypeReturned(Exception):
     def __init__(self, type_: str) -> None:
         super().__init__(f"Wrong aggregate type returned: {type_}")
@@ -51,7 +58,7 @@ class FeaturesTable:
             path,
             str,
         ):
-            self._con = sqlite3.connect(path, timeout=120)
+            self._con = connect(path)
         else:
             self._con = path
         self._init_db()
@@ -192,7 +199,7 @@ class GalleryIndexTable:
             path,
             str,
         ):
-            self._con = sqlite3.connect(path, timeout=120)
+            self._con = connect(path)
         else:
             self._con = path
         self._init_db()
