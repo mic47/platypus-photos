@@ -1,6 +1,7 @@
-from cache import HasImage, Cache
-import hashlib
 from dataclasses import dataclass
+import hashlib
+
+from cache import HasImage, Cache
 
 VERSION = 0
 

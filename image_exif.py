@@ -1,7 +1,8 @@
-import exif
-import typing as t
-import sys
 from datetime import datetime, timedelta
+import sys
+import typing as t
+
+import exif
 
 from data_model.features import ImageExif, Date, Camera, GPSCoord
 from cache import Cache

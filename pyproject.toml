@@ -10,9 +10,7 @@ max-line-length=110
 [tool.pylint."MESSAGES CONTROL"]
 
 disable = '''
-  wrong-import-order,
   bare-except,
-  cyclic-import,
   broad-exception-caught,
   broad-exception-raised,
 

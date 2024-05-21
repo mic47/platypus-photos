@@ -89,6 +89,7 @@ def verify_filter(pattern: re.Pattern[str]) -> re.Pattern[str]:
     assert pattern.groupindex.get("day") is not None, f"Missing `day` in date patter in {pattern.pattern}"
     return pattern
 
+
 def main() -> None:
     config = Config.load("config.yaml")
     ex = PathDateExtractor(config.directory_matching)
@@ -116,6 +117,7 @@ def main() -> None:
         f"with_date {100*with_date/total:5.2f}% without_date {100*without_date/total:5.2f} unclassifiable {100*unclassifiable/total:5.2f}"
     )
     print(f"{unclassifiable} out of {total} left")
+
 
 if __name__ == "__main__":
     main()

@@ -1,11 +1,11 @@
+import itertools
 import typing as t
 
 from PIL import Image
-import itertools
 from ultralytics import YOLO
 from transformers import pipeline
-from cache import Cache
 
+from cache import Cache
 from data_model.features import ImageClassification, BoxClassification, Classification, Box
 
 

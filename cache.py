@@ -191,11 +191,14 @@ class JsonlCache(t.Generic[T], Cache[T]):
         self._file.write("\n")
         self._file.flush()
 
+
 def main() -> None:
     # pylint: disable=import-outside-toplevel
     from data_model.features import ImageClassification
+
     # pylint: disable=import-outside-toplevel
     from data_model.features import ImageExif
+
     # pylint: disable=import-outside-toplevel
     from data_model.features import GeoAddress
 
@@ -212,6 +215,7 @@ def main() -> None:
             if data is None:
                 continue
             sql.add(data)
+
 
 if __name__ == "__main__":
     main()

@@ -1,9 +1,9 @@
-from dataclasses_json import DataClassJsonMixin
 from dataclasses import dataclass
 import json
+import typing as t
 import yaml
 
-import typing as t
+from dataclasses_json import DataClassJsonMixin
 
 
 @dataclass
