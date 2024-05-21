@@ -58,7 +58,7 @@ def main() -> None:
         geo = None
         if exif_item.gps is not None:
             geo = geolocator.address(
-                path, exif_item.gps.latitude, exif_item.gps.longitude, recompute=exif_item.changed()
+                path, exif_item.gps.latitude, exif_item.gps.longitude, recompute=False)
             )
         if skip_image_to_text:
             itt = None
