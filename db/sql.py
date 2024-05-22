@@ -341,6 +341,9 @@ WHERE
         if url.datefrom:
             clauses.append("timestamp >= ?")
             variables.append(maybe_datetime_to_timestamp(url.datefrom))
+        if url.directory:
+            clauses.append("file like ?")
+            variables.append(f"{url.directory}%")
         if url.dateto:
             clauses.append("timestamp <= ?")
             variables.append(

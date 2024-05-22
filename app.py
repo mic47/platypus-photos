@@ -80,6 +80,7 @@ async def read_item(
     paging: int = 100,
     datefrom: str = "",
     dateto: str = "",
+    dir: str = "",
     oi: t.Optional[int] = None,
 ) -> HTMLResponse:
     print(datefrom, dateto)
@@ -91,6 +92,7 @@ async def read_item(
         datetime.strptime(dateto, "%Y-%m-%d") if dateto else None,
         page,
         paging,
+        dir,
     )
     del tag
     del cls
@@ -99,6 +101,7 @@ async def read_item(
     del paging
     del datefrom
     del dateto
+    del dir
     images = []
     aggr = DB.get_aggregate_stats(url)
     if url.page * url.paging >= aggr.total:
@@ -121,6 +124,7 @@ async def read_item(
                 "hsh": hash(omg.path),
                 "filename": os.path.basename(omg.path),
                 "dir": os.path.dirname(omg.path),
+                "dir_url": url.to_url(directory=os.path.dirname(omg.path)),
                 "loc": loc,
                 "classifications": omg.classifications or "",
                 "tags": [
@@ -163,6 +167,7 @@ async def read_item(
                 "addr": url.addr,
                 "datefrom": maybe_datetime_to_date(url.datefrom) or "",
                 "dateto": maybe_datetime_to_date(url.dateto) or "",
+                "dir": url.directory,
             },
             "top": {
                 "tag": [(tg, s, url.to_url(add_tag=tg)) for tg, s in top_tags[:15]],

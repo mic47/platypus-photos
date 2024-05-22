@@ -14,6 +14,7 @@ class UrlParameters:
     dateto: t.Optional[datetime]
     page: int
     paging: int
+    directory: str
 
     def to_url(
         self,
@@ -26,6 +27,7 @@ class UrlParameters:
         page: t.Optional[int] = None,
         paging: t.Optional[int] = None,
         oi: t.Optional[int] = None,
+        directory: t.Optional[str] = None,
     ) -> str:
         tag = tag or self.tag
         if add_tag:
@@ -39,9 +41,21 @@ class UrlParameters:
         paging = paging or self.paging
         datefrom_ = maybe_datetime_to_date(datefrom or self.datefrom) or ""
         dateto_ = maybe_datetime_to_date(dateto or self.dateto) or ""
-        ret = f"?tag={tag}&cls={cls}&addr={addr}&datefrom={datefrom_}&dateto={dateto_}&page={page}&paging={paging}"
+        directory = directory or self.directory
+        parts: t.List[t.Tuple[str, t.Union[str, int]]] = [
+            ("tag", tag),
+            ("cls", cls),
+            ("addr", addr),
+            ("datefrom", datefrom_),
+            ("dateto", dateto_),
+            ("page", page),
+            ("paging", paging),
+            ("dir", directory),
+        ]
         if oi is not None:
-            ret = f"{ret}&oi={oi}"
+            parts.append(("oi=", oi))
+        parts_url = "&".join(f"{k}={v}" for k, v in parts if v is not None and v != "")
+        ret = f"?{parts_url}"
         return ret
 
     def prev_url(self, overlay: bool = False) -> t.Optional[str]:
