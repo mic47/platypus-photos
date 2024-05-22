@@ -1,5 +1,6 @@
 import typing as t
 import os
+import sys
 import asyncio
 from datetime import datetime
 
@@ -28,14 +29,25 @@ del config
 
 @app.on_event("startup")
 async def on_startup() -> None:
-    DB.load(show_progress=True)
+    try:
+        DB.load(show_progress=True)
+    # pylint: disable = broad-exception-caught
+    except Exception as e:
+        print("Error while trying to refresh data in db", e)
     asyncio.create_task(auto_load())
 
 
 async def auto_load() -> None:
+    sleep_time = 1
+    max_sleep_time = 64
     while True:
         try:
-            DB.load(show_progress=False)
+            done = DB.load(show_progress=False)
+            if done <= 0:
+                sleep_time = min(sleep_time * 2, max_sleep_time)
+            else:
+                print(f"Reindexed {done} images.", file=sys.stderr)
+                sleep_time = 1
         # pylint: disable = broad-exception-caught
         except Exception as e:
             print("Error while trying to refresh data in db", e)

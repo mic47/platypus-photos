@@ -18,7 +18,7 @@ T = t.TypeVar("T")
 
 class OmgDB(ABC):
     @abstractmethod
-    def load(self, show_progress: bool) -> None:
+    def load(self, show_progress: bool) -> int:
         pass
 
     @abstractmethod
@@ -57,7 +57,8 @@ class ImageSqlDB(OmgDB):
             self._hash_to_image[hash(omg.path)] = omg.path
             yield omg
 
-    def load(self, show_progress: bool) -> None:
+    def load(self, show_progress: bool) -> int:
+        reindexed = 0
         for file, _last_update in tqdm(
             self._features_table.dirty_files(
                 [ImageExif.__name__, GeoAddress.__name__, ImageClassification.__name__]
@@ -66,12 +67,15 @@ class ImageSqlDB(OmgDB):
             disable=not show_progress,
         ):
             self._reindex(file)
+            reindexed += 1
         for file in tqdm(
             self._gallery_index.old_version_files(),
             desc="reindexing old versions",
             disable=not show_progress,
         ):
             self._reindex(file)
+            reindexed += 1
+        return reindexed
 
     def _reindex(self, path: str) -> None:
         max_last_update = 0.0

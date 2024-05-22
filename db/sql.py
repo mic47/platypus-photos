@@ -119,7 +119,7 @@ CREATE INDEX IF NOT EXISTS features_idx_last_update ON features (last_update);
     def dirty_files(
         self,
         types: t.List[str],
-        limit: int=1000,
+        limit: int = 1000,
     ) -> t.Iterable[t.Tuple[str, int,]]:
         if types:
             q = ", ".join(f"'{qt}'" for qt in types)
