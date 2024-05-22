@@ -1,4 +1,3 @@
-import os
 import sys
 import typing as t
 import json
@@ -158,67 +157,6 @@ class SQLiteCache(t.Generic[T], Cache[T]):
         self._jsonl.append(d)
         # NOTE: local cache is just for fetching
         return data
-
-
-class JsonlCache(t.Generic[T], Cache[T]):
-    def __init__(self, path: str, loader: t.Type[T], old_paths: t.Optional[t.List[str]] = None):
-        if old_paths is None:
-            old_paths = []
-        self._data = {}
-        self._current_version = loader.current_version()
-
-        read_path = None
-        if not os.path.exists(path):
-            for p in old_paths:
-                if os.path.exists(p):
-                    read_path = p
-                    break
-        else:
-            read_path = path
-        if read_path is not None:
-            with open(read_path, "r", encoding="utf-8") as f:
-                for line in tqdm(f, desc=f"LOADING: {read_path}"):
-                    j = json.loads(line)
-                    # Defaulting all versions to 0
-                    if "version" not in j:
-                        j["version"] = DEFAULT_VERSION
-                    cimg = loader.from_dict(j)
-                    if cimg.version == self._current_version:
-                        cimg._set_from_cache()
-                        self._data[cimg.image] = cimg
-        # pylint: disable=consider-using-with
-        self._file = open(path, "a", encoding="utf-8")
-        if path != read_path:
-            for d in self._data.values():
-                self._do_write(d)
-
-    def __del__(self) -> None:
-        self._file.close()
-
-    def get(self, key: str) -> t.Optional[T]:
-        return self._data.get(key)
-
-    def add(self, data: T) -> T:
-        if data.version != self._current_version:
-            print(
-                "Trying to add wrong version of feature",
-                data.version,
-                self._current_version,
-                data,
-                file=sys.stderr,
-            )
-            return data
-        self._data[data.image] = data
-        self._do_write(data)
-        return data
-
-    def keys(self) -> t.Iterable[str]:
-        yield from self._data.keys()
-
-    def _do_write(self, data: T) -> None:
-        self._file.write(data.to_json(ensure_ascii=False))
-        self._file.write("\n")
-        self._file.flush()
 
 
 def main() -> None:
