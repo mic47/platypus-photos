@@ -119,15 +119,16 @@ CREATE INDEX IF NOT EXISTS features_idx_last_update ON features (last_update);
     def dirty_files(
         self,
         types: t.List[str],
+        limit: int=1000,
     ) -> t.Iterable[t.Tuple[str, int,]]:
         if types:
             q = ", ".join(f"'{qt}'" for qt in types)
             res = self._con.execute(
-                f"SELECT file, MAX(last_update) FROM features WHERE dirty > 0 AND type in ({q}) GROUP BY file"
+                f"SELECT file, MAX(last_update) FROM features WHERE dirty > 0 AND type in ({q}) GROUP BY file LIMIT {limit}"
             )
         else:
             res = self._con.execute(
-                "SELECT file, MAX(last_update) FROM features WHERE dirty > 0 GROUP BY file"
+                "SELECT file, MAX(last_update) FROM features WHERE dirty > 0 GROUP BY file LIMIT {limit}"
             )
         while True:
             items = res.fetchmany()
@@ -301,9 +302,10 @@ WHERE
 
     def old_version_files(
         self,
+        limit: int = 1000,
     ) -> t.Iterable[str]:
         res = self._con.execute(
-            "SELECT file FROM gallery_index WHERE version < ? GROUP BY file",
+            f"SELECT file FROM gallery_index WHERE version < ? GROUP BY file LIMIT {limit}",
             (Image.current_version(),),
         )
         while True:
