@@ -12,6 +12,7 @@ body {
 .gallery_item {
   float: left;
   width: 15em;
+  height: 25em;
   background-color: #0000BB33;
   margin: 0.5em;
   border: 1px solid #fff;
@@ -22,12 +23,16 @@ div.gallery_item:hover {
 }
 .gallery_container {
   display: flex;
+  width: 15em;
+  height: 15em;
   justify-content: center;
 
 }
 .overlay .gallery_container {
   display: flex;
   justify-content: center;
+  width: initial;
+  height: initial;
   max-height: 90%;
 
 }
@@ -38,6 +43,7 @@ div.gallery_item:hover {
   display: block;
 }
 .gallery_image {
+  object-fit: contain;
   max-width: 15em;
   max-height: 15em;
 }
