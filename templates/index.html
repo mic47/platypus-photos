@@ -91,7 +91,15 @@ div.gallery_item:hover {
   color: black;
   text-decoration: none;
 }
+#map { height: 180px; }
 </style>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+  crossorigin=""/>
+ <!-- Make sure you put this AFTER Leaflet's CSS -->
+ <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+   integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+   crossorigin=""></script>
 <script>
 function changeState(index) {
   var url = new URL(window.location.href);
@@ -122,10 +130,23 @@ function overlay_next(element, index) {
   element.parentElement.parentElement.classList.remove('overlay');
   changeState(index + 1);
 }
+function init_fun() {
+  var map = L.map('map').setView([51.505, -0.09], 13);
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+  }).addTo(map);
+  {% if bounds %}
+  map.fitBounds([
+    [{{bounds.lat[0]}}, {{bounds.lon[0]}}],
+    [{{bounds.lat[1]}}, {{bounds.lon[1]}}],
+  ]);
+  {% endif %}
+}
 </script>
 
 </head>
-<body>
+<body onload="init_fun()">
 
 <div>
   <form>
@@ -152,6 +173,7 @@ function overlay_next(element, index) {
   {% for t in top.addr %}
     <a href="{{t[2]}}">{{t[0]}} ({{t[1]}})</a>
   {% endfor %} <br/>
+  <div id="map"></div>
   {% if urls.prev %}<a href="{{urls.prev}}">{% endif %}Prev Page{% if urls.prev %}</a>{% endif %}
   {% if urls.next %}<a href="{{urls.next}}">{% endif %}Next Page{% if urls.next %}</a>{% endif %}
 </div>

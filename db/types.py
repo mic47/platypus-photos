@@ -23,6 +23,9 @@ class ImageAggregation:
     address: t.Dict[str, int]
     tag: t.Dict[str, int]
     classification: t.Dict[str, int]
+    latitude: t.Optional[t.Tuple[float, float]]
+    longitude: t.Optional[t.Tuple[float, float]]
+    altitude: t.Optional[t.Tuple[float, float]]
 
 
 @dataclass
@@ -35,6 +38,14 @@ class Image:
     address_name: t.Optional[str]
     address_full: t.Optional[str]
     dependent_features_last_update: float
+    latitude: t.Optional[float]
+    longitude: t.Optional[float]
+    altitude: t.Optional[float]
+    version: int
+
+    @staticmethod
+    def current_version() -> int:
+        return 1
 
     @staticmethod
     def from_updates(
@@ -64,6 +75,14 @@ class Image:
             [] if text_classification is None else text_classification.captions
         ).lower()
 
+        latitude = None
+        longitude = None
+        altitude = None
+        if exif is not None and exif.gps is not None:
+            latitude = exif.gps.latitude
+            longitude = exif.gps.longitude
+            altitude = exif.gps.altitude
+
         address_country = None
         address_name = None
         address_full = None
@@ -73,7 +92,18 @@ class Image:
             address_full = ", ".join(x for x in [address_name, address_country] if x)
 
         return Image(
-            path, date, tags, classifications, address_country, address_name, address_full, max_last_update
+            path,
+            date,
+            tags,
+            classifications,
+            address_country,
+            address_name,
+            address_full,
+            max_last_update,
+            latitude,
+            longitude,
+            altitude,
+            Image.current_version(),
         )
 
     def match_url(self, url: UrlParameters) -> bool:

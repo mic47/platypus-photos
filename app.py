@@ -90,6 +90,12 @@ async def read_item(
     aggr = DB.get_aggregate_stats(url)
     if url.page * url.paging >= aggr.total:
         url.page = aggr.total // url.paging
+    bounds = None
+    if aggr.latitude is not None and aggr.longitude is not None:
+        bounds = {
+            "lat": aggr.latitude,
+            "lon": aggr.longitude,
+        }
 
     for omg in DB.get_matching_images(url):
 
@@ -123,6 +129,7 @@ async def read_item(
         name="index.html",
         context={
             "oi": oi,
+            "bounds": bounds,
             "images": images,
             "total": aggr.total,
             "urls": {

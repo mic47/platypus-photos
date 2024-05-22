@@ -66,6 +66,12 @@ class ImageSqlDB(OmgDB):
             disable=not show_progress,
         ):
             self._reindex(file)
+        for file in tqdm(
+            self._gallery_index.old_version_files(),
+            desc="reindexing old versions",
+            disable=not show_progress,
+        ):
+            self._reindex(file)
 
     def _reindex(self, path: str) -> None:
         max_last_update = 0.0

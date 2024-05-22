@@ -7,6 +7,7 @@ from datetime import (
     datetime,
     timedelta,
 )
+import traceback
 
 # TODO move to proper place
 from gallery.utils import (
@@ -223,6 +224,22 @@ CREATE TABLE IF NOT EXISTS gallery_index (
   PRIMARY KEY (file)
 ) STRICT;"""
         )
+        try:
+            self._con.execute("ALTER TABLE gallery_index ADD COLUMN latitude REAL;")
+        except sqlite3.OperationalError:
+            traceback.print_exc()
+        try:
+            self._con.execute("ALTER TABLE gallery_index ADD COLUMN longitude REAL;")
+        except sqlite3.OperationalError:
+            traceback.print_exc()
+        try:
+            self._con.execute("ALTER TABLE gallery_index ADD COLUMN altitude REAL;")
+        except sqlite3.OperationalError:
+            traceback.print_exc()
+        try:
+            self._con.execute("ALTER TABLE gallery_index ADD COLUMN version INTEGER NOT NULL DEFAULT 0;")
+        except sqlite3.OperationalError:
+            traceback.print_exc()
         for columns in [
             ["file"],
             ["feature_last_update"],
@@ -230,6 +247,10 @@ CREATE TABLE IF NOT EXISTS gallery_index (
             ["tags"],
             ["classifications"],
             ["address_full"],
+            ["latitude"],
+            ["longitude"],
+            ["altitude"],
+            ["version"],
         ]:
             name = f"gallery_index_idx_{'_'.join(columns)}"
             cols_str = ", ".join(columns)
@@ -242,7 +263,7 @@ CREATE TABLE IF NOT EXISTS gallery_index (
         tags = sorted(list((omg.tags or {}).items()))
         self._con.execute(
             """
-INSERT INTO gallery_index VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+INSERT INTO gallery_index VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT(file) DO UPDATE SET
   feature_last_update=excluded.feature_last_update,
   timestamp=excluded.timestamp,
@@ -251,8 +272,15 @@ ON CONFLICT(file) DO UPDATE SET
   classifications=excluded.classifications,
   address_country=excluded.address_country,
   address_name=excluded.address_name,
-  address_full=excluded.address_full
-WHERE excluded.feature_last_update > gallery_index.feature_last_update""",
+  address_full=excluded.address_full,
+  latitude=excluded.latitude,
+  longitude=excluded.longitude,
+  altitude=excluded.altitude,
+  version=excluded.version
+WHERE
+  excluded.feature_last_update > gallery_index.feature_last_update
+  OR excluded.version > gallery_index.version
+""",
             (
                 omg.path,
                 omg.dependent_features_last_update,
@@ -263,9 +291,26 @@ WHERE excluded.feature_last_update > gallery_index.feature_last_update""",
                 omg.address_country,
                 omg.address_name,
                 omg.address_full,
+                omg.latitude,
+                omg.longitude,
+                omg.altitude,
+                omg.version,
             ),
         )
         self._con.commit()
+
+    def old_version_files(
+        self,
+    ) -> t.Iterable[str]:
+        res = self._con.execute(
+            "SELECT file FROM gallery_index WHERE version < ? GROUP BY file",
+            (Image.current_version(),),
+        )
+        while True:
+            items = res.fetchmany()
+            if not items:
+                return
+            yield from (item for (item,) in items)
 
     def _matching_query(
         self,
@@ -319,7 +364,7 @@ WHERE excluded.feature_last_update > gallery_index.feature_last_update""",
     ) -> ImageAggregation:
         # do aggregate query
         (select, variables,) = self._matching_query(
-            "tags, classifications, address_name, address_country",
+            "tags, classifications, address_name, address_country, latitude, longitude, altitude",
             url,
         )
         query = f"""
@@ -333,6 +378,18 @@ UNION ALL
 SELECT "addrn", address_name, COUNT(1) FROM matched_images WHERE address_name IS NOT NULL GROUP BY address_name
 UNION ALL
 SELECT "addrc", address_country, COUNT(1) FROM matched_images WHERE address_country IS NOT NULL GROUP BY address_country
+UNION ALL
+SELECT "lat", 'max', MAX(latitude) FROM matched_images WHERE latitude IS NOT NULL
+UNION ALL
+SELECT "lat", 'min', MIN(latitude) FROM matched_images WHERE latitude IS NOT NULL
+UNION ALL
+SELECT "lon", 'max', MAX(longitude) FROM matched_images WHERE longitude IS NOT NULL
+UNION ALL
+SELECT "lon", 'min', MIN(longitude) FROM matched_images WHERE longitude IS NOT NULL
+UNION ALL
+SELECT "alt", 'max', MAX(altitude) FROM matched_images WHERE altitude IS NOT NULL
+UNION ALL
+SELECT "alt", 'min', MIN(altitude) FROM matched_images WHERE altitude IS NOT NULL
         """
         tag_cnt: t.Counter[str] = Counter()
         classifications_cnt: t.Counter[str] = Counter()
@@ -342,6 +399,7 @@ SELECT "addrc", address_country, COUNT(1) FROM matched_images WHERE address_coun
             query,
             variables,
         )
+        position: t.Dict[str, t.Tuple[float, float]] = {}
         while True:
             items = res.fetchmany(size=url.paging or 100)
             if not items:
@@ -350,6 +408,9 @@ SELECT "addrc", address_country, COUNT(1) FROM matched_images WHERE address_coun
                     address_cnt,
                     tag_cnt,
                     classifications_cnt,
+                    position.get("lat"),
+                    position.get("lon"),
+                    position.get("alt"),
                 )
             for (
                 type_,
@@ -373,6 +434,23 @@ SELECT "addrc", address_country, COUNT(1) FROM matched_images WHERE address_coun
                     "addrc",
                 ]:
                     address_cnt[value] += count
+                elif type_ in [
+                    "lat",
+                    "lon",
+                    "alt",
+                ]:
+                    if count is None:
+                        continue
+                    if type_ not in position:
+                        position[type_] = (count, count)
+                    else:
+                        x = position[type_]
+                        if value == "min":
+                            position[type_] = (count, x[1])
+                        elif value == "max":
+                            position[type_] = (x[0], count)
+                        else:
+                            raise WrongAggregateTypeReturned(f"{type_}:{value}")
                 else:
                     raise WrongAggregateTypeReturned(type_)
 
@@ -382,7 +460,7 @@ SELECT "addrc", address_country, COUNT(1) FROM matched_images WHERE address_coun
     ) -> t.Iterable[Image]:
         # TODO: aggregations could be done separately
         (query, variables,) = self._matching_query(
-            "file, timestamp, tags, tags_probs, classifications, address_country, address_name, address_full, feature_last_update",
+            "file, timestamp, tags, tags_probs, classifications, address_country, address_name, address_full, feature_last_update, latitude, longitude, altitude, version",
             url,
         )
         if url.paging:
@@ -405,6 +483,10 @@ SELECT "addrc", address_country, COUNT(1) FROM matched_images WHERE address_coun
                 address_name,
                 address_full,
                 feature_last_update,
+                latitude,
+                longitude,
+                altitude,
+                version,
             ) in items:
                 yield Image(
                     file,
@@ -425,4 +507,8 @@ SELECT "addrc", address_country, COUNT(1) FROM matched_images WHERE address_coun
                     address_name,
                     address_full,
                     feature_last_update,
+                    latitude,
+                    longitude,
+                    altitude,
+                    version,
                 )
