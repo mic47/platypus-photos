@@ -3,6 +3,7 @@ __pycache__/
 data/
 output-*.jsonl
 output*.db
+output*.db-*
 test.db
 config.yaml
 config.json
