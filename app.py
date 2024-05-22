@@ -51,7 +51,8 @@ async def auto_load() -> None:
         # pylint: disable = broad-exception-caught
         except Exception as e:
             print("Error while trying to refresh data in db", e)
-        await asyncio.sleep(1)
+            sleep_time = min(sleep_time * 2, max_sleep_time)
+        await asyncio.sleep(sleep_time)
 
 
 @app.get(
