@@ -113,9 +113,15 @@ async def read_item(
     for omg in DB.get_matching_images(url):
 
         max_tag = min(1, max((omg.tags or {}).values(), default=1.0))
+        loc = None
+        if omg.latitude is not None and omg.longitude is not None:
+            loc = {"lat": omg.latitude, "lon": omg.longitude}
         images.append(
             {
                 "hsh": hash(omg.path),
+                "filename": os.path.basename(omg.path),
+                "dir": os.path.dirname(omg.path),
+                "loc": loc,
                 "classifications": omg.classifications or "",
                 "tags": [
                     (tg, classify_tag(x / max_tag), url.to_url(add_tag=tg))

@@ -9,6 +9,10 @@ Gallery
 body {
   font-family: monospace;
 }
+.popup {
+  max-width: 5em;
+  max-height: 5em;
+}
 .gallery_item {
   float: left;
   width: 15em;
@@ -81,6 +85,12 @@ div.gallery_item:hover {
   color: black;
   text-decoration: none;
 }
+.dir {
+  background-color: #00BBBB33;
+  border-radius: 1em;
+  padding: 0.1em;
+  margin: 0.2em;
+}
 .date{
   background-color: #BBBB0033;
   border-radius: 1em;
@@ -142,6 +152,14 @@ function init_fun() {
     [{{bounds.lat[1]}}, {{bounds.lon[1]}}],
   ]);
   {% endif %}
+  {% for image in images %}
+    {% if image.loc %}
+  var marker = L.marker([{{image.loc.lat}}, {{image.loc.lon}}]).addTo(map);
+    {% if image.classifications %}
+  marker.bindPopup("{{image.classifications}}<br/><img src='/img?hsh={{image.hsh}}' class='popup'>")
+    {% endif %}
+    {% endif %}
+  {% endfor %}
 }
 </script>
 
@@ -212,6 +230,7 @@ function init_fun() {
     {% if image.date.date %}
     <span class="date"><a href="{{image.date.url}}">{{image.date.date}}</a></span>
     {% endif %}
+    <span class="dir"><a href="{{image.dir_url}}">{{image.dir}}</a></span>
   </div>
 {% endfor %}
 </div>
