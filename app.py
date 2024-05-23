@@ -42,7 +42,7 @@ async def auto_load() -> None:
     max_sleep_time = 64
     while True:
         try:
-            done = DB.load(show_progress=False)
+            done = DB.load(show_progress=True)
             if done <= 0:
                 sleep_time = min(sleep_time * 2, max_sleep_time)
             else:
