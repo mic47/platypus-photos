@@ -152,14 +152,10 @@ function init_fun() {
     [{{bounds.lat[1]}}, {{bounds.lon[1]}}],
   ]);
   {% endif %}
-  {% for image in images %}
-    {% if image.loc %}
+  {% for image in images %}{% if image.loc %}
   var marker = L.marker([{{image.loc.lat}}, {{image.loc.lon}}]).addTo(map);
-    {% if image.classifications %}
-  marker.bindPopup("{{image.classifications}}<br/><img src='/img?hsh={{image.hsh}}' class='popup'>")
-    {% endif %}
-    {% endif %}
-  {% endfor %}
+  marker.bindPopup("{% if image.classifications %}{{image.classifications}}{% endif %}<br/><img src='/img?hsh={{image.hsh}}' class='popup'>")
+  {% endif %}{% endfor %}
 }
 </script>
 
