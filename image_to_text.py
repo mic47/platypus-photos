@@ -1,9 +1,16 @@
 import itertools
 import typing as t
+import io
+from dataclasses import dataclass
+import traceback
+import base64
 
 from PIL import Image
 from ultralytics import YOLO
 from transformers import pipeline
+import requests as rq
+from dataclasses_json import DataClassJsonMixin
+
 
 from cache import Cache
 from data_model.features import ImageClassification, BoxClassification, Classification, Box
@@ -23,13 +30,27 @@ def remove_consecutive_words(sentence: str) -> str:
     return " ".join(out)
 
 
+@dataclass
+class AnnotateRequest(DataClassJsonMixin):
+    path: str
+    data_base64: bytes
+    gap_threshold: float
+    discard_threshold: float
+
+
+def fetch_ann(url: str, request: AnnotateRequest) -> ImageClassification:
+    data = rq.post(url, json=request.to_dict(), timeout=(3, 60))
+    return ImageClassification.from_json(data.content)
+
+
 class Models:
-    def __init__(self, cache: Cache[ImageClassification]) -> None:
+    def __init__(self, cache: Cache[ImageClassification], remote: t.Optional[str]) -> None:
         self._cache = cache
         self.predict_model = YOLO("yolov8x.pt")
         self.classify_model = YOLO("yolov8x-cls.pt")
         self.captioner = pipeline("image-to-text", model="Salesforce/blip-image-captioning-base")
         self._version = ImageClassification.current_version()
+        self._remote = remote
 
     def process_image_batch(
         self: "Models",
@@ -41,21 +62,48 @@ class Models:
         for path in paths:
             x = self._cache.get(path)
             if x is None:
-                not_cached.append(path)
+                if self._remote is not None:
+                    try:
+                        with open(path, "rb") as f:
+                            data = base64.encodebytes(f.read())
+                        ret = fetch_ann(
+                            self._remote, AnnotateRequest(path, data, gap_threshold, discard_threshold)
+                        )
+                        self._cache.add(ret)
+                        yield ret
+                    except:
+                        traceback.print_exc()
+                        not_cached.append(path)
+                else:
+                    not_cached.append(path)
             else:
                 yield x
         if not_cached:
-            for p in self.process_image_batch_impl(not_cached, gap_threshold, discard_threshold):
+            for p in self.process_image_batch_impl(
+                ((x, None) for x in not_cached), gap_threshold, discard_threshold
+            ):
                 self._cache.add(p)
                 yield p
 
+    def process_image_data(
+        self,
+        request: AnnotateRequest,
+    ) -> ImageClassification:
+        return list(
+            self.process_image_batch_impl(
+                [(request.path, base64.decodebytes(request.data_base64))], request.gap_threshold, request.discard_threshold
+            )
+        )[0]
+
     def process_image_batch_impl(
         self: "Models",
-        paths: t.Iterable[str],
+        paths: t.Iterable[t.Tuple[str, t.Optional[bytes]]],
         gap_threshold: float,
         discard_threshold: float,
     ) -> t.Iterable[ImageClassification]:
-        images = [(path, Image.open(path)) for path in paths]
+        images = [
+            (path, Image.open(path) if data is None else Image.open(io.BytesIO(data))) for path, data in paths
+        ]
         captions = self.captioner([image for (_, image) in images])
         results = self.predict_model([img for (_, img) in images], verbose=False)
         boxes_to_classify = []

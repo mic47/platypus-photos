@@ -35,7 +35,7 @@ def main() -> None:
     models_cache = SQLiteCache(
         features, ImageClassification, "output-image-to-text.jsonl", enforce_version=True
     )
-    models = Models(models_cache)
+    models = Models(models_cache, sys.argv[1])
 
     exif_cache = SQLiteCache(features, ImageExif, "output-exif.jsonl", enforce_version=True)
     exif = Exif(exif_cache)
