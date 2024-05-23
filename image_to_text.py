@@ -39,7 +39,7 @@ class AnnotateRequest(DataClassJsonMixin):
 
 
 def fetch_ann(url: str, request: AnnotateRequest) -> ImageClassification:
-    data = rq.post(url, json=request.to_dict(), timeout=(3, 60))
+    data = rq.post(url, json=request.to_dict(), timeout=60)
     return ImageClassification.from_json(data.content)
 
 
