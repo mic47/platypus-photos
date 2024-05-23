@@ -400,6 +400,8 @@ SELECT "alt", 'max', MAX(altitude) FROM matched_images WHERE altitude IS NOT NUL
 UNION ALL
 SELECT "alt", 'min', MIN(altitude) FROM matched_images WHERE altitude IS NOT NULL
         """
+#UNION ALL
+#SELECT "pos", CONCAT(CAST(ROUND(latitude * 50) AS TEXT), ':' CAST(ROUND(longitude * 50) AS TEXT)) as value, AVG(latitude) FROM matched_images WHERE latitude IS NOT NULL GROUP BY value
         tag_cnt: t.Counter[str] = Counter()
         classifications_cnt: t.Counter[str] = Counter()
         address_cnt: t.Counter[str] = Counter()
@@ -420,6 +422,7 @@ SELECT "alt", 'min', MIN(altitude) FROM matched_images WHERE altitude IS NOT NUL
                     position.get("lat"),
                     position.get("lon"),
                     position.get("alt"),
+                    [],
                 )
             for (
                 type_,
