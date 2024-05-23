@@ -67,8 +67,10 @@ class ImageSqlDB(OmgDB):
     def load(self, show_progress: bool) -> int:
         reindexed = 0
         for file, _last_update in tqdm(
-            self._features_table.dirty_files(
-                [ImageExif.__name__, GeoAddress.__name__, ImageClassification.__name__]
+            list(
+                self._features_table.dirty_files(
+                    [ImageExif.__name__, GeoAddress.__name__, ImageClassification.__name__]
+                )
             ),
             desc="reindexing",
             disable=not show_progress,
@@ -76,7 +78,7 @@ class ImageSqlDB(OmgDB):
             self._reindex(file)
             reindexed += 1
         for file in tqdm(
-            self._gallery_index.old_version_files(),
+            list(self._gallery_index.old_version_files()),
             desc="reindexing old versions",
             disable=not show_progress,
         ):
