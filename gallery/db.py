@@ -51,7 +51,7 @@ class ImageSqlDB(OmgDB):
         self._hash_to_image: t.Dict[int, str] = {}
 
     def reconnect(self) -> None:
-        self.reconnect()
+        self._con.reconnect()
 
     def get_path_from_hash(self, hsh: int) -> str:
         return self._hash_to_image[hsh]
