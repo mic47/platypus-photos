@@ -9,6 +9,8 @@ from datetime import (
 )
 import traceback
 
+import types as ts
+
 # TODO move to proper place
 from gallery.utils import (
     maybe_datetime_to_timestamp,
@@ -34,11 +36,34 @@ from db.types import (
 # 6. Cleanup after removal
 
 
-def connect(path: str, timeout: int = 120) -> sqlite3.Connection:
-    conn = sqlite3.connect(path, timeout=timeout)
-    conn.execute("PRAGMA journal_mode=WAL;")
-    conn.execute("PRAGMA synchronous=NORMAL;")
-    return conn
+class Connection:
+    def __init__(self, path: str, timeout: int = 120) -> None:
+        self._path = path
+        self._timeout = timeout
+        self._connection = self._connect()
+
+    def reconnect(self) -> None:
+        self._connection.close()
+        self._connection = self._connect()
+
+    def _connect(self) -> sqlite3.Connection:
+        conn = sqlite3.connect(self._path, timeout=self._timeout)
+        conn.execute("PRAGMA journal_mode=WAL;")
+        conn.execute("PRAGMA synchronous=NORMAL;")
+        return conn
+
+    def execute(
+        self,
+        sql: str,
+        parameters: t.Optional[t.Sequence[t.Union[str, bytes, int, float | None]]] = None,
+    ) -> sqlite3.Cursor:
+        if parameters is None:
+            return self._connection.execute(sql)
+        else:
+            return self._connection.execute(sql, parameters)
+
+    def commit(self) -> None:
+        return self._connection.commit()
 
 
 class WrongAggregateTypeReturned(Exception):
@@ -50,18 +75,9 @@ class WrongAggregateTypeReturned(Exception):
 class FeaturesTable:
     def __init__(
         self,
-        path: t.Union[
-            str,
-            sqlite3.Connection,
-        ],
+        connection: Connection,
     ) -> None:
-        if isinstance(
-            path,
-            str,
-        ):
-            self._con = connect(path)
-        else:
-            self._con = path
+        self._con = connection
         self._init_db()
 
     def _init_db(
@@ -192,18 +208,9 @@ WHERE excluded.version > features.version""",
 class GalleryIndexTable:
     def __init__(
         self,
-        path: t.Union[
-            str,
-            sqlite3.Connection,
-        ],
+        connection: Connection,
     ) -> None:
-        if isinstance(
-            path,
-            str,
-        ):
-            self._con = connect(path)
-        else:
-            self._con = path
+        self._con = connection
         self._init_db()
 
     def _init_db(

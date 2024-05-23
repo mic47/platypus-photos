@@ -14,7 +14,7 @@ from geolocation import Geolocator, GeoAddress
 from cache import SQLiteCache
 from filename_to_date import PathDateExtractor
 from config import Config
-from db.sql import FeaturesTable
+from db.sql import FeaturesTable, Connection
 
 VERSION = 0
 
@@ -28,7 +28,7 @@ def walk_tree(path: str, extensions: t.Optional[t.List[str]] = None) -> t.Iterab
 
 def main() -> None:
     config = Config.load("config.yaml")
-    features = FeaturesTable("output.db")
+    features = FeaturesTable(Connection("output.db"))
 
     path_to_date = PathDateExtractor(config.directory_matching)
 

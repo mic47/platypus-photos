@@ -91,7 +91,9 @@ class Models:
     ) -> ImageClassification:
         return list(
             self.process_image_batch_impl(
-                [(request.path, base64.decodebytes(request.data_base64))], request.gap_threshold, request.discard_threshold
+                [(request.path, base64.decodebytes(request.data_base64))],
+                request.gap_threshold,
+                request.discard_threshold,
             )
         )[0]
 

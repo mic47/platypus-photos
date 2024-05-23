@@ -9,7 +9,7 @@ from geolocation import GeoAddress
 from filename_to_date import PathDateExtractor
 from cache import SQLiteCache
 
-from db.sql import FeaturesTable, GalleryIndexTable, connect
+from db.sql import FeaturesTable, GalleryIndexTable, Connection
 from db.types import ImageAggregation, Image
 from gallery.url import UrlParameters
 
@@ -19,11 +19,11 @@ T = t.TypeVar("T")
 class OmgDB(ABC):
     @abstractmethod
     def load(self, show_progress: bool) -> int:
-        pass
+        ...
 
     @abstractmethod
     def get_matching_images(self, url: UrlParameters) -> t.Iterable[Image]:
-        pass
+        ...
 
     @abstractmethod
     def get_aggregate_stats(self, url: UrlParameters) -> ImageAggregation:
@@ -31,20 +31,27 @@ class OmgDB(ABC):
 
     @abstractmethod
     def get_path_from_hash(self, hsh: int) -> str:
-        pass
+        ...
+
+    @abstractmethod
+    def reconnect(self) -> None:
+        ...
 
 
 class ImageSqlDB(OmgDB):
     def __init__(self, path_to_date: PathDateExtractor) -> None:
         # TODO: this should be a feature with loader
         self._path_to_date = path_to_date
-        self._con = connect("output.db")
+        self._con = Connection("output.db")
         self._features_table = FeaturesTable(self._con)
         self._exif = SQLiteCache(self._features_table, ImageExif)
         self._address = SQLiteCache(self._features_table, GeoAddress)
         self._text_classification = SQLiteCache(self._features_table, ImageClassification)
         self._gallery_index = GalleryIndexTable(self._con)
         self._hash_to_image: t.Dict[int, str] = {}
+
+    def reconnect(self) -> None:
+        self.reconnect()
 
     def get_path_from_hash(self, hsh: int) -> str:
         return self._hash_to_image[hsh]

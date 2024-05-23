@@ -4,7 +4,7 @@ import json
 from tqdm import tqdm
 
 from data_model.features import HasImage
-from db.sql import FeaturesTable, connect
+from db.sql import FeaturesTable, Connection
 
 
 T = t.TypeVar("T", bound=HasImage)
@@ -178,7 +178,7 @@ def main() -> None:
         ("output-image-to-text.jsonl", ImageClassification),
         ("output-md5.jsonl", MD5Annot),
     ]
-    conn = connect("output.db")
+    conn = Connection("output.db")
     conn.execute("PRAGMA synchronous=OFF;")
     for path, type_ in to_iter:
         sql = SQLiteCache(FeaturesTable(conn), type_)

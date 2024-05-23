@@ -22,5 +22,5 @@ def image_endpoint(image: AnnotateRequest) -> ImageClassification:
     now = datetime.datetime.now()
     ret = MODELS.process_image_data(image)
     after = datetime.datetime.now()
-    print(after-now)
+    print(after - now)
     return ret
