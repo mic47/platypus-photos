@@ -1,12 +1,13 @@
 aiohttp
+argparse
 asyncio
 dataclasses_json
 exif
 geopy
-transformers
-ultralytics
 tqdm
+transformers
 types-tqdm
+ultralytics
 
 # For browser
 

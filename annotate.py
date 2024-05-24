@@ -1,25 +1,26 @@
-import os
-import sys
-import glob
-import random
-import re
-import typing as t
 import asyncio
 import datetime
 from enum import Enum
+import glob
+import os
+import random
+import re
+import sys
 import traceback
+import typing as t
 
-from tqdm import tqdm
 import aiohttp
+import argparse
+from tqdm import tqdm
 
-from image_to_text import Models, ImageClassification
-from image_exif import Exif, ImageExif
-from md5_annot import MD5er, MD5Annot
-from geolocation import Geolocator, GeoAddress
 from cache import SQLiteCache
-from filename_to_date import PathDateExtractor
 from config import Config
 from db.sql import FeaturesTable, Connection
+from filename_to_date import PathDateExtractor
+from geolocation import Geolocator, GeoAddress
+from image_exif import Exif, ImageExif
+from image_to_text import Models, ImageClassification
+from md5_annot import MD5er, MD5Annot
 
 VERSION = 0
 
@@ -37,13 +38,19 @@ class JobType(Enum):
 
 
 class GlobalContext:
-    def __init__(self, config: Config, features: FeaturesTable, session: aiohttp.ClientSession) -> None:
+    def __init__(
+        self,
+        config: Config,
+        features: FeaturesTable,
+        session: aiohttp.ClientSession,
+        annotate_url: t.Optional[str],
+    ) -> None:
         self.path_to_date = PathDateExtractor(config.directory_matching)
 
         models_cache = SQLiteCache(
             features, ImageClassification, "output-image-to-text.jsonl", enforce_version=True
         )
-        self.models = Models(models_cache, sys.argv[1])
+        self.models = Models(models_cache, annotate_url)
         exif_cache = SQLiteCache(features, ImageExif, "output-exif.jsonl", enforce_version=True)
         self.exif = Exif(exif_cache)
         geolocator_cache = SQLiteCache(features, GeoAddress, "output-geo.jsonl", enforce_version=True)
@@ -113,21 +120,32 @@ async def worker(
             await asyncio.sleep(0)
 
 
+def get_paths(config: Config) -> t.List[str]:
+    paths = [
+        file
+        for pattern in tqdm(config.input_patterns, desc="Listing files")
+        for file in tqdm(glob.glob(re.sub("^~/", os.environ["HOME"] + "/", pattern)), desc=pattern)
+    ]
+    for directory in tqdm(config.input_directories, desc="Listing directories"):
+        paths.extend(walk_tree(re.sub("^~/", os.environ["HOME"] + "/", directory)))
+    return paths
+
+
 async def main() -> None:
-    config = Config.load("config.yaml")
-    features = FeaturesTable(Connection("output.db"))
+    parser = argparse.ArgumentParser(prog="Photo annotator")
+    parser.add_argument("--config", default="config.yaml", type=str)
+    parser.add_argument("--db", default="output.db", type=str)
+    parser.add_argument("--image-to-text-workers", default=3, type=int)
+    parser.add_argument("--annotate-url", default=None, type=str)
+    args = parser.parse_args()
+    config = Config.load(args.config)
+    features = FeaturesTable(Connection(args.db))
     async with aiohttp.ClientSession() as session:
-        context = GlobalContext(config, features, session)
+        context = GlobalContext(config, features, session, args.annotate_url)
         cheap_queue: asyncio.PriorityQueue[QueueItem[t.Tuple[str, JobType]]] = asyncio.PriorityQueue()
         image_to_text_queue: asyncio.PriorityQueue[QueueItem[t.Tuple[str, JobType]]] = asyncio.PriorityQueue()
 
-        paths = [
-            file
-            for pattern in tqdm(config.input_patterns, desc="Listing files")
-            for file in tqdm(glob.glob(re.sub("^~/", os.environ["HOME"] + "/", pattern)), desc=pattern)
-        ]
-        for directory in tqdm(config.input_directories, desc="Listing directories"):
-            paths.extend(walk_tree(re.sub("^~/", os.environ["HOME"] + "/", directory)))
+        paths = get_paths(config)
 
         tasks = []
         for i, path in enumerate(tqdm(paths, total=len(paths), desc="Creating Workers")):
@@ -137,7 +155,7 @@ async def main() -> None:
             context.progress[tp].reset(total=len(paths))
         for i in range(1):
             task = asyncio.create_task(worker(f"worker-cheap-{i}", context, cheap_queue))
-        for i in range(3):
+        for i in range(args.image_to_text_workers):
             task = asyncio.create_task(worker(f"worker-image-to-text-{i}", context, image_to_text_queue))
             tasks.append(task)
         try:
