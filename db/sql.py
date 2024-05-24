@@ -55,12 +55,11 @@ class Connection:
     def execute(
         self,
         sql: str,
-        parameters: t.Optional[t.Sequence[t.Union[str, bytes, int, float | None]]] = None,
+        parameters: t.Optional[t.Sequence[t.Union[str, bytes, int, float, None]]] = None,
     ) -> sqlite3.Cursor:
         if parameters is None:
             return self._connection.execute(sql)
-        else:
-            return self._connection.execute(sql, parameters)
+        return self._connection.execute(sql, parameters)
 
     def commit(self) -> None:
         return self._connection.commit()
