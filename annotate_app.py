@@ -1,10 +1,7 @@
-import typing as t
 import datetime
+import traceback
 
-from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse, FileResponse
-from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
+from fastapi import FastAPI
 
 from image_to_text import AnnotateRequest, Models, ImageClassification
 from cache import NoCache
@@ -20,7 +17,14 @@ app = FastAPI()
 )
 def image_endpoint(image: AnnotateRequest) -> ImageClassification:
     now = datetime.datetime.now()
-    ret = MODELS.process_image_data(image)
+    try:
+        ret = MODELS.process_image_data(image)
+    # pylint: disable = bare-except
+    except:
+        ret = ImageClassification(
+            image.path, ImageClassification.current_version(), [], [], traceback.format_exc()
+        )
+        traceback.print_exc()
     after = datetime.datetime.now()
     print(after - now)
     return ret

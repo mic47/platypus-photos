@@ -1,6 +1,6 @@
 import typing as t
 from datetime import datetime
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from dataclasses_json import DataClassJsonMixin
 
 
@@ -119,6 +119,7 @@ class ImageClassification(HasImage):
     version: int
     captions: t.List[str]
     boxes: t.List[BoxClassification]
+    exception: t.Optional[str] = field(default=None)
 
     def print(self) -> None:
         print(self.image)

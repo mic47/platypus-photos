@@ -2,6 +2,7 @@ import itertools
 import typing as t
 import io
 from dataclasses import dataclass
+import sys
 import traceback
 import base64
 
@@ -69,8 +70,15 @@ class Models:
                         ret = fetch_ann(
                             self._remote, AnnotateRequest(path, data, gap_threshold, discard_threshold)
                         )
+                        if ret.exception is not None:
+                            print(ret.exception, file=sys.stderr)
+                            print(
+                                "There was an exception in remote processing -- storing it anyways.",
+                                file=sys.stderr,
+                            )
                         self._cache.add(ret)
                         yield ret
+                    # pylint: disable = bare-except
                     except:
                         traceback.print_exc()
                         not_cached.append(path)

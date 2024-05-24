@@ -9,8 +9,6 @@ from datetime import (
 )
 import traceback
 
-import types as ts
-
 # TODO move to proper place
 from gallery.utils import (
     maybe_datetime_to_timestamp,
