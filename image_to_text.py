@@ -6,10 +6,10 @@ import sys
 import traceback
 import base64
 
+import aiohttp as aioh
 from PIL import Image
 from ultralytics import YOLO
 from transformers import pipeline
-import requests as rq
 from dataclasses_json import DataClassJsonMixin
 
 
@@ -34,14 +34,15 @@ def remove_consecutive_words(sentence: str) -> str:
 @dataclass
 class AnnotateRequest(DataClassJsonMixin):
     path: str
-    data_base64: bytes
+    data_base64: str
     gap_threshold: float
     discard_threshold: float
 
 
-def fetch_ann(url: str, request: AnnotateRequest) -> ImageClassification:
-    data = rq.post(url, json=request.to_dict(), timeout=60)
-    return ImageClassification.from_json(data.content)
+async def fetch_ann(session: aioh.ClientSession, url: str, request: AnnotateRequest) -> ImageClassification:
+    async with aioh.ClientSession() as session:
+        async with session.post(url, json=request.to_dict(), timeout=60) as data:
+            return ImageClassification.from_json(await data.text())
 
 
 class Models:
@@ -53,12 +54,14 @@ class Models:
         self._version = ImageClassification.current_version()
         self._remote = remote
 
-    def process_image_batch(
+    async def process_image_batch(
         self: "Models",
+        session: aioh.ClientSession,
         paths: t.Iterable[str],
         gap_threshold: float = 0.2,
         discard_threshold: float = 0.1,
-    ) -> t.Iterable[ImageClassification]:
+    ) -> t.List[ImageClassification]:
+        output = []
         not_cached = []
         for path in paths:
             x = self._cache.get(path)
@@ -67,8 +70,10 @@ class Models:
                     try:
                         with open(path, "rb") as f:
                             data = base64.encodebytes(f.read())
-                        ret = fetch_ann(
-                            self._remote, AnnotateRequest(path, data, gap_threshold, discard_threshold)
+                        ret = await fetch_ann(
+                            session,
+                            self._remote,
+                            AnnotateRequest(path, data.decode("utf-8"), gap_threshold, discard_threshold),
                         )
                         if ret.exception is not None:
                             print(ret.exception, file=sys.stderr)
@@ -77,7 +82,7 @@ class Models:
                                 file=sys.stderr,
                             )
                         self._cache.add(ret)
-                        yield ret
+                        output.append(ret)
                     # pylint: disable = bare-except
                     except:
                         traceback.print_exc()
@@ -85,13 +90,14 @@ class Models:
                 else:
                     not_cached.append(path)
             else:
-                yield x
+                output.append(x)
         if not_cached:
             for p in self.process_image_batch_impl(
                 ((x, None) for x in not_cached), gap_threshold, discard_threshold
             ):
                 self._cache.add(p)
-                yield p
+                output.append(p)
+        return output
 
     def process_image_data(
         self,
@@ -99,7 +105,7 @@ class Models:
     ) -> ImageClassification:
         return list(
             self.process_image_batch_impl(
-                [(request.path, base64.decodebytes(request.data_base64))],
+                [(request.path, base64.decodebytes(request.data_base64.encode("utf-8")))],
                 request.gap_threshold,
                 request.discard_threshold,
             )

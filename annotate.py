@@ -4,8 +4,13 @@ import glob
 import random
 import re
 import typing as t
+import asyncio
+import datetime
+from enum import Enum
+import traceback
 
 from tqdm import tqdm
+import aiohttp
 
 from image_to_text import Models, ImageClassification
 from image_exif import Exif, ImageExif
@@ -26,71 +31,122 @@ def walk_tree(path: str, extensions: t.Optional[t.List[str]] = None) -> t.Iterab
         yield from (f"{directory}/{file}" for file in files if file.split(".")[-1] in extensions)
 
 
-def main() -> None:
-    config = Config.load("config.yaml")
-    features = FeaturesTable(Connection("output.db"))
+class JobType(Enum):
+    CHEAP_FEATURES = 1
+    IMAGE_TO_TEXT = 2
 
-    path_to_date = PathDateExtractor(config.directory_matching)
 
-    models_cache = SQLiteCache(
-        features, ImageClassification, "output-image-to-text.jsonl", enforce_version=True
-    )
-    models = Models(models_cache, sys.argv[1])
+class GlobalContext:
+    def __init__(self, config: Config, features: FeaturesTable, session: aiohttp.ClientSession) -> None:
+        self.path_to_date = PathDateExtractor(config.directory_matching)
 
-    exif_cache = SQLiteCache(features, ImageExif, "output-exif.jsonl", enforce_version=True)
-    exif = Exif(exif_cache)
+        models_cache = SQLiteCache(
+            features, ImageClassification, "output-image-to-text.jsonl", enforce_version=True
+        )
+        self.models = Models(models_cache, sys.argv[1])
+        exif_cache = SQLiteCache(features, ImageExif, "output-exif.jsonl", enforce_version=True)
+        self.exif = Exif(exif_cache)
+        geolocator_cache = SQLiteCache(features, GeoAddress, "output-geo.jsonl", enforce_version=True)
+        self.geolocator = Geolocator(geolocator_cache)
+        md5_cache = SQLiteCache(features, MD5Annot, "output-md5.jsonl", enforce_version=True)
+        self.md5 = MD5er(md5_cache)
+        self.session = session
+        self.progress = {
+            tp: tqdm(desc=f"Ingest {tp.name}", position=position) for position, tp in enumerate(JobType)
+        }
 
-    geolocator_cache = SQLiteCache(features, GeoAddress, "output-geo.jsonl", enforce_version=True)
-    geolocator = Geolocator(geolocator_cache)
-
-    md5_cache = SQLiteCache(features, MD5Annot, "output-md5.jsonl", enforce_version=True)
-    md5 = MD5er(md5_cache)
-
-    paths = [
-        file
-        for pattern in tqdm(config.input_patterns, desc="Listing files")
-        for file in tqdm(glob.glob(re.sub("^~/", os.environ["HOME"] + "/", pattern)), desc=pattern)
-    ]
-    for directory in tqdm(config.input_directories, desc="Listing directories"):
-        paths.extend(walk_tree(re.sub("^~/", os.environ["HOME"] + "/", directory)))
-
-    def process_path(path: str, skip_image_to_text: bool) -> t.Any:
-        exif_item = exif.process_image(path)
+    def cheap_features(
+        self, path: str
+    ) -> t.Tuple[str, MD5Annot, ImageExif, t.Optional[GeoAddress], t.Optional[datetime.datetime]]:
+        exif_item = self.exif.process_image(path)
         geo = None
         if exif_item.gps is not None:
             # TODO: do recomputation based on the last_update
-            geo = geolocator.address(path, exif_item.gps.latitude, exif_item.gps.longitude, recompute=False)
-        if skip_image_to_text:
-            itt = None
-        else:
-            itt = list(models.process_image_batch([path]))[0]
-        md5hsh = md5.process(path)
-        path_date = path_to_date.extract_date(path)
-        return (path, md5hsh, exif_item, geo, itt, path_date)
+            geo = self.geolocator.address(
+                path, exif_item.gps.latitude, exif_item.gps.longitude, recompute=False
+            )
+        md5hsh = self.md5.process(path)
+        path_date = self.path_to_date.extract_date(path)
+        return (path, md5hsh, exif_item, geo, path_date)
 
-    try:
-        for path in tqdm(paths, total=len(paths), desc="Cheap features"):
-            try:
-                img = process_path(path, skip_image_to_text=True)
-            # pylint: disable = broad-exception-caught
-            except Exception as e:
-                print("Error while processing path", path, e, file=sys.stderr)
-        print(img)
-        # Shuffle paths, so expensive features are more uniform
-        random.shuffle(paths)
-        for path in tqdm(paths, total=len(paths), desc="Expensive features"):
-            try:
-                img = process_path(path, skip_image_to_text=False)
-            # pylint: disable = broad-exception-caught
-            except Exception as e:
-                print("Error while processing path", path, e, file=sys.stderr)
-        print(img)
-    finally:
-        del models_cache
-        del exif_cache
-        del geolocator_cache
-        del md5_cache
+    async def image_to_text(self, path: str) -> t.Tuple[str, ImageClassification]:
+        itt = (await self.models.process_image_batch(self.session, [path]))[0]
+        return (path, itt)
+
+
+T = t.TypeVar("T")
+
+
+class QueueItem(t.Generic[T]):
+    def __init__(self, priority: int, rank: float, payload: T) -> None:
+        self.priority = priority
+        self.rank = rank
+        self.payload = payload
+
+    def __lt__(self, other: object) -> bool:
+        if not isinstance(other, QueueItem):
+            raise NotImplementedError
+        return (self.priority, self.rank) < (other.priority, other.rank)
+
+
+async def worker(
+    name: str, context: GlobalContext, queue: asyncio.PriorityQueue[QueueItem[t.Tuple[str, JobType]]]
+) -> None:
+    while True:
+        # Get a "work item" out of the queue.
+        item = await queue.get()
+        path, type_ = item.payload
+        try:
+            if type_ == JobType.CHEAP_FEATURES:
+                context.cheap_features(path)
+            elif type_ == JobType.IMAGE_TO_TEXT:
+                await context.image_to_text(path)
+        # pylint: disable = broad-exception-caught
+        except Exception as e:
+            traceback.print_exc()
+            print("Error while processing path in ", name, path, e, file=sys.stderr)
+        finally:
+            # Notify the queue that the "work item" has been processed.
+            context.progress[type_].update(1)
+            queue.task_done()
+
+
+async def main() -> None:
+    config = Config.load("config.yaml")
+    features = FeaturesTable(Connection("output.db"))
+    async with aiohttp.ClientSession() as session:
+        context = GlobalContext(config, features, session)
+        cheap_queue: asyncio.PriorityQueue[QueueItem[t.Tuple[str, JobType]]] = asyncio.PriorityQueue()
+        image_to_text_queue: asyncio.PriorityQueue[QueueItem[t.Tuple[str, JobType]]] = asyncio.PriorityQueue()
+
+        paths = [
+            file
+            for pattern in tqdm(config.input_patterns, desc="Listing files")
+            for file in tqdm(glob.glob(re.sub("^~/", os.environ["HOME"] + "/", pattern)), desc=pattern)
+        ]
+        for directory in tqdm(config.input_directories, desc="Listing directories"):
+            paths.extend(walk_tree(re.sub("^~/", os.environ["HOME"] + "/", directory)))
+
+        tasks = []
+        for i, path in enumerate(tqdm(paths, total=len(paths), desc="Creating Workers")):
+            cheap_queue.put_nowait(QueueItem(47, i, (path, JobType.CHEAP_FEATURES)))
+            image_to_text_queue.put_nowait(QueueItem(47, random.random(), (path, JobType.IMAGE_TO_TEXT)))
+        for tp in [JobType.CHEAP_FEATURES, JobType.IMAGE_TO_TEXT]:
+            context.progress[tp].reset(total=len(paths))
+        for i in range(1):
+            task = asyncio.create_task(worker(f"worker-cheap-{i}", context, cheap_queue))
+        for i in range(3):
+            task = asyncio.create_task(worker(f"worker-image-to-text-{i}", context, image_to_text_queue))
+            tasks.append(task)
+        try:
+            await cheap_queue.join()
+            await image_to_text_queue.join()
+        finally:
+            for task in tasks:
+                task.cancel()
+            # Wait until all worker tasks are cancelled.
+            await asyncio.gather(*tasks, return_exceptions=True)
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
