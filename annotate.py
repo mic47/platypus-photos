@@ -109,6 +109,8 @@ async def worker(
             # Notify the queue that the "work item" has been processed.
             context.progress[type_].update(1)
             queue.task_done()
+            # So that we gave up place for other workers too
+            await asyncio.sleep(0)
 
 
 async def main() -> None:
