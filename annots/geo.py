@@ -7,7 +7,7 @@ from geopy.distance import distance
 from geopy.geocoders import Nominatim
 
 from data_model.features import GeoAddress, POI, NearestPOI
-from cache import Cache
+from db.cache import Cache
 
 
 RATE_LIMIT_SECONDS = 1

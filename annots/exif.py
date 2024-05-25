@@ -5,7 +5,7 @@ import typing as t
 import exif
 
 from data_model.features import ImageExif, Date, Camera, GPSCoord
-from cache import Cache
+from db.cache import Cache
 
 
 IGNORED_TAGS = [

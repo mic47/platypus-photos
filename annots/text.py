@@ -12,8 +12,8 @@ from transformers import pipeline
 from ultralytics import YOLO
 
 
-from cache import Cache
 from data_model.features import ImageClassification, BoxClassification, Classification, Box
+from db.cache import Cache
 
 
 def remove_consecutive_words(sentence: str) -> str:

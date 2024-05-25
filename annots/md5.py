@@ -1,7 +1,7 @@
 import hashlib
 
-from cache import Cache
 from data_model.features import MD5Annot
+from db.cache import Cache
 
 
 class MD5er:
