@@ -213,6 +213,8 @@ async def reingest_directories_worker(context: GlobalContext, config: Config, qu
                 continue
             queues.enqueue_path(context, path, DEFAULT_PRIORITY)
             total_for_reingest += 1
+            if total_for_reingest % 1000 == 0:
+                await asyncio.sleep(0)
             found_something = True
         if found_something:
             for p in context.default_progress.values():
