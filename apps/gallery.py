@@ -9,7 +9,7 @@ from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from config import Config
+from data_model.config import Config
 from annots.date import PathDateExtractor
 
 from gallery.db import OmgDB, ImageSqlDB

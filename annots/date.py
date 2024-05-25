@@ -4,7 +4,7 @@ from datetime import datetime, date
 import os
 import re
 
-from config import Config, DirectoryMatchingConfig
+from data_model.config import Config, DirectoryMatchingConfig
 
 # glob.glob(re.sub("^~/", os.environ["HOME"] + "/", '~/Camera/Camera/*jpg'))
 

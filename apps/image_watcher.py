@@ -13,7 +13,7 @@ import typing as t
 import aiohttp
 from tqdm import tqdm
 
-from config import Config
+from data_model.config import Config
 from db.cache import SQLiteCache
 from db.sql import FeaturesTable, Connection
 from annots.date import PathDateExtractor
