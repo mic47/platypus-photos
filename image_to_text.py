@@ -75,12 +75,6 @@ class Models:
                             self._remote,
                             AnnotateRequest(path, data.decode("utf-8"), gap_threshold, discard_threshold),
                         )
-                        if ret.exception is not None:
-                            print(ret.exception, file=sys.stderr)
-                            print(
-                                "There was an exception in remote processing -- storing it anyways.",
-                                file=sys.stderr,
-                            )
                         self._cache.add(ret)
                         output.append(ret)
                     # pylint: disable = bare-except
