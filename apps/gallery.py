@@ -32,11 +32,6 @@ del config
 
 @app.on_event("startup")
 async def on_startup() -> None:
-    try:
-        DB.load(show_progress=True)
-    # pylint: disable = broad-exception-caught
-    except Exception as e:
-        print("Error while trying to refresh data in db", e)
     asyncio.create_task(auto_load())
 
 
