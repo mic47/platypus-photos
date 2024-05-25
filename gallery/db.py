@@ -34,7 +34,8 @@ class OmgDB(ABC):
         url: UrlParameters,
         top_left: LocPoint,
         bottom_right: LocPoint,
-        resolution: int,
+        latitude_resolution: float,
+        longitude_resolution: float,
     ) -> t.List[LocationCluster]:
         ...
 
@@ -73,9 +74,12 @@ class ImageSqlDB(OmgDB):
         url: UrlParameters,
         top_left: LocPoint,
         bottom_right: LocPoint,
-        resolution: int,
+        latitude_resolution: float,
+        longitude_resolution: float,
     ) -> t.List[LocationCluster]:
-        ret = self._gallery_index.get_image_clusters(url, top_left, bottom_right, resolution)
+        ret = self._gallery_index.get_image_clusters(
+            url, top_left, bottom_right, latitude_resolution, longitude_resolution
+        )
         for c in ret:
             self._hash_to_image[c.example_path_hash] = c.example_path
         return ret

@@ -373,12 +373,13 @@ WHERE
         url: UrlParameters,
         top_left: LocPoint,
         bottom_right: LocPoint,
-        resolution: int,
+        latitude_resolution: float,
+        longitude_resolution: float,
     ) -> t.List[LocationCluster]:
         lats = [top_left.latitude, bottom_right.latitude]
         longs = [top_left.longitude, bottom_right.longitude]
-        lat_scale = (max(lats) - min(lats)) / resolution
-        lon_scale = (max(longs) - min(longs)) / resolution
+        lat_scale = (max(lats) - min(lats)) / latitude_resolution
+        lon_scale = (max(longs) - min(longs)) / longitude_resolution
         print(lat_scale, lon_scale, top_left, bottom_right)
         select_items, variables = self._matching_query(
             f"""

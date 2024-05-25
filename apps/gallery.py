@@ -81,13 +81,16 @@ class LocClusterParams:
     tl: LocPoint
     br: LocPoint
     url: UrlParameters
+    res: LocPoint
 
 
 @app.post("/api/location_clusters")
 def location_clusters_endpoint(params: LocClusterParams) -> t.List[LocationCluster]:
     # TODO: we want to take this from parameters?
     print(params)
-    clusters = DB.get_image_clusters(params.url, params.tl, params.br, 50)
+    clusters = DB.get_image_clusters(
+        params.url, params.tl, params.br, params.res.latitude, params.res.longitude
+    )
     return clusters
 
 

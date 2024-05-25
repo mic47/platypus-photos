@@ -142,9 +142,13 @@ function overlay_next(element, index) {
 }
 function update_markers(map, existing_markers) {
     function inner(e) {
+        // TODO: wrapped maps
+        // TODO: iamges are not working
         var bounds = map.getBounds();
         var nw = bounds.getNorthWest();
         var se = bounds.getSouthEast();
+        var sz = map.getSize();
+        var cluster_pixel_size = 10;
         fetch("/api/location_clusters", {
           method: "POST",
           body: JSON.stringify({
@@ -155,6 +159,10 @@ function update_markers(map, existing_markers) {
             "br": {
               "latitude": se.lat,
               "longitude": se.lng,
+            },
+            "res": {
+              "latitude": sz.y / cluster_pixel_size,
+              "longitude": sz.x / cluster_pixel_size,
             },
             url: {{location_url_json | safe}},
           }),
