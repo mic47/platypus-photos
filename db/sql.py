@@ -385,8 +385,8 @@ WHERE
             f"""
             address_name, address_country, latitude, longitude,
             file, classifications,
-            round(latitude*{lat_scale})/{lat_scale} as cluster_lat,
-            round(longitude*{lon_scale})/{lon_scale} as cluster_lon
+            round(latitude/{lat_scale})*{lat_scale} as cluster_lat,
+            round(longitude/{lon_scale})*{lon_scale} as cluster_lon
         """,
             url,
             [
