@@ -1,7 +1,7 @@
 import argparse
 import asyncio
 import datetime
-from enum import Enum
+import enum
 import glob
 import os
 import random
@@ -11,6 +11,7 @@ import traceback
 import typing as t
 
 import aiohttp
+import asyncinotify
 from tqdm import tqdm
 
 from data_model.config import Config
@@ -22,17 +23,19 @@ from annots.geo import Geolocator, GeoAddress
 from annots.md5 import MD5er, MD5Annot
 from annots.text import Models, ImageClassification
 
-VERSION = 0
+DEFAULT_PRIORITY = 47
+
+EXTENSIONS = ["jpg", "jpeg", "JPG", "JEPG"]
 
 
 def walk_tree(path: str, extensions: t.Optional[t.List[str]] = None) -> t.Iterable[str]:
     if extensions is None:
-        extensions = ["jpg", "jpeg", "JPG", "JEPG"]
+        extensions = EXTENSIONS
     for directory, _subdirs, files in os.walk(path):
         yield from (f"{directory}/{file}" for file in files if file.split(".")[-1] in extensions)
 
 
-class JobType(Enum):
+class JobType(enum.Enum):
     CHEAP_FEATURES = 1
     IMAGE_TO_TEXT = 2
 
@@ -58,9 +61,22 @@ class GlobalContext:
         md5_cache = SQLiteCache(features, MD5Annot, "output-md5.jsonl", enforce_version=True)
         self.md5 = MD5er(md5_cache)
         self.session = session
-        self.progress = {
-            tp: tqdm(desc=f"Ingest {tp.name}", position=position) for position, tp in enumerate(JobType)
+        position = 0
+
+        def get_position() -> int:
+            nonlocal position
+            ret = position
+            position += 1
+            return ret
+
+        self.default_progress = {
+            tp: tqdm(desc=f"Backfill ingest {tp.name}", position=get_position(), smoothing=0.003)
+            for tp in JobType
         }
+        self.prio_progress = {
+            tp: tqdm(desc=f"Realtime ingest {tp.name}", position=get_position()) for tp in JobType
+        }
+        self.known_paths: t.Set[str] = set()
 
     def cheap_features(
         self, path: str
@@ -114,10 +130,54 @@ async def worker(
             print("Error while processing path in ", name, path, e, file=sys.stderr)
         finally:
             # Notify the queue that the "work item" has been processed.
-            context.progress[type_].update(1)
+            if item.priority >= DEFAULT_PRIORITY:
+                context.default_progress[type_].update(1)
+            else:
+                context.prio_progress[type_].update(1)
             queue.task_done()
             # So that we gave up place for other workers too
             await asyncio.sleep(0)
+
+
+class Queues:
+    def __init__(self) -> None:
+        self.cheap_features: asyncio.PriorityQueue[QueueItem[t.Tuple[str, JobType]]] = asyncio.PriorityQueue()
+        self.image_to_text: asyncio.PriorityQueue[QueueItem[t.Tuple[str, JobType]]] = asyncio.PriorityQueue()
+        self._index = 0
+
+    def enqueue_path(self, context: GlobalContext, path: str, priority: int) -> None:
+        context.known_paths.add(path)
+        self.cheap_features.put_nowait(QueueItem(priority, self._index, (path, JobType.CHEAP_FEATURES)))
+        self.image_to_text.put_nowait(QueueItem(priority, random.random(), (path, JobType.IMAGE_TO_TEXT)))
+        self._index += 1
+
+
+async def inotify_worker(name: str, dirs: t.List[str], context: GlobalContext, queues: Queues) -> None:
+    with asyncinotify.Inotify() as inotify:
+        for dir_ in dirs:
+            inotify.add_watch(
+                re.sub("^~/", os.environ["HOME"] + "/", dir_),
+                asyncinotify.Mask.CREATE | asyncinotify.Mask.MOVE,
+            )
+        async for event in inotify:
+            if event.path is None:
+                continue
+            try:
+                path = event.path.absolute().resolve().as_posix()
+            # pylint: disable = bare-except
+            except:
+                traceback.print_exc()
+                print("Error in inotify worker", name)
+                continue
+            if path in context.known_paths:
+                continue
+            if path.split(".")[-1] not in EXTENSIONS:
+                continue
+            if not os.path.exists(path):
+                continue
+            if not os.path.isfile(path):
+                continue
+            queues.enqueue_path(context, path, 23)
 
 
 def get_paths(config: Config) -> t.List[str]:
@@ -142,25 +202,26 @@ async def main() -> None:
     features = FeaturesTable(Connection(args.db))
     async with aiohttp.ClientSession() as session:
         context = GlobalContext(config, features, session, args.annotate_url)
-        cheap_queue: asyncio.PriorityQueue[QueueItem[t.Tuple[str, JobType]]] = asyncio.PriorityQueue()
-        image_to_text_queue: asyncio.PriorityQueue[QueueItem[t.Tuple[str, JobType]]] = asyncio.PriorityQueue()
+        queues = Queues()
 
         paths = get_paths(config)
 
         tasks = []
-        for i, path in enumerate(tqdm(paths, total=len(paths), desc="Creating Workers")):
-            cheap_queue.put_nowait(QueueItem(47, i, (path, JobType.CHEAP_FEATURES)))
-            image_to_text_queue.put_nowait(QueueItem(47, random.random(), (path, JobType.IMAGE_TO_TEXT)))
+        for path in tqdm(paths, total=len(paths), desc="Creating Workers"):
+            queues.enqueue_path(context, path, DEFAULT_PRIORITY)
         for tp in [JobType.CHEAP_FEATURES, JobType.IMAGE_TO_TEXT]:
-            context.progress[tp].reset(total=len(paths))
+            context.default_progress[tp].reset(total=len(paths))
         for i in range(1):
-            task = asyncio.create_task(worker(f"worker-cheap-{i}", context, cheap_queue))
+            task = asyncio.create_task(worker(f"worker-cheap-{i}", context, queues.cheap_features))
         for i in range(args.image_to_text_workers):
-            task = asyncio.create_task(worker(f"worker-image-to-text-{i}", context, image_to_text_queue))
+            task = asyncio.create_task(worker(f"worker-image-to-text-{i}", context, queues.image_to_text))
             tasks.append(task)
+        tasks.append(
+            asyncio.create_task(inotify_worker("watch-files", config.watched_directories, context, queues))
+        )
         try:
-            await cheap_queue.join()
-            await image_to_text_queue.join()
+            await queues.cheap_features.join()
+            await queues.image_to_text.join()
         finally:
             for task in tasks:
                 task.cancel()

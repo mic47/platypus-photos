@@ -1,5 +1,6 @@
 aiohttp
 argparse
+asyncinotify
 asyncio
 dataclasses_json
 exif

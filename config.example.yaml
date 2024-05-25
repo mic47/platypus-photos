@@ -4,6 +4,8 @@ input_patterns:
   - ~/Pictures/*jpg
 input_directories:
   - ~/Pictures
+watched_directories:
+  - ~/Pictures
 
 directory_matching:
   date_directory_filters:
