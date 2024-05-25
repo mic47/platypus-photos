@@ -1,5 +1,6 @@
 import datetime
 import traceback
+import sys
 
 from fastapi import FastAPI
 
@@ -25,6 +26,7 @@ def image_endpoint(image: AnnotateRequest) -> ImageClassification:
             image.path, ImageClassification.current_version(), [], [], traceback.format_exc()
         )
         traceback.print_exc()
+        print("Error processing file:", image.path, file=sys.stderr)
     after = datetime.datetime.now()
     print(after - now)
     return ret
