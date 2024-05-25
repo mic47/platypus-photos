@@ -40,7 +40,7 @@ class AnnotateRequest(DataClassJsonMixin):
 
 async def fetch_ann(session: aioh.ClientSession, url: str, request: AnnotateRequest) -> ImageClassification:
     async with aioh.ClientSession() as session:
-        async with session.post(url, json=request.to_dict(), timeout=60) as data:
+        async with session.post(url, json=request.to_dict(), timeout=600) as data:
             return ImageClassification.from_json(await data.text())
 
 
