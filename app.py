@@ -4,7 +4,7 @@ import sys
 import asyncio
 from datetime import datetime
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Query
 from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -84,7 +84,7 @@ async def read_item(
     paging: int = 100,
     datefrom: str = "",
     dateto: str = "",
-    dir: str = "",
+    dir_: str = Query("", alias="dir"),
     oi: t.Optional[int] = None,
 ) -> HTMLResponse:
     print(datefrom, dateto)
@@ -96,7 +96,7 @@ async def read_item(
         datetime.strptime(dateto, "%Y-%m-%d") if dateto else None,
         page,
         paging,
-        dir,
+        dir_,
     )
     del tag
     del cls
@@ -105,7 +105,7 @@ async def read_item(
     del paging
     del datefrom
     del dateto
-    del dir
+    del dir_
     images = []
     aggr = DB.get_aggregate_stats(url)
     if url.page * url.paging >= aggr.total:

@@ -1,3 +1,4 @@
+import argparse
 import asyncio
 import datetime
 from enum import Enum
@@ -10,7 +11,6 @@ import traceback
 import typing as t
 
 import aiohttp
-import argparse
 from tqdm import tqdm
 
 from cache import SQLiteCache

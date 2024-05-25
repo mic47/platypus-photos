@@ -1,18 +1,7 @@
-from dataclasses import dataclass
 import hashlib
 
-from cache import HasImage, Cache
-
-
-@dataclass
-class MD5Annot(HasImage):
-    image: str
-    version: int
-    md5: str
-
-    @staticmethod
-    def current_version() -> int:
-        return 1
+from cache import Cache
+from data_model.features import MD5Annot
 
 
 class MD5er:

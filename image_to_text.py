@@ -1,16 +1,15 @@
-import itertools
-import typing as t
-import io
 from dataclasses import dataclass
-import sys
-import traceback
 import base64
+import io
+import itertools
+import traceback
+import typing as t
 
 import aiohttp as aioh
-from PIL import Image
-from ultralytics import YOLO
-from transformers import pipeline
 from dataclasses_json import DataClassJsonMixin
+from PIL import Image
+from transformers import pipeline
+from ultralytics import YOLO
 
 
 from cache import Cache

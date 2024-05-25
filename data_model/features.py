@@ -95,6 +95,17 @@ class NearestPOI(HasImage):
 
 
 @dataclass
+class MD5Annot(HasImage):
+    image: str
+    version: int
+    md5: str
+
+    @staticmethod
+    def current_version() -> int:
+        return 1
+
+
+@dataclass
 class Box(DataClassJsonMixin):
     classification: str
     confidence: float

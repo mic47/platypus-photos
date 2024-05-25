@@ -170,7 +170,7 @@ def main() -> None:
     from data_model.features import GeoAddress
 
     # pylint: disable=import-outside-toplevel
-    from md5_annot import MD5Annot
+    from data_model.features import MD5Annot
 
     to_iter: t.List[t.Tuple[str, t.Type[HasImage]]] = [
         ("output-exif.jsonl", ImageExif),
