@@ -108,6 +108,7 @@ async def read_item(
     del dir_
     images = []
     aggr = DB.get_aggregate_stats(url)
+    clusters = DB.get_image_clusters(url, aggr, 50)
     if url.page * url.paging >= aggr.total:
         url.page = aggr.total // url.paging
     bounds = None
@@ -158,6 +159,7 @@ async def read_item(
             "oi": oi,
             "bounds": bounds,
             "images": images,
+            "image_clusters": clusters,
             "total": aggr.total,
             "urls": {
                 "next": url.next_url(aggr.total),

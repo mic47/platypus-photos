@@ -152,10 +152,10 @@ function init_fun() {
     [{{bounds.lat[1]}}, {{bounds.lon[1]}}],
   ]);
   {% endif %}
-  {% for image in images %}{% if image.loc %}
-  var marker = L.marker([{{image.loc.lat}}, {{image.loc.lon}}]).addTo(map);
-  marker.bindPopup("{% if image.classifications %}{{image.classifications}}{% endif %}<br/><img src='/img?hsh={{image.hsh}}' class='popup'>")
-  {% endif %}{% endfor %}
+  {% for cluster in image_clusters %}
+  var marker = L.marker([{{cluster.position.latitude}}, {{cluster.position.longitude}}]).addTo(map);
+  marker.bindPopup("{% if cluster.example_classification %}{{cluster.example_classification}}{% endif %} @ {{cluster.address_name}}, {{cluster.address_country}} ({{cluster.size}})<br/><img src='/img?hsh={{cluster.example_path_hash}}' class='popup'>")
+  {% endfor %}
 }
 </script>
 

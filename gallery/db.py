@@ -9,7 +9,7 @@ from annots.geo import GeoAddress
 from annots.text import ImageClassification
 from db.cache import SQLiteCache
 from db.sql import FeaturesTable, GalleryIndexTable, Connection
-from db.types import ImageAggregation, Image
+from db.types import ImageAggregation, Image, LocationCluster
 from gallery.url import UrlParameters
 
 T = t.TypeVar("T")
@@ -26,6 +26,15 @@ class OmgDB(ABC):
 
     @abstractmethod
     def get_aggregate_stats(self, url: UrlParameters) -> ImageAggregation:
+        ...
+
+    @abstractmethod
+    def get_image_clusters(
+        self,
+        url: UrlParameters,
+        aggregation: ImageAggregation,
+        resolution: int,
+    ) -> t.List[LocationCluster]:
         ...
 
     @abstractmethod
@@ -57,6 +66,17 @@ class ImageSqlDB(OmgDB):
 
     def get_aggregate_stats(self, url: "UrlParameters") -> ImageAggregation:
         return self._gallery_index.get_aggregate_stats(url)
+
+    def get_image_clusters(
+        self,
+        url: UrlParameters,
+        aggregation: ImageAggregation,
+        resolution: int,
+    ) -> t.List[LocationCluster]:
+        ret = self._gallery_index.get_image_clusters(url, aggregation, resolution)
+        for c in ret:
+            self._hash_to_image[c.example_path_hash] = c.example_path
+        return ret
 
     def get_matching_images(self, url: UrlParameters) -> t.Iterable[Image]:
         for omg in self._gallery_index.get_matching_images(url):

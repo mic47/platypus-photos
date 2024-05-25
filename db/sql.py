@@ -18,11 +18,7 @@ from gallery.utils import (
 from gallery.url import (
     UrlParameters,
 )
-from db.types import (
-    FeaturePayload,
-    Image,
-    ImageAggregation,
-)
+from db.types import FeaturePayload, Image, ImageAggregation, LocationCluster, LocPoint
 
 
 # TODO:
@@ -367,6 +363,73 @@ WHERE
             variables,
         )
 
+    def get_image_clusters(
+        self,
+        url: UrlParameters,
+        aggregation: ImageAggregation,
+        resolution: int,
+    ) -> t.List[LocationCluster]:
+        if aggregation.latitude is None or aggregation.longitude is None:
+            return []
+        lat_scale = (max(aggregation.latitude) - min(aggregation.latitude)) / resolution
+        lon_scale = (max(aggregation.longitude) - min(aggregation.longitude)) / resolution
+        select_items, variables = self._matching_query(
+            f"""
+            address_name, address_country, latitude, longitude,
+            file, classifications,
+            round(latitude*{lat_scale})/{lat_scale} as cluster_lat,
+            round(longitude*{lon_scale})/{lon_scale} as cluster_lon
+        """,
+            url,
+        )
+        query = f"""
+SELECT
+  address_name, address_country,
+  min(latitude), max(latitude),
+  min(longitude), max(longitude),
+  avg(latitude), avg(longitude),
+  count(1),
+  min(file),
+  max(classifications)
+FROM (
+  {select_items}
+)
+WHERE
+  latitude IS NOT NULL
+  AND longitude IS NOT NULL
+GROUP BY
+  address_name, address_country, cluster_lat, cluster_lon
+        """
+        res = self._con.execute(query, variables)
+        out = []
+        for (
+            address_name,
+            address_country,
+            min_latitude,
+            max_latitude,
+            min_longitude,
+            max_longitude,
+            avg_latitude,
+            avg_longitude,
+            total,
+            example_file,
+            example_classification,
+        ) in res:
+            out.append(
+                LocationCluster(
+                    example_file,
+                    hash(example_file),
+                    example_classification,
+                    total,
+                    address_name,
+                    address_country,
+                    LocPoint(max_latitude, max_longitude),
+                    LocPoint(min_latitude, min_longitude),
+                    LocPoint(avg_latitude, avg_longitude),
+                )
+            )
+        return out
+
     def get_aggregate_stats(
         self,
         url: UrlParameters,
@@ -400,8 +463,6 @@ SELECT "alt", 'max', MAX(altitude) FROM matched_images WHERE altitude IS NOT NUL
 UNION ALL
 SELECT "alt", 'min', MIN(altitude) FROM matched_images WHERE altitude IS NOT NULL
         """
-#UNION ALL
-#SELECT "pos", CONCAT(CAST(ROUND(latitude * 50) AS TEXT), ':' CAST(ROUND(longitude * 50) AS TEXT)) as value, AVG(latitude) FROM matched_images WHERE latitude IS NOT NULL GROUP BY value
         tag_cnt: t.Counter[str] = Counter()
         classifications_cnt: t.Counter[str] = Counter()
         address_cnt: t.Counter[str] = Counter()
@@ -422,7 +483,6 @@ SELECT "alt", 'min', MIN(altitude) FROM matched_images WHERE altitude IS NOT NUL
                     position.get("lat"),
                     position.get("lon"),
                     position.get("alt"),
-                    [],
                 )
             for (
                 type_,

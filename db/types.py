@@ -16,16 +16,27 @@ class FeaturePayload(t.Generic[T]):
     last_update: int
     rowid: int
 
+
 LocRange = t.Tuple[float, float]
+
+
+@dataclass
+class LocPoint:
+    latitude: float
+    longitude: float
+
 
 @dataclass
 class LocationCluster:
-    latitude: LocRange
-    longitude: LocRange
-    avg_latitude: float
-    avg_longitude: float
-    # TODO: image example
-    # TODO: tags aggregation?
+    example_path: str
+    example_path_hash: int
+    example_classification: t.Optional[str]
+    size: int
+    address_name: t.Optional[str]
+    address_country: t.Optional[str]
+    top_left: LocPoint
+    bottom_right: LocPoint
+    position: LocPoint
 
 
 @dataclass
@@ -37,7 +48,6 @@ class ImageAggregation:
     latitude: t.Optional[LocRange]
     longitude: t.Optional[LocRange]
     altitude: t.Optional[LocRange]
-    locations: t.List[LocationCluster]
 
 
 @dataclass
