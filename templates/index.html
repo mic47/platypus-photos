@@ -142,12 +142,9 @@ function overlay_next(element, index) {
 }
 function update_markers(map, existing_markers) {
     function inner(e) {
-        console.log('event', e);
         var bounds = map.getBounds();
-                console.log(bounds);
         var nw = bounds.getNorthWest();
         var se = bounds.getSouthEast();
-                console.log(nw, se);
         fetch("/api/location_clusters", {
           method: "POST",
           body: JSON.stringify({
@@ -167,7 +164,6 @@ function update_markers(map, existing_markers) {
         })
           .then((response) => response.json())
           .then((clusters) => {
-            console.log(clusters);
             var new_markers = [];
             for (var i = 0; i < clusters.length; i++) {
                 var cluster = clusters[i];
