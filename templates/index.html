@@ -172,9 +172,15 @@ function update_markers(map, existing_markers) {
         })
           .then((response) => response.json())
           .then((clusters) => {
-            var new_markers = [];
+            var new_markers = {};
             for (var i = 0; i < clusters.length; i++) {
                 var cluster = clusters[i];
+                var existing = existing_markers[cluster.example_path_md5];
+                if (existing !== undefined) {
+                  new_markers[cluster.example_path_md5] = existing;
+                  delete existing_markers[cluster.example_path_md5];
+                  continue;
+                }
                 var marker = L.marker([cluster.position.latitude, cluster.position.longitude]).addTo(map);
                 marker.bindPopup([
                     cluster.example_classification,
@@ -188,11 +194,11 @@ function update_markers(map, existing_markers) {
                     cluster.example_path_md5,
                     "' class='popup'>"
                 ].join(''));
-                new_markers.push(marker);
+                new_markers[cluster.example_path_md5] = marker;
             }
-            existing_markers.forEach((m) => m.remove());
-            existing_markers.length = 0;
-            existing_markers.push(...new_markers);
+            Object.values(existing_markers).forEach((m) => m.remove());
+            Object.keys(existing_markers).forEach((m) => delete existing_markers[m]);
+            Object.entries(new_markers).forEach((m) => existing_markers[m[0]] = m[1]);
           });
     };
     return inner
@@ -201,7 +207,7 @@ function update_markers(map, existing_markers) {
 function init_fun() {
   var map = L.map('map').setView([51.505, -0.09], 13);
         // Events: load, zoomend, moveend, resizej
-  var existing_markers = [];
+  var existing_markers = {};
   map.on('load', update_markers(map, existing_markers));
   map.on('zoomend', update_markers(map, existing_markers));
   map.on('moveend', update_markers(map, existing_markers));
