@@ -10,7 +10,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from config import Config
-from filename_to_date import PathDateExtractor
+from annots.date import PathDateExtractor
 
 from gallery.db import OmgDB, ImageSqlDB
 from gallery.url import UrlParameters

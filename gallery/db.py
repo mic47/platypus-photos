@@ -3,10 +3,10 @@ import typing as t
 
 from tqdm import tqdm
 
-from image_to_text import ImageClassification
-from image_exif import ImageExif
-from geolocation import GeoAddress
-from filename_to_date import PathDateExtractor
+from annots.exif import ImageExif
+from annots.date import PathDateExtractor
+from annots.geo import GeoAddress
+from annots.text import ImageClassification
 from cache import SQLiteCache
 
 from db.sql import FeaturesTable, GalleryIndexTable, Connection

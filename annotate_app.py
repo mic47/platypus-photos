@@ -4,7 +4,7 @@ import sys
 
 from fastapi import FastAPI
 
-from image_to_text import AnnotateRequest, Models, ImageClassification
+from annots.text import AnnotateRequest, Models, ImageClassification
 from cache import NoCache
 
 MODELS = Models(NoCache(), None)

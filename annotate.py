@@ -16,11 +16,11 @@ from tqdm import tqdm
 from cache import SQLiteCache
 from config import Config
 from db.sql import FeaturesTable, Connection
-from filename_to_date import PathDateExtractor
-from geolocation import Geolocator, GeoAddress
-from image_exif import Exif, ImageExif
-from image_to_text import Models, ImageClassification
-from md5_annot import MD5er, MD5Annot
+from annots.date import PathDateExtractor
+from annots.exif import Exif, ImageExif
+from annots.geo import Geolocator, GeoAddress
+from annots.md5 import MD5er, MD5Annot
+from annots.text import Models, ImageClassification
 
 VERSION = 0
 
