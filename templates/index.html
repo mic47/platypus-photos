@@ -140,8 +140,69 @@ function overlay_next(element, index) {
   element.parentElement.parentElement.classList.remove('overlay');
   changeState(index + 1);
 }
+function update_markers(map, existing_markers) {
+    function inner(e) {
+        console.log('event', e);
+        var bounds = map.getBounds();
+                console.log(bounds);
+        var nw = bounds.getNorthWest();
+        var se = bounds.getSouthEast();
+                console.log(nw, se);
+        fetch("/api/location_clusters", {
+          method: "POST",
+          body: JSON.stringify({
+            "tl": {
+              "latitude": nw.lat,
+              "longitude": nw.lng,
+            },
+            "br": {
+              "latitude": se.lat,
+              "longitude": se.lng,
+            },
+            url: {{location_url_json | safe}},
+          }),
+          headers: {
+            "Content-type": "application/json; charset=UTF-8"
+          }
+        })
+          .then((response) => response.json())
+          .then((clusters) => {
+            console.log(clusters);
+            var new_markers = [];
+            for (var i = 0; i < clusters.length; i++) {
+                var cluster = clusters[i];
+                var marker = L.marker([cluster.position.latitude, cluster.position.longitude]).addTo(map);
+                marker.bindPopup([
+                    cluster.example_classification,
+                    "@ ",
+                    cluster.address_name,
+                    ", ",
+                    cluster.address_country,
+                    " (",
+                    cluster.size,
+                    ")<br/><img src='/img?hsh=",
+                    cluster.example_path_hash,
+                    "' class='popup'>"
+                ].join(''));
+                new_markers.push(marker);
+            }
+            existing_markers.forEach((m) => m.remove());
+            existing_markers.length = 0;
+            existing_markers.push(...new_markers);
+          });
+    };
+    return inner
+
+}
 function init_fun() {
   var map = L.map('map').setView([51.505, -0.09], 13);
+        // Events: load, zoomend, moveend, resizej
+  var existing_markers = [];
+  map.on('load', update_markers(map, existing_markers));
+  map.on('zoomend', update_markers(map, existing_markers));
+  map.on('moveend', update_markers(map, existing_markers));
+  map.on('resize', update_markers(map, existing_markers));
+
   L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19,
     attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
@@ -152,10 +213,6 @@ function init_fun() {
     [{{bounds.lat[1]}}, {{bounds.lon[1]}}],
   ]);
   {% endif %}
-  {% for cluster in image_clusters %}
-  var marker = L.marker([{{cluster.position.latitude}}, {{cluster.position.longitude}}]).addTo(map);
-  marker.bindPopup("{% if cluster.example_classification %}{{cluster.example_classification}}{% endif %} @ {{cluster.address_name}}, {{cluster.address_country}} ({{cluster.size}})<br/><img src='/img?hsh={{cluster.example_path_hash}}' class='popup'>")
-  {% endfor %}
 }
 </script>
 

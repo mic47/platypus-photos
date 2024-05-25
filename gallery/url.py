@@ -7,14 +7,27 @@ from gallery.utils import maybe_datetime_to_date
 
 @dataclass
 class UrlParameters:
-    tag: str
-    cls: str
-    addr: str
-    datefrom: t.Optional[datetime]
-    dateto: t.Optional[datetime]
-    page: int
-    paging: int
-    directory: str
+    tag: str = ""
+    cls: str = ""
+    addr: str = ""
+    datefrom: t.Optional[datetime] = None
+    dateto: t.Optional[datetime] = None
+    page: int = 0
+    paging: int = 100
+    directory: str = ""
+
+    def to_filtered_dict(self, skip_keys: t.List[str]) -> t.Dict[str, t.Any]:
+        ret = {
+            "tag": self.tag,
+            "cls": self.cls,
+            "addr": self.addr,
+            "datefrom": maybe_datetime_to_date(self.datefrom),
+            "dateto": maybe_datetime_to_date(self.dateto),
+            "page": self.page,
+            "paging": self.paging,
+            "directory": self.directory,
+        }
+        return {k: v for k, v in ret.items() if k not in skip_keys and v}
 
     def to_url(
         self,

@@ -9,7 +9,7 @@ from annots.geo import GeoAddress
 from annots.text import ImageClassification
 from db.cache import SQLiteCache
 from db.sql import FeaturesTable, GalleryIndexTable, Connection
-from db.types import ImageAggregation, Image, LocationCluster
+from db.types import ImageAggregation, Image, LocationCluster, LocPoint
 from gallery.url import UrlParameters
 
 T = t.TypeVar("T")
@@ -32,7 +32,8 @@ class OmgDB(ABC):
     def get_image_clusters(
         self,
         url: UrlParameters,
-        aggregation: ImageAggregation,
+        top_left: LocPoint,
+        bottom_right: LocPoint,
         resolution: int,
     ) -> t.List[LocationCluster]:
         ...
@@ -47,10 +48,10 @@ class OmgDB(ABC):
 
 
 class ImageSqlDB(OmgDB):
-    def __init__(self, path_to_date: PathDateExtractor) -> None:
+    def __init__(self, path_to_date: PathDateExtractor, check_same_thread: bool) -> None:
         # TODO: this should be a feature with loader
         self._path_to_date = path_to_date
-        self._con = Connection("output.db")
+        self._con = Connection("output.db", check_same_thread=check_same_thread)
         self._features_table = FeaturesTable(self._con)
         self._exif = SQLiteCache(self._features_table, ImageExif)
         self._address = SQLiteCache(self._features_table, GeoAddress)
@@ -70,10 +71,11 @@ class ImageSqlDB(OmgDB):
     def get_image_clusters(
         self,
         url: UrlParameters,
-        aggregation: ImageAggregation,
+        top_left: LocPoint,
+        bottom_right: LocPoint,
         resolution: int,
     ) -> t.List[LocationCluster]:
-        ret = self._gallery_index.get_image_clusters(url, aggregation, resolution)
+        ret = self._gallery_index.get_image_clusters(url, top_left, bottom_right, resolution)
         for c in ret:
             self._hash_to_image[c.example_path_hash] = c.example_path
         return ret

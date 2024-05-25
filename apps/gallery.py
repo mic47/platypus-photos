@@ -1,8 +1,10 @@
+import json
 import typing as t
 import os
 import sys
 import asyncio
 from datetime import datetime
+from dataclasses import dataclass
 
 from fastapi import FastAPI, Request, Query
 from fastapi.responses import HTMLResponse, FileResponse
@@ -10,6 +12,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from data_model.config import Config
+from db.types import LocationCluster, LocPoint
 from annots.date import PathDateExtractor
 
 from gallery.db import OmgDB, ImageSqlDB
@@ -23,7 +26,7 @@ app.mount("/static", StaticFiles(directory="static/"), name="static")
 templates = Jinja2Templates(directory="templates")
 
 config = Config.load("config.yaml")
-DB: OmgDB = ImageSqlDB(PathDateExtractor(config.directory_matching))
+DB: OmgDB = ImageSqlDB(PathDateExtractor(config.directory_matching), check_same_thread=False)
 del config
 
 
@@ -73,6 +76,21 @@ def image_endpoint(hsh: int) -> t.Any:
     return {"error": "File not found!"}
 
 
+@dataclass
+class LocClusterParams:
+    tl: LocPoint
+    br: LocPoint
+    url: UrlParameters
+
+
+@app.post("/api/location_clusters")
+def location_clusters_endpoint(params: LocClusterParams) -> t.List[LocationCluster]:
+    # TODO: we want to take this from parameters?
+    print(params)
+    clusters = DB.get_image_clusters(params.url, params.tl, params.br, 50)
+    return clusters
+
+
 @app.get("/index.html", response_class=HTMLResponse)
 @app.get("/", response_class=HTMLResponse)
 async def read_item(
@@ -108,7 +126,6 @@ async def read_item(
     del dir_
     images = []
     aggr = DB.get_aggregate_stats(url)
-    clusters = DB.get_image_clusters(url, aggr, 50)
     if url.page * url.paging >= aggr.total:
         url.page = aggr.total // url.paging
     bounds = None
@@ -159,8 +176,8 @@ async def read_item(
             "oi": oi,
             "bounds": bounds,
             "images": images,
-            "image_clusters": clusters,
             "total": aggr.total,
+            "location_url_json": json.dumps(url.to_filtered_dict(["addr", "page", "paging"])),
             "urls": {
                 "next": url.next_url(aggr.total),
                 "next_overlay": url.next_url(aggr.total, overlay=True),

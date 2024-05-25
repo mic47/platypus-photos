@@ -31,9 +31,10 @@ from db.types import FeaturePayload, Image, ImageAggregation, LocationCluster, L
 
 
 class Connection:
-    def __init__(self, path: str, timeout: int = 120) -> None:
+    def __init__(self, path: str, timeout: int = 120, check_same_thread: bool = True) -> None:
         self._path = path
         self._timeout = timeout
+        self._check_same_thread = check_same_thread
         self._connection = self._connect()
 
     def reconnect(self) -> None:
@@ -41,7 +42,7 @@ class Connection:
         self._connection = self._connect()
 
     def _connect(self) -> sqlite3.Connection:
-        conn = sqlite3.connect(self._path, timeout=self._timeout)
+        conn = sqlite3.connect(self._path, timeout=self._timeout, check_same_thread=self._check_same_thread)
         conn.execute("PRAGMA journal_mode=WAL;")
         conn.execute("PRAGMA synchronous=NORMAL;")
         return conn
@@ -318,6 +319,7 @@ WHERE
         self,
         select: str,
         url: UrlParameters,
+        extra_clauses: t.Optional[t.List[t.Tuple[str, t.List[t.Union[str, int, float, None]]]]] = None,
     ) -> t.Tuple["str", t.List[t.Union[str, int, float, None,]],]:
         clauses = []
         variables: t.List[
@@ -349,6 +351,9 @@ WHERE
             variables.append(
                 maybe_datetime_to_timestamp(None if url.dateto is None else url.dateto + timedelta(days=1))
             )
+        for txt, vrs in extra_clauses or []:
+            clauses.append(f"({txt})")
+            variables.extend(vrs)
         if clauses:
             where = "WHERE " + " AND ".join(clauses)
         else:
@@ -366,13 +371,15 @@ WHERE
     def get_image_clusters(
         self,
         url: UrlParameters,
-        aggregation: ImageAggregation,
+        top_left: LocPoint,
+        bottom_right: LocPoint,
         resolution: int,
     ) -> t.List[LocationCluster]:
-        if aggregation.latitude is None or aggregation.longitude is None:
-            return []
-        lat_scale = (max(aggregation.latitude) - min(aggregation.latitude)) / resolution
-        lon_scale = (max(aggregation.longitude) - min(aggregation.longitude)) / resolution
+        lats = [top_left.latitude, bottom_right.latitude]
+        longs = [top_left.longitude, bottom_right.longitude]
+        lat_scale = (max(lats) - min(lats)) / resolution
+        lon_scale = (max(longs) - min(longs)) / resolution
+        print(lat_scale, lon_scale, top_left, bottom_right)
         select_items, variables = self._matching_query(
             f"""
             address_name, address_country, latitude, longitude,
@@ -381,6 +388,10 @@ WHERE
             round(longitude*{lon_scale})/{lon_scale} as cluster_lon
         """,
             url,
+            [
+                ("latitude BETWEEN ? AND ?", [bottom_right.latitude, top_left.latitude]),
+                ("longitude BETWEEN ? AND ?", [top_left.longitude, bottom_right.longitude]),
+            ],
         )
         query = f"""
 SELECT
