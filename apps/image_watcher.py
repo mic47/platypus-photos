@@ -247,9 +247,6 @@ async def main() -> None:
         tasks.append(
             asyncio.create_task(inotify_worker("watch-files", config.watched_directories, context, queues))
         )
-        for i in range(context.number_of_progress_bars):
-            # Clear the lines for progress bars.
-            print()
         try:
             while True:
                 await asyncio.sleep(3600 * 24 * 365)
