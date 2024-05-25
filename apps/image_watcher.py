@@ -69,13 +69,14 @@ class GlobalContext:
             position += 1
             return ret
 
+        self.prio_progress = {
+            tp: tqdm(desc=f"Realtime ingest {tp.name}", position=get_position()) for tp in JobType
+        }
         self.default_progress = {
             tp: tqdm(desc=f"Backfill ingest {tp.name}", position=get_position(), smoothing=0.003)
             for tp in JobType
         }
-        self.prio_progress = {
-            tp: tqdm(desc=f"Realtime ingest {tp.name}", position=get_position()) for tp in JobType
-        }
+        self.number_of_progress_bars = position
         self.known_paths: t.Set[str] = set()
 
     def cheap_features(
@@ -219,6 +220,9 @@ async def main() -> None:
         tasks.append(
             asyncio.create_task(inotify_worker("watch-files", config.watched_directories, context, queues))
         )
+        for i in range(context.number_of_progress_bars):
+            # Clear the lines for progress bars.
+            print()
         try:
             await queues.cheap_features.join()
             await queues.image_to_text.join()
