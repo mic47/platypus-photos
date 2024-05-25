@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 import typing as t
 import re
 
-from data_model.features import ImageExif, GeoAddress, ImageClassification
+from data_model.features import ImageExif, GeoAddress, ImageClassification, MD5Annot
 from gallery.url import UrlParameters
 
 T = t.TypeVar("T")
@@ -28,8 +28,7 @@ class LocPoint:
 
 @dataclass
 class LocationCluster:
-    example_path: str
-    example_path_hash: int
+    example_path_md5: str
     example_classification: t.Optional[str]
     size: int
     address_name: t.Optional[str]
@@ -64,10 +63,11 @@ class Image:
     longitude: t.Optional[float]
     altitude: t.Optional[float]
     version: int
+    md5: t.Optional[str]
 
     @staticmethod
     def current_version() -> int:
-        return 1
+        return 2
 
     @staticmethod
     def from_updates(
@@ -76,6 +76,7 @@ class Image:
         address: t.Optional[GeoAddress],
         text_classification: t.Optional[ImageClassification],
         date_from_path: t.Optional[datetime],
+        md5: t.Optional[MD5Annot],
         max_last_update: float,
     ) -> "Image":
         date = None
@@ -113,6 +114,10 @@ class Image:
             address_name = address.name
             address_full = ", ".join(x for x in [address_name, address_country] if x)
 
+        md5_sum = None
+        if md5:
+            md5_sum = md5.md5
+
         return Image(
             path,
             date,
@@ -126,6 +131,7 @@ class Image:
             longitude,
             altitude,
             Image.current_version(),
+            md5_sum,
         )
 
     def match_url(self, url: UrlParameters) -> bool:

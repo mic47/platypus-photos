@@ -68,9 +68,9 @@ async def auto_load() -> None:
         200: {"description": "photo", "content": {"image/jpeg": {"example": "No example available."}}}
     },
 )
-def image_endpoint(hsh: int) -> t.Any:
+def image_endpoint(hsh: t.Union[int, str]) -> t.Any:
     file_path = DB.get_path_from_hash(hsh)
-    if os.path.exists(file_path):
+    if file_path is not None and os.path.exists(file_path):
         # TODO: fix media type
         return FileResponse(file_path, media_type="image/jpeg", filename=file_path.split("/")[-1])
     return {"error": "File not found!"}
@@ -146,7 +146,7 @@ async def read_item(
             loc = {"lat": omg.latitude, "lon": omg.longitude}
         images.append(
             {
-                "hsh": hash(omg.path),
+                "hsh": omg.md5 or hash(omg.path),
                 "filename": os.path.basename(omg.path),
                 "dir": os.path.dirname(omg.path),
                 "dir_url": url.to_url(directory=os.path.dirname(omg.path)),

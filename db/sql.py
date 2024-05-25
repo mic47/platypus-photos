@@ -242,6 +242,10 @@ CREATE TABLE IF NOT EXISTS gallery_index (
             self._con.execute("ALTER TABLE gallery_index ADD COLUMN version INTEGER NOT NULL DEFAULT 0;")
         except sqlite3.OperationalError:
             traceback.print_exc()
+        try:
+            self._con.execute("ALTER TABLE gallery_index ADD COLUMN md5 TEXT;")
+        except sqlite3.OperationalError:
+            traceback.print_exc()
         for columns in [
             ["file"],
             ["feature_last_update"],
@@ -253,6 +257,7 @@ CREATE TABLE IF NOT EXISTS gallery_index (
             ["longitude"],
             ["altitude"],
             ["version"],
+            ["md5"],
         ]:
             name = f"gallery_index_idx_{'_'.join(columns)}"
             cols_str = ", ".join(columns)
@@ -265,7 +270,7 @@ CREATE TABLE IF NOT EXISTS gallery_index (
         tags = sorted(list((omg.tags or {}).items()))
         self._con.execute(
             """
-INSERT INTO gallery_index VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+INSERT INTO gallery_index VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT(file) DO UPDATE SET
   feature_last_update=excluded.feature_last_update,
   timestamp=excluded.timestamp,
@@ -278,7 +283,8 @@ ON CONFLICT(file) DO UPDATE SET
   latitude=excluded.latitude,
   longitude=excluded.longitude,
   altitude=excluded.altitude,
-  version=excluded.version
+  version=excluded.version,
+  md5=excluded.md5
 WHERE
   excluded.feature_last_update > gallery_index.feature_last_update
   OR excluded.version > gallery_index.version
@@ -297,6 +303,7 @@ WHERE
                 omg.longitude,
                 omg.altitude,
                 omg.version,
+                omg.md5,
             ),
         )
         self._con.commit()
@@ -384,7 +391,7 @@ WHERE
         select_items, variables = self._matching_query(
             f"""
             address_name, address_country, latitude, longitude,
-            file, classifications,
+            md5, classifications,
             round(latitude/{lat_scale})*{lat_scale} as cluster_lat,
             round(longitude/{lon_scale})*{lon_scale} as cluster_lon
         """,
@@ -401,7 +408,7 @@ SELECT
   min(longitude), max(longitude),
   avg(latitude), avg(longitude),
   count(1),
-  min(file),
+  min(md5),
   max(classifications)
 FROM (
   {select_items}
@@ -424,13 +431,12 @@ GROUP BY
             avg_latitude,
             avg_longitude,
             total,
-            example_file,
+            example_file_md5,
             example_classification,
         ) in res:
             out.append(
                 LocationCluster(
-                    example_file,
-                    hash(example_file),
+                    example_file_md5,
                     example_classification,
                     total,
                     address_name,
@@ -441,6 +447,12 @@ GROUP BY
                 )
             )
         return out
+
+    def path_by_hash(self, hsh: str) -> t.Optional[str]:
+        res = self._con.execute("SELECT file FROM gallery_index where md5 = ? LIMIT 1", (hsh,)).fetchone()
+        if res is None:
+            return None
+        return t.cast(str, res[0])
 
     def get_aggregate_stats(
         self,
@@ -544,7 +556,7 @@ SELECT "alt", 'min', MIN(altitude) FROM matched_images WHERE altitude IS NOT NUL
     ) -> t.Iterable[Image]:
         # TODO: aggregations could be done separately
         (query, variables,) = self._matching_query(
-            "file, timestamp, tags, tags_probs, classifications, address_country, address_name, address_full, feature_last_update, latitude, longitude, altitude, version",
+            "file, timestamp, tags, tags_probs, classifications, address_country, address_name, address_full, feature_last_update, latitude, longitude, altitude, version, md5",
             url,
         )
         if url.paging:
@@ -571,6 +583,7 @@ SELECT "alt", 'min', MIN(altitude) FROM matched_images WHERE altitude IS NOT NUL
                 longitude,
                 altitude,
                 version,
+                md5,
             ) in items:
                 yield Image(
                     file,
@@ -595,4 +608,5 @@ SELECT "alt", 'min', MIN(altitude) FROM matched_images WHERE altitude IS NOT NUL
                     longitude,
                     altitude,
                     version,
+                    md5,
                 )

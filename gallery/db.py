@@ -3,10 +3,8 @@ import typing as t
 
 from tqdm import tqdm
 
-from annots.exif import ImageExif
 from annots.date import PathDateExtractor
-from annots.geo import GeoAddress
-from annots.text import ImageClassification
+from data_model.features import ImageExif, GeoAddress, ImageClassification, MD5Annot
 from db.cache import SQLiteCache
 from db.sql import FeaturesTable, GalleryIndexTable, Connection
 from db.types import ImageAggregation, Image, LocationCluster, LocPoint
@@ -40,7 +38,7 @@ class OmgDB(ABC):
         ...
 
     @abstractmethod
-    def get_path_from_hash(self, hsh: int) -> str:
+    def get_path_from_hash(self, hsh: t.Union[int, str]) -> t.Optional[str]:
         ...
 
     @abstractmethod
@@ -57,14 +55,24 @@ class ImageSqlDB(OmgDB):
         self._exif = SQLiteCache(self._features_table, ImageExif)
         self._address = SQLiteCache(self._features_table, GeoAddress)
         self._text_classification = SQLiteCache(self._features_table, ImageClassification)
+        self._md5 = SQLiteCache(self._features_table, MD5Annot)
         self._gallery_index = GalleryIndexTable(self._con)
         self._hash_to_image: t.Dict[int, str] = {}
+        self._md5_to_image: t.Dict[str, str] = {}
 
     def reconnect(self) -> None:
         self._con.reconnect()
 
-    def get_path_from_hash(self, hsh: int) -> str:
-        return self._hash_to_image[hsh]
+    def get_path_from_hash(self, hsh: t.Union[int, str]) -> t.Optional[str]:
+        if isinstance(hsh, int):
+            return self._hash_to_image[hsh]
+        r = self._md5_to_image.get(hsh)
+        if r is not None:
+            return r
+        path = self._gallery_index.path_by_hash(hsh)
+        if path is not None:
+            self._md5_to_image[hsh] = path
+        return path
 
     def get_aggregate_stats(self, url: "UrlParameters") -> ImageAggregation:
         return self._gallery_index.get_aggregate_stats(url)
@@ -77,16 +85,15 @@ class ImageSqlDB(OmgDB):
         latitude_resolution: float,
         longitude_resolution: float,
     ) -> t.List[LocationCluster]:
-        ret = self._gallery_index.get_image_clusters(
+        return self._gallery_index.get_image_clusters(
             url, top_left, bottom_right, latitude_resolution, longitude_resolution
         )
-        for c in ret:
-            self._hash_to_image[c.example_path_hash] = c.example_path
-        return ret
 
     def get_matching_images(self, url: UrlParameters) -> t.Iterable[Image]:
         for omg in self._gallery_index.get_matching_images(url):
             self._hash_to_image[hash(omg.path)] = omg.path
+            if omg.md5:
+                self._md5_to_image[omg.md5] = omg.path
             yield omg
 
     def load(self, show_progress: bool) -> int:
@@ -125,12 +132,14 @@ class ImageSqlDB(OmgDB):
         exif = extract_data(self._exif.get_with_last_update(path))
         addr = extract_data(self._address.get_with_last_update(path))
         text_cls = extract_data(self._text_classification.get_with_last_update(path))
+        md5 = extract_data(self._md5.get_with_last_update(path))
         omg = Image.from_updates(
             path,
             exif,
             addr,
             text_cls,
             self._path_to_date.extract_date(path),
+            md5,
             max_last_update,
         )
         assert max_last_update > 0.0
