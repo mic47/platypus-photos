@@ -23,16 +23,27 @@ from annots.geo import Geolocator, GeoAddress
 from annots.md5 import MD5er, MD5Annot
 from annots.text import Models, ImageClassification
 
+T = t.TypeVar("T")
+
 DEFAULT_PRIORITY = 47
 
 EXTENSIONS = ["jpg", "jpeg", "JPG", "JEPG"]
 
 
-def walk_tree(path: str, extensions: t.Optional[t.List[str]] = None) -> t.Iterable[str]:
-    if extensions is None:
-        extensions = EXTENSIONS
-    for directory, _subdirs, files in os.walk(path):
-        yield from (f"{directory}/{file}" for file in files if file.split(".")[-1] in extensions)
+class Tqdm(t.Generic[T]):
+    def __init__(self, tq: "tqdm[T]") -> None:
+        self._tqdm = tq
+        self._progress = 0
+
+    def update(self, value: int) -> "Tqdm[T]":
+        self._progress += value
+        self._tqdm.update(value)
+        return self
+
+    def update_total(self, new_total: int) -> "Tqdm[T]":
+        self._tqdm.reset(total=new_total)
+        self._tqdm.update(self._progress)
+        return self
 
 
 class JobType(enum.Enum):
@@ -70,10 +81,10 @@ class GlobalContext:
             return ret
 
         self.prio_progress = {
-            tp: tqdm(desc=f"Realtime ingest {tp.name}", position=get_position()) for tp in JobType
+            tp: Tqdm(tqdm(desc=f"Realtime ingest {tp.name}", position=get_position())) for tp in JobType
         }
         self.default_progress = {
-            tp: tqdm(desc=f"Backfill ingest {tp.name}", position=get_position(), smoothing=0.003)
+            tp: Tqdm(tqdm(desc=f"Backfill ingest {tp.name}", position=get_position(), smoothing=0.003))
             for tp in JobType
         }
         self.number_of_progress_bars = position
@@ -96,9 +107,6 @@ class GlobalContext:
     async def image_to_text(self, path: str) -> t.Tuple[str, ImageClassification]:
         itt = (await self.models.process_image_batch(self.session, [path]))[0]
         return (path, itt)
-
-
-T = t.TypeVar("T")
 
 
 class QueueItem(t.Generic[T]):
@@ -181,15 +189,37 @@ async def inotify_worker(name: str, dirs: t.List[str], context: GlobalContext, q
             queues.enqueue_path(context, path, 23)
 
 
-def get_paths(config: Config) -> t.List[str]:
-    paths = [
-        file
-        for pattern in tqdm(config.input_patterns, desc="Listing files")
-        for file in tqdm(glob.glob(re.sub("^~/", os.environ["HOME"] + "/", pattern)), desc=pattern)
-    ]
-    for directory in tqdm(config.input_directories, desc="Listing directories"):
-        paths.extend(walk_tree(re.sub("^~/", os.environ["HOME"] + "/", directory)))
-    return paths
+def walk_tree(path: str, extensions: t.Optional[t.List[str]] = None) -> t.Iterable[str]:
+    if extensions is None:
+        extensions = EXTENSIONS
+    for directory, _subdirs, files in os.walk(path):
+        yield from (f"{directory}/{file}" for file in files if file.split(".")[-1] in extensions)
+
+
+def get_paths(config: Config) -> t.Iterable[str]:
+    for pattern in config.input_patterns:
+        yield from glob.glob(re.sub("^~/", os.environ["HOME"] + "/", pattern))
+    for directory in config.input_directories:
+        yield from walk_tree(re.sub("^~/", os.environ["HOME"] + "/", directory))
+
+
+async def reingest_directories_worker(context: GlobalContext, config: Config, queues: Queues) -> None:
+    total_for_reingest = 0
+    while True:
+        await queues.cheap_features.join()
+        found_something = False
+        for path in get_paths(config):
+            if path in context.known_paths:
+                continue
+            queues.enqueue_path(context, path, DEFAULT_PRIORITY)
+            total_for_reingest += 1
+            found_something = True
+        if found_something:
+            for p in context.default_progress.values():
+                p.update_total(total_for_reingest)
+
+        # Check for new features once every 8 hours
+        await asyncio.sleep(3600 * 8)
 
 
 async def main() -> None:
@@ -205,13 +235,8 @@ async def main() -> None:
         context = GlobalContext(config, features, session, args.annotate_url)
         queues = Queues()
 
-        paths = get_paths(config)
-
         tasks = []
-        for path in tqdm(paths, total=len(paths), desc="Creating Workers"):
-            queues.enqueue_path(context, path, DEFAULT_PRIORITY)
-        for tp in [JobType.CHEAP_FEATURES, JobType.IMAGE_TO_TEXT]:
-            context.default_progress[tp].reset(total=len(paths))
+        tasks.append(asyncio.create_task(reingest_directories_worker(context, config, queues)))
         for i in range(1):
             task = asyncio.create_task(worker(f"worker-cheap-{i}", context, queues.cheap_features))
         for i in range(args.image_to_text_workers):
@@ -224,8 +249,9 @@ async def main() -> None:
             # Clear the lines for progress bars.
             print()
         try:
-            await queues.cheap_features.join()
-            await queues.image_to_text.join()
+            while True:
+                await asyncio.sleep(3600 * 24 * 365)
+                print("Wow, it's on for 365 days!🚀", file=sys.stderr)
         finally:
             for task in tasks:
                 task.cancel()
