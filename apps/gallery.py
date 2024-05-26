@@ -8,7 +8,7 @@ import enum
 from datetime import datetime
 from dataclasses import dataclass
 
-from PIL import Image
+from PIL import Image, ImageFile
 
 from fastapi import FastAPI, Request, Response, Query
 from fastapi.responses import HTMLResponse, FileResponse
@@ -23,6 +23,7 @@ from gallery.db import OmgDB, ImageSqlDB
 from gallery.url import UrlParameters
 from gallery.utils import maybe_datetime_to_date, maybe_datetime_to_timestamp
 
+ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 app = FastAPI()
 # TODO: serve these differenty

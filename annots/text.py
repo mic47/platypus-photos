@@ -7,7 +7,7 @@ import typing as t
 
 import aiohttp as aioh
 from dataclasses_json import DataClassJsonMixin
-from PIL import Image
+from PIL import Image, ImageFile
 from transformers import pipeline
 from ultralytics import YOLO
 
@@ -15,6 +15,7 @@ from ultralytics import YOLO
 from data_model.features import ImageClassification, BoxClassification, Classification, Box
 from db.cache import Cache
 
+ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 def remove_consecutive_words(sentence: str) -> str:
     words = sentence.split(" ")
