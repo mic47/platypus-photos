@@ -34,6 +34,7 @@ class OmgDB(ABC):
         bottom_right: LocPoint,
         latitude_resolution: float,
         longitude_resolution: float,
+        over_fetch: float,
     ) -> t.List[LocationCluster]:
         ...
 
@@ -84,9 +85,10 @@ class ImageSqlDB(OmgDB):
         bottom_right: LocPoint,
         latitude_resolution: float,
         longitude_resolution: float,
+        over_fetch: float,
     ) -> t.List[LocationCluster]:
         return self._gallery_index.get_image_clusters(
-            url, top_left, bottom_right, latitude_resolution, longitude_resolution
+            url, top_left, bottom_right, latitude_resolution, longitude_resolution, over_fetch
         )
 
     def get_matching_images(self, url: UrlParameters) -> t.Iterable[Image]:

@@ -382,11 +382,14 @@ WHERE
         bottom_right: LocPoint,
         latitude_resolution: float,
         longitude_resolution: float,
+        over_fetch: float,
     ) -> t.List[LocationCluster]:
         lats = [top_left.latitude, bottom_right.latitude]
         longs = [top_left.longitude, bottom_right.longitude]
         lat_scale = (max(lats) - min(lats)) / latitude_resolution
         lon_scale = (max(longs) - min(longs)) / longitude_resolution
+        over_fetch_lat = (max(lats) - min(lats)) * over_fetch
+        over_fetch_long = (max(longs) - min(longs)) * over_fetch
         select_items, variables = self._matching_query(
             f"""
             address_name, address_country, latitude, longitude,
@@ -396,8 +399,14 @@ WHERE
         """,
             url,
             [
-                ("latitude BETWEEN ? AND ?", [bottom_right.latitude, top_left.latitude]),
-                ("longitude BETWEEN ? AND ?", [top_left.longitude, bottom_right.longitude]),
+                (
+                    "latitude BETWEEN ? AND ?",
+                    [bottom_right.latitude - over_fetch_lat, top_left.latitude + over_fetch_lat],
+                ),
+                (
+                    "longitude BETWEEN ? AND ?",
+                    [top_left.longitude - over_fetch_long, bottom_right.longitude + over_fetch_long],
+                ),
             ],
         )
         query = f"""
