@@ -17,6 +17,7 @@ from db.cache import Cache
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
+
 def remove_consecutive_words(sentence: str) -> str:
     words = sentence.split(" ")
     out = []

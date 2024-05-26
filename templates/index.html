@@ -185,14 +185,30 @@ function overlay_next(element, index) {
   element.parentElement.parentElement.classList.remove('overlay');
   changeState(index + 1);
 }
-function update_markers(map, existing_markers) {
+
+function update_boundary(nw, se) {
+  var input = document.getElementById('fbnd');
+  input.value = JSON.stringify({
+    "tl": {
+      "latitude": nw.lat,
+      "longitude": nw.lng,
+    },
+    "br": {
+      "latitude": se.lat,
+      "longitude": se.lng,
+    },
+  });
+}
+function update_markers(map, state) {
     function inner(e) {
         // TODO: wrapped maps: shift from 0 + wrap around
         var bounds = map.getBounds();
         var nw = bounds.getNorthWest();
         var se = bounds.getSouthEast();
+        update_boundary(nw, se);
         var sz = map.getSize();
         var cluster_pixel_size = 10;
+        var timestamp = (new Date()).getTime();
         fetch("/api/location_clusters", {
           method: "POST",
           body: JSON.stringify({
@@ -217,13 +233,17 @@ function update_markers(map, existing_markers) {
         })
           .then((response) => response.json())
           .then((clusters) => {
+            if (timestamp < state.last_update_timestamp) {
+              return;
+            }
+            state.last_update_timestamp = timestamp;
             var new_markers = {};
             for (var i = 0; i < clusters.length; i++) {
                 var cluster = clusters[i];
-                var existing = existing_markers[cluster.example_path_md5];
+                var existing = state.markers[cluster.example_path_md5];
                 if (existing !== undefined) {
                   new_markers[cluster.example_path_md5] = existing;
-                  delete existing_markers[cluster.example_path_md5];
+                  delete state.markers[cluster.example_path_md5];
                   continue;
                 }
                 var marker = L.marker([cluster.position.latitude, cluster.position.longitude]).addTo(map);
@@ -241,9 +261,9 @@ function update_markers(map, existing_markers) {
                 ].join(''));
                 new_markers[cluster.example_path_md5] = marker;
             }
-            Object.values(existing_markers).forEach((m) => m.remove());
-            Object.keys(existing_markers).forEach((m) => delete existing_markers[m]);
-            Object.entries(new_markers).forEach((m) => existing_markers[m[0]] = m[1]);
+            Object.values(state.markers).forEach((m) => m.remove());
+            Object.keys(state.markers).forEach((m) => delete state.markers[m]);
+            Object.entries(new_markers).forEach((m) => state.markers[m[0]] = m[1]);
           });
     };
     return inner
@@ -251,13 +271,16 @@ function update_markers(map, existing_markers) {
 }
 function init_fun() {
   var map = L.map('map').setView([51.505, -0.09], 13);
-  var existing_markers = {};
-  map.on('load', update_markers(map, existing_markers));
-  map.on('zoomend', update_markers(map, existing_markers));
-  map.on('moveend', update_markers(map, existing_markers));
-  map.on('zoom', update_markers(map, existing_markers));
-  map.on('move', update_markers(map, existing_markers));
-  map.on('resize', update_markers(map, existing_markers));
+  var state = {
+    "markers": {},
+    "last_update_timestamp": 0,
+  };
+  map.on('load', update_markers(map, state));
+  map.on('zoomend', update_markers(map, state));
+  map.on('moveend', update_markers(map, state));
+  map.on('zoom', update_markers(map, state));
+  map.on('move', update_markers(map, state));
+  map.on('resize', update_markers(map, state));
 
   L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19,
@@ -276,13 +299,14 @@ function init_fun() {
 <body onload="init_fun()">
 
 <div>
-  <form>
+  <form id="input">
     <label for="ftag">Tag:</label><input type="text" id="ftag" name="tag" value="{{input.tag}}"><br>
     <label for="fcls">Text:</label><input type="text" id="fcls" name="cls" value="{{input.cls}}"><br>
     <label for="faddr">Address:</label><input type="text" id="faddr" name="addr" value="{{input.addr}}"><br>
     <label for="fdatefrom">Since</label><input type="date" id="fdatefrom" name="datefrom" value="{{input.datefrom}}" />
     <label for="fdateto">Until</label><input type="date" id="fdateto" name="dateto" value="{{input.dateto}}" /><br/>
-    <label for="fdir">Address:</label><input type="text" id="fdir" name="dir" value="{{input.dir}}"><br>
+    <label for="fdir">Directory:</label><input type="text" id="fdir" name="dir" value="{{input.dir}}"><br>
+    <label for="boundary">Boundary:</label><input type="text" id="fbnd" name="bnd" value=""><br>
     <input type="submit" value="Submit">
     <input type="reset"> 
   </form>
