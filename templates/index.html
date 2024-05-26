@@ -132,7 +132,13 @@ function replace_image_size_inside(element, source, replacement) {
   var images = element.getElementsByTagName('img');
   for (var i = 0; i < images.length; i ++) {
     var image = images[i];
-    image.src = image.src.replace('size=' + source, 'size=' + replacement);
+    var repl = image.src.replace('size=' + source, 'size=' + replacement);
+    if (repl != image.src) {
+        image.src = repl;
+    }
+    if (replacement == 'original') {
+      image.loading = 'eager';
+    }
   }
 }
 function this_is_overlay_element(element) {
@@ -307,17 +313,18 @@ function init_fun() {
   {% else %}
   <div class="gallery_item">
   {% endif %}
+    <span id="i{{loop.index0}}"></span>
     <div class="gallery_item_nav">
         {% if loop.index0 == 0 %}
         {% if urls.prev_overlay %}<a href="{{urls.prev_overlay}}">prev</a>{% else %} prev {% endif %}
         {% else %}
-        <a href="#" onclick="overlay_prev(this, {{ loop.index0 }})">prev</a>
+        <a href="#i{{ loop.index0}}" onclick="overlay_prev(this, {{ loop.index0 }})">prev</a>
         {% endif %}
-        <a href="#" onclick="overlay_close(this)">close</a>
+        <a href="#i{{ loop.index0}}" onclick="overlay_close(this)">close</a>
         {% if loop.index == images|length %}
         {% if urls.next_overlay %}<a href="{{urls.next_overlay}}">next</a>{% else %} next {% endif %}
         {% else %}
-        <a href="#" onclick="overlay_next(this, {{ loop.index0 }})">next</a>
+        <a href="#i{{ loop.index0}}" onclick="overlay_next(this, {{ loop.index0 }})">next</a>
         {% endif %}
     </div>
     <div class="gallery_container" onclick="overlay(this, {{ loop.index0 }})">
