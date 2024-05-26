@@ -390,6 +390,16 @@ WHERE
         lon_scale = (max(longs) - min(longs)) / longitude_resolution
         over_fetch_lat = (max(lats) - min(lats)) * over_fetch
         over_fetch_long = (max(longs) - min(longs)) * over_fetch
+        print(
+            lat_scale,
+            lon_scale,
+            latitude_resolution,
+            longitude_resolution,
+            lats,
+            longs,
+            over_fetch_lat,
+            over_fetch_long,
+        )
         select_items, variables = self._matching_query(
             f"""
             address_name, address_country, latitude, longitude,
