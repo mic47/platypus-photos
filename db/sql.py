@@ -2,6 +2,7 @@ from collections import (
     Counter,
 )
 import typing as t
+import math
 import sqlite3
 from datetime import (
     datetime,
@@ -386,8 +387,8 @@ WHERE
     ) -> t.List[LocationCluster]:
         lats = [top_left.latitude, bottom_right.latitude]
         longs = [top_left.longitude, bottom_right.longitude]
-        lat_scale = (max(lats) - min(lats)) / latitude_resolution
-        lon_scale = (max(longs) - min(longs)) / longitude_resolution
+        lat_scale = round_to_significant_digits((max(lats) - min(lats)) / latitude_resolution, 3)
+        lon_scale = round_to_significant_digits((max(longs) - min(longs)) / longitude_resolution, 3)
         over_fetch_lat = (max(lats) - min(lats)) * over_fetch
         over_fetch_long = (max(longs) - min(longs)) * over_fetch
         print(
@@ -628,3 +629,7 @@ SELECT "alt", 'min', MIN(altitude) FROM matched_images WHERE altitude IS NOT NUL
                     version,
                     md5,
                 )
+
+
+def round_to_significant_digits(value: float, significant_digits: int) -> float:
+    return round(value, significant_digits - int(math.floor(math.log10(abs(value)))) - 1)
