@@ -66,7 +66,7 @@ class UrlParameters:
             ("dir", directory),
         ]
         if oi is not None:
-            parts.append(("oi=", oi))
+            parts.append(("oi", oi))
         parts_url = "&".join(f"{k}={v}" for k, v in parts if v is not None and v != "")
         ret = f"?{parts_url}"
         return ret
