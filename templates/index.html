@@ -142,8 +142,9 @@ function overlay_next(element, index) {
 }
 function update_markers(map, existing_markers) {
     function inner(e) {
-        // TODO: wrapped maps
+        // TODO: wrapped maps: shift from 0 + wrap around
         // TODO: resize images
+        // TODO: overfetch
         var bounds = map.getBounds();
         var nw = bounds.getNorthWest();
         var se = bounds.getSouthEast();

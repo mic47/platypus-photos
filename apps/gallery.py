@@ -1,12 +1,13 @@
+import asyncio
 import json
 import typing as t
 import os
 import sys
-import asyncio
+import time
 from datetime import datetime
 from dataclasses import dataclass
 
-from fastapi import FastAPI, Request, Query
+from fastapi import FastAPI, Request, Response, Query
 from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -57,6 +58,15 @@ async def auto_load() -> None:
         await asyncio.sleep(sleep_time)
 
 
+@app.middleware("http")
+async def log_metadata(request: Request, func: t.Callable[[Request], t.Awaitable[Response]]) -> Response:
+    start_time = time.time()
+    response = await func(request)
+    took = time.time() - start_time
+    print("Request took ", request.url, took, file=sys.stderr)
+    return response
+
+
 @app.get(
     "/img",
     responses={
@@ -82,7 +92,6 @@ class LocClusterParams:
 @app.post("/api/location_clusters")
 def location_clusters_endpoint(params: LocClusterParams) -> t.List[LocationCluster]:
     # TODO: we want to take this from parameters?
-    print(params)
     clusters = DB.get_image_clusters(
         params.url, params.tl, params.br, params.res.latitude, params.res.longitude
     )
@@ -103,7 +112,6 @@ async def read_item(
     dir_: str = Query("", alias="dir"),
     oi: t.Optional[int] = None,
 ) -> HTMLResponse:
-    print(datefrom, dateto)
     url = UrlParameters(
         tag,
         cls,

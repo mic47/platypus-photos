@@ -387,7 +387,6 @@ WHERE
         longs = [top_left.longitude, bottom_right.longitude]
         lat_scale = (max(lats) - min(lats)) / latitude_resolution
         lon_scale = (max(longs) - min(longs)) / longitude_resolution
-        print(lat_scale, lon_scale, top_left, bottom_right)
         select_items, variables = self._matching_query(
             f"""
             address_name, address_country, latitude, longitude,
