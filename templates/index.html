@@ -206,11 +206,12 @@ function update_markers(map, existing_markers) {
 }
 function init_fun() {
   var map = L.map('map').setView([51.505, -0.09], 13);
-        // Events: load, zoomend, moveend, resizej
   var existing_markers = {};
   map.on('load', update_markers(map, existing_markers));
   map.on('zoomend', update_markers(map, existing_markers));
   map.on('moveend', update_markers(map, existing_markers));
+  map.on('zoom', update_markers(map, existing_markers));
+  map.on('move', update_markers(map, existing_markers));
   map.on('resize', update_markers(map, existing_markers));
 
   L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
