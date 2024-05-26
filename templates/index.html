@@ -38,7 +38,7 @@ div.gallery_item:hover {
   width: initial;
   height: initial;
   max-height: 90%;
-
+  height: 90%;
 }
 .gallery_item_nav{
   display: none;
@@ -125,20 +125,33 @@ function changeState(index) {
     window.history.replaceState(window.history.state, "", url.href);
   }
 }
+function replace_image_size_inside(element, source, replacement) {
+  var images = element.getElementsByTagName('img');
+  for (var i = 0; i < images.length; i ++) {
+    var image = images[i];
+    image.src = image.src.replace('size=' + source, 'size=' + replacement);
+  }
+}
 function overlay(element, index) {
+  replace_image_size_inside(element.parentElement, 'preview', 'original');
   element.parentElement.classList.add('overlay');
   changeState(index);
 }
 function overlay_close(element) {
+  replace_image_size_inside(element.parentElement.parentElement, 'original', 'preview');
   element.parentElement.parentElement.classList.remove('overlay');
   changeState(null);
 }
 function overlay_prev(element, index) {
+  replace_image_size_inside(element.parentElement.parentElement.previousElementSibling, 'preview', 'original');
+  replace_image_size_inside(element.parentElement.parentElement, 'original', 'preview');
   element.parentElement.parentElement.previousElementSibling.classList.add('overlay');
   element.parentElement.parentElement.classList.remove('overlay');
   changeState(index - 1);
 }
 function overlay_next(element, index) {
+  replace_image_size_inside(element.parentElement.parentElement.nextElementSibling, 'preview', 'original');
+  replace_image_size_inside(element.parentElement.parentElement, 'original', 'preview');
   element.parentElement.parentElement.nextElementSibling.classList.add('overlay');
   element.parentElement.parentElement.classList.remove('overlay');
   changeState(index + 1);
@@ -196,7 +209,7 @@ function update_markers(map, existing_markers) {
                     cluster.size,
                     ")<br/><img src='/img?hsh=",
                     cluster.example_path_md5,
-                    "' class='popup'>"
+                    "&size=preview' class='popup'>"
                 ].join(''));
                 new_markers[cluster.example_path_md5] = marker;
             }
@@ -286,7 +299,7 @@ function init_fun() {
         {% endif %}
     </div>
     <div class="gallery_container" onclick="overlay(this, {{ loop.index0 }})">
-    <img src="/img?hsh={{image.hsh}}" class="gallery_image"/>
+    <img src="/img?hsh={{image.hsh}}&size={% if loop.index0 == oi %}original{%else%}preview{%endif%}" class="gallery_image"/>
     </div>
     {{ image.classifications}} <br/>
     {% for tag in image.tags %}

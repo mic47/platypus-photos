@@ -4,8 +4,11 @@ import typing as t
 import os
 import sys
 import time
+import enum
 from datetime import datetime
 from dataclasses import dataclass
+
+from PIL import Image
 
 from fastapi import FastAPI, Request, Response, Query
 from fastapi.responses import HTMLResponse, FileResponse
@@ -67,13 +70,48 @@ async def log_metadata(request: Request, func: t.Callable[[Request], t.Awaitable
     return response
 
 
+class ImageSize(enum.Enum):
+    ORIGINAL = "original"
+    MEDIUM = "medium"
+    PREVIEW = "preview"
+
+
+def sz_to_resolution(size: ImageSize) -> t.Optional[int]:
+    if size == ImageSize.ORIGINAL:
+        return None
+    if size == ImageSize.MEDIUM:
+        return 1600
+    if size == ImageSize.PREVIEW:
+        return 640
+    raise NotImplementedError()
+
+
+def get_cache_file(size: int, hsh: str) -> str:
+    return f".cache/{size}/{hsh[0]}/{hsh[1]}/{hsh[2]}/{hsh[3:]}.jpg"
+
+
 @app.get(
     "/img",
     responses={
         200: {"description": "photo", "content": {"image/jpeg": {"example": "No example available."}}}
     },
 )
-def image_endpoint(hsh: t.Union[int, str]) -> t.Any:
+def image_endpoint(hsh: t.Union[int, str], size: ImageSize = ImageSize.ORIGINAL) -> t.Any:
+    sz = sz_to_resolution(size)
+    if sz is not None and isinstance(hsh, str):
+        cache_file = get_cache_file(sz, hsh)
+        if not os.path.exists(cache_file):
+            file_path = DB.get_path_from_hash(hsh)
+            if file_path is None:
+                return {"error": "File not found!"}
+            img = Image.open(file_path)
+            img.thumbnail((sz, sz))
+            dirname = os.path.dirname(cache_file)
+            if not os.path.exists(dirname):
+                os.makedirs(dirname, exist_ok=True)
+            exif = img.info["exif"]
+            img.save(cache_file, exif=exif)
+        return FileResponse(cache_file, media_type="image/jpeg", filename=cache_file.split("/")[-1])
     file_path = DB.get_path_from_hash(hsh)
     if file_path is not None and os.path.exists(file_path):
         # TODO: fix media type
