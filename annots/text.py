@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 import base64
 import io
+import os
+import sys
 import itertools
 import traceback
 import typing as t
@@ -55,44 +57,48 @@ class Models:
         self._version = ImageClassification.current_version()
         self._remote = remote
 
-    async def process_image_batch(
+    async def process_image(
         self: "Models",
         session: aioh.ClientSession,
-        paths: t.Iterable[str],
+        path: str,
         gap_threshold: float = 0.2,
         discard_threshold: float = 0.1,
-    ) -> t.List[ImageClassification]:
+    ) -> ImageClassification:
         output = []
         not_cached = []
-        for path in paths:
-            x = self._cache.get(path)
-            if x is None:
-                if self._remote is not None:
-                    try:
-                        with open(path, "rb") as f:
-                            data = base64.encodebytes(f.read())
-                        ret = await fetch_ann(
-                            session,
-                            self._remote,
-                            AnnotateRequest(path, data.decode("utf-8"), gap_threshold, discard_threshold),
-                        )
-                        self._cache.add(ret)
-                        output.append(ret)
-                    # pylint: disable = bare-except
-                    except:
-                        traceback.print_exc()
-                        not_cached.append(path)
-                else:
+        x = self._cache.get(path)
+        if x is None:
+            if os.path.getsize(path) > 10_000_000:
+                print(f"Warning large file {path}", file=sys.stderr)
+            if os.path.getsize(path) > 100_000_000:
+                print(f"ERROR huge file {path}", file=sys.stderr)
+                raise Exception("Skipping huge file")
+            if self._remote is not None:
+                try:
+                    with open(path, "rb") as f:
+                        data = base64.encodebytes(f.read())
+                    ret = await fetch_ann(
+                        session,
+                        self._remote,
+                        AnnotateRequest(path, data.decode("utf-8"), gap_threshold, discard_threshold),
+                    )
+                    self._cache.add(ret)
+                    output.append(ret)
+                # pylint: disable = bare-except
+                except:
+                    traceback.print_exc()
                     not_cached.append(path)
             else:
-                output.append(x)
+                not_cached.append(path)
+        else:
+            output.append(x)
         if not_cached:
             for p in self.process_image_batch_impl(
                 ((x, None) for x in not_cached), gap_threshold, discard_threshold
             ):
                 self._cache.add(p)
                 output.append(p)
-        return output
+        return output[0]
 
     def process_image_data(
         self,

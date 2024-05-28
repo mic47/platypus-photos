@@ -105,7 +105,7 @@ class GlobalContext:
         return (path, md5hsh, exif_item, geo, path_date)
 
     async def image_to_text(self, path: str) -> t.Tuple[str, ImageClassification]:
-        itt = (await self.models.process_image_batch(self.session, [path]))[0]
+        itt = await self.models.process_image(self.session, path)
         return (path, itt)
 
 
