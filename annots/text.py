@@ -69,9 +69,11 @@ class Models:
         x = self._cache.get(path)
         if x is None:
             if os.path.getsize(path) > 10_000_000:
-                print(f"Warning large file {path}", file=sys.stderr)
+                for i in range(5):
+                    print(f"Warning large file {path}", file=sys.stderr)
             if os.path.getsize(path) > 100_000_000:
-                print(f"ERROR huge file {path}", file=sys.stderr)
+                for i in range(5):
+                    print(f"ERROR huge file {path}", file=sys.stderr)
                 raise Exception("Skipping huge file")
             if self._remote is not None:
                 try:
