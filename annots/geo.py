@@ -24,7 +24,7 @@ class Geolocator:
     def address(self, image: str, lat: float, lon: float, recompute: bool = False) -> HasImage[GeoAddress]:
         ret = self._cache.get(image)
         if ret is not None and not recompute:
-            return ret
+            return ret.payload
         return self._cache.add(self.address_impl(image, lat, lon))
 
     def address_impl(self, image: str, lat: float, lon: float) -> HasImage[GeoAddress]:

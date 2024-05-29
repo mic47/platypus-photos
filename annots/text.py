@@ -98,7 +98,7 @@ class Models:
             else:
                 not_cached.append(path)
         else:
-            output.append(x)
+            output.append(x.payload)
         if not_cached:
             for p in self.process_image_batch_impl(
                 ((x, None) for x in not_cached), gap_threshold, discard_threshold

@@ -233,7 +233,7 @@ class Exif:
     def process_image(self, path: str) -> HasImage[ImageExif]:
         ret = self._cache.get(path)
         if ret is not None:
-            return ret
+            return ret.payload
         return self._cache.add(self.process_image_impl(path))
 
     def process_image_impl(self: "Exif", path: str) -> HasImage[ImageExif]:

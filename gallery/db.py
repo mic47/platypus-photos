@@ -7,7 +7,7 @@ from tqdm import tqdm
 from annots.date import PathDateExtractor
 from data_model.features import ImageExif, GeoAddress, ImageClassification, MD5Annot, HasImage
 from db.cache import SQLiteCache
-from db.sql import FeaturesTable, GalleryIndexTable, Connection
+from db.sql import FeaturesTable, GalleryIndexTable, Connection, FeaturePayload
 from db.types import ImageAggregation, Image, LocationCluster, LocPoint
 from gallery.url import UrlParameters
 
@@ -131,18 +131,17 @@ class ImageSqlDB(OmgDB):
     def _reindex(self, path: str) -> None:
         max_last_update = 0.0
 
-        def extract_data(x: t.Optional[t.Tuple[HasImage[Ser], float]]) -> t.Optional[Ser]:
+        def extract_data(x: t.Optional[FeaturePayload[HasImage[Ser]]]) -> t.Optional[Ser]:
             nonlocal max_last_update
             if x is None:
                 return None
-            d, time = x
-            max_last_update = max(max_last_update, time)
-            return d.p
+            max_last_update = max(max_last_update, x.last_update)
+            return x.payload.p
 
-        exif = extract_data(self._exif.get_with_last_update(path))
-        addr = extract_data(self._address.get_with_last_update(path))
-        text_cls = extract_data(self._text_classification.get_with_last_update(path))
-        md5 = extract_data(self._md5.get_with_last_update(path))
+        exif = extract_data(self._exif.get(path))
+        addr = extract_data(self._address.get(path))
+        text_cls = extract_data(self._text_classification.get(path))
+        md5 = extract_data(self._md5.get(path))
         omg = Image.from_updates(
             path,
             exif,

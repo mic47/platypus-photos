@@ -12,7 +12,7 @@ class MD5er:
     def process(self, image: str) -> HasImage[MD5Annot]:
         ret = self._cache.get(image)
         if ret is not None:
-            return ret
+            return ret.payload
         return self._cache.add(
             HasImage(image, self._version, MD5Annot(hashlib.md5(open(image, "rb").read()).hexdigest()))
         )

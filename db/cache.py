@@ -5,7 +5,7 @@ import json
 from tqdm import tqdm
 
 from data_model.features import HasImage, HasCurrentVersion
-from db.sql import FeaturesTable, Connection
+from db.sql import FeaturesTable, Connection, FeaturePayload
 
 
 Ser = t.TypeVar("Ser", bound="HasCurrentVersion")
@@ -14,7 +14,7 @@ DEFAULT_VERSION = 0
 
 
 class Cache(t.Generic[Ser]):
-    def get(self, key: str) -> t.Optional[HasImage[Ser]]:
+    def get(self, key: str) -> t.Optional[FeaturePayload[HasImage[Ser]]]:
         raise NotImplementedError
 
     def add(self, data: HasImage[Ser]) -> HasImage[Ser]:
@@ -22,7 +22,7 @@ class Cache(t.Generic[Ser]):
 
 
 class NoCache(t.Generic[Ser], Cache[Ser]):
-    def get(self, key: str) -> t.Optional[HasImage[Ser]]:
+    def get(self, key: str) -> t.Optional[FeaturePayload[HasImage[Ser]]]:
         pass
 
     def add(self, data: HasImage[Ser]) -> HasImage[Ser]:
@@ -109,36 +109,24 @@ class SQLiteCache(t.Generic[Ser], Cache[Ser]):
         self._features_table = features_table
         self._loader = loader
         self._type = loader.__name__
-        self._data: t.Dict[str, t.Tuple[int, HasImage[Ser]]] = {}
+        self._data: t.Dict[str, FeaturePayload[HasImage[Ser]]] = {}
         self._current_version = loader.current_version()
         self._enforce_version = enforce_version
         self._jsonl = JsonlWriter(jsonl_path)
 
-    def get(self, key: str) -> t.Optional[HasImage[Ser]]:
+    def get(self, key: str) -> t.Optional[FeaturePayload[HasImage[Ser]]]:
         cached = self._data.get(key)
         res = self._features_table.get_payload(self._type, key)
         if res is None:
             return None
-        if self._enforce_version and res.version != self._current_version:
-            return None
-        if cached is not None and cached[0] == res.rowid:
-            return cached[1]
+        if cached is not None and cached.rowid == res.rowid:
+            return cached
         dct = json.loads(res.payload)
         parsed = HasImage.load(dct, self._loader.from_dict(dct))
-        self._data[key] = (res.rowid, parsed)
-        return parsed
-
-    def get_with_last_update(self, key: str) -> t.Optional[t.Tuple[HasImage[Ser], int]]:
-        cached = self._data.get(key)
-        res = self._features_table.get_payload(self._type, key)
-        if res is None:
-            return None
-        if cached is not None and cached[0] == res.rowid:
-            return (cached[1], cached[0])
-        dct = json.loads(res.payload)
-        parsed = HasImage.load(dct, self._loader.from_dict(dct))
-        self._data[key] = (res.rowid, parsed)
-        return parsed, res.last_update
+        ret = t.cast(FeaturePayload[HasImage[Ser]], res)
+        ret.payload = parsed
+        self._data[key] = ret
+        return ret
 
     def add(self, data: HasImage[Ser]) -> HasImage[Ser]:
         if data.version != self._current_version:
