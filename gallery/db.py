@@ -5,7 +5,7 @@ from dataclasses_json import DataClassJsonMixin
 from tqdm import tqdm
 
 from annots.date import PathDateExtractor
-from data_model.features import ImageExif, GeoAddress, ImageClassification, MD5Annot, HasImage
+from data_model.features import ImageExif, GeoAddress, ImageClassification, MD5Annot, WithImage
 from db.cache import SQLiteCache
 from db.sql import FeaturesTable, GalleryIndexTable, Connection, FeaturePayload
 from db.types import ImageAggregation, Image, LocationCluster, LocPoint
@@ -131,7 +131,7 @@ class ImageSqlDB(OmgDB):
     def _reindex(self, path: str) -> None:
         max_last_update = 0.0
 
-        def extract_data(x: t.Optional[FeaturePayload[HasImage[Ser]]]) -> t.Optional[Ser]:
+        def extract_data(x: t.Optional[FeaturePayload[WithImage[Ser]]]) -> t.Optional[Ser]:
             nonlocal max_last_update
             if x is None:
                 return None

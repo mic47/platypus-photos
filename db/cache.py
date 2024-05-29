@@ -4,7 +4,7 @@ import json
 
 from tqdm import tqdm
 
-from data_model.features import HasImage, HasCurrentVersion
+from data_model.features import WithImage, HasCurrentVersion
 from db.sql import FeaturesTable, Connection, FeaturePayload
 
 
@@ -14,23 +14,23 @@ DEFAULT_VERSION = 0
 
 
 class Cache(t.Generic[Ser]):
-    def get(self, key: str) -> t.Optional[FeaturePayload[HasImage[Ser]]]:
+    def get(self, key: str) -> t.Optional[FeaturePayload[WithImage[Ser]]]:
         raise NotImplementedError
 
-    def add(self, data: HasImage[Ser]) -> HasImage[Ser]:
+    def add(self, data: WithImage[Ser]) -> WithImage[Ser]:
         raise NotImplementedError
 
 
 class NoCache(t.Generic[Ser], Cache[Ser]):
-    def get(self, key: str) -> t.Optional[FeaturePayload[HasImage[Ser]]]:
+    def get(self, key: str) -> t.Optional[FeaturePayload[WithImage[Ser]]]:
         pass
 
-    def add(self, data: HasImage[Ser]) -> HasImage[Ser]:
+    def add(self, data: WithImage[Ser]) -> WithImage[Ser]:
         return data
 
 
 class Loader(t.Generic[Ser]):
-    def __init__(self, path: str, type_: t.Type[Ser], loader: t.Callable[[HasImage[Ser]], None]):
+    def __init__(self, path: str, type_: t.Type[Ser], loader: t.Callable[[WithImage[Ser]], None]):
         self._position = 0
         # pylint: disable=consider-using-with
         self._file = open(path, encoding="utf-8")
@@ -64,7 +64,7 @@ class Loader(t.Generic[Ser]):
                     if j.get("version", 0) != self._type.current_version():
                         continue
                     data = self._type.from_dict(j)
-                    self._loader(HasImage.load(j, data))
+                    self._loader(WithImage.load(j, data))
                 # pylint: disable = broad-exception-caught
                 except Exception as e:
                     # Revert position in the file
@@ -109,12 +109,12 @@ class SQLiteCache(t.Generic[Ser], Cache[Ser]):
         self._features_table = features_table
         self._loader = loader
         self._type = loader.__name__
-        self._data: t.Dict[str, FeaturePayload[HasImage[Ser]]] = {}
+        self._data: t.Dict[str, FeaturePayload[WithImage[Ser]]] = {}
         self._current_version = loader.current_version()
         self._enforce_version = enforce_version
         self._jsonl = JsonlWriter(jsonl_path)
 
-    def get(self, key: str) -> t.Optional[FeaturePayload[HasImage[Ser]]]:
+    def get(self, key: str) -> t.Optional[FeaturePayload[WithImage[Ser]]]:
         cached = self._data.get(key)
         res = self._features_table.get_payload(self._type, key)
         if res is None:
@@ -122,13 +122,13 @@ class SQLiteCache(t.Generic[Ser], Cache[Ser]):
         if cached is not None and cached.rowid == res.rowid:
             return cached
         dct = json.loads(res.payload)
-        parsed = HasImage.load(dct, self._loader.from_dict(dct))
-        ret = t.cast(FeaturePayload[HasImage[Ser]], res)
+        parsed = WithImage.load(dct, self._loader.from_dict(dct))
+        ret = t.cast(FeaturePayload[WithImage[Ser]], res)
         ret.payload = parsed
         self._data[key] = ret
         return ret
 
-    def add(self, data: HasImage[Ser]) -> HasImage[Ser]:
+    def add(self, data: WithImage[Ser]) -> WithImage[Ser]:
         if data.version != self._current_version:
             print(
                 "Trying to add wrong version of feature",
@@ -174,7 +174,7 @@ def main() -> None:
     for path, type_ in to_iter:
         sql = SQLiteCache(FeaturesTable(conn), type_)
 
-        def load(x: HasImage[HasCurrentVersion]) -> None:
+        def load(x: WithImage[HasCurrentVersion]) -> None:
             # pylint: disable = cell-var-from-loop
             sql.add(x)
 

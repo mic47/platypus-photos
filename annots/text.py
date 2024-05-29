@@ -15,7 +15,7 @@ from transformers import pipeline
 from ultralytics import YOLO
 
 
-from data_model.features import ImageClassification, BoxClassification, Classification, Box, HasImage
+from data_model.features import ImageClassification, BoxClassification, Classification, Box, WithImage
 from db.cache import Cache
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
@@ -45,11 +45,11 @@ class AnnotateRequest(DataClassJsonMixin):
 
 async def fetch_ann(
     session: aioh.ClientSession, url: str, request: AnnotateRequest
-) -> HasImage[ImageClassification]:
+) -> WithImage[ImageClassification]:
     async with aioh.ClientSession() as session:
         async with session.post(url, json=request.to_dict(), timeout=600) as data:
             dct = json.loads(await data.text())
-            return HasImage.load(dct, ImageClassification.from_dict(dct))
+            return WithImage.load(dct, ImageClassification.from_dict(dct))
 
 
 class Models:
@@ -67,7 +67,7 @@ class Models:
         path: str,
         gap_threshold: float = 0.2,
         discard_threshold: float = 0.1,
-    ) -> HasImage[ImageClassification]:
+    ) -> WithImage[ImageClassification]:
         output = []
         not_cached = []
         x = self._cache.get(path)
@@ -110,7 +110,7 @@ class Models:
     def process_image_data(
         self,
         request: AnnotateRequest,
-    ) -> HasImage[ImageClassification]:
+    ) -> WithImage[ImageClassification]:
         return list(
             self.process_image_batch_impl(
                 [(request.path, base64.decodebytes(request.data_base64.encode("utf-8")))],
@@ -124,7 +124,7 @@ class Models:
         paths: t.Iterable[t.Tuple[str, t.Optional[bytes]]],
         gap_threshold: float,
         discard_threshold: float,
-    ) -> t.Iterable[HasImage[ImageClassification]]:
+    ) -> t.Iterable[WithImage[ImageClassification]]:
         images = [
             (path, Image.open(path) if data is None else Image.open(io.BytesIO(data))) for path, data in paths
         ]
@@ -192,7 +192,7 @@ class Models:
                     prev_conf = conf
                     classifications.append(Classification(names[index], float(conf)))
                 box_class.append(BoxClassification(box, classifications))
-            yield HasImage(path, self._version, ImageClassification(list(captions), box_class))
+            yield WithImage(path, self._version, ImageClassification(list(captions), box_class))
         for ((path, image), captions, _) in all_input:
             if path in visited:
                 continue
@@ -202,4 +202,4 @@ class Models:
                 gt = c.get("generated_text")
                 if gt is not None:
                     captions.add(remove_consecutive_words(gt))
-            yield HasImage(path, self._version, ImageClassification(list(captions), []))
+            yield WithImage(path, self._version, ImageClassification(list(captions), []))

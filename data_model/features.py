@@ -15,15 +15,15 @@ Ser = t.TypeVar("Ser", bound="DataClassJsonMixin")
 T = t.TypeVar("T")
 
 
-class HasImage(t.Generic[Ser]):
+class WithImage(t.Generic[Ser]):
     def __init__(self, image: str, version: int, payload: Ser):
         self.image = image
         self.version = version
         self.p = payload
 
     @staticmethod
-    def load(d: t.Dict[str, t.Any], payload: Ser) -> "HasImage[Ser]":
-        return HasImage(cast(d["image"], str), cast(d["version"], int), payload)
+    def load(d: t.Dict[str, t.Any], payload: Ser) -> "WithImage[Ser]":
+        return WithImage(cast(d["image"], str), cast(d["version"], int), payload)
 
     def to_json(self) -> str:
         return json.dumps(

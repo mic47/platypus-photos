@@ -1,6 +1,6 @@
 import hashlib
 
-from data_model.features import MD5Annot, HasImage
+from data_model.features import MD5Annot, WithImage
 from db.cache import Cache
 
 
@@ -9,10 +9,10 @@ class MD5er:
         self._cache = cache
         self._version = MD5Annot.current_version()
 
-    def process(self, image: str) -> HasImage[MD5Annot]:
+    def process(self, image: str) -> WithImage[MD5Annot]:
         ret = self._cache.get(image)
         if ret is not None:
             return ret.payload
         return self._cache.add(
-            HasImage(image, self._version, MD5Annot(hashlib.md5(open(image, "rb").read()).hexdigest()))
+            WithImage(image, self._version, MD5Annot(hashlib.md5(open(image, "rb").read()).hexdigest()))
         )
