@@ -15,6 +15,7 @@ import asyncinotify
 from tqdm import tqdm
 
 from data_model.config import Config
+from data_model.features import HasImage
 from db.cache import SQLiteCache
 from db.sql import FeaturesTable, Connection
 from annots.date import PathDateExtractor
@@ -92,19 +93,25 @@ class GlobalContext:
 
     def cheap_features(
         self, path: str
-    ) -> t.Tuple[str, MD5Annot, ImageExif, t.Optional[GeoAddress], t.Optional[datetime.datetime]]:
+    ) -> t.Tuple[
+        str,
+        HasImage[MD5Annot],
+        HasImage[ImageExif],
+        t.Optional[HasImage[GeoAddress]],
+        t.Optional[datetime.datetime],
+    ]:
         exif_item = self.exif.process_image(path)
         geo = None
-        if exif_item.gps is not None:
+        if exif_item.p.gps is not None:
             # TODO: do recomputation based on the last_update
             geo = self.geolocator.address(
-                path, exif_item.gps.latitude, exif_item.gps.longitude, recompute=False
+                path, exif_item.p.gps.latitude, exif_item.p.gps.longitude, recompute=False
             )
         md5hsh = self.md5.process(path)
         path_date = self.path_to_date.extract_date(path)
         return (path, md5hsh, exif_item, geo, path_date)
 
-    async def image_to_text(self, path: str) -> t.Tuple[str, ImageClassification]:
+    async def image_to_text(self, path: str) -> t.Tuple[str, HasImage[ImageClassification]]:
         itt = await self.models.process_image(self.session, path)
         return (path, itt)
 

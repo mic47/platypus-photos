@@ -1,16 +1,17 @@
 from abc import ABC, abstractmethod
 import typing as t
 
+from dataclasses_json import DataClassJsonMixin
 from tqdm import tqdm
 
 from annots.date import PathDateExtractor
-from data_model.features import ImageExif, GeoAddress, ImageClassification, MD5Annot
+from data_model.features import ImageExif, GeoAddress, ImageClassification, MD5Annot, HasImage
 from db.cache import SQLiteCache
 from db.sql import FeaturesTable, GalleryIndexTable, Connection
 from db.types import ImageAggregation, Image, LocationCluster, LocPoint
 from gallery.url import UrlParameters
 
-T = t.TypeVar("T")
+Ser = t.TypeVar("Ser", bound=DataClassJsonMixin)
 
 
 class OmgDB(ABC):
@@ -130,13 +131,13 @@ class ImageSqlDB(OmgDB):
     def _reindex(self, path: str) -> None:
         max_last_update = 0.0
 
-        def extract_data(x: t.Optional[t.Tuple[T, float]]) -> t.Optional[T]:
+        def extract_data(x: t.Optional[t.Tuple[HasImage[Ser], float]]) -> t.Optional[Ser]:
             nonlocal max_last_update
             if x is None:
                 return None
             d, time = x
             max_last_update = max(max_last_update, time)
-            return d
+            return d.p
 
         exif = extract_data(self._exif.get_with_last_update(path))
         addr = extract_data(self._address.get_with_last_update(path))

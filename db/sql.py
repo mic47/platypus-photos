@@ -22,15 +22,6 @@ from gallery.url import (
 from db.types import FeaturePayload, Image, ImageAggregation, LocationCluster, LocPoint
 
 
-# TODO:
-# 1. Check code that it works, and check types
-# 2. Use this in annotation
-# 3. Make converter for existing features
-# 4. Backup into jsonl
-# 5. Remove Json DB
-# 6. Cleanup after removal
-
-
 class Connection:
     def __init__(self, path: str, timeout: int = 120, check_same_thread: bool = True) -> None:
         self._path = path

@@ -4,7 +4,7 @@ import typing as t
 
 import exif
 
-from data_model.features import ImageExif, Date, Camera, GPSCoord
+from data_model.features import ImageExif, Date, Camera, GPSCoord, HasImage
 from db.cache import Cache
 
 
@@ -230,13 +230,13 @@ class Exif:
         self._cache = cache
         self._version = ImageExif.current_version()
 
-    def process_image(self, path: str) -> ImageExif:
+    def process_image(self, path: str) -> HasImage[ImageExif]:
         ret = self._cache.get(path)
         if ret is not None:
             return ret
         return self._cache.add(self.process_image_impl(path))
 
-    def process_image_impl(self: "Exif", path: str) -> ImageExif:
+    def process_image_impl(self: "Exif", path: str) -> HasImage[ImageExif]:
         img = exif.Image(path)
         d = UnparsedTags()
         for tag in img.list_all():
@@ -257,4 +257,4 @@ class Exif:
         for tag, value in d.all().items():
             print("ERR: unprocessed tag", tag, value, type(value), file=sys.stderr)
 
-        return ImageExif(path, self._version, gps, camera, date)
+        return HasImage(path, self._version, ImageExif(gps, camera, date))

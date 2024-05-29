@@ -6,7 +6,7 @@ import typing as t
 from geopy.distance import distance
 from geopy.geocoders import Nominatim
 
-from data_model.features import GeoAddress, POI, NearestPOI
+from data_model.features import GeoAddress, POI, NearestPOI, HasImage
 from db.cache import Cache
 
 
@@ -21,13 +21,13 @@ class Geolocator:
         self.last_api = time.time() - 10
         self._version = GeoAddress.current_version()
 
-    def address(self, image: str, lat: float, lon: float, recompute: bool = False) -> GeoAddress:
+    def address(self, image: str, lat: float, lon: float, recompute: bool = False) -> HasImage[GeoAddress]:
         ret = self._cache.get(image)
         if ret is not None and not recompute:
             return ret
         return self._cache.add(self.address_impl(image, lat, lon))
 
-    def address_impl(self, image: str, lat: float, lon: float) -> GeoAddress:
+    def address_impl(self, image: str, lat: float, lon: float) -> HasImage[GeoAddress]:
         now = time.time()
         from_last_call = max(0, now - self.last_api)
         if from_last_call < RATE_LIMIT_SECONDS:
@@ -69,7 +69,7 @@ class Geolocator:
                 or None  # In case of empty string
             )
             country = raw_add.get("country")
-        return GeoAddress(image, self._version, ret.address, country, name, raw_data, query)
+        return HasImage(image, self._version, GeoAddress(ret.address, country, name, raw_data, query))
 
 
 class POIDetector:
@@ -78,7 +78,7 @@ class POIDetector:
         self._pois = list(pois)
         self._version = NearestPOI.current_version()
 
-    def find(self, image: str, latitude: float, longitude: float) -> t.Optional[NearestPOI]:
+    def find(self, image: str, latitude: float, longitude: float) -> t.Optional[HasImage[NearestPOI]]:
         if not self._pois:
             return None
         best = min(
@@ -88,4 +88,4 @@ class POIDetector:
         best_distance, poi = best
         if best_distance > self._max_distance:
             return None
-        return NearestPOI(image, self._version, poi, best_distance)
+        return HasImage(image, self._version, NearestPOI(poi, best_distance))

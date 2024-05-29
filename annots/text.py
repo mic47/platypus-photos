@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 import base64
 import io
+import json
 import os
 import sys
 import itertools
@@ -14,7 +15,7 @@ from transformers import pipeline
 from ultralytics import YOLO
 
 
-from data_model.features import ImageClassification, BoxClassification, Classification, Box
+from data_model.features import ImageClassification, BoxClassification, Classification, Box, HasImage
 from db.cache import Cache
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
@@ -42,10 +43,13 @@ class AnnotateRequest(DataClassJsonMixin):
     discard_threshold: float
 
 
-async def fetch_ann(session: aioh.ClientSession, url: str, request: AnnotateRequest) -> ImageClassification:
+async def fetch_ann(
+    session: aioh.ClientSession, url: str, request: AnnotateRequest
+) -> HasImage[ImageClassification]:
     async with aioh.ClientSession() as session:
         async with session.post(url, json=request.to_dict(), timeout=600) as data:
-            return ImageClassification.from_json(await data.text())
+            dct = json.loads(await data.text())
+            return HasImage.load(dct, ImageClassification.from_dict(dct))
 
 
 class Models:
@@ -63,17 +67,18 @@ class Models:
         path: str,
         gap_threshold: float = 0.2,
         discard_threshold: float = 0.1,
-    ) -> ImageClassification:
+    ) -> HasImage[ImageClassification]:
         output = []
         not_cached = []
         x = self._cache.get(path)
         if x is None:
             if os.path.getsize(path) > 10_000_000:
-                for i in range(5):
+                for _i in range(5):
                     print(f"Warning large file {path}", file=sys.stderr)
             if os.path.getsize(path) > 100_000_000:
-                for i in range(5):
+                for _i in range(5):
                     print(f"ERROR huge file {path}", file=sys.stderr)
+                # pylint: disable = broad-exception-raised
                 raise Exception("Skipping huge file")
             if self._remote is not None:
                 try:
@@ -105,7 +110,7 @@ class Models:
     def process_image_data(
         self,
         request: AnnotateRequest,
-    ) -> ImageClassification:
+    ) -> HasImage[ImageClassification]:
         return list(
             self.process_image_batch_impl(
                 [(request.path, base64.decodebytes(request.data_base64.encode("utf-8")))],
@@ -119,7 +124,7 @@ class Models:
         paths: t.Iterable[t.Tuple[str, t.Optional[bytes]]],
         gap_threshold: float,
         discard_threshold: float,
-    ) -> t.Iterable[ImageClassification]:
+    ) -> t.Iterable[HasImage[ImageClassification]]:
         images = [
             (path, Image.open(path) if data is None else Image.open(io.BytesIO(data))) for path, data in paths
         ]
@@ -187,7 +192,7 @@ class Models:
                     prev_conf = conf
                     classifications.append(Classification(names[index], float(conf)))
                 box_class.append(BoxClassification(box, classifications))
-            yield ImageClassification(path, self._version, list(captions), box_class)
+            yield HasImage(path, self._version, ImageClassification(list(captions), box_class))
         for ((path, image), captions, _) in all_input:
             if path in visited:
                 continue
@@ -197,4 +202,4 @@ class Models:
                 gt = c.get("generated_text")
                 if gt is not None:
                     captions.add(remove_consecutive_words(gt))
-            yield ImageClassification(path, self._version, list(captions), [])
+            yield HasImage(path, self._version, ImageClassification(list(captions), []))

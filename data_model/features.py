@@ -1,17 +1,46 @@
+import json
 import typing as t
 from datetime import datetime
 from dataclasses import dataclass, field
 from dataclasses_json import DataClassJsonMixin
 
 
-@dataclass
-class HasImage(DataClassJsonMixin):
-    image: str
-    version: int
-
+class HasCurrentVersion(DataClassJsonMixin):
     @staticmethod
     def current_version() -> int:
         raise NotImplementedError
+
+
+Ser = t.TypeVar("Ser", bound="DataClassJsonMixin")
+T = t.TypeVar("T")
+
+
+class HasImage(t.Generic[Ser]):
+    def __init__(self, image: str, version: int, payload: Ser):
+        self.image = image
+        self.version = version
+        self.p = payload
+
+    @staticmethod
+    def load(d: t.Dict[str, t.Any], payload: Ser) -> "HasImage[Ser]":
+        return HasImage(cast(d["image"], str), cast(d["version"], int), payload)
+
+    def to_json(self) -> str:
+        return json.dumps(
+            {
+                **self.p.to_dict(),
+                "image": self.image,
+                "version": self.version,
+            },
+            ensure_ascii=False,
+        )
+
+
+def cast(x: t.Any, type_: t.Type[T]) -> T:
+    if not isinstance(x, type_):
+        # pylint: disable = broad-exception-raised
+        raise Exception(f"Expected value of type '{type_}', got value '{x}'")
+    return x
 
 
 @dataclass
@@ -37,9 +66,7 @@ class Date(DataClassJsonMixin):
 
 
 @dataclass
-class ImageExif(HasImage):
-    image: str
-    version: int
+class ImageExif(HasCurrentVersion):
     gps: t.Optional[GPSCoord]
     camera: Camera
     date: t.Optional[Date]
@@ -50,8 +77,7 @@ class ImageExif(HasImage):
 
 
 @dataclass
-class GeoAddress(HasImage):
-    image: str
+class GeoAddress(HasCurrentVersion):
     address: str
     country: t.Optional[str]
     name: t.Optional[str]
@@ -72,8 +98,7 @@ class POI(DataClassJsonMixin):
 
 
 @dataclass
-class NearestPOI(HasImage):
-    image: str
+class NearestPOI(HasCurrentVersion):
     poi: POI
     distance: float
 
@@ -83,9 +108,7 @@ class NearestPOI(HasImage):
 
 
 @dataclass
-class MD5Annot(HasImage):
-    image: str
-    version: int
+class MD5Annot(HasCurrentVersion):
     md5: str
 
     @staticmethod
@@ -113,9 +136,7 @@ class BoxClassification(DataClassJsonMixin):
 
 
 @dataclass
-class ImageClassification(HasImage):
-    image: str
-    version: int
+class ImageClassification(HasCurrentVersion):
     captions: t.List[str]
     boxes: t.List[BoxClassification]
     exception: t.Optional[str] = field(default=None)

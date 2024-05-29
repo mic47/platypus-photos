@@ -5,6 +5,7 @@ import sys
 from fastapi import FastAPI
 
 from annots.text import AnnotateRequest, Models, ImageClassification
+from data_model.features import HasImage
 from db.cache import NoCache
 
 MODELS = Models(NoCache(), None)
@@ -16,14 +17,16 @@ app = FastAPI()
     "/annotate/image_to_text",
     response_model=ImageClassification,
 )
-def image_endpoint(image: AnnotateRequest) -> ImageClassification:
+def image_endpoint(image: AnnotateRequest) -> HasImage[ImageClassification]:
     now = datetime.datetime.now()
     try:
         ret = MODELS.process_image_data(image)
     # pylint: disable = bare-except
     except:
-        ret = ImageClassification(
-            image.path, ImageClassification.current_version(), [], [], traceback.format_exc()
+        ret = HasImage(
+            image.path,
+            ImageClassification.current_version(),
+            ImageClassification([], [], traceback.format_exc()),
         )
         traceback.print_exc()
         print("Error processing file:", image.path, file=sys.stderr)
