@@ -46,6 +46,10 @@ class OmgDB(ABC):
     def reconnect(self) -> None:
         ...
 
+    @abstractmethod
+    def check_unused(self) -> None:
+        ...
+
 
 class ImageSqlDB(OmgDB):
     def __init__(self, path_to_date: PathDateExtractor, check_same_thread: bool) -> None:
@@ -63,6 +67,9 @@ class ImageSqlDB(OmgDB):
 
     def reconnect(self) -> None:
         self._con.reconnect()
+
+    def check_unused(self) -> None:
+        self._con.check_unused()
 
     def get_path_from_hash(self, hsh: t.Union[int, str]) -> t.Optional[str]:
         if isinstance(hsh, int):

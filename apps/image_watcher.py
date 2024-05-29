@@ -232,12 +232,21 @@ async def main() -> None:
     parser.add_argument("--annotate-url", default=None, type=str)
     args = parser.parse_args()
     config = Config.load(args.config)
-    features = FeaturesTable(Connection(args.db))
+    connection = Connection(args.db)
+    features = FeaturesTable(connection)
+
+    async def check_db_connection() -> None:
+        while True:
+            connection.check_unused()
+            await asyncio.sleep(10)
+
+    tasks = []
+    tasks.append(asyncio.create_task(check_db_connection()))
+
     async with aiohttp.ClientSession() as session:
         context = GlobalContext(config, features, session, args.annotate_url)
         queues = Queues()
 
-        tasks = []
         tasks.append(asyncio.create_task(reingest_directories_worker(context, config, queues)))
         for i in range(1):
             task = asyncio.create_task(worker(f"worker-cheap-{i}", context, queues.cheap_features))

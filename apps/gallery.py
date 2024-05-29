@@ -38,6 +38,13 @@ del config
 @app.on_event("startup")
 async def on_startup() -> None:
     asyncio.create_task(auto_load())
+    asyncio.create_task(check_db_connection())
+
+
+async def check_db_connection() -> None:
+    while True:
+        DB.check_unused()
+        await asyncio.sleep(10)
 
 
 async def auto_load() -> None:

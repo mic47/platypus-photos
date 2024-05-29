@@ -36,11 +36,22 @@ class Connection:
         self._path = path
         self._timeout = timeout
         self._check_same_thread = check_same_thread
-        self._connection = self._connect()
+        self._last_use = datetime.now()
+        self._connection: t.Optional[sqlite3.Connection] = self._connect()
+        self._disconnect_timeout = timedelta(seconds=10)
 
     def reconnect(self) -> None:
-        self._connection.close()
+        if self._connection is not None:
+            self._connection.close()
         self._connection = self._connect()
+
+    def check_unused(self) -> None:
+        if self._connection is None:
+            return
+        now = datetime.now()
+        if now - self._last_use > self._disconnect_timeout:
+            self._connection.close()
+            self._connection = None
 
     def _connect(self) -> sqlite3.Connection:
         conn = sqlite3.connect(self._path, timeout=self._timeout, check_same_thread=self._check_same_thread)
@@ -53,11 +64,17 @@ class Connection:
         sql: str,
         parameters: t.Optional[t.Sequence[t.Union[str, bytes, int, float, None]]] = None,
     ) -> sqlite3.Cursor:
+        self._last_use = datetime.now()
+        if self._connection is None:
+            self._connection = self._connect()
         if parameters is None:
             return self._connection.execute(sql)
         return self._connection.execute(sql, parameters)
 
     def commit(self) -> None:
+        self._last_use = datetime.now()
+        if self._connection is None:
+            self._connection = self._connect()
         return self._connection.commit()
 
 
