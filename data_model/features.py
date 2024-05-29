@@ -13,18 +13,6 @@ class HasImage(DataClassJsonMixin):
     def current_version() -> int:
         raise NotImplementedError
 
-    def _set_from_cache(self) -> None:
-        # pylint: disable= attribute-defined-outside-init
-        self._from_cache = True
-
-    def is_from_cache(self) -> bool:
-        if hasattr(self, "_from_cache"):
-            return self._from_cache
-        return False
-
-    def changed(self) -> bool:
-        return not self.is_from_cache()
-
 
 @dataclass
 class GPSCoord(DataClassJsonMixin):
