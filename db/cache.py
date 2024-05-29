@@ -121,8 +121,7 @@ class SQLiteCache(t.Generic[Ser], Cache[Ser]):
             return None
         if cached is not None and cached.rowid == res.rowid:
             return cached
-        dct = json.loads(res.payload)
-        parsed = WithImage.load(dct, self._loader.from_dict(dct))
+        parsed = WithImage(key, res.version, self._loader.from_json(res.payload))
         ret = t.cast(FeaturePayload[WithImage[Ser]], res)
         ret.payload = parsed
         self._data[key] = ret
@@ -138,14 +137,15 @@ class SQLiteCache(t.Generic[Ser], Cache[Ser]):
                 file=sys.stderr,
             )
             return data
-        d = data.to_json()
+        d = data.p.to_json()
         self._features_table.add(
             d.encode("utf-8"),
             self._type,
             data.image,
             data.version,
         )
-        self._jsonl.append(d)
+
+        self._jsonl.append(data.to_json())
         # NOTE: local cache is just for fetching
         return data
 
