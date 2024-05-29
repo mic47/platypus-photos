@@ -120,15 +120,6 @@ class ImageClassification(HasImage):
     boxes: t.List[BoxClassification]
     exception: t.Optional[str] = field(default=None)
 
-    def print(self) -> None:
-        print(self.image)
-        for caption in self.captions:
-            print(" ", caption)
-        for box in self.boxes:
-            print(" ", box.box.classification, box.box.confidence)
-            for c in box.classifications:
-                print("   ", c.name, c.confidence)
-
     @staticmethod
     def current_version() -> int:
         return 0
