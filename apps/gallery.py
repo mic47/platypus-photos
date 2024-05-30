@@ -117,8 +117,11 @@ def image_endpoint(hsh: t.Union[int, str], size: ImageSize = ImageSize.ORIGINAL)
             dirname = os.path.dirname(cache_file)
             if not os.path.exists(dirname):
                 os.makedirs(dirname, exist_ok=True)
-            exif = img.info["exif"]
-            img.save(cache_file, exif=exif)
+            if "exif" in img.info:
+                exif = img.info["exif"]
+                img.save(cache_file, exif=exif)
+            else:
+                img.save(cache_file)
         return FileResponse(cache_file, media_type="image/jpeg", filename=cache_file.split("/")[-1])
     file_path = DB.get_path_from_hash(hsh)
     if file_path is not None and os.path.exists(file_path):

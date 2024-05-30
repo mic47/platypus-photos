@@ -162,7 +162,7 @@ ON CONFLICT(path) DO UPDATE SET
         res = self._con.execute(
             "SELECT rowid, last_update, path FROM files WHERE md5 = ?",
             (md5,),
-        ).fetchmany()
+        ).fetchall()
         out = []
         for (
             rowid,
