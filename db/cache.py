@@ -1,11 +1,12 @@
 import sys
 import typing as t
 import json
+import traceback
 
 from tqdm import tqdm
 
-from data_model.features import WithImage, HasCurrentVersion
-from db.sql import FeaturesTable, Connection, FeaturePayload
+from data_model.features import WithImage, HasCurrentVersion, WithMD5
+from db.sql import FeaturesTable, Connection, FeaturePayload, FileRow, FilesTable
 
 
 Ser = t.TypeVar("Ser", bound="HasCurrentVersion")
@@ -14,22 +15,22 @@ DEFAULT_VERSION = 0
 
 
 class Cache(t.Generic[Ser]):
-    def get(self, key: str) -> t.Optional[FeaturePayload[WithImage[Ser]]]:
+    def get(self, key: str) -> t.Optional[FeaturePayload[WithMD5[Ser]]]:
         raise NotImplementedError
 
-    def add(self, data: WithImage[Ser]) -> WithImage[Ser]:
+    def add(self, data: WithMD5[Ser]) -> WithMD5[Ser]:
         raise NotImplementedError
 
 
 class NoCache(t.Generic[Ser], Cache[Ser]):
-    def get(self, key: str) -> t.Optional[FeaturePayload[WithImage[Ser]]]:
+    def get(self, key: str) -> t.Optional[FeaturePayload[WithMD5[Ser]]]:
         pass
 
-    def add(self, data: WithImage[Ser]) -> WithImage[Ser]:
+    def add(self, data: WithMD5[Ser]) -> WithMD5[Ser]:
         return data
 
 
-class Loader(t.Generic[Ser]):
+class WithImageLoader(t.Generic[Ser]):
     def __init__(self, path: str, type_: t.Type[Ser], loader: t.Callable[[WithImage[Ser]], None]):
         self._position = 0
         # pylint: disable=consider-using-with
@@ -71,6 +72,7 @@ class Loader(t.Generic[Ser]):
                     self._position = position
                     self._file.seek(self._position, 0)
                     print("Error while loading input", e, file=sys.stderr)
+                    traceback.print_exc()
                     break
                 finally:
                     # Advance position in the file
@@ -109,25 +111,25 @@ class SQLiteCache(t.Generic[Ser], Cache[Ser]):
         self._features_table = features_table
         self._loader = loader
         self._type = loader.__name__
-        self._data: t.Dict[str, FeaturePayload[WithImage[Ser]]] = {}
+        self._data: t.Dict[str, FeaturePayload[WithMD5[Ser]]] = {}
         self._current_version = loader.current_version()
         self._enforce_version = enforce_version
         self._jsonl = JsonlWriter(jsonl_path)
 
-    def get(self, key: str) -> t.Optional[FeaturePayload[WithImage[Ser]]]:
+    def get(self, key: str) -> t.Optional[FeaturePayload[WithMD5[Ser]]]:
         cached = self._data.get(key)
         res = self._features_table.get_payload(self._type, key)
         if res is None:
             return None
         if cached is not None and cached.rowid == res.rowid:
             return cached
-        parsed = WithImage(key, res.version, self._loader.from_json(res.payload))
-        ret = t.cast(FeaturePayload[WithImage[Ser]], res)
+        parsed = WithMD5(key, res.version, self._loader.from_json(res.payload))
+        ret = t.cast(FeaturePayload[WithMD5[Ser]], res)
         ret.payload = parsed
         self._data[key] = ret
         return ret
 
-    def add(self, data: WithImage[Ser]) -> WithImage[Ser]:
+    def add(self, data: WithMD5[Ser]) -> WithMD5[Ser]:
         if data.version != self._current_version:
             print(
                 "Trying to add wrong version of feature",
@@ -141,7 +143,7 @@ class SQLiteCache(t.Generic[Ser], Cache[Ser]):
         self._features_table.add(
             d.encode("utf-8"),
             self._type,
-            data.image,
+            data.md5,
             data.version,
         )
 
@@ -150,7 +152,35 @@ class SQLiteCache(t.Generic[Ser], Cache[Ser]):
         return data
 
 
+class FilesCache:
+    def __init__(
+        self,
+        files_table: FilesTable,
+        jsonl_path: t.Optional[str] = None,
+    ) -> None:
+        self._files_table = files_table
+        self._by_path: t.Dict[str, FileRow] = {}
+        self._jsonl = JsonlWriter(jsonl_path)
+
+    def get(self, path: str) -> t.Optional[FileRow]:
+        ret = self._by_path.get(path)
+        if ret is not None:
+            return None
+        ret = self._files_table.by_path(path)
+        if ret is not None:
+            self._by_path[path] = ret
+            return ret
+        return None
+
+    def add(self, path: str, md5: str) -> None:
+        self._files_table.add(path, md5)
+        self._jsonl.append(json.dumps({"path": path, "md5": md5}, ensure_ascii=False))
+
+
 def main() -> None:
+    # pylint: disable=import-outside-toplevel
+    from annots.md5 import compute_md5
+
     # pylint: disable=import-outside-toplevel
     from data_model.features import ImageClassification
 
@@ -163,23 +193,38 @@ def main() -> None:
     # pylint: disable=import-outside-toplevel
     from data_model.features import MD5Annot
 
+    conn = Connection("data/photos.db")
+    conn.execute("PRAGMA synchronous=OFF;")
+    cache = FilesCache(FilesTable(conn), "data/output-files.jsonl")
+
+    def ldmd5(x: WithImage[MD5Annot]) -> None:
+        cache.add(x.image, x.p.md5)
+
+    loader_md5 = WithImageLoader("output-md5.jsonl", MD5Annot, ldmd5)
+    loader_md5.load(show_progress=True)
+    conn.reconnect()
+
     to_iter: t.List[t.Tuple[str, t.Type[HasCurrentVersion]]] = [
         ("output-exif.jsonl", ImageExif),
         ("output-geo.jsonl", GeoAddress),
         ("output-image-to-text.jsonl", ImageClassification),
-        ("output-md5.jsonl", MD5Annot),
     ]
-    conn = Connection("output.db")
-    conn.execute("PRAGMA synchronous=OFF;")
     for path, type_ in to_iter:
-        sql = SQLiteCache(FeaturesTable(conn), type_)
+        sql = SQLiteCache(FeaturesTable(conn), type_, f"data/{path}")
 
         def load(x: WithImage[HasCurrentVersion]) -> None:
+            row = cache.get(x.image)
+            if row is not None:
+                md5 = row.md5
+            else:
+                md5 = compute_md5(x.image).md5
+                cache.add(x.image, md5)
             # pylint: disable = cell-var-from-loop
-            sql.add(x)
+            sql.add(WithMD5(md5, x.version, x.p))
 
-        loader = Loader(path, type_, load)
+        loader = WithImageLoader(path, type_, load)
         loader.load(show_progress=True)
+        conn.reconnect()
 
 
 if __name__ == "__main__":

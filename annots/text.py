@@ -15,7 +15,14 @@ from transformers import pipeline
 from ultralytics import YOLO
 
 
-from data_model.features import ImageClassification, BoxClassification, Classification, Box, WithImage
+from data_model.features import (
+    ImageClassification,
+    BoxClassification,
+    Classification,
+    Box,
+    WithMD5,
+    PathWithMd5,
+)
 from db.cache import Cache
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
@@ -37,7 +44,7 @@ def remove_consecutive_words(sentence: str) -> str:
 
 @dataclass
 class AnnotateRequest(DataClassJsonMixin):
-    path: str
+    path: PathWithMd5
     data_base64: str
     gap_threshold: float
     discard_threshold: float
@@ -45,11 +52,11 @@ class AnnotateRequest(DataClassJsonMixin):
 
 async def fetch_ann(
     session: aioh.ClientSession, url: str, request: AnnotateRequest
-) -> WithImage[ImageClassification]:
+) -> WithMD5[ImageClassification]:
     async with aioh.ClientSession() as session:
         async with session.post(url, json=request.to_dict(), timeout=600) as data:
             dct = json.loads(await data.text())
-            return WithImage.load(dct, ImageClassification.from_dict(dct))
+            return WithMD5.load(dct, ImageClassification.from_dict(dct["p"]))
 
 
 class Models:
@@ -64,25 +71,25 @@ class Models:
     async def process_image(
         self: "Models",
         session: aioh.ClientSession,
-        path: str,
+        path: PathWithMd5,
         gap_threshold: float = 0.2,
         discard_threshold: float = 0.1,
-    ) -> WithImage[ImageClassification]:
+    ) -> WithMD5[ImageClassification]:
         output = []
         not_cached = []
-        x = self._cache.get(path)
+        x = self._cache.get(path.md5)
         if x is None:
-            if os.path.getsize(path) > 10_000_000:
+            if os.path.getsize(path.path) > 10_000_000:
                 for _i in range(5):
-                    print(f"Warning large file {path}", file=sys.stderr)
-            if os.path.getsize(path) > 100_000_000:
+                    print(f"Warning large file {path.path}", file=sys.stderr)
+            if os.path.getsize(path.path) > 100_000_000:
                 for _i in range(5):
-                    print(f"ERROR huge file {path}", file=sys.stderr)
+                    print(f"ERROR huge file {path.path}", file=sys.stderr)
                 # pylint: disable = broad-exception-raised
                 raise Exception("Skipping huge file")
             if self._remote is not None:
                 try:
-                    with open(path, "rb") as f:
+                    with open(path.path, "rb") as f:
                         data = base64.encodebytes(f.read())
                     ret = await fetch_ann(
                         session,
@@ -110,7 +117,7 @@ class Models:
     def process_image_data(
         self,
         request: AnnotateRequest,
-    ) -> WithImage[ImageClassification]:
+    ) -> WithMD5[ImageClassification]:
         return list(
             self.process_image_batch_impl(
                 [(request.path, base64.decodebytes(request.data_base64.encode("utf-8")))],
@@ -121,12 +128,13 @@ class Models:
 
     def process_image_batch_impl(
         self: "Models",
-        paths: t.Iterable[t.Tuple[str, t.Optional[bytes]]],
+        paths: t.Iterable[t.Tuple[PathWithMd5, t.Optional[bytes]]],
         gap_threshold: float,
         discard_threshold: float,
-    ) -> t.Iterable[WithImage[ImageClassification]]:
+    ) -> t.Iterable[WithMD5[ImageClassification]]:
         images = [
-            (path, Image.open(path) if data is None else Image.open(io.BytesIO(data))) for path, data in paths
+            (path, Image.open(path.path) if data is None else Image.open(io.BytesIO(data)))
+            for path, data in paths
         ]
         captions = self.captioner([image for (_, image) in images])
         results = self.predict_model([img for (_, img) in images], verbose=False)
@@ -172,8 +180,8 @@ class Models:
             results = []
 
         visited = set()
-        for (path, group) in itertools.groupby(results, lambda x: t.cast(str, x[0][0])):
-            visited.add(path)
+        for (path, group) in itertools.groupby(results, lambda x: t.cast(PathWithMd5, x[0][0])):
+            visited.add(path.path)
             box_class = []
             captions = set()
             for (_, _image, box_id, caption, box), result in group:
@@ -192,14 +200,14 @@ class Models:
                     prev_conf = conf
                     classifications.append(Classification(names[index], float(conf)))
                 box_class.append(BoxClassification(box, classifications))
-            yield WithImage(path, self._version, ImageClassification(list(captions), box_class))
+            yield WithMD5(path.md5, self._version, ImageClassification(list(captions), box_class))
         for ((path, image), captions, _) in all_input:
-            if path in visited:
+            if path.path in visited:
                 continue
-            visited.add(path)
+            visited.add(path.path)
             captions = set()
             for c in caption:
                 gt = c.get("generated_text")
                 if gt is not None:
                     captions.add(remove_consecutive_words(gt))
-            yield WithImage(path, self._version, ImageClassification(list(captions), []))
+            yield WithMD5(path.md5, self._version, ImageClassification(list(captions), []))

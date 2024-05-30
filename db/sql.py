@@ -8,7 +8,6 @@ from datetime import (
     datetime,
     timedelta,
 )
-import traceback
 
 # TODO move to proper place
 from gallery.utils import (
@@ -19,7 +18,7 @@ from gallery.utils import (
 from gallery.url import (
     UrlParameters,
 )
-from db.types import FeaturePayload, Image, ImageAggregation, LocationCluster, LocPoint
+from db.types import FeaturePayload, Image, ImageAggregation, LocationCluster, LocPoint, FileRow
 
 
 class Connection:
@@ -69,6 +68,118 @@ class Connection:
         return self._connection.commit()
 
 
+class FilesTable:
+    def __init__(self, connection: Connection) -> None:
+        self._con = connection
+        self._init_db()
+
+    def _init_db(
+        self,
+    ) -> None:
+        self._con.execute(
+            """
+CREATE TABLE IF NOT EXISTS files (
+  path TEXT NOT NULL PRIMARY KEY,
+  last_update INTEGER NOT NULL,
+  md5 TEXT
+) STRICT;
+        """
+        )
+        for (suffix, rows) in [("path", "path"), ("md5", "md5")]:
+            self._con.execute(
+                f"""
+    CREATE INDEX IF NOT EXISTS files_idx_{suffix}_file ON files ({rows});
+            """
+            )
+
+    def add(
+        self,
+        path: str,
+        md5: t.Optional[str],
+    ) -> None:
+        self._con.execute(
+            """
+INSERT INTO files VALUES (?, strftime('%s'), ?)
+ON CONFLICT(path) DO UPDATE SET
+  last_update=excluded.last_update,
+  md5=excluded.md5
+            """,
+            (
+                path,
+                md5,
+            ),
+        )
+        self._con.commit()
+
+    def by_path(
+        self,
+        path: str,
+    ) -> t.Optional[FileRow]:
+        res = self._con.execute(
+            "SELECT rowid, last_update, md5 FROM files WHERE path = ?",
+            (path,),
+        ).fetchone()
+        if res is None:
+            return None
+        (
+            rowid,
+            last_update,
+            md5,
+        ) = res
+        return FileRow(
+            path,
+            md5,
+            last_update,
+            rowid,
+        )
+
+    def example_by_md5(
+        self,
+        md5: str,
+    ) -> t.Optional[FileRow]:
+        res = self._con.execute(
+            "SELECT rowid, last_update, path FROM files WHERE md5 = ?",
+            (md5,),
+        ).fetchone()
+        if res is None:
+            return None
+        (
+            rowid,
+            last_update,
+            path,
+        ) = res
+        return FileRow(
+            path,
+            md5,
+            last_update,
+            rowid,
+        )
+
+    def by_md5(
+        self,
+        md5: str,
+    ) -> t.List[FileRow]:
+        res = self._con.execute(
+            "SELECT rowid, last_update, path FROM files WHERE md5 = ?",
+            (md5,),
+        ).fetchmany()
+        out = []
+        for (
+            rowid,
+            last_update,
+            path,
+        ) in res:
+            out.append(
+                FileRow(
+                    path,
+                    md5,
+                    last_update,
+                    rowid,
+                )
+            )
+        return out
+
+
 class WrongAggregateTypeReturned(Exception):
     def __init__(self, type_: str) -> None:
         super().__init__(f"Wrong aggregate type returned: {type_}")
@@ -90,23 +201,23 @@ class FeaturesTable:
             """
 CREATE TABLE IF NOT EXISTS features (
   type TEXT NOT NULL,
-  file TEXT NOT NULL,
+  md5 TEXT NOT NULL,
   version INT NOT NULL,
   last_update INTEGER NOT NULL,
   dirty INTEGER NOT NULL,
   payload BLOB NOT NULL,
-  PRIMARY KEY (type, file)
+  PRIMARY KEY (type, md5)
 ) STRICT;
         """
         )
         self._con.execute(
             """
-CREATE INDEX IF NOT EXISTS features_idx_type_file ON features (type, file);
+CREATE INDEX IF NOT EXISTS features_idx_type_md5 ON features (type, md5);
         """
         )
         self._con.execute(
             """
-CREATE INDEX IF NOT EXISTS features_idx_file ON features (file);
+CREATE INDEX IF NOT EXISTS features_idx_md5 ON features (md5);
         """
         )
         self._con.execute(
@@ -117,15 +228,15 @@ CREATE INDEX IF NOT EXISTS features_idx_last_update ON features (last_update);
 
     def undirty(
         self,
-        path: str,
+        md5: str,
         types: t.List[str],
         max_last_update: float,
     ) -> None:
         q = ", ".join(f"'{qt}'" for qt in types)
         (query, param,) = (
-            f"UPDATE features SET dirty = 0 WHERE dirty > 0 AND file = ? AND type in ({q}) AND last_update <= ?",
+            f"UPDATE features SET dirty = 0 WHERE dirty > 0 AND md5 = ? AND type in ({q}) AND last_update <= ?",
             (
-                path,
+                md5,
                 max_last_update,
             ),
         )
@@ -135,7 +246,7 @@ CREATE INDEX IF NOT EXISTS features_idx_last_update ON features (last_update);
         )
         self._con.commit()
 
-    def dirty_files(
+    def dirty_md5s(
         self,
         types: t.List[str],
         limit: int = 1000,
@@ -143,11 +254,11 @@ CREATE INDEX IF NOT EXISTS features_idx_last_update ON features (last_update);
         if types:
             q = ", ".join(f"'{qt}'" for qt in types)
             res = self._con.execute(
-                f"SELECT file, MAX(last_update) FROM features WHERE dirty > 0 AND type in ({q}) GROUP BY file LIMIT {limit}"
+                f"SELECT md5, MAX(last_update) FROM features WHERE dirty > 0 AND type in ({q}) GROUP BY md5 LIMIT {limit}"
             )
         else:
             res = self._con.execute(
-                "SELECT file, MAX(last_update) FROM features WHERE dirty > 0 GROUP BY file LIMIT {limit}"
+                "SELECT md5, MAX(last_update) FROM features WHERE dirty > 0 GROUP BY md5 LIMIT {limit}"
             )
         while True:
             items = res.fetchmany()
@@ -161,7 +272,7 @@ CREATE INDEX IF NOT EXISTS features_idx_last_update ON features (last_update);
         key: str,
     ) -> t.Optional[FeaturePayload[bytes]]:
         res = self._con.execute(
-            "SELECT rowid, payload, last_update, version FROM features WHERE type = ? AND file = ?",
+            "SELECT rowid, payload, last_update, version FROM features WHERE type = ? AND md5 = ?",
             (
                 type_,
                 key,
@@ -186,13 +297,13 @@ CREATE INDEX IF NOT EXISTS features_idx_last_update ON features (last_update);
         self,
         payload: bytes,
         type_: str,
-        path: str,
+        md5: str,
         version: int,
     ) -> None:
         self._con.execute(
             """
 INSERT INTO features VALUES (?, ?, ?, strftime('%s'), 1, ?)
-ON CONFLICT(type, file) DO UPDATE SET
+ON CONFLICT(type, md5) DO UPDATE SET
   version=excluded.version,
   last_update=excluded.last_update,
   dirty=excluded.dirty,
@@ -200,7 +311,7 @@ ON CONFLICT(type, file) DO UPDATE SET
 WHERE excluded.version > features.version""",
             (
                 type_,
-                path,
+                md5,
                 version,
                 payload,
             ),
@@ -223,7 +334,7 @@ class GalleryIndexTable:
         self._con.execute(
             """
 CREATE TABLE IF NOT EXISTS gallery_index (
-  file TEXT NOT NULL,
+  md5 TEXT NOT NULL,
   feature_last_update INT NOT NULL,
   timestamp INTEGER,
   tags TEXT,
@@ -232,31 +343,15 @@ CREATE TABLE IF NOT EXISTS gallery_index (
   address_country TEXT,
   address_name TEXT,
   address_full TEXT,
-  PRIMARY KEY (file)
+  latitude REAL,
+  longitude REAL,
+  altitude REAL,
+  version INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (md5)
 ) STRICT;"""
         )
-        try:
-            self._con.execute("ALTER TABLE gallery_index ADD COLUMN latitude REAL;")
-        except sqlite3.OperationalError:
-            traceback.print_exc()
-        try:
-            self._con.execute("ALTER TABLE gallery_index ADD COLUMN longitude REAL;")
-        except sqlite3.OperationalError:
-            traceback.print_exc()
-        try:
-            self._con.execute("ALTER TABLE gallery_index ADD COLUMN altitude REAL;")
-        except sqlite3.OperationalError:
-            traceback.print_exc()
-        try:
-            self._con.execute("ALTER TABLE gallery_index ADD COLUMN version INTEGER NOT NULL DEFAULT 0;")
-        except sqlite3.OperationalError:
-            traceback.print_exc()
-        try:
-            self._con.execute("ALTER TABLE gallery_index ADD COLUMN md5 TEXT;")
-        except sqlite3.OperationalError:
-            traceback.print_exc()
         for columns in [
-            ["file"],
+            ["md5"],
             ["feature_last_update"],
             ["timestamp"],
             ["tags"],
@@ -266,7 +361,6 @@ CREATE TABLE IF NOT EXISTS gallery_index (
             ["longitude"],
             ["altitude"],
             ["version"],
-            ["md5"],
         ]:
             name = f"gallery_index_idx_{'_'.join(columns)}"
             cols_str = ", ".join(columns)
@@ -279,8 +373,8 @@ CREATE TABLE IF NOT EXISTS gallery_index (
         tags = sorted(list((omg.tags or {}).items()))
         self._con.execute(
             """
-INSERT INTO gallery_index VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-ON CONFLICT(file) DO UPDATE SET
+INSERT INTO gallery_index VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+ON CONFLICT(md5) DO UPDATE SET
   feature_last_update=excluded.feature_last_update,
   timestamp=excluded.timestamp,
   tags=excluded.tags,
@@ -292,14 +386,13 @@ ON CONFLICT(file) DO UPDATE SET
   latitude=excluded.latitude,
   longitude=excluded.longitude,
   altitude=excluded.altitude,
-  version=excluded.version,
-  md5=excluded.md5
+  version=excluded.version
 WHERE
   excluded.feature_last_update > gallery_index.feature_last_update
   OR excluded.version > gallery_index.version
 """,
             (
-                omg.path,
+                omg.md5,
                 omg.dependent_features_last_update,
                 maybe_datetime_to_timestamp(omg.date),
                 ":".join([t for t, _ in tags]),
@@ -312,17 +405,16 @@ WHERE
                 omg.longitude,
                 omg.altitude,
                 omg.version,
-                omg.md5,
             ),
         )
         self._con.commit()
 
-    def old_version_files(
+    def old_versions_md5(
         self,
         limit: int = 1000,
     ) -> t.Iterable[str]:
         res = self._con.execute(
-            f"SELECT file FROM gallery_index WHERE version < ? GROUP BY file LIMIT {limit}",
+            f"SELECT md5 FROM gallery_index WHERE version < ? GROUP BY md5 LIMIT {limit}",
             (Image.current_version(),),
         )
         while True:
@@ -359,9 +451,10 @@ WHERE
         if url.datefrom:
             clauses.append("timestamp >= ?")
             variables.append(maybe_datetime_to_timestamp(url.datefrom))
-        if url.directory:
-            clauses.append("file like ?")
-            variables.append(f"{url.directory}%")
+        if url.directory:  # TODO: this does not work, fix it
+            pass
+            # clauses.append("file like ?")
+            # variables.append(f"{url.directory}%")
         if url.dateto:
             clauses.append("timestamp <= ?")
             variables.append(
@@ -465,12 +558,6 @@ GROUP BY
             )
         return out
 
-    def path_by_hash(self, hsh: str) -> t.Optional[str]:
-        res = self._con.execute("SELECT file FROM gallery_index where md5 = ? LIMIT 1", (hsh,)).fetchone()
-        if res is None:
-            return None
-        return t.cast(str, res[0])
-
     def get_aggregate_stats(
         self,
         url: UrlParameters,
@@ -573,7 +660,7 @@ SELECT "alt", 'min', MIN(altitude) FROM matched_images WHERE altitude IS NOT NUL
     ) -> t.Iterable[Image]:
         # TODO: aggregations could be done separately
         (query, variables,) = self._matching_query(
-            "file, timestamp, tags, tags_probs, classifications, address_country, address_name, address_full, feature_last_update, latitude, longitude, altitude, version, md5",
+            "md5, timestamp, tags, tags_probs, classifications, address_country, address_name, address_full, feature_last_update, latitude, longitude, altitude, version",
             url,
         )
         if url.paging:
@@ -587,7 +674,7 @@ SELECT "alt", 'min', MIN(altitude) FROM matched_images WHERE altitude IS NOT NUL
             if not items:
                 return
             for (
-                file,
+                md5,
                 timestamp,
                 tags,
                 tags_probs,
@@ -600,10 +687,9 @@ SELECT "alt", 'min', MIN(altitude) FROM matched_images WHERE altitude IS NOT NUL
                 longitude,
                 altitude,
                 version,
-                md5,
             ) in items:
                 yield Image(
-                    file,
+                    md5,
                     None if timestamp is None else datetime.fromtimestamp(timestamp),  # TODO convert
                     None
                     if not tags
@@ -625,7 +711,6 @@ SELECT "alt", 'min', MIN(altitude) FROM matched_images WHERE altitude IS NOT NUL
                     longitude,
                     altitude,
                     version,
-                    md5,
                 )
 
 

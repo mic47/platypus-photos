@@ -198,12 +198,20 @@ async def read_item(
         loc = None
         if omg.latitude is not None and omg.longitude is not None:
             loc = {"lat": omg.latitude, "lon": omg.longitude}
+
+        paths = [
+            {
+                "filename": os.path.basename(file.file),
+                "dir": os.path.dirname(file.file),
+                "dir_url": url.to_url(directory=os.path.dirname(file.file)),
+            }
+            for file in DB.files(omg.md5)
+        ]
+
         images.append(
             {
-                "hsh": omg.md5 or hash(omg.path),
-                "filename": os.path.basename(omg.path),
-                "dir": os.path.dirname(omg.path),
-                "dir_url": url.to_url(directory=os.path.dirname(omg.path)),
+                "hsh": omg.md5,
+                "paths": paths,
                 "loc": loc,
                 "classifications": omg.classifications or "",
                 "tags": [

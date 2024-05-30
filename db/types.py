@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 import typing as t
 import re
 
-from data_model.features import ImageExif, GeoAddress, ImageClassification, MD5Annot
+from data_model.features import ImageExif, GeoAddress, ImageClassification
 from gallery.url import UrlParameters
 
 T = t.TypeVar("T")
@@ -13,6 +13,14 @@ T = t.TypeVar("T")
 class FeaturePayload(t.Generic[T]):
     payload: T
     version: int
+    last_update: int
+    rowid: int
+
+
+@dataclass
+class FileRow:
+    file: str
+    md5: str
     last_update: int
     rowid: int
 
@@ -51,7 +59,7 @@ class ImageAggregation:
 
 @dataclass
 class Image:
-    path: str
+    md5: str
     date: t.Optional[datetime]
     tags: t.Optional[t.Dict[str, float]]
     classifications: t.Optional[str]
@@ -63,7 +71,6 @@ class Image:
     longitude: t.Optional[float]
     altitude: t.Optional[float]
     version: int
-    md5: t.Optional[str]
 
     @staticmethod
     def current_version() -> int:
@@ -71,18 +78,17 @@ class Image:
 
     @staticmethod
     def from_updates(
-        path: str,
+        md5: str,
         exif: t.Optional[ImageExif],
         address: t.Optional[GeoAddress],
         text_classification: t.Optional[ImageClassification],
-        date_from_path: t.Optional[datetime],
-        md5: t.Optional[MD5Annot],
+        date_from_path: t.List[datetime],
         max_last_update: float,
     ) -> "Image":
         date = None
         if exif is not None and exif.date is not None:
             date = exif.date.datetime
-        date = date or date_from_path
+        date = date or (date_from_path[0] if date_from_path else None)
 
         tags: t.Dict[str, float] = {}
         if text_classification is not None:
@@ -114,12 +120,8 @@ class Image:
             address_name = address.name
             address_full = ", ".join(x for x in [address_name, address_country] if x)
 
-        md5_sum = None
-        if md5:
-            md5_sum = md5.md5
-
         return Image(
-            path,
+            md5,
             date,
             tags,
             classifications,
@@ -131,7 +133,6 @@ class Image:
             longitude,
             altitude,
             Image.current_version(),
-            md5_sum,
         )
 
     def match_url(self, url: UrlParameters) -> bool:

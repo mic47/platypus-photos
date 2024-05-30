@@ -15,6 +15,12 @@ Ser = t.TypeVar("Ser", bound="DataClassJsonMixin")
 T = t.TypeVar("T")
 
 
+@dataclass
+class PathWithMd5:
+    path: str
+    md5: str
+
+
 class WithImage(t.Generic[Ser]):
     def __init__(self, image: str, version: int, payload: Ser):
         self.image = image
@@ -28,8 +34,29 @@ class WithImage(t.Generic[Ser]):
     def to_json(self) -> str:
         return json.dumps(
             {
-                **self.p.to_dict(),
+                **self.p.to_dict(encode_json=True),
                 "image": self.image,
+                "version": self.version,
+            },
+            ensure_ascii=False,
+        )
+
+
+class WithMD5(t.Generic[Ser]):
+    def __init__(self, md5: str, version: int, payload: Ser):
+        self.md5 = md5
+        self.version = version
+        self.p = payload
+
+    @staticmethod
+    def load(d: t.Dict[str, t.Any], payload: Ser) -> "WithMD5[Ser]":
+        return WithMD5(cast(d["md5"], str), cast(d["version"], int), payload)
+
+    def to_json(self) -> str:
+        return json.dumps(
+            {
+                **self.p.to_dict(encode_json=True),
+                "md5": self.md5,
                 "version": self.version,
             },
             ensure_ascii=False,

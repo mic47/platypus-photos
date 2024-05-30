@@ -4,7 +4,7 @@ import typing as t
 
 import exif
 
-from data_model.features import ImageExif, Date, Camera, GPSCoord, WithImage
+from data_model.features import ImageExif, Date, Camera, GPSCoord, WithMD5, PathWithMd5
 from db.cache import Cache
 
 
@@ -230,14 +230,14 @@ class Exif:
         self._cache = cache
         self._version = ImageExif.current_version()
 
-    def process_image(self, path: str) -> WithImage[ImageExif]:
-        ret = self._cache.get(path)
+    def process_image(self, inp: PathWithMd5) -> WithMD5[ImageExif]:
+        ret = self._cache.get(inp.md5)
         if ret is not None:
             return ret.payload
-        return self._cache.add(self.process_image_impl(path))
+        return self._cache.add(self.process_image_impl(inp))
 
-    def process_image_impl(self: "Exif", path: str) -> WithImage[ImageExif]:
-        img = exif.Image(path)
+    def process_image_impl(self: "Exif", inp: PathWithMd5) -> WithMD5[ImageExif]:
+        img = exif.Image(inp.path)
         d = UnparsedTags()
         for tag in img.list_all():
             if tag in IGNORED_TAGS:
@@ -257,4 +257,4 @@ class Exif:
         for tag, value in d.all().items():
             print("ERR: unprocessed tag", tag, value, type(value), file=sys.stderr)
 
-        return WithImage(path, self._version, ImageExif(gps, camera, date))
+        return WithMD5(inp.md5, self._version, ImageExif(gps, camera, date))

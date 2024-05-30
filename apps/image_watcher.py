@@ -15,13 +15,13 @@ import asyncinotify
 from tqdm import tqdm
 
 from data_model.config import Config
-from data_model.features import WithImage
-from db.cache import SQLiteCache
-from db.sql import FeaturesTable, Connection
+from data_model.features import WithMD5, PathWithMd5
+from db.cache import SQLiteCache, FilesCache
+from db.sql import FeaturesTable, Connection, FilesTable
 from annots.date import PathDateExtractor
 from annots.exif import Exif, ImageExif
 from annots.geo import Geolocator, GeoAddress
-from annots.md5 import MD5er, MD5Annot
+from annots.md5 import compute_md5
 from annots.text import Models, ImageClassification
 
 T = t.TypeVar("T")
@@ -57,21 +57,21 @@ class GlobalContext:
         self,
         config: Config,
         features: FeaturesTable,
+        files: FilesTable,
         session: aiohttp.ClientSession,
         annotate_url: t.Optional[str],
     ) -> None:
         self.path_to_date = PathDateExtractor(config.directory_matching)
 
+        self.files = FilesCache(files, "data/output-files.jsonl")
         models_cache = SQLiteCache(
-            features, ImageClassification, "output-image-to-text.jsonl", enforce_version=True
+            features, ImageClassification, "data/output-image-to-text.jsonl", enforce_version=True
         )
         self.models = Models(models_cache, annotate_url)
-        exif_cache = SQLiteCache(features, ImageExif, "output-exif.jsonl", enforce_version=True)
+        exif_cache = SQLiteCache(features, ImageExif, "data/output-exif.jsonl", enforce_version=True)
         self.exif = Exif(exif_cache)
-        geolocator_cache = SQLiteCache(features, GeoAddress, "output-geo.jsonl", enforce_version=True)
+        geolocator_cache = SQLiteCache(features, GeoAddress, "data/output-geo.jsonl", enforce_version=True)
         self.geolocator = Geolocator(geolocator_cache)
-        md5_cache = SQLiteCache(features, MD5Annot, "output-md5.jsonl", enforce_version=True)
-        self.md5 = MD5er(md5_cache)
         self.session = session
         position = 0
 
@@ -92,12 +92,11 @@ class GlobalContext:
         self.known_paths: t.Set[str] = set()
 
     def cheap_features(
-        self, path: str
+        self, path: PathWithMd5
     ) -> t.Tuple[
-        str,
-        WithImage[MD5Annot],
-        WithImage[ImageExif],
-        t.Optional[WithImage[GeoAddress]],
+        PathWithMd5,
+        WithMD5[ImageExif],
+        t.Optional[WithMD5[GeoAddress]],
         t.Optional[datetime.datetime],
     ]:
         exif_item = self.exif.process_image(path)
@@ -107,11 +106,10 @@ class GlobalContext:
             geo = self.geolocator.address(
                 path, exif_item.p.gps.latitude, exif_item.p.gps.longitude, recompute=False
             )
-        md5hsh = self.md5.process(path)
-        path_date = self.path_to_date.extract_date(path)
-        return (path, md5hsh, exif_item, geo, path_date)
+        path_date = self.path_to_date.extract_date(path.path)
+        return (path, exif_item, geo, path_date)
 
-    async def image_to_text(self, path: str) -> t.Tuple[str, WithImage[ImageClassification]]:
+    async def image_to_text(self, path: PathWithMd5) -> t.Tuple[PathWithMd5, WithMD5[ImageClassification]]:
         itt = await self.models.process_image(self.session, path)
         return (path, itt)
 
@@ -129,7 +127,7 @@ class QueueItem(t.Generic[T]):
 
 
 async def worker(
-    name: str, context: GlobalContext, queue: asyncio.PriorityQueue[QueueItem[t.Tuple[str, JobType]]]
+    name: str, context: GlobalContext, queue: asyncio.PriorityQueue[QueueItem[t.Tuple[PathWithMd5, JobType]]]
 ) -> None:
     while True:
         # Get a "work item" out of the queue.
@@ -157,14 +155,28 @@ async def worker(
 
 class Queues:
     def __init__(self) -> None:
-        self.cheap_features: asyncio.PriorityQueue[QueueItem[t.Tuple[str, JobType]]] = asyncio.PriorityQueue()
-        self.image_to_text: asyncio.PriorityQueue[QueueItem[t.Tuple[str, JobType]]] = asyncio.PriorityQueue()
+        self.cheap_features: asyncio.PriorityQueue[
+            QueueItem[t.Tuple[PathWithMd5, JobType]]
+        ] = asyncio.PriorityQueue()
+        self.image_to_text: asyncio.PriorityQueue[
+            QueueItem[t.Tuple[PathWithMd5, JobType]]
+        ] = asyncio.PriorityQueue()
         self._index = 0
 
     def enqueue_path(self, context: GlobalContext, path: str, priority: int) -> None:
         context.known_paths.add(path)
-        self.cheap_features.put_nowait(QueueItem(priority, self._index, (path, JobType.CHEAP_FEATURES)))
-        self.image_to_text.put_nowait(QueueItem(priority, random.random(), (path, JobType.IMAGE_TO_TEXT)))
+        file_row = context.files.get(path)
+        if file_row is None:
+            path_with_md5 = compute_md5(path)
+            context.files.add(path, path_with_md5.md5)
+        else:
+            path_with_md5 = PathWithMd5(path, file_row.md5)
+        self.cheap_features.put_nowait(
+            QueueItem(priority, self._index, (path_with_md5, JobType.CHEAP_FEATURES))
+        )
+        self.image_to_text.put_nowait(
+            QueueItem(priority, random.random(), (path_with_md5, JobType.IMAGE_TO_TEXT))
+        )
         self._index += 1
 
 
@@ -234,13 +246,14 @@ async def reingest_directories_worker(context: GlobalContext, config: Config, qu
 async def main() -> None:
     parser = argparse.ArgumentParser(prog="Photo annotator")
     parser.add_argument("--config", default="config.yaml", type=str)
-    parser.add_argument("--db", default="output.db", type=str)
+    parser.add_argument("--db", default="data/photos.db", type=str)
     parser.add_argument("--image-to-text-workers", default=3, type=int)
     parser.add_argument("--annotate-url", default=None, type=str)
     args = parser.parse_args()
     config = Config.load(args.config)
     connection = Connection(args.db)
     features = FeaturesTable(connection)
+    files = FilesTable(connection)
 
     async def check_db_connection() -> None:
         while True:
@@ -251,7 +264,7 @@ async def main() -> None:
     tasks.append(asyncio.create_task(check_db_connection()))
 
     async with aiohttp.ClientSession() as session:
-        context = GlobalContext(config, features, session, args.annotate_url)
+        context = GlobalContext(config, features, files, session, args.annotate_url)
         queues = Queues()
 
         tasks.append(asyncio.create_task(reingest_directories_worker(context, config, queues)))

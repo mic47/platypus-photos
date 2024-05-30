@@ -365,7 +365,9 @@ function init_fun() {
     {% if image.date.date %}
     <span class="date"><a href="{{image.date.url}}">{{image.date.date}}</a></span>
     {% endif %}
-    <span class="dir"><a href="{{image.dir_url}}">{{image.dir}}</a></span>
+    {% for path in image.paths %}
+    <span class="dir"><a href="{{path.dir_url}}">{{path.dir}}</a></span>
+    {% endfor %}
   </div>
 {% endfor %}
 </div>

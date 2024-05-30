@@ -1,18 +1,7 @@
 import hashlib
 
-from data_model.features import MD5Annot, WithImage
-from db.cache import Cache
+from data_model.features import PathWithMd5
 
 
-class MD5er:
-    def __init__(self, cache: Cache[MD5Annot]) -> None:
-        self._cache = cache
-        self._version = MD5Annot.current_version()
-
-    def process(self, image: str) -> WithImage[MD5Annot]:
-        ret = self._cache.get(image)
-        if ret is not None:
-            return ret.payload
-        return self._cache.add(
-            WithImage(image, self._version, MD5Annot(hashlib.md5(open(image, "rb").read()).hexdigest()))
-        )
+def compute_md5(path: str) -> PathWithMd5:
+    return PathWithMd5(path, hashlib.md5(open(path, "rb").read()).hexdigest())
