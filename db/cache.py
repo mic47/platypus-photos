@@ -1,6 +1,7 @@
 import sys
 import typing as t
 import json
+import os
 import traceback
 
 from tqdm import tqdm
@@ -217,6 +218,8 @@ def main() -> None:
             if row is not None:
                 md5 = row.md5
             else:
+                if not os.path.exists(x.image):
+                    return
                 md5 = compute_md5(x.image).md5
                 cache.add(x.image, md5)
             # pylint: disable = cell-var-from-loop
