@@ -12,7 +12,6 @@ import typing as t
 
 import aiohttp
 import asyncinotify
-from tqdm import tqdm
 
 from data_model.config import Config
 from data_model.features import WithMD5, PathWithMd5
@@ -23,41 +22,13 @@ from annots.exif import Exif, ImageExif
 from annots.geo import Geolocator, GeoAddress
 from annots.md5 import compute_md5
 from annots.text import Models, ImageClassification
+from utils.progress_bar import ProgressBar
 
 T = t.TypeVar("T")
 
 DEFAULT_PRIORITY = 47
 
 EXTENSIONS = ["jpg", "jpeg", "JPG", "JEPG"]
-
-_POSITION = 0
-
-
-def _get_position() -> int:
-    # pylint: disable = global-statement
-    global _POSITION
-    ret = _POSITION
-    _POSITION += 1
-    return ret
-
-
-class ProgressBar:
-    def __init__(self, desc: t.Optional[str] = None, permanent: bool = False, smoothing: float = 0.3) -> None:
-        position = None
-        if permanent:
-            position = _get_position()
-        self._tqdm = tqdm(desc=desc, position=position, smoothing=smoothing)
-        self._progress = 0
-
-    def update(self, value: int) -> "ProgressBar":
-        self._progress += value
-        self._tqdm.update(value)
-        return self
-
-    def update_total(self, new_total: int) -> "ProgressBar":
-        self._tqdm.reset(total=new_total)
-        self._tqdm.update(self._progress)
-        return self
 
 
 class JobType(enum.Enum):
