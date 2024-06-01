@@ -2,7 +2,6 @@ import argparse
 import asyncio
 import datetime
 import enum
-import glob
 import os
 import random
 import re
@@ -22,13 +21,12 @@ from annots.exif import Exif, ImageExif
 from annots.geo import Geolocator, GeoAddress
 from annots.md5 import compute_md5
 from annots.text import Models, ImageClassification
+from utils.files import get_paths, supported_media
 from utils.progress_bar import ProgressBar
 
 T = t.TypeVar("T")
 
 DEFAULT_PRIORITY = 47
-
-EXTENSIONS = ["jpg", "jpeg", "JPG", "JEPG"]
 
 
 class JobType(enum.Enum):
@@ -140,6 +138,8 @@ class Queues:
         self._index = 0
 
     def enqueue_path(self, context: GlobalContext, path: str, priority: int) -> None:
+        if path in context.known_paths:
+            return
         context.known_paths.add(path)
         if not os.path.exists(path):
             return
@@ -175,9 +175,7 @@ async def inotify_worker(name: str, dirs: t.List[str], context: GlobalContext, q
                 traceback.print_exc()
                 print("Error in inotify worker", name)
                 continue
-            if path in context.known_paths:
-                continue
-            if path.split(".")[-1] not in EXTENSIONS:
+            if supported_media(path) is None:
                 continue
             if not os.path.exists(path):
                 continue
@@ -186,28 +184,12 @@ async def inotify_worker(name: str, dirs: t.List[str], context: GlobalContext, q
             queues.enqueue_path(context, path, 23)
 
 
-def walk_tree(path: str, extensions: t.Optional[t.List[str]] = None) -> t.Iterable[str]:
-    if extensions is None:
-        extensions = EXTENSIONS
-    for directory, _subdirs, files in os.walk(path):
-        yield from (f"{directory}/{file}" for file in files if file.split(".")[-1] in extensions)
-
-
-def get_paths(config: Config) -> t.Iterable[str]:
-    for pattern in config.input_patterns:
-        yield from glob.glob(re.sub("^~/", os.environ["HOME"] + "/", pattern))
-    for directory in config.input_directories:
-        yield from walk_tree(re.sub("^~/", os.environ["HOME"] + "/", directory))
-
-
 async def reingest_directories_worker(context: GlobalContext, config: Config, queues: Queues) -> None:
     total_for_reingest = 0
     while True:
         await queues.cheap_features.join()
         found_something = False
-        for path in get_paths(config):
-            if path in context.known_paths:
-                continue
+        for path in get_paths(config.input_patterns, config.input_directories):
             queues.enqueue_path(context, path, DEFAULT_PRIORITY)
             total_for_reingest += 1
             if total_for_reingest % 1000 == 0:
