@@ -30,18 +30,31 @@ DEFAULT_PRIORITY = 47
 
 EXTENSIONS = ["jpg", "jpeg", "JPG", "JEPG"]
 
+_POSITION = 0
 
-class Tqdm(t.Generic[T]):
-    def __init__(self, tq: "tqdm[T]") -> None:
-        self._tqdm = tq
+
+def _get_position() -> int:
+    # pylint: disable = global-statement
+    global _POSITION
+    ret = _POSITION
+    _POSITION += 1
+    return ret
+
+
+class ProgressBar:
+    def __init__(self, desc: t.Optional[str] = None, permanent: bool = False, smoothing: float = 0.3) -> None:
+        position = None
+        if permanent:
+            position = _get_position()
+        self._tqdm = tqdm(desc=desc, position=position, smoothing=smoothing)
         self._progress = 0
 
-    def update(self, value: int) -> "Tqdm[T]":
+    def update(self, value: int) -> "ProgressBar":
         self._progress += value
         self._tqdm.update(value)
         return self
 
-    def update_total(self, new_total: int) -> "Tqdm[T]":
+    def update_total(self, new_total: int) -> "ProgressBar":
         self._tqdm.reset(total=new_total)
         self._tqdm.update(self._progress)
         return self
@@ -73,22 +86,14 @@ class GlobalContext:
         geolocator_cache = SQLiteCache(features, GeoAddress, "data/output-geo.jsonl", enforce_version=True)
         self.geolocator = Geolocator(geolocator_cache)
         self.session = session
-        position = 0
-
-        def get_position() -> int:
-            nonlocal position
-            ret = position
-            position += 1
-            return ret
 
         self.prio_progress = {
-            tp: Tqdm(tqdm(desc=f"Realtime ingest {tp.name}", position=get_position())) for tp in JobType
+            tp: ProgressBar(desc=f"Realtime ingest {tp.name}", permanent=True) for tp in JobType
         }
         self.default_progress = {
-            tp: Tqdm(tqdm(desc=f"Backfill ingest {tp.name}", position=get_position(), smoothing=0.003))
+            tp: ProgressBar(desc=f"Backfill ingest {tp.name}", permanent=True, smoothing=0.003)
             for tp in JobType
         }
-        self.number_of_progress_bars = position
         self.known_paths: t.Set[str] = set()
 
     def cheap_features(
@@ -165,6 +170,8 @@ class Queues:
 
     def enqueue_path(self, context: GlobalContext, path: str, priority: int) -> None:
         context.known_paths.add(path)
+        if not os.path.exists(path):
+            return
         file_row = context.files.get(path)
         if file_row is None:
             path_with_md5 = compute_md5(path)
