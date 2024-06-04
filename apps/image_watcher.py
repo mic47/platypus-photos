@@ -15,7 +15,7 @@ import asyncinotify
 from data_model.config import Config
 from data_model.features import WithMD5, PathWithMd5
 from db.cache import SQLiteCache, FilesCache
-from db.sql import FeaturesTable, Connection, FilesTable
+from db import FeaturesTable, Connection, FilesTable
 from annots.date import PathDateExtractor
 from annots.exif import Exif, ImageExif
 from annots.geo import Geolocator, GeoAddress

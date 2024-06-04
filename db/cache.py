@@ -7,7 +7,8 @@ import traceback
 from tqdm import tqdm
 
 from data_model.features import WithImage, HasCurrentVersion, WithMD5
-from db.sql import FeaturesTable, Connection, FeaturePayload, FileRow, FilesTable
+from db import FeaturesTable, Connection, FilesTable
+from db.types import FileRow, FeaturePayload
 
 
 Ser = t.TypeVar("Ser", bound="HasCurrentVersion")

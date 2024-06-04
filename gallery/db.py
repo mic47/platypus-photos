@@ -6,9 +6,8 @@ from tqdm import tqdm
 
 from annots.date import PathDateExtractor
 from data_model.features import ImageExif, GeoAddress, ImageClassification, MD5Annot, WithMD5
-from db.cache import SQLiteCache
-from db.sql import FeaturesTable, GalleryIndexTable, Connection, FeaturePayload, FilesTable
-from db.types import ImageAggregation, Image, LocationCluster, LocPoint, FileRow
+from db import FeaturesTable, GalleryIndexTable, Connection, FilesTable, SQLiteCache
+from db.types import ImageAggregation, Image, LocationCluster, LocPoint, FeaturePayload, FileRow
 from gallery.url import UrlParameters
 
 Ser = t.TypeVar("Ser", bound=DataClassJsonMixin)
