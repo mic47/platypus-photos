@@ -6,4 +6,4 @@ ci:
 	pylint gallery db data_model annots apps utils
 
 covfefe:
-	coverage run -m unittest discover -p test_*.py && coverage html
+	coverage run --source=. -m unittest discover -p test_*.py && coverage html
