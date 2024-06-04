@@ -143,6 +143,10 @@ class Queues:
         context.known_paths.add(path)
         if not os.path.exists(path):
             return
+        if not os.path.isfile(path):
+            return
+        if supported_media(path) is None:
+            return
         file_row = context.files.get(path)
         if file_row is None:
             path_with_md5 = compute_md5(path)
@@ -174,12 +178,6 @@ async def inotify_worker(name: str, dirs: t.List[str], context: GlobalContext, q
             except:
                 traceback.print_exc()
                 print("Error in inotify worker", name)
-                continue
-            if supported_media(path) is None:
-                continue
-            if not os.path.exists(path):
-                continue
-            if not os.path.isfile(path):
                 continue
             queues.enqueue_path(context, path, 23)
 
