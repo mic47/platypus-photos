@@ -8,3 +8,5 @@ test.db
 config.yaml
 config.json
 .cache/
+htmlcov/
+.coverage

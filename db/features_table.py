@@ -75,7 +75,7 @@ CREATE INDEX IF NOT EXISTS features_idx_last_update ON features (last_update);
             )
         else:
             res = self._con.execute(
-                "SELECT md5, MAX(last_update) FROM features WHERE dirty > 0 GROUP BY md5 LIMIT {limit}"
+                f"SELECT md5, MAX(last_update) FROM features WHERE dirty > 0 GROUP BY md5 LIMIT {limit}"
             )
         while True:
             items = res.fetchmany()

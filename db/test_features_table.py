@@ -89,6 +89,18 @@ class TestFeaturesTable(unittest.TestCase):
         dirty = sorted(list(table.dirty_md5s(["T1", "T2", "T3"])))
         self.assertListEqual(dirty, [("M1", e1.last_update), ("M4", e4.last_update)])
 
+        # Empty list is like all types
+        dirty = sorted(list(table.dirty_md5s([])))
+        self.assertListEqual(dirty, [("M1", e1.last_update), ("M4", e4.last_update)])
+
+        # Limit should return one element
+        dirty = sorted(list(table.dirty_md5s(["T1", "T2", "T3"], limit=1)))
+        self.assertEqual(len(dirty), 1, "Should return only 1 element")
+        assert dirty[0] == ("M1", e1.last_update) or dirty[0] == (
+            "M4",
+            e4.last_update,
+        ), "Limit returned wrong element"
+
         # Need to undirty all features for file not to be dirty
         table.undirty("M1", ["T1"], max(e1.last_update, e2.last_update, e3.last_update, e4.last_update))
         dirty = sorted(list(table.dirty_md5s(["T1", "T2", "T3"])))

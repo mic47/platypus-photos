@@ -4,3 +4,6 @@ ci:
 	python3 -m unittest discover -p test_*.py
 	mypy  --no-incremental .
 	pylint gallery db data_model annots apps utils
+
+covfefe:
+	coverage run -m unittest discover -p test_*.py && coverage html
