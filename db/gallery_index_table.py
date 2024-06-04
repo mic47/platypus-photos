@@ -96,8 +96,11 @@ ON CONFLICT(md5) DO UPDATE SET
   altitude=excluded.altitude,
   version=excluded.version
 WHERE
-  excluded.feature_last_update > gallery_index.feature_last_update
-  OR excluded.version > gallery_index.version
+  excluded.version > gallery_index.version
+  OR (
+    excluded.version >= gallery_index.version
+    AND excluded.feature_last_update > gallery_index.feature_last_update
+  )
 """,
             (
                 omg.md5,
@@ -269,6 +272,7 @@ GROUP BY
     def get_aggregate_stats(
         self,
         url: UrlParameters,
+        _extra_query_for_tests: str = "",
     ) -> ImageAggregation:
         # do aggregate query
         (select, variables,) = self._matching_query(
@@ -298,6 +302,7 @@ UNION ALL
 SELECT "alt", 'max', MAX(altitude) FROM matched_images WHERE altitude IS NOT NULL
 UNION ALL
 SELECT "alt", 'min', MIN(altitude) FROM matched_images WHERE altitude IS NOT NULL
+{_extra_query_for_tests}
         """
         tag_cnt: t.Counter[str] = Counter()
         classifications_cnt: t.Counter[str] = Counter()
@@ -349,16 +354,13 @@ SELECT "alt", 'min', MIN(altitude) FROM matched_images WHERE altitude IS NOT NUL
                 ]:
                     if count is None:
                         continue
-                    if type_ not in position:
-                        position[type_] = (count, count)
+                    x = position.get(type_, (count, count))
+                    if value == "min":
+                        position[type_] = (count, x[1])
+                    elif value == "max":
+                        position[type_] = (x[0], count)
                     else:
-                        x = position[type_]
-                        if value == "min":
-                            position[type_] = (count, x[1])
-                        elif value == "max":
-                            position[type_] = (x[0], count)
-                        else:
-                            raise WrongAggregateTypeReturned(f"{type_}:{value}")
+                        raise WrongAggregateTypeReturned(f"{type_}:{value}")
                 else:
                     raise WrongAggregateTypeReturned(type_)
 
