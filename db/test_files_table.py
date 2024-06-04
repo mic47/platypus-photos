@@ -9,7 +9,7 @@ def connection() -> Connection:
     return Connection(":memory:")
 
 
-class TestStringMethods(unittest.TestCase):
+class TestFilesTable(unittest.TestCase):
     def test_create_and_migrate_table(self) -> None:
         conn = connection()
         FilesTable(conn)
