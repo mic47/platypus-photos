@@ -56,10 +56,10 @@ class OmgDB(ABC):
 
 
 class ImageSqlDB(OmgDB):
-    def __init__(self, path_to_date: PathDateExtractor, check_same_thread: bool) -> None:
+    def __init__(self, path_to_date: PathDateExtractor, connection: Connection) -> None:
         # TODO: this should be a feature with loader
         self._path_to_date = path_to_date
-        self._con = Connection("data/photos.db", check_same_thread=check_same_thread)
+        self._con = connection
         self._features_table = FeaturesTable(self._con)
         self._files_table = FilesTable(self._con)
         self._exif = SQLiteCache(self._features_table, ImageExif)
