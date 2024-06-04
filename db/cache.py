@@ -7,7 +7,8 @@ import traceback
 from tqdm import tqdm
 
 from data_model.features import WithImage, HasCurrentVersion, WithMD5
-from db import FeaturesTable, Connection, FilesTable
+from db.sql import FeaturesTable, Connection
+from db.files_table import FilesTable
 from db.types import FileRow, FeaturePayload
 
 
