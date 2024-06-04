@@ -12,7 +12,7 @@ class Connection:
         self._timeout = timeout
         self._check_same_thread = check_same_thread
         self._last_use = datetime.now()
-        self._connection: t.Optional[sqlite3.Connection] = self._connect()
+        self._connection: t.Optional[sqlite3.Connection] = None
         self._disconnect_timeout = timedelta(seconds=10)
 
     def reconnect(self) -> None:
