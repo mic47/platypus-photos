@@ -2,6 +2,7 @@ aiohttp
 argparse
 asyncinotify
 asyncio
+coverage
 dataclasses_json
 exif
 geopy
