@@ -1,6 +1,5 @@
 import argparse
 import asyncio
-import datetime
 import enum
 import os
 import random
@@ -13,14 +12,11 @@ import aiohttp
 import asyncinotify
 
 from data_model.config import Config
-from data_model.features import WithMD5, PathWithMd5
-from db.cache import SQLiteCache, FilesCache
+from data_model.features import PathWithMd5
+from db.cache import FilesCache
 from db import FeaturesTable, Connection, FilesTable
-from annots.date import PathDateExtractor
-from annots.exif import Exif, ImageExif
-from annots.geo import Geolocator, GeoAddress
 from annots.md5 import compute_md5
-from annots.text import Models, ImageClassification
+from annots.annotator import Annotator
 from utils.files import get_paths, supported_media
 from utils.progress_bar import ProgressBar
 
@@ -37,24 +33,11 @@ class JobType(enum.Enum):
 class GlobalContext:
     def __init__(
         self,
-        config: Config,
-        features: FeaturesTable,
+        annotator: Annotator,
         files: FilesTable,
-        session: aiohttp.ClientSession,
-        annotate_url: t.Optional[str],
     ) -> None:
-        self.path_to_date = PathDateExtractor(config.directory_matching)
-
         self.files = FilesCache(files, "data/output-files.jsonl")
-        models_cache = SQLiteCache(
-            features, ImageClassification, "data/output-image-to-text.jsonl", enforce_version=True
-        )
-        self.models = Models(models_cache, annotate_url)
-        exif_cache = SQLiteCache(features, ImageExif, "data/output-exif.jsonl", enforce_version=True)
-        self.exif = Exif(exif_cache)
-        geolocator_cache = SQLiteCache(features, GeoAddress, "data/output-geo.jsonl", enforce_version=True)
-        self.geolocator = Geolocator(geolocator_cache)
-        self.session = session
+        self.annotator = annotator
 
         self.prio_progress = {
             tp: ProgressBar(desc=f"Realtime ingest {tp.name}", permanent=True) for tp in JobType
@@ -64,28 +47,6 @@ class GlobalContext:
             for tp in JobType
         }
         self.known_paths: t.Set[str] = set()
-
-    def cheap_features(
-        self, path: PathWithMd5
-    ) -> t.Tuple[
-        PathWithMd5,
-        WithMD5[ImageExif],
-        t.Optional[WithMD5[GeoAddress]],
-        t.Optional[datetime.datetime],
-    ]:
-        exif_item = self.exif.process_image(path)
-        geo = None
-        if exif_item.p.gps is not None:
-            # TODO: do recomputation based on the last_update
-            geo = self.geolocator.address(
-                path, exif_item.p.gps.latitude, exif_item.p.gps.longitude, recompute=False
-            )
-        path_date = self.path_to_date.extract_date(path.path)
-        return (path, exif_item, geo, path_date)
-
-    async def image_to_text(self, path: PathWithMd5) -> t.Tuple[PathWithMd5, WithMD5[ImageClassification]]:
-        itt = await self.models.process_image(self.session, path)
-        return (path, itt)
 
 
 class QueueItem(t.Generic[T]):
@@ -109,9 +70,9 @@ async def worker(
         path, type_ = item.payload
         try:
             if type_ == JobType.CHEAP_FEATURES:
-                context.cheap_features(path)
+                context.annotator.cheap_features(path)
             elif type_ == JobType.IMAGE_TO_TEXT:
-                await context.image_to_text(path)
+                await context.annotator.image_to_text(path)
         # pylint: disable = broad-exception-caught
         except Exception as e:
             traceback.print_exc()
@@ -222,7 +183,8 @@ async def main() -> None:
     tasks.append(asyncio.create_task(check_db_connection()))
 
     async with aiohttp.ClientSession() as session:
-        context = GlobalContext(config, features, files, session, args.annotate_url)
+        annotator = Annotator(config.directory_matching, features, session, args.annotate_url)
+        context = GlobalContext(annotator, files)
         queues = Queues()
 
         tasks.append(asyncio.create_task(reingest_directories_worker(context, config, queues)))
