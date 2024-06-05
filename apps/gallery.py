@@ -19,6 +19,7 @@ from data_model.config import Config, DBFilesConfig
 from db.types import LocationCluster, LocPoint
 from db import Connection
 from annots.date import PathDateExtractor
+from utils import assert_never
 
 from gallery.db import OmgDB, ImageSqlDB
 from gallery.url import UrlParameters
@@ -96,7 +97,7 @@ def sz_to_resolution(size: ImageSize) -> t.Optional[int]:
         return 1600
     if size == ImageSize.PREVIEW:
         return 640
-    raise NotImplementedError()
+    assert_never(size)
 
 
 def get_cache_file(size: int, hsh: str) -> str:

@@ -17,6 +17,7 @@ from db.cache import FilesCache
 from db import FeaturesTable, Connection, FilesTable
 from annots.md5 import compute_md5
 from annots.annotator import Annotator
+from utils import assert_never
 from utils.files import get_paths, supported_media
 from utils.progress_bar import ProgressBar
 
@@ -74,6 +75,8 @@ async def worker(
                 context.annotator.cheap_features(path)
             elif type_ == JobType.IMAGE_TO_TEXT:
                 await context.annotator.image_to_text(path)
+            else:
+                assert_never(type_)
         # pylint: disable = broad-exception-caught
         except Exception as e:
             traceback.print_exc()
