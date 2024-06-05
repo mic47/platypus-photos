@@ -11,7 +11,7 @@ import typing as t
 import aiohttp
 import asyncinotify
 
-from data_model.config import Config
+from data_model.config import Config, DBFilesConfig
 from data_model.features import PathWithMd5
 from db.cache import FilesCache
 from db import FeaturesTable, Connection, FilesTable
@@ -35,8 +35,9 @@ class GlobalContext:
         self,
         annotator: Annotator,
         files: FilesTable,
+        files_config: DBFilesConfig,
     ) -> None:
-        self.files = FilesCache(files, "data/output-files.jsonl")
+        self.files = FilesCache(files, files_config.files_jsonl)
         self.annotator = annotator
 
         self.prio_progress = {
@@ -163,9 +164,10 @@ async def reingest_directories_worker(context: GlobalContext, config: Config, qu
 
 
 async def main() -> None:
+    files_config = DBFilesConfig()
     parser = argparse.ArgumentParser(prog="Photo annotator")
     parser.add_argument("--config", default="config.yaml", type=str)
-    parser.add_argument("--db", default="data/photos.db", type=str)
+    parser.add_argument("--db", default=files_config.photos_db, type=str)
     parser.add_argument("--image-to-text-workers", default=3, type=int)
     parser.add_argument("--annotate-url", default=None, type=str)
     args = parser.parse_args()
@@ -183,8 +185,8 @@ async def main() -> None:
     tasks.append(asyncio.create_task(check_db_connection()))
 
     async with aiohttp.ClientSession() as session:
-        annotator = Annotator(config.directory_matching, features, session, args.annotate_url)
-        context = GlobalContext(annotator, files)
+        annotator = Annotator(config.directory_matching, files_config, features, session, args.annotate_url)
+        context = GlobalContext(annotator, files, files_config)
         queues = Queues()
 
         tasks.append(asyncio.create_task(reingest_directories_worker(context, config, queues)))

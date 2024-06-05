@@ -15,7 +15,7 @@ from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from data_model.config import Config
+from data_model.config import Config, DBFilesConfig
 from db.types import LocationCluster, LocPoint
 from db import Connection
 from annots.date import PathDateExtractor
@@ -32,8 +32,10 @@ app.mount("/static", StaticFiles(directory="static/"), name="static")
 templates = Jinja2Templates(directory="templates")
 
 config = Config.load("config.yaml")
+
 DB: OmgDB = ImageSqlDB(
-    PathDateExtractor(config.directory_matching), Connection("data/photos.db", check_same_thread=False)
+    PathDateExtractor(config.directory_matching),
+    Connection(DBFilesConfig().photos_db, check_same_thread=False),
 )
 del config
 

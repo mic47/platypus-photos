@@ -6,6 +6,7 @@ import traceback
 
 from tqdm import tqdm
 
+from data_model.config import DBFilesConfig
 from data_model.features import WithImage, HasCurrentVersion, WithMD5
 from db.connection import Connection
 from db.features_table import FeaturesTable
@@ -197,9 +198,10 @@ def main() -> None:
     # pylint: disable=import-outside-toplevel
     from data_model.features import MD5Annot
 
-    conn = Connection("data/photos.db")
+    files = DBFilesConfig()
+    conn = Connection(files.photos_db)
     conn.execute("PRAGMA synchronous=OFF;")
-    cache = FilesCache(FilesTable(conn), "data/output-files.jsonl")
+    cache = FilesCache(FilesTable(conn), files.files_jsonl)
 
     def ldmd5(x: WithImage[MD5Annot]) -> None:
         cache.add(x.image, x.p.md5)
