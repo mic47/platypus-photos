@@ -3,7 +3,9 @@ import asyncio
 import datetime
 import enum
 import json
+import os
 import random
+import stat
 import sys
 import traceback
 import typing as t
@@ -179,6 +181,18 @@ async def reingest_directories_worker(context: GlobalContext, config: Config) ->
 
 
 async def managed_worker_and_import_worker(context: GlobalContext, config: Config) -> None:
+    try:
+        if os.path.exists(config.import_fifo):
+            if not stat.S_ISFIFO(os.stat(config.import_fifo).st_mode):
+                print(f"FATAL: {config.import_fifo} is not FIFo!", file=sys.stderr)
+                sys.exit(1)
+        else:
+            os.mkfifo(config.import_fifo)
+    # pylint: disable = broad-exception-caught
+    except Exception as e:
+        traceback.print_exc()
+        print("Unable to create fifo file", config.import_fifo, e, file=sys.stderr)
+        sys.exit(1)
     context.jobs.fix_in_progress_moved_files_at_startup()
     context.jobs.fix_imported_files_at_startup()
     # TODO: check for new files in managed folders, and add them. Run it from time to time
