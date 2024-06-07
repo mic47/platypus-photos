@@ -73,6 +73,9 @@ class Queues:
             return
         self.enqueue_path(path, priority)
 
+    def mark_failed(self, path: PathWithMd5) -> None:
+        self.known_paths.delete(path)
+
 
 class GlobalContext:
     def __init__(
@@ -123,6 +126,7 @@ async def worker(
         except Exception as e:
             traceback.print_exc()
             print("Error while processing path in ", name, path, e, file=sys.stderr)
+            context.queues.mark_failed(path)
         finally:
             # Notify the queue that the "work item" has been processed.
             if item.priority >= DEFAULT_PRIORITY:

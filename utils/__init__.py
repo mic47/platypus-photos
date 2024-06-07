@@ -30,6 +30,10 @@ class CacheTTL(t.Generic[V]):
     def _get_ttl(self) -> datetime.timedelta:
         return datetime.timedelta(seconds=random.randint(self._ttl_low, self._ttl_high))
 
+    def delete(self, value: V) -> None:
+        if value in self._items:
+            del self._items[value]
+
     def mutable_should_update(self, value: V, now: t.Optional[datetime.datetime] = None) -> bool:
         if now is None:
             now = datetime.datetime.now()
