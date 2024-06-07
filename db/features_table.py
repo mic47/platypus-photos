@@ -50,7 +50,10 @@ CREATE INDEX IF NOT EXISTS features_idx_last_update ON features (last_update);
         max_last_update: float,
     ) -> None:
         q = ", ".join(f"'{qt}'" for qt in types)
-        (query, param,) = (
+        (
+            query,
+            param,
+        ) = (
             f"UPDATE features SET dirty = 0 WHERE dirty > 0 AND md5 = ? AND type in ({q}) AND last_update <= ?",
             (
                 md5,
@@ -67,7 +70,12 @@ CREATE INDEX IF NOT EXISTS features_idx_last_update ON features (last_update);
         self,
         types: t.List[str],
         limit: int = 1000,
-    ) -> t.Iterable[t.Tuple[str, int,]]:
+    ) -> t.Iterable[
+        t.Tuple[
+            str,
+            int,
+        ]
+    ]:
         if types:
             q = ", ".join(f"'{qt}'" for qt in types)
             res = self._con.execute(

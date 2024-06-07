@@ -50,12 +50,12 @@ class QueueItem(t.Generic[T]):
 
 class Queues:
     def __init__(self) -> None:
-        self.cheap_features: asyncio.PriorityQueue[
-            QueueItem[t.Tuple[PathWithMd5, JobType]]
-        ] = asyncio.PriorityQueue()
-        self.image_to_text: asyncio.PriorityQueue[
-            QueueItem[t.Tuple[PathWithMd5, JobType]]
-        ] = asyncio.PriorityQueue()
+        self.cheap_features: asyncio.PriorityQueue[QueueItem[t.Tuple[PathWithMd5, JobType]]] = (
+            asyncio.PriorityQueue()
+        )
+        self.image_to_text: asyncio.PriorityQueue[QueueItem[t.Tuple[PathWithMd5, JobType]]] = (
+            asyncio.PriorityQueue()
+        )
         self._index = 0
 
     def enqueue_path(self, context: "GlobalContext", path: str, priority: int, can_add: bool) -> None:

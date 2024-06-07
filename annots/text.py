@@ -140,7 +140,7 @@ class Models:
         results = self.predict_model([img for (_, img) in images], verbose=False)
         boxes_to_classify = []
         all_input = list(zip(images, results, captions))
-        for ((path, image), result, caption) in all_input:
+        for (path, image), result, caption in all_input:
             names = result.names
             for box_id, box in enumerate(result.boxes):
                 classification = names[int(box.cls[0])]
@@ -180,7 +180,7 @@ class Models:
             results = []
 
         visited = set()
-        for (path, group) in itertools.groupby(results, lambda x: t.cast(PathWithMd5, x[0][0])):
+        for path, group in itertools.groupby(results, lambda x: t.cast(PathWithMd5, x[0][0])):
             visited.add(path.path)
             box_class = []
             captions = set()
@@ -201,7 +201,7 @@ class Models:
                     classifications.append(Classification(names[index], float(conf)))
                 box_class.append(BoxClassification(box, classifications))
             yield WithMD5(path.md5, self._version, ImageClassification(list(captions), box_class))
-        for ((path, image), captions, _) in all_input:
+        for (path, image), captions, _ in all_input:
             if path.path in visited:
                 continue
             visited.add(path.path)

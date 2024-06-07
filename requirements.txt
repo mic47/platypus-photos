@@ -11,6 +11,11 @@ transformers
 types-tqdm
 ultralytics
 
+# Dev
+black==24.4.2
+pylint==3.2.0
+mypy==1.10.0
+
 # For browser
 
 fastapi

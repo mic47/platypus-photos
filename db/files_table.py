@@ -46,7 +46,7 @@ ALTER TABLE files ADD COLUMN tmp_path TEXT
 ALTER TABLE files ADD COLUMN managed INTEGER NOT NULL DEFAULT 0
         """
         )
-        for (suffix, rows) in [
+        for suffix, rows in [
             ("path", "path"),
             ("md5", "md5"),
             ("managed", "managed"),
@@ -211,7 +211,7 @@ UPDATE files SET managed=? , tmp_path=? WHERE path = ?
             (md5,),
         ).fetchall()
         out = []
-        for (rowid, last_update, path, og_path, tmp_path, managed) in res:
+        for rowid, last_update, path, og_path, tmp_path, managed in res:
             out.append(
                 FileRow(
                     path,
