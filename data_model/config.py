@@ -38,6 +38,7 @@ class UnsupportedFileType(Exception):
 @dataclass
 class Config(DataClassJsonMixin):
     managed_folder: str
+    import_fifo: str
     input_patterns: t.List[str]
     input_directories: t.List[str]
     watched_directories: t.List[str]
@@ -56,6 +57,7 @@ class Config(DataClassJsonMixin):
 
     def resolve_vars(self) -> "Config":
         self.managed_folder = expand_vars_in_path(self.managed_folder)
+        self.import_fifo = expand_vars_in_path(self.import_fifo)
         self.input_patterns = [expand_vars_in_path(x) for x in self.input_patterns]
         self.input_directories = [expand_vars_in_path(x) for x in self.input_directories]
         self.watched_directories = [expand_vars_in_path(x) for x in self.watched_directories]

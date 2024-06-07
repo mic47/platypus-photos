@@ -159,6 +159,27 @@ UPDATE files SET managed=? , tmp_path=? WHERE path = ?
         )
         self._con.commit()
 
+    def by_managed_lifecycle(self, managed: ManagedLifecycle) -> t.List[FileRow]:
+        # TODO: test
+        res = self._con.execute(
+            "SELECT rowid, last_update, path, md5, og_path, tmp_path FROM files WHERE managed = ?",
+            (managed.value,),
+        ).fetchall()
+        out = []
+        for rowid, last_update, path, md5, og_path, tmp_path in res:
+            out.append(
+                FileRow(
+                    path,
+                    md5,
+                    og_path,
+                    tmp_path,
+                    managed,
+                    last_update,
+                    rowid,
+                )
+            )
+        return out
+
     def by_path(
         self,
         path: str,

@@ -1,3 +1,4 @@
+aiofiles==23.2.1
 aiohttp==3.9.5
 asyncinotify==4.0.9
 asyncio==3.4.3

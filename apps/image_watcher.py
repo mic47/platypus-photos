@@ -2,11 +2,13 @@ import argparse
 import asyncio
 import datetime
 import enum
+import json
 import random
 import sys
 import traceback
 import typing as t
 
+import aiofiles
 import aiohttp
 import asyncinotify
 
@@ -14,7 +16,7 @@ from data_model.config import Config, DBFilesConfig
 from data_model.features import PathWithMd5
 from db import FeaturesTable, Connection, FilesTable
 from annots.annotator import Annotator
-from file_mgmt.jobs import Jobs, JobAction, EnqueuePathAction
+from file_mgmt.jobs import Jobs
 from utils import assert_never, DefaultDict, CacheTTL
 from utils.files import get_paths, expand_vars_in_path
 from utils.progress_bar import ProgressBar
@@ -29,7 +31,6 @@ REALTIME_PRIORITY = 23
 class JobType(enum.Enum):
     CHEAP_FEATURES = 1
     IMAGE_TO_TEXT = 2
-    IMPORT = 3
 
 
 class QueueItem(t.Generic[T]):
@@ -61,10 +62,13 @@ class Queues:
         self.cheap_features.put_nowait(
             QueueItem(priority, self._index, (path_with_md5, JobType.CHEAP_FEATURES))
         )
+        self._index += 1
+        self.enqueue_path_for_image_to_text(path_with_md5, priority)
+
+    def enqueue_path_for_image_to_text(self, path_with_md5: PathWithMd5, priority: int) -> None:
         self.image_to_text.put_nowait(
             QueueItem(priority, random.random(), (path_with_md5, JobType.IMAGE_TO_TEXT))
         )
-        self._index += 1
 
     def enqueue_path_skipped_known(self, path: PathWithMd5, priority: int) -> None:
         if not self.known_paths.mutable_should_update(path):
@@ -104,22 +108,13 @@ async def worker(
         # Get a "work item" out of the queue.
         item = await queue.get()
         path, type_ = item.payload
-        actions: t.List[JobAction] = []
         try:
             if type_ == JobType.CHEAP_FEATURES:
                 context.jobs.cheap_features(path)
             elif type_ == JobType.IMAGE_TO_TEXT:
                 await context.jobs.image_to_text(path)
-            elif type_ == JobType.IMPORT:
-                enqueue = context.jobs.import_file(path)
-                actions.append(enqueue)
             else:
                 assert_never(type_)
-            for action in actions:
-                if isinstance(action, EnqueuePathAction):
-                    context.queues.enqueue_path(action.path_with_md5, action.priority)
-                else:
-                    assert_never(action)
         # pylint: disable = broad-exception-caught
         except Exception as e:
             traceback.print_exc()
@@ -183,6 +178,52 @@ async def reingest_directories_worker(context: GlobalContext, config: Config) ->
         await asyncio.sleep(3600 * 8)
 
 
+async def managed_worker_and_import_worker(context: GlobalContext, config: Config) -> None:
+    context.jobs.fix_in_progress_moved_files_at_startup()
+    context.jobs.fix_imported_files_at_startup()
+    # TODO: check for new files in managed folders, and add them. Run it from time to time
+    total = 0
+    progress_bar = context.import_progress[JobType.CHEAP_FEATURES]
+    while True:
+        async with aiofiles.open(config.import_fifo, "r") as import_fifo:
+            async for line in import_fifo:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    data = json.loads(line)
+                    path = data["import_path"]
+                    paths = list(get_paths([], [path]))
+                    total += len(paths)
+                    progress_bar.update_total(total)
+                    for path in paths:
+                        try:
+                            action = context.jobs.import_file(path)
+                            if action is not None:
+                                context.queues.enqueue_path_for_image_to_text(
+                                    action.path_with_md5, action.priority
+                                )
+                        # pylint: disable = broad-exception-caught
+                        except Exception as e:
+                            traceback.print_exc()
+                            print("Error while importing path", path, e, file=sys.stderr)
+                            continue
+                        finally:
+                            progress_bar.update(1)
+                            # So that we gave up place for other workers too
+                            await asyncio.sleep(0)
+                # pylint: disable = broad-exception-caught
+                except Exception as e:
+                    traceback.print_exc()
+                    print("Error while pricessing import request", line, e, file=sys.stderr)
+                    continue
+                finally:
+                    # So that we gave up place for other workers too
+                    await asyncio.sleep(0)
+            # So that we gave up place for other workers too
+            await asyncio.sleep(0)
+
+
 async def main() -> None:
     files_config = DBFilesConfig()
     parser = argparse.ArgumentParser(prog="Photo annotator")
@@ -209,7 +250,7 @@ async def main() -> None:
         jobs = Jobs(config.managed_folder, files, annotator)
         queues = Queues()
         context = GlobalContext(jobs, queues)
-
+        tasks.append(asyncio.create_task(managed_worker_and_import_worker(context, config)))
         tasks.append(asyncio.create_task(reingest_directories_worker(context, config)))
         for i in range(1):
             task = asyncio.create_task(worker(f"worker-cheap-{i}", context, queues.cheap_features))
