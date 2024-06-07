@@ -19,6 +19,12 @@ def sanitize(row: t.Optional[FileRow]) -> t.Optional[FileRow]:
 
 
 class TestFilesTable(unittest.TestCase):
+
+    def assert_table_without_paths(self, table: FilesTable, paths: t.List[str]) -> None:
+        for path in paths:
+            ret = table.by_path(path)
+            self.assertIsNone(ret, f"Path '{path}' already exists")
+
     def test_create_and_migrate_table(self) -> None:
         conn = connection()
         FilesTable(conn)
@@ -26,8 +32,8 @@ class TestFilesTable(unittest.TestCase):
 
     def test_add_update_vs_add_only(self) -> None:
         table = FilesTable(connection())
-        ret = table.by_path("foo")
-        self.assertIsNone(ret, "Element already exists")
+        self.assert_table_without_paths(table, ["foo"])
+
         u1 = FileRow("foo", None, "og/foo", None, ManagedLifecycle.NOT_MANAGED, 0, 0)
         u2 = FileRow("foo", "omnomnom", "og/goo", "hohoho", ManagedLifecycle.BEING_MOVED_AROUND, 0, 0)
         expected = FileRow("foo", "omnomnom", "og/foo", "hohoho", ManagedLifecycle.BEING_MOVED_AROUND, 0, 0)
@@ -44,10 +50,8 @@ class TestFilesTable(unittest.TestCase):
 
     def test_change_path(self) -> None:
         table = FilesTable(connection())
-        ret = table.by_path("foo")
-        self.assertIsNone(ret, "Element already exists")
-        ret = table.by_path("bar")
-        self.assertIsNone(ret, "Element already exists")
+        self.assert_table_without_paths(table, ["foo", "bar"])
+
         u1 = FileRow("foo", None, "og/foo", None, ManagedLifecycle.SYNCED, 0, 0)
         table.add_or_update(u1.file, u1.md5, u1.og_file, u1.managed, u1.tmp_file)
         ret = sanitize(table.by_path("foo"))
@@ -61,8 +65,8 @@ class TestFilesTable(unittest.TestCase):
 
     def test_set_lifecycle(self) -> None:
         table = FilesTable(connection())
-        ret = table.by_path("foo")
-        self.assertIsNone(ret, "Element already exists")
+        self.assert_table_without_paths(table, ["foo"])
+
         u1 = FileRow("foo", None, "og/foo", None, ManagedLifecycle.NOT_MANAGED, 0, 0)
         table.add_or_update(u1.file, u1.md5, u1.og_file, u1.managed, u1.tmp_file)
         ret = sanitize(table.by_path("foo"))
@@ -94,8 +98,8 @@ class TestFilesTable(unittest.TestCase):
 
     def test_add_and_get_by_path(self) -> None:
         table = FilesTable(connection())
-        ret = table.by_path("foo")
-        self.assertIsNone(ret, "Element already exists")
+        self.assert_table_without_paths(table, ["foo"])
+
         table.add_or_update("foo", None, "og/foo", ManagedLifecycle.NOT_MANAGED, None)
         ret = table.by_path("foo")
         if ret is None:
@@ -110,6 +114,7 @@ class TestFilesTable(unittest.TestCase):
         table = FilesTable(connection())
         ret = table.example_by_md5("wat")
         self.assertIsNone(ret, "Element already exists")
+
         table.add_or_update("bar", "wat", "og/bar", ManagedLifecycle.BEING_MOVED_AROUND, "lol")
         ret = table.example_by_md5("wat")
         if ret is None:
@@ -125,6 +130,7 @@ class TestFilesTable(unittest.TestCase):
         table = FilesTable(connection())
         ret = table.by_md5("bar")
         self.assertListEqual(ret, [], "Element already exists")
+
         table.add_or_update("bar", "wat", "og/bar", ManagedLifecycle.IMPORTED, None)
         table.add_or_update("foo", "wat", None, ManagedLifecycle.BEING_MOVED_AROUND, "x/foo")
         table.add_or_update("should not be found", "random stuff", None, ManagedLifecycle.NOT_MANAGED, None)
