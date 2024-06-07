@@ -1,11 +1,9 @@
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import datetime
 import enum
 import typing as t
-import re
 
 from data_model.features import ImageExif, GeoAddress, ImageClassification
-from gallery.url import UrlParameters
 
 T = t.TypeVar("T")
 
@@ -148,54 +146,3 @@ class Image:
             altitude,
             Image.current_version(),
         )
-
-    def match_url(self, url: UrlParameters) -> bool:
-        return (
-            self.match_date(url.datefrom, url.dateto)
-            and self.match_tags(url.tag)
-            and self.match_classifications(url.cls)
-            and self.match_address(url.addr)
-        )
-
-    def match_date(self, datefrom: t.Optional[datetime], dateto: t.Optional[datetime]) -> bool:
-        if self.date is not None:
-            to_compare = self.date.replace(tzinfo=None)
-            if datefrom is not None and to_compare < datefrom:
-                return False
-            if dateto is not None:
-                to_compare -= timedelta(days=1)
-                if to_compare > dateto:
-                    return False
-        else:
-            if datefrom is not None or dateto is not None:
-                # Datetime filter is on, so skipping stuff without date
-                return False
-        return True
-
-    def match_tags(self, tag: str) -> bool:
-        if not tag:
-            return True
-        if self.tags is None:
-            return False
-        return not any(not in_tags(tt, self.tags.keys()) for tt in tag.split(",") if tt)
-
-    def match_classifications(self, classifications: str) -> bool:
-        if not classifications:
-            return True
-        if self.classifications is None:
-            return False
-        return re.search(classifications, self.classifications) is not None
-
-    def match_address(self, addr: str) -> bool:
-        if not addr:
-            return True
-        if self.address_full is None:
-            return False
-        return re.search(addr.lower(), self.address_full.lower()) is not None
-
-
-def in_tags(what: str, tags: t.Iterable[str]) -> bool:
-    for tag in tags:
-        if what in tag:
-            return True
-    return False
