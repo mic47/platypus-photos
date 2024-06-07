@@ -38,7 +38,7 @@ class Config(DataClassJsonMixin):
     def load(file: str) -> "Config":
         with open(file, encoding="utf-8") as f:
             if file.endswith(".yaml"):
-                data = yaml.load(f)
+                data = yaml.load(f, Loader=None)
             elif file.endswith(".json"):
                 data = json.load(f)
             else:
