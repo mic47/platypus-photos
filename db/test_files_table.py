@@ -18,6 +18,10 @@ def sanitize(row: t.Optional[FileRow]) -> t.Optional[FileRow]:
     return row
 
 
+def sanitize_list(rows: t.List[FileRow]) -> t.List[FileRow]:
+    return [x for x in (sanitize(r) for r in rows) if x is not None]
+
+
 class TestFilesTable(unittest.TestCase):
 
     def assert_table_without_paths(self, table: FilesTable, paths: t.List[str]) -> None:
@@ -147,6 +151,27 @@ class TestFilesTable(unittest.TestCase):
                 FileRow("bar", "wat", "og/bar", None, ManagedLifecycle.IMPORTED, 0, 0),
                 FileRow("foo", "wat", None, "x/foo", ManagedLifecycle.BEING_MOVED_AROUND, 0, 0),
             ],
+        )
+
+    def test_by_managed_lifecycle(self) -> None:
+        table = FilesTable(connection())
+        self.assert_table_without_paths(table, ["foo", "bar", "foobar"])
+
+        u1 = FileRow("foo", None, "og/foo", None, ManagedLifecycle.NOT_MANAGED, 0, 0)
+        u2 = FileRow("bar", "omnomnom", "og/goo", "hohoho", ManagedLifecycle.BEING_MOVED_AROUND, 0, 0)
+        u3 = FileRow("foobar", "omnomnom", "og/goobar", None, ManagedLifecycle.NOT_MANAGED, 0, 0)
+        table.add_or_update(u1.file, u1.md5, u1.og_file, u1.managed, u1.tmp_file)
+        table.add_or_update(u2.file, u2.md5, u2.og_file, u2.managed, u2.tmp_file)
+        table.add_or_update(u3.file, u3.md5, u3.og_file, u3.managed, u3.tmp_file)
+        self.assertListEqual([], sanitize_list(table.by_managed_lifecycle(ManagedLifecycle.SYNCED)))
+        self.assertListEqual(
+            [u2], sanitize_list(table.by_managed_lifecycle(ManagedLifecycle.BEING_MOVED_AROUND))
+        )
+        self.assertListEqual(
+            [u1, u3],
+            sorted(
+                sanitize_list(table.by_managed_lifecycle(ManagedLifecycle.NOT_MANAGED)), key=lambda x: x.file
+            ),
         )
 
 
