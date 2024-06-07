@@ -31,6 +31,10 @@ class Jobs:
         self._files = files
         self._annotator = annotator
 
+    async def image_to_text(self, path: PathWithMd5) -> None:
+        # This is relatively simple job, does not wait
+        await self._annotator.image_to_text(path)
+
     def get_path_with_md5_to_enqueue(self, path: str, can_add: bool) -> t.Optional[PathWithMd5]:
         if not os.path.exists(path):
             return None

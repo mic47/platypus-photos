@@ -77,13 +77,11 @@ class Queues:
 class GlobalContext:
     def __init__(
         self,
-        annotator: Annotator,
         jobs: Jobs,
         queues: Queues,
     ) -> None:
         self.queues = queues
         self.jobs = jobs
-        self.annotator = annotator
 
         self.prio_progress: DefaultDict[JobType, ProgressBar] = DefaultDict(
             default_factory=lambda tp: ProgressBar(desc=f"Realtime ingest {tp.name}", permanent=True)
@@ -110,7 +108,7 @@ async def worker(
             if type_ == JobType.CHEAP_FEATURES:
                 context.jobs.cheap_features(path)
             elif type_ == JobType.IMAGE_TO_TEXT:
-                await context.annotator.image_to_text(path)
+                await context.jobs.image_to_text(path)
             elif type_ == JobType.IMPORT:
                 enqueue = context.jobs.import_file(path)
                 actions.append(enqueue)
@@ -208,7 +206,7 @@ async def main() -> None:
         annotator = Annotator(config.directory_matching, files_config, features, session, args.annotate_url)
         jobs = Jobs(files, annotator)
         queues = Queues()
-        context = GlobalContext(annotator, jobs, queues)
+        context = GlobalContext(jobs, queues)
 
         tasks.append(asyncio.create_task(reingest_directories_worker(context, config)))
         for i in range(1):
