@@ -1,0 +1,19 @@
+---
+name: Platypul Gallery CI
+run-name: ${{ github.actor }} is running CI🚀
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+jobs:
+  CI:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3
+      - run: make ci
+      - run: git diff --exit-code
+      - run: echo "🍏 This job's status is ${{ job.status }}."
