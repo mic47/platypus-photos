@@ -1,5 +1,6 @@
 import argparse
 import asyncio
+import datetime
 import enum
 import os
 import random
@@ -16,7 +17,7 @@ from data_model.features import PathWithMd5
 from db import FeaturesTable, Connection, FilesTable
 from annots.annotator import Annotator
 from file_mgmt.jobs import Jobs, JobAction, EnqueuePathAction
-from utils import assert_never
+from utils import assert_never, DefaultDict, CacheTTL
 from utils.files import get_paths
 from utils.progress_bar import ProgressBar
 
@@ -53,7 +54,9 @@ class Queues:
         self.image_to_text: asyncio.PriorityQueue[QueueItem[t.Tuple[PathWithMd5, JobType]]] = (
             asyncio.PriorityQueue()
         )
-        self.known_paths: t.Set[str] = set()
+        self.known_paths: CacheTTL[PathWithMd5] = CacheTTL(
+            datetime.timedelta(days=7), datetime.timedelta(days=14)
+        )
         self._index = 0
 
     def enqueue_path(self, path_with_md5: PathWithMd5, priority: int) -> None:
@@ -66,24 +69,9 @@ class Queues:
         self._index += 1
 
     def enqueue_path_skipped_known(self, path: PathWithMd5, priority: int) -> None:
-        if path.path in self.known_paths:
+        if not self.known_paths.mutable_should_update(path):
             return
-        self.known_paths.add(path.path)
         self.enqueue_path(path, priority)
-
-
-K = t.TypeVar("K")
-V = t.TypeVar("V")
-
-
-class DefaultDict(dict[K, V]):
-    def __init__(self, default_factory: t.Callable[[K], V]):
-        super().__init__()
-        self.default_factory = default_factory
-
-    def __missing__(self, key: K) -> V:
-        ret = self[key] = self.default_factory(key)
-        return ret
 
 
 class GlobalContext:

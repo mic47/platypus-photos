@@ -62,7 +62,7 @@ class Jobs:
         # Do not import if file exists, delete if it exists
         # TODO: make this async
         if not path.md5:
-            path.md5 = compute_md5(path.path).md5
+            path = compute_md5(path.path)
         # Do cheap annotation
         (_path, exif, geo, path_date) = self._annotator.cheap_features(path)
         date = (None if exif.p.date is None else exif.p.date.datetime) or path_date
