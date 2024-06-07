@@ -53,16 +53,10 @@ class Queues:
         self.image_to_text: asyncio.PriorityQueue[QueueItem[t.Tuple[PathWithMd5, JobType]]] = (
             asyncio.PriorityQueue()
         )
+        self.known_paths: t.Set[str] = set()
         self._index = 0
 
-    def enqueue_path(self, context: "GlobalContext", path: str, priority: int, can_add: bool) -> None:
-        # TODO: this caching is wrong?
-        if path in context.known_paths:
-            return
-        context.known_paths.add(path)
-        path_with_md5 = context.jobs.get_path_with_md5_to_enqueue(path, can_add)
-        if path_with_md5 is None:
-            return
+    def enqueue_path(self, path_with_md5: PathWithMd5, priority: int) -> None:
         self.cheap_features.put_nowait(
             QueueItem(priority, self._index, (path_with_md5, JobType.CHEAP_FEATURES))
         )
@@ -70,6 +64,12 @@ class Queues:
             QueueItem(priority, random.random(), (path_with_md5, JobType.IMAGE_TO_TEXT))
         )
         self._index += 1
+
+    def enqueue_path_skipped_known(self, path: PathWithMd5, priority: int) -> None:
+        if path.path in self.known_paths:
+            return
+        self.known_paths.add(path.path)
+        self.enqueue_path(path, priority)
 
 
 K = t.TypeVar("K")
@@ -106,7 +106,6 @@ class GlobalContext:
         self.default_progress: DefaultDict[JobType, ProgressBar] = DefaultDict(
             default_factory=lambda tp: ProgressBar(desc=f"Default ingest {tp.name}", permanent=True)
         )
-        self.known_paths: t.Set[str] = set()
 
 
 async def worker(
@@ -131,7 +130,7 @@ async def worker(
                 assert_never(type_)
             for action in actions:
                 if isinstance(action, EnqueuePathAction):
-                    context.queues.enqueue_path(context, action.path, action.priority, action.can_add)
+                    context.queues.enqueue_path(action.path_with_md5, action.priority)
                 else:
                     assert_never(action)
         # pylint: disable = broad-exception-caught
@@ -168,7 +167,10 @@ async def inotify_worker(name: str, dirs: t.List[str], context: GlobalContext) -
                 traceback.print_exc()
                 print("Error in inotify worker", name)
                 continue
-            context.queues.enqueue_path(context, path, REALTIME_PRIORITY, can_add=True)
+            path_with_md5 = context.jobs.get_path_with_md5_to_enqueue(path, can_add=True)
+            if path_with_md5 is None:
+                return
+            context.queues.enqueue_path_skipped_known(path_with_md5, REALTIME_PRIORITY)
 
 
 async def reingest_directories_worker(context: GlobalContext, config: Config) -> None:
@@ -177,7 +179,10 @@ async def reingest_directories_worker(context: GlobalContext, config: Config) ->
         await context.queues.cheap_features.join()
         found_something = False
         for path in get_paths(config.input_patterns, config.input_directories):
-            context.queues.enqueue_path(context, path, DEFAULT_PRIORITY, can_add=True)
+            path_with_md5 = context.jobs.get_path_with_md5_to_enqueue(path, can_add=True)
+            if path_with_md5 is None:
+                return
+            context.queues.enqueue_path_skipped_known(path_with_md5, DEFAULT_PRIORITY)
             total_for_reingest += 1
             if total_for_reingest % 1000 == 0:
                 await asyncio.sleep(0)

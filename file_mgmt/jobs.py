@@ -18,9 +18,8 @@ REALTIME_PRIORITY = 23
 
 @dataclasses.dataclass
 class EnqueuePathAction:
-    path: str
+    path_with_md5: PathWithMd5
     priority: int
-    can_add: bool
 
 
 JobAction = EnqueuePathAction
@@ -81,7 +80,7 @@ class Jobs:
         shutil.move(path.path, new_path.path)
         self._files.set_lifecycle(new_path.path, ManagedLifecycle.SYNCED, None)
         # Schedule expensive annotation
-        return EnqueuePathAction(new_path.path, IMPORT_PRIORITY, can_add=False)
+        return EnqueuePathAction(new_path, IMPORT_PRIORITY)
 
 
 def _resolve_path(
