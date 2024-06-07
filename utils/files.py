@@ -28,3 +28,10 @@ def get_paths(input_patterns: t.List[str], input_directories: t.List[str]) -> t.
         yield from glob.glob(re.sub("^~/", os.environ["HOME"] + "/", pattern))
     for directory in input_directories:
         yield from walk_tree(re.sub("^~/", os.environ["HOME"] + "/", directory))
+
+
+REMOVE_FROM_PATH_PART = re.compile(r"[^a-zA-Z0-9-:\w]+")
+
+
+def pathify(path: str) -> str:
+    return REMOVE_FROM_PATH_PART.sub("_", path)

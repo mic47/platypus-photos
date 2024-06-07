@@ -46,6 +46,21 @@ class Connection:
             return self._connection.execute(sql)
         return self._connection.execute(sql, parameters)
 
+    def execute_add_column(
+        self,
+        sql: str,
+    ) -> None:
+        try:
+            self.execute(sql)
+        except sqlite3.OperationalError as e:
+            if len(e.args) == 0:
+                raise
+            if not isinstance(e.args[0], str):
+                raise
+            if not e.args[0].startswith("duplicate column name"):
+                raise
+            # It is ok, this is expected
+
     def commit(self) -> None:
         self._last_use = datetime.now()
         if self._connection is None:

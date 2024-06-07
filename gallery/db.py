@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+import itertools
 import typing as t
 
 from dataclasses_json import DataClassJsonMixin
@@ -15,16 +16,13 @@ Ser = t.TypeVar("Ser", bound=DataClassJsonMixin)
 
 class OmgDB(ABC):
     @abstractmethod
-    def load(self, show_progress: bool) -> int:
-        ...
+    def load(self, show_progress: bool) -> int: ...
 
     @abstractmethod
-    def get_matching_images(self, url: UrlParameters) -> t.Iterable[Image]:
-        ...
+    def get_matching_images(self, url: UrlParameters) -> t.Iterable[Image]: ...
 
     @abstractmethod
-    def get_aggregate_stats(self, url: UrlParameters) -> ImageAggregation:
-        ...
+    def get_aggregate_stats(self, url: UrlParameters) -> ImageAggregation: ...
 
     @abstractmethod
     def get_image_clusters(
@@ -35,24 +33,19 @@ class OmgDB(ABC):
         latitude_resolution: float,
         longitude_resolution: float,
         over_fetch: float,
-    ) -> t.List[LocationCluster]:
-        ...
+    ) -> t.List[LocationCluster]: ...
 
     @abstractmethod
-    def files(self, md5: str) -> t.List[FileRow]:
-        ...
+    def files(self, md5: str) -> t.List[FileRow]: ...
 
     @abstractmethod
-    def get_path_from_hash(self, hsh: t.Union[int, str]) -> t.Optional[str]:
-        ...
+    def get_path_from_hash(self, hsh: t.Union[int, str]) -> t.Optional[str]: ...
 
     @abstractmethod
-    def reconnect(self) -> None:
-        ...
+    def reconnect(self) -> None: ...
 
     @abstractmethod
-    def check_unused(self) -> None:
-        ...
+    def check_unused(self) -> None: ...
 
 
 class ImageSqlDB(OmgDB):
@@ -151,7 +144,17 @@ class ImageSqlDB(OmgDB):
             exif,
             addr,
             text_cls,
-            [x for x in (self._path_to_date.extract_date(file.file) for file in files) if x is not None],
+            [
+                x
+                for x in itertools.chain.from_iterable(
+                    [
+                        self._path_to_date.extract_date(file.file),
+                        None if file.og_file is None else self._path_to_date.extract_date(file.og_file),
+                    ]
+                    for file in files
+                )
+                if x is not None
+            ],
             max_last_update,
         )
         assert max_last_update > 0.0

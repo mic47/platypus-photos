@@ -11,7 +11,6 @@ class DBFilesConfig:
     image_to_text_jsonl: str = "data/output-image-to-text.jsonl"
     exif_jsonl: str = "data/output-exif.jsonl"
     geo_address_jsonl: str = "data/output-geo.jsonl"
-    files_jsonl: str = "data/output-files.jsonl"
     photos_db: str = "data/photos.db"
 
 
@@ -39,7 +38,7 @@ class Config(DataClassJsonMixin):
     def load(file: str) -> "Config":
         with open(file, encoding="utf-8") as f:
             if file.endswith(".yaml"):
-                data = yaml.load(f)
+                data = yaml.load(f, Loader=yaml.SafeLoader)
             elif file.endswith(".json"):
                 data = json.load(f)
             else:

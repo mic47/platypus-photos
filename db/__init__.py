@@ -1,4 +1,4 @@
-from db.cache import Cache, NoCache, WithImageLoader, JsonlWriter, SQLiteCache, FilesCache
+from db.cache import Cache, NoCache, WithImageLoader, JsonlWriter, SQLiteCache
 from db.connection import Connection
 from db.features_table import FeaturesTable
 from db.files_table import FilesTable

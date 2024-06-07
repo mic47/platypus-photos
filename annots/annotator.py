@@ -35,9 +35,7 @@ class Annotator:
         )
         self.geolocator = Geolocator(geolocator_cache)
 
-    def cheap_features(
-        self, path: PathWithMd5
-    ) -> t.Tuple[
+    def cheap_features(self, path: PathWithMd5) -> t.Tuple[
         PathWithMd5,
         WithMD5[ImageExif],
         t.Optional[WithMD5[GeoAddress]],

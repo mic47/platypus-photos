@@ -139,7 +139,17 @@ WHERE
         select: str,
         url: UrlParameters,
         extra_clauses: t.Optional[t.List[t.Tuple[str, t.List[t.Union[str, int, float, None]]]]] = None,
-    ) -> t.Tuple["str", t.List[t.Union[str, int, float, None,]],]:
+    ) -> t.Tuple[
+        "str",
+        t.List[
+            t.Union[
+                str,
+                int,
+                float,
+                None,
+            ]
+        ],
+    ]:
         clauses = []
         variables: t.List[
             t.Union[
@@ -275,7 +285,10 @@ GROUP BY
         _extra_query_for_tests: str = "",
     ) -> ImageAggregation:
         # do aggregate query
-        (select, variables,) = self._matching_query(
+        (
+            select,
+            variables,
+        ) = self._matching_query(
             "tags, classifications, address_name, address_country, latitude, longitude, altitude",
             url,
         )
@@ -369,7 +382,10 @@ SELECT "alt", 'min', MIN(altitude) FROM matched_images WHERE altitude IS NOT NUL
         url: UrlParameters,
     ) -> t.Iterable[Image]:
         # TODO: aggregations could be done separately
-        (query, variables,) = self._matching_query(
+        (
+            query,
+            variables,
+        ) = self._matching_query(
             "md5, timestamp, tags, tags_probs, classifications, address_country, address_name, address_full, feature_last_update, latitude, longitude, altitude, version",
             url,
         )
@@ -401,15 +417,17 @@ SELECT "alt", 'min', MIN(altitude) FROM matched_images WHERE altitude IS NOT NUL
                 yield Image(
                     md5,
                     None if timestamp is None else datetime.fromtimestamp(timestamp),  # TODO convert
-                    None
-                    if not tags
-                    else dict(
-                        zip(
-                            tags.split(":"),
-                            map(
-                                float,
-                                tags_probs.split(":"),
-                            ),
+                    (
+                        None
+                        if not tags
+                        else dict(
+                            zip(
+                                tags.split(":"),
+                                map(
+                                    float,
+                                    tags_probs.split(":"),
+                                ),
+                            )
                         )
                     ),
                     None if not classifications else classifications,
