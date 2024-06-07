@@ -15,7 +15,7 @@ Ser = t.TypeVar("Ser", bound="DataClassJsonMixin")
 T = t.TypeVar("T")
 
 
-@dataclass
+@dataclass(frozen=True, eq=True)
 class PathWithMd5:
     path: str
     md5: str

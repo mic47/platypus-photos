@@ -127,6 +127,19 @@ ON CONFLICT(path) DO UPDATE SET
                     "`tmp_path` must be None when not movinf file around", managed, tmp_path
                 )
 
+    def change_path(
+        self,
+        old_path: str,
+        new_path: str,
+    ) -> None:
+        self._con.execute(
+            """
+UPDATE files SET path=? WHERE path = ?
+            """,
+            (new_path, old_path),
+        )
+        self._con.commit()
+
     def set_lifecycle(
         self,
         path: str,
@@ -145,6 +158,27 @@ UPDATE files SET managed=? , tmp_path=? WHERE path = ?
             ),
         )
         self._con.commit()
+
+    def by_managed_lifecycle(self, managed: ManagedLifecycle) -> t.List[FileRow]:
+        # TODO: test
+        res = self._con.execute(
+            "SELECT rowid, last_update, path, md5, og_path, tmp_path FROM files WHERE managed = ?",
+            (managed.value,),
+        ).fetchall()
+        out = []
+        for rowid, last_update, path, md5, og_path, tmp_path in res:
+            out.append(
+                FileRow(
+                    path,
+                    md5,
+                    og_path,
+                    tmp_path,
+                    managed,
+                    last_update,
+                    rowid,
+                )
+            )
+        return out
 
     def by_path(
         self,

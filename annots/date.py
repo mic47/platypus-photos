@@ -6,8 +6,6 @@ import re
 
 from data_model.config import Config, DirectoryMatchingConfig
 
-# glob.glob(re.sub("^~/", os.environ["HOME"] + "/", '~/Camera/Camera/*jpg'))
-
 DATE_TIME_FILE_REGEX = re.compile(
     "".join(
         [

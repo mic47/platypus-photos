@@ -2,25 +2,25 @@ import argparse
 import asyncio
 import datetime
 import enum
+import json
 import os
 import random
-import re
-import shutil
+import stat
 import sys
 import traceback
 import typing as t
 
+import aiofiles
 import aiohttp
 import asyncinotify
 
 from data_model.config import Config, DBFilesConfig
-from data_model.features import PathWithMd5, GeoAddress
+from data_model.features import PathWithMd5
 from db import FeaturesTable, Connection, FilesTable
-from db.types import ManagedLifecycle
-from annots.md5 import compute_md5
 from annots.annotator import Annotator
-from utils import assert_never
-from utils.files import get_paths, supported_media, pathify
+from file_mgmt.jobs import Jobs
+from utils import assert_never, DefaultDict, CacheTTL
+from utils.files import get_paths, expand_vars_in_path
 from utils.progress_bar import ProgressBar
 
 T = t.TypeVar("T")
@@ -33,7 +33,6 @@ REALTIME_PRIORITY = 23
 class JobType(enum.Enum):
     CHEAP_FEATURES = 1
     IMAGE_TO_TEXT = 2
-    IMPORT = 3
 
 
 class QueueItem(t.Generic[T]):
@@ -56,70 +55,40 @@ class Queues:
         self.image_to_text: asyncio.PriorityQueue[QueueItem[t.Tuple[PathWithMd5, JobType]]] = (
             asyncio.PriorityQueue()
         )
+        self.known_paths: CacheTTL[PathWithMd5] = CacheTTL(
+            datetime.timedelta(days=7), datetime.timedelta(days=14)
+        )
         self._index = 0
 
-    def enqueue_path(self, context: "GlobalContext", path: str, priority: int, can_add: bool) -> None:
-        if path in context.known_paths:
-            return
-        context.known_paths.add(path)
-        if not os.path.exists(path):
-            return
-        if not os.path.isfile(path):
-            return
-        if supported_media(path) is None:
-            return
-        file_row = context.files.by_path(path)
-        if file_row is None:
-            if not can_add:
-                # TODO: error?
-                return
-            # File does not exists
-            path_with_md5 = compute_md5(path)
-            # TODO: if path is in managed files, make it managed?
-            context.files.add_if_not_exists(path, path_with_md5.md5, None, ManagedLifecycle.NOT_MANAGED, None)
-        else:
-            md5 = file_row.md5
-            if md5 is None:
-                path_with_md5 = compute_md5(path)
-                context.files.add_or_update(
-                    file_row.file, path_with_md5.md5, file_row.og_file, file_row.managed, file_row.tmp_file
-                )
-            else:
-                path_with_md5 = PathWithMd5(path, md5)
+    def enqueue_path(self, path_with_md5: PathWithMd5, priority: int) -> None:
         self.cheap_features.put_nowait(
             QueueItem(priority, self._index, (path_with_md5, JobType.CHEAP_FEATURES))
         )
+        self._index += 1
+        self.enqueue_path_for_image_to_text(path_with_md5, priority)
+
+    def enqueue_path_for_image_to_text(self, path_with_md5: PathWithMd5, priority: int) -> None:
         self.image_to_text.put_nowait(
             QueueItem(priority, random.random(), (path_with_md5, JobType.IMAGE_TO_TEXT))
         )
-        self._index += 1
 
+    def enqueue_path_skipped_known(self, path: PathWithMd5, priority: int) -> None:
+        if not self.known_paths.mutable_should_update(path):
+            return
+        self.enqueue_path(path, priority)
 
-K = t.TypeVar("K")
-V = t.TypeVar("V")
-
-
-class DefaultDict(dict[K, V]):
-    def __init__(self, default_factory: t.Callable[[K], V]):
-        super().__init__()
-        self.default_factory = default_factory
-
-    def __missing__(self, key: K) -> V:
-        ret = self[key] = self.default_factory(key)
-        return ret
+    def mark_failed(self, path: PathWithMd5) -> None:
+        self.known_paths.delete(path)
 
 
 class GlobalContext:
     def __init__(
         self,
-        annotator: Annotator,
-        files: FilesTable,
+        jobs: Jobs,
         queues: Queues,
     ) -> None:
         self.queues = queues
-        self.photos_dir = "/home/mic/Gallery"
-        self.files = files
-        self.annotator = annotator
+        self.jobs = jobs
 
         self.prio_progress: DefaultDict[JobType, ProgressBar] = DefaultDict(
             default_factory=lambda tp: ProgressBar(desc=f"Realtime ingest {tp.name}", permanent=True)
@@ -130,56 +99,6 @@ class GlobalContext:
         self.default_progress: DefaultDict[JobType, ProgressBar] = DefaultDict(
             default_factory=lambda tp: ProgressBar(desc=f"Default ingest {tp.name}", permanent=True)
         )
-        self.known_paths: t.Set[str] = set()
-
-    def resolve_path(
-        self, date: t.Optional[datetime.datetime], geo: t.Optional[GeoAddress], og_path: str
-    ) -> str:
-        # f"{base_dir}/{year}/{month}-{day}-{place}/{filename}_{exists_suffix}.{extension}"
-        path = self.photos_dir
-        if date is not None:
-            path = f"{path}/{date.year}/{date.month}-{date.day}"
-        else:
-            path = f"{path}/UnknownDate"
-        if geo is not None:
-            path = f"{path}-{pathify(geo.address)}"
-        filename = os.path.basename(og_path)
-        splitted = filename.rsplit(".", maxsplit=1)
-        extension = splitted[-1]
-        basefile = ".".join(splitted[:-1])
-        insert = ""
-        count = 0
-        while True:
-            final_path = f"{path}/{basefile}{insert}.{extension}"
-            if not os.path.exists(final_path):
-                break
-            insert = f"_{count:03d}"
-            count += 1
-        return final_path
-
-    def import_file(self, path: PathWithMd5) -> None:
-        # Do not import if file exists, delete if it exists
-        # TODO: make this async
-        if not path.md5:
-            path.md5 = compute_md5(path.path).md5
-        # Do cheap annotation
-        (_path, exif, geo, path_date) = self.annotator.cheap_features(path)
-        date = (None if exif.p.date is None else exif.p.date.datetime) or path_date
-        # Move file
-        # TODO: we need to extract date and location from this one
-        new_path: PathWithMd5 = PathWithMd5(
-            self.resolve_path(date, None if geo is None else geo.p, path.path),
-            path.md5,
-        )
-        os.makedirs(os.path.dirname(new_path.path), exist_ok=True)
-        # TODO: what happens if this file is watched
-        # TODO: annotate date by path + geofile
-        # TODO: this should not exists, right? Maybe just add?
-        self.files.add_if_not_exists(new_path.path, new_path.md5, path.path, ManagedLifecycle.IMPORTED, None)
-        shutil.move(path.path, new_path.path)
-        self.files.set_lifecycle(new_path.path, ManagedLifecycle.SYNCED, None)
-        # Schedule expensive annotation
-        self.queues.enqueue_path(self, new_path.path, IMPORT_PRIORITY, can_add=False)
 
 
 async def worker(
@@ -193,17 +112,16 @@ async def worker(
         path, type_ = item.payload
         try:
             if type_ == JobType.CHEAP_FEATURES:
-                context.annotator.cheap_features(path)
+                context.jobs.cheap_features(path)
             elif type_ == JobType.IMAGE_TO_TEXT:
-                await context.annotator.image_to_text(path)
-            elif type_ == JobType.IMPORT:
-                context.import_file(path)
+                await context.jobs.image_to_text(path)
             else:
                 assert_never(type_)
         # pylint: disable = broad-exception-caught
         except Exception as e:
             traceback.print_exc()
             print("Error while processing path in ", name, path, e, file=sys.stderr)
+            context.queues.mark_failed(path)
         finally:
             # Notify the queue that the "work item" has been processed.
             if item.priority >= DEFAULT_PRIORITY:
@@ -221,7 +139,7 @@ async def inotify_worker(name: str, dirs: t.List[str], context: GlobalContext) -
     with asyncinotify.Inotify() as inotify:
         for dir_ in dirs:
             inotify.add_watch(
-                re.sub("^~/", os.environ["HOME"] + "/", dir_),
+                expand_vars_in_path(dir_),
                 asyncinotify.Mask.CREATE | asyncinotify.Mask.MOVE,
             )
         async for event in inotify:
@@ -234,7 +152,10 @@ async def inotify_worker(name: str, dirs: t.List[str], context: GlobalContext) -
                 traceback.print_exc()
                 print("Error in inotify worker", name)
                 continue
-            context.queues.enqueue_path(context, path, REALTIME_PRIORITY, can_add=True)
+            path_with_md5 = context.jobs.get_path_with_md5_to_enqueue(path, can_add=True)
+            if path_with_md5 is None:
+                return
+            context.queues.enqueue_path_skipped_known(path_with_md5, REALTIME_PRIORITY)
 
 
 async def reingest_directories_worker(context: GlobalContext, config: Config) -> None:
@@ -243,7 +164,10 @@ async def reingest_directories_worker(context: GlobalContext, config: Config) ->
         await context.queues.cheap_features.join()
         found_something = False
         for path in get_paths(config.input_patterns, config.input_directories):
-            context.queues.enqueue_path(context, path, DEFAULT_PRIORITY, can_add=True)
+            path_with_md5 = context.jobs.get_path_with_md5_to_enqueue(path, can_add=True)
+            if path_with_md5 is None:
+                return
+            context.queues.enqueue_path_skipped_known(path_with_md5, DEFAULT_PRIORITY)
             total_for_reingest += 1
             if total_for_reingest % 1000 == 0:
                 await asyncio.sleep(0)
@@ -254,6 +178,64 @@ async def reingest_directories_worker(context: GlobalContext, config: Config) ->
 
         # Check for new features once every 8 hours
         await asyncio.sleep(3600 * 8)
+
+
+async def managed_worker_and_import_worker(context: GlobalContext, config: Config) -> None:
+    try:
+        if os.path.exists(config.import_fifo):
+            if not stat.S_ISFIFO(os.stat(config.import_fifo).st_mode):
+                print(f"FATAL: {config.import_fifo} is not FIFo!", file=sys.stderr)
+                sys.exit(1)
+        else:
+            os.mkfifo(config.import_fifo)
+    # pylint: disable = broad-exception-caught
+    except Exception as e:
+        traceback.print_exc()
+        print("Unable to create fifo file", config.import_fifo, e, file=sys.stderr)
+        sys.exit(1)
+    context.jobs.fix_in_progress_moved_files_at_startup()
+    context.jobs.fix_imported_files_at_startup()
+    # TODO: check for new files in managed folders, and add them. Run it from time to time
+    total = 0
+    progress_bar = context.import_progress[JobType.CHEAP_FEATURES]
+    while True:
+        async with aiofiles.open(config.import_fifo, "r") as import_fifo:
+            async for line in import_fifo:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    data = json.loads(line)
+                    path = data["import_path"]
+                    paths = list(get_paths([], [path]))
+                    total += len(paths)
+                    progress_bar.update_total(total)
+                    for path in paths:
+                        try:
+                            action = context.jobs.import_file(path)
+                            if action is not None:
+                                context.queues.enqueue_path_for_image_to_text(
+                                    action.path_with_md5, action.priority
+                                )
+                        # pylint: disable = broad-exception-caught
+                        except Exception as e:
+                            traceback.print_exc()
+                            print("Error while importing path", path, e, file=sys.stderr)
+                            continue
+                        finally:
+                            progress_bar.update(1)
+                            # So that we gave up place for other workers too
+                            await asyncio.sleep(0)
+                # pylint: disable = broad-exception-caught
+                except Exception as e:
+                    traceback.print_exc()
+                    print("Error while pricessing import request", line, e, file=sys.stderr)
+                    continue
+                finally:
+                    # So that we gave up place for other workers too
+                    await asyncio.sleep(0)
+            # So that we gave up place for other workers too
+            await asyncio.sleep(0)
 
 
 async def main() -> None:
@@ -279,9 +261,10 @@ async def main() -> None:
 
     async with aiohttp.ClientSession() as session:
         annotator = Annotator(config.directory_matching, files_config, features, session, args.annotate_url)
+        jobs = Jobs(config.managed_folder, files, annotator)
         queues = Queues()
-        context = GlobalContext(annotator, files, queues)
-
+        context = GlobalContext(jobs, queues)
+        tasks.append(asyncio.create_task(managed_worker_and_import_worker(context, config)))
         tasks.append(asyncio.create_task(reingest_directories_worker(context, config)))
         for i in range(1):
             task = asyncio.create_task(worker(f"worker-cheap-{i}", context, queues.cheap_features))
