@@ -1,11 +1,9 @@
 import argparse
 import asyncio
-import datetime
 import enum
 import os
 import random
 import re
-import shutil
 import sys
 import traceback
 import typing as t
@@ -14,13 +12,12 @@ import aiohttp
 import asyncinotify
 
 from data_model.config import Config, DBFilesConfig
-from data_model.features import PathWithMd5, GeoAddress
+from data_model.features import PathWithMd5
 from db import FeaturesTable, Connection, FilesTable
-from db.types import ManagedLifecycle
-from annots.md5 import compute_md5
 from annots.annotator import Annotator
+from file_mgmt.jobs import Jobs, JobAction, EnqueuePathAction
 from utils import assert_never
-from utils.files import get_paths, supported_media, pathify
+from utils.files import get_paths
 from utils.progress_bar import ProgressBar
 
 T = t.TypeVar("T")
@@ -59,33 +56,13 @@ class Queues:
         self._index = 0
 
     def enqueue_path(self, context: "GlobalContext", path: str, priority: int, can_add: bool) -> None:
+        # TODO: this caching is wrong?
         if path in context.known_paths:
             return
         context.known_paths.add(path)
-        if not os.path.exists(path):
+        path_with_md5 = context.jobs.get_path_with_md5_to_enqueue(path, can_add)
+        if path_with_md5 is None:
             return
-        if not os.path.isfile(path):
-            return
-        if supported_media(path) is None:
-            return
-        file_row = context.files.by_path(path)
-        if file_row is None:
-            if not can_add:
-                # TODO: error?
-                return
-            # File does not exists
-            path_with_md5 = compute_md5(path)
-            # TODO: if path is in managed files, make it managed?
-            context.files.add_if_not_exists(path, path_with_md5.md5, None, ManagedLifecycle.NOT_MANAGED, None)
-        else:
-            md5 = file_row.md5
-            if md5 is None:
-                path_with_md5 = compute_md5(path)
-                context.files.add_or_update(
-                    file_row.file, path_with_md5.md5, file_row.og_file, file_row.managed, file_row.tmp_file
-                )
-            else:
-                path_with_md5 = PathWithMd5(path, md5)
         self.cheap_features.put_nowait(
             QueueItem(priority, self._index, (path_with_md5, JobType.CHEAP_FEATURES))
         )
@@ -113,12 +90,11 @@ class GlobalContext:
     def __init__(
         self,
         annotator: Annotator,
-        files: FilesTable,
+        jobs: Jobs,
         queues: Queues,
     ) -> None:
         self.queues = queues
-        self.photos_dir = "/home/mic/Gallery"
-        self.files = files
+        self.jobs = jobs
         self.annotator = annotator
 
         self.prio_progress: DefaultDict[JobType, ProgressBar] = DefaultDict(
@@ -132,55 +108,6 @@ class GlobalContext:
         )
         self.known_paths: t.Set[str] = set()
 
-    def resolve_path(
-        self, date: t.Optional[datetime.datetime], geo: t.Optional[GeoAddress], og_path: str
-    ) -> str:
-        # f"{base_dir}/{year}/{month}-{day}-{place}/{filename}_{exists_suffix}.{extension}"
-        path = self.photos_dir
-        if date is not None:
-            path = f"{path}/{date.year}/{date.month}-{date.day}"
-        else:
-            path = f"{path}/UnknownDate"
-        if geo is not None:
-            path = f"{path}-{pathify(geo.address)}"
-        filename = os.path.basename(og_path)
-        splitted = filename.rsplit(".", maxsplit=1)
-        extension = splitted[-1]
-        basefile = ".".join(splitted[:-1])
-        insert = ""
-        count = 0
-        while True:
-            final_path = f"{path}/{basefile}{insert}.{extension}"
-            if not os.path.exists(final_path):
-                break
-            insert = f"_{count:03d}"
-            count += 1
-        return final_path
-
-    def import_file(self, path: PathWithMd5) -> None:
-        # Do not import if file exists, delete if it exists
-        # TODO: make this async
-        if not path.md5:
-            path.md5 = compute_md5(path.path).md5
-        # Do cheap annotation
-        (_path, exif, geo, path_date) = self.annotator.cheap_features(path)
-        date = (None if exif.p.date is None else exif.p.date.datetime) or path_date
-        # Move file
-        # TODO: we need to extract date and location from this one
-        new_path: PathWithMd5 = PathWithMd5(
-            self.resolve_path(date, None if geo is None else geo.p, path.path),
-            path.md5,
-        )
-        os.makedirs(os.path.dirname(new_path.path), exist_ok=True)
-        # TODO: what happens if this file is watched
-        # TODO: annotate date by path + geofile
-        # TODO: this should not exists, right? Maybe just add?
-        self.files.add_if_not_exists(new_path.path, new_path.md5, path.path, ManagedLifecycle.IMPORTED, None)
-        shutil.move(path.path, new_path.path)
-        self.files.set_lifecycle(new_path.path, ManagedLifecycle.SYNCED, None)
-        # Schedule expensive annotation
-        self.queues.enqueue_path(self, new_path.path, IMPORT_PRIORITY, can_add=False)
-
 
 async def worker(
     name: str,
@@ -191,15 +118,22 @@ async def worker(
         # Get a "work item" out of the queue.
         item = await queue.get()
         path, type_ = item.payload
+        actions: t.List[JobAction] = []
         try:
             if type_ == JobType.CHEAP_FEATURES:
                 context.annotator.cheap_features(path)
             elif type_ == JobType.IMAGE_TO_TEXT:
                 await context.annotator.image_to_text(path)
             elif type_ == JobType.IMPORT:
-                context.import_file(path)
+                enqueue = context.jobs.import_file(path)
+                actions.append(enqueue)
             else:
                 assert_never(type_)
+            for action in actions:
+                if isinstance(action, EnqueuePathAction):
+                    context.queues.enqueue_path(context, action.path, action.priority, action.can_add)
+                else:
+                    assert_never(action)
         # pylint: disable = broad-exception-caught
         except Exception as e:
             traceback.print_exc()
@@ -279,8 +213,9 @@ async def main() -> None:
 
     async with aiohttp.ClientSession() as session:
         annotator = Annotator(config.directory_matching, files_config, features, session, args.annotate_url)
+        jobs = Jobs(files, annotator)
         queues = Queues()
-        context = GlobalContext(annotator, files, queues)
+        context = GlobalContext(annotator, jobs, queues)
 
         tasks.append(asyncio.create_task(reingest_directories_worker(context, config)))
         for i in range(1):
