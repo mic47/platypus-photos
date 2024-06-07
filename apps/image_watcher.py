@@ -108,7 +108,7 @@ async def worker(
         actions: t.List[JobAction] = []
         try:
             if type_ == JobType.CHEAP_FEATURES:
-                context.annotator.cheap_features(path)
+                context.jobs.cheap_features(path)
             elif type_ == JobType.IMAGE_TO_TEXT:
                 await context.annotator.image_to_text(path)
             elif type_ == JobType.IMPORT:

@@ -127,6 +127,19 @@ ON CONFLICT(path) DO UPDATE SET
                     "`tmp_path` must be None when not movinf file around", managed, tmp_path
                 )
 
+    def change_path(
+        self,
+        old_path: str,
+        new_path: str,
+    ) -> None:
+        self._con.execute(
+            """
+UPDATE files SET path=? WHERE path = ?
+            """,
+            (new_path, old_path),
+        )
+        self._con.commit()
+
     def set_lifecycle(
         self,
         path: str,

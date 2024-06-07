@@ -42,6 +42,23 @@ class TestFilesTable(unittest.TestCase):
         ret = sanitize(table.by_path("foo"))
         self.assertEqual(ret, expected)
 
+    def test_change_path(self) -> None:
+        table = FilesTable(connection())
+        ret = table.by_path("foo")
+        self.assertIsNone(ret, "Element already exists")
+        ret = table.by_path("bar")
+        self.assertIsNone(ret, "Element already exists")
+        u1 = FileRow("foo", None, "og/foo", None, ManagedLifecycle.SYNCED, 0, 0)
+        table.add_or_update(u1.file, u1.md5, u1.og_file, u1.managed, u1.tmp_file)
+        ret = sanitize(table.by_path("foo"))
+        self.assertEqual(ret, u1)
+        table.change_path("foo", "bar")
+        ret = table.by_path("foo")
+        self.assertIsNone(ret, "Foo should be moved, but ti still exists")
+        u1.file = "bar"
+        ret = sanitize(table.by_path("bar"))
+        self.assertEqual(ret, u1, "Foo was not removed")
+
     def test_set_lifecycle(self) -> None:
         table = FilesTable(connection())
         ret = table.by_path("foo")

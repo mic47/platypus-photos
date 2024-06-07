@@ -68,11 +68,12 @@ class Jobs:
         date = (None if exif.p.date is None else exif.p.date.datetime) or path_date
         # Move file
         # TODO: we need to extract date and location from this one
+        new_dir = _resolve_dir(self.photos_dir, date, None if geo is None else geo.p)
+        os.makedirs(new_dir, exist_ok=True)
         new_path: PathWithMd5 = PathWithMd5(
-            _resolve_path(self.photos_dir, date, None if geo is None else geo.p, path.path),
+            _resolve_path(new_dir, path.path),
             path.md5,
         )
-        os.makedirs(os.path.dirname(new_path.path), exist_ok=True)
         # TODO: what happens if this file is watched
         # TODO: annotate date by path + geofile
         # TODO: this should not exists, right? Maybe just add?
@@ -82,10 +83,35 @@ class Jobs:
         # Schedule expensive annotation
         return EnqueuePathAction(new_path, IMPORT_PRIORITY)
 
+    def cheap_features(self, path: PathWithMd5) -> None:
+        # Annotate features
+        (path, exif, geo, path_date) = self._annotator.cheap_features(path)
 
-def _resolve_path(
-    photos_dir: str, date: t.Optional[datetime.datetime], geo: t.Optional[GeoAddress], og_path: str
-) -> str:
+        # Figure out if file should be moved
+        date = (None if exif.p.date is None else exif.p.date.datetime) or path_date
+        new_dir = _resolve_dir(self.photos_dir, date, None if geo is None else geo.p)
+        old_dir = os.path.dirname(path.path)
+        if old_dir == new_dir:
+            # Dir is same, not moving file
+            return
+
+        file_row = self._files.by_path(path.path)
+        if file_row is None or file_row.managed is None:
+            # File is not managed, skipping
+            return
+
+        new_path: PathWithMd5 = PathWithMd5(
+            _resolve_path(new_dir, path.path),
+            path.md5,
+        )
+        os.makedirs(new_dir, exist_ok=True)
+        self._files.set_lifecycle(path.path, ManagedLifecycle.BEING_MOVED_AROUND, new_path.path)
+        shutil.move(path.path, new_path.path)
+        self._files.change_path(path.path, new_path.path)
+        self._files.set_lifecycle(new_path.path, ManagedLifecycle.SYNCED, None)
+
+
+def _resolve_dir(photos_dir: str, date: t.Optional[datetime.datetime], geo: t.Optional[GeoAddress]) -> str:
     # f"{base_dir}/{year}/{month}-{day}-{place}/{filename}_{exists_suffix}.{extension}"
     path = photos_dir
     if date is not None:
@@ -94,6 +120,11 @@ def _resolve_path(
         path = f"{path}/UnknownDate"
     if geo is not None:
         path = f"{path}-{pathify(geo.address)}"
+    return path
+
+
+def _resolve_path(directory: str, og_path: str) -> str:
+    path = directory
     filename = os.path.basename(og_path)
     splitted = filename.rsplit(".", maxsplit=1)
     extension = splitted[-1]
