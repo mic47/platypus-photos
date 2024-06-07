@@ -14,6 +14,7 @@ jobs:
     steps:
       - name: Check out repository code
         uses: actions/checkout@v3
+      - run: pip install -r requirements.txt
       - run: make ci
       - run: git diff --exit-code
       - run: echo "🍏 This job's status is ${{ job.status }}."
