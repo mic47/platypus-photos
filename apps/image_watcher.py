@@ -178,7 +178,7 @@ class GlobalContext:
         self.files.add_if_not_exists(new_path.path, new_path.md5, path.path, ManagedLifecycle.IMPORTED, None)
         shutil.move(path.path, new_path.path)
         self.files.set_lifecycle(new_path.path, ManagedLifecycle.SYNCED, None)
-        # schedule expnesive annotation
+        # Schedule expensive annotation
         self.queues.enqueue_path(self, new_path.path, IMPORT_PRIORITY, can_add=False)
 
 
