@@ -37,13 +37,13 @@ class Annotator:
 
     def cheap_features(self, path: PathWithMd5) -> t.Tuple[
         PathWithMd5,
-        WithMD5[ImageExif],
+        t.Optional[WithMD5[ImageExif]],
         t.Optional[WithMD5[GeoAddress]],
         t.Optional[datetime.datetime],
     ]:
         exif_item = self.exif.process_image(path)
         geo = None
-        if exif_item.p.gps is not None:
+        if exif_item is not None and exif_item.p.gps is not None:
             # TODO: do recomputation based on the last_update
             geo = self.geolocator.address(
                 path, exif_item.p.gps.latitude, exif_item.p.gps.longitude, recompute=False

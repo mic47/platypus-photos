@@ -6,6 +6,7 @@ import exif
 
 from data_model.features import ImageExif, Date, Camera, GPSCoord, WithMD5, PathWithMd5
 from db.cache import Cache
+from utils.files import SupportedMedia, supported_media
 
 
 IGNORED_TAGS = [
@@ -15,6 +16,7 @@ IGNORED_TAGS = [
     "brightness_value",
     "color_space",
     "components_configuration",
+    "compressed_bits_per_pixel",
     "compression",
     "contrast",
     "copyright",
@@ -75,6 +77,9 @@ IGNORED_TAGS = [
     "x_resolution",
     "y_and_c_positioning",
     "y_resolution",
+    # TODO: consider in future
+    "image_description",
+    "camera_owner_name",
 ]
 
 EXTRACT_TAGS = [
@@ -230,7 +235,9 @@ class Exif:
         self._cache = cache
         self._version = ImageExif.current_version()
 
-    def process_image(self, inp: PathWithMd5) -> WithMD5[ImageExif]:
+    def process_image(self, inp: PathWithMd5) -> t.Optional[WithMD5[ImageExif]]:
+        if supported_media(inp.path) != SupportedMedia.JPEG:
+            return None
         ret = self._cache.get(inp.md5)
         if ret is not None:
             return ret.payload

@@ -6,11 +6,12 @@ import typing as t
 
 
 class SupportedMedia(enum.Enum):
-    IMAGE = 0
+    JPEG = 0
+    PNG = 0
     # VIDEO = 1 TODO
 
 
-_EXTENSIONS = {"jpg": SupportedMedia.IMAGE, "jpeg": SupportedMedia.IMAGE, "png": SupportedMedia.IMAGE}
+_EXTENSIONS = {"jpg": SupportedMedia.JPEG, "jpeg": SupportedMedia.JPEG, "png": SupportedMedia.PNG}
 
 
 def supported_media(path: str) -> t.Optional[SupportedMedia]:
