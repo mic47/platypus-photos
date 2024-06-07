@@ -26,8 +26,8 @@ JobAction = EnqueuePathAction
 
 
 class Jobs:
-    def __init__(self, files: FilesTable, annotator: Annotator):
-        self.photos_dir = "/home/mic/Gallery"
+    def __init__(self, managed_folder: str, files: FilesTable, annotator: Annotator):
+        self.photos_dir = managed_folder
         self._files = files
         self._annotator = annotator
 

@@ -2,9 +2,7 @@ import argparse
 import asyncio
 import datetime
 import enum
-import os
 import random
-import re
 import sys
 import traceback
 import typing as t
@@ -18,7 +16,7 @@ from db import FeaturesTable, Connection, FilesTable
 from annots.annotator import Annotator
 from file_mgmt.jobs import Jobs, JobAction, EnqueuePathAction
 from utils import assert_never, DefaultDict, CacheTTL
-from utils.files import get_paths
+from utils.files import get_paths, expand_vars_in_path
 from utils.progress_bar import ProgressBar
 
 T = t.TypeVar("T")
@@ -144,7 +142,7 @@ async def inotify_worker(name: str, dirs: t.List[str], context: GlobalContext) -
     with asyncinotify.Inotify() as inotify:
         for dir_ in dirs:
             inotify.add_watch(
-                re.sub("^~/", os.environ["HOME"] + "/", dir_),
+                expand_vars_in_path(dir_),
                 asyncinotify.Mask.CREATE | asyncinotify.Mask.MOVE,
             )
         async for event in inotify:
@@ -208,7 +206,7 @@ async def main() -> None:
 
     async with aiohttp.ClientSession() as session:
         annotator = Annotator(config.directory_matching, files_config, features, session, args.annotate_url)
-        jobs = Jobs(files, annotator)
+        jobs = Jobs(config.managed_folder, files, annotator)
         queues = Queues()
         context = GlobalContext(jobs, queues)
 

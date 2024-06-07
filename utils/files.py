@@ -25,9 +25,13 @@ def walk_tree(path: str) -> t.Iterable[str]:
 
 def get_paths(input_patterns: t.List[str], input_directories: t.List[str]) -> t.Iterable[str]:
     for pattern in input_patterns:
-        yield from glob.glob(re.sub("^~/", os.environ["HOME"] + "/", pattern))
+        yield from glob.glob(expand_vars_in_path(pattern))
     for directory in input_directories:
-        yield from walk_tree(re.sub("^~/", os.environ["HOME"] + "/", directory))
+        yield from walk_tree(expand_vars_in_path(directory))
+
+
+def expand_vars_in_path(path: str) -> str:
+    return re.sub("^~/", os.environ["HOME"] + "/", path)
 
 
 REMOVE_FROM_PATH_PART = re.compile(r"[^a-zA-Z0-9-:\w]+")
