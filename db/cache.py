@@ -11,7 +11,7 @@ from data_model.features import WithImage, HasCurrentVersion, WithMD5
 from db.connection import Connection
 from db.features_table import FeaturesTable
 from db.files_table import FilesTable
-from db.types import FileRow, FeaturePayload
+from db.types import FeaturePayload, ManagedLifecycle
 
 
 Ser = t.TypeVar("Ser", bound="HasCurrentVersion")
@@ -157,31 +157,6 @@ class SQLiteCache(t.Generic[Ser], Cache[Ser]):
         return data
 
 
-class FilesCache:
-    def __init__(
-        self,
-        files_table: FilesTable,
-        jsonl_path: t.Optional[str] = None,
-    ) -> None:
-        self._files_table = files_table
-        self._by_path: t.Dict[str, FileRow] = {}
-        self._jsonl = JsonlWriter(jsonl_path)
-
-    def get(self, path: str) -> t.Optional[FileRow]:
-        ret = self._by_path.get(path)
-        if ret is not None:
-            return None
-        ret = self._files_table.by_path(path)
-        if ret is not None:
-            self._by_path[path] = ret
-            return ret
-        return None
-
-    def add(self, path: str, md5: str) -> None:
-        self._files_table.add(path, md5)
-        self._jsonl.append(json.dumps({"path": path, "md5": md5}, ensure_ascii=False))
-
-
 def main() -> None:
     # pylint: disable=import-outside-toplevel
     from annots.md5 import compute_md5
@@ -201,10 +176,10 @@ def main() -> None:
     files = DBFilesConfig()
     conn = Connection(files.photos_db)
     conn.execute("PRAGMA synchronous=OFF;")
-    cache = FilesCache(FilesTable(conn), files.files_jsonl)
+    cache = FilesTable(conn)
 
     def ldmd5(x: WithImage[MD5Annot]) -> None:
-        cache.add(x.image, x.p.md5)
+        cache.add_if_not_exists(x.image, x.p.md5, None, ManagedLifecycle.NOT_MANAGED, None)
 
     loader_md5 = WithImageLoader("output-md5.jsonl", MD5Annot, ldmd5)
     loader_md5.load(show_progress=True)
@@ -219,14 +194,24 @@ def main() -> None:
         sql = SQLiteCache(FeaturesTable(conn), type_, f"data/{path}")
 
         def load(x: WithImage[HasCurrentVersion]) -> None:
-            row = cache.get(x.image)
+            row = cache.by_path(x.image)
+            og_path = None
             if row is not None:
-                md5 = row.md5
+                og_path = row.og_file
+                if row.md5 is not None:
+                    md5 = row.md5
+                else:
+                    if not os.path.exists(x.image):
+                        return
+                    if not os.path.isfile(x.image):
+                        return
+                    md5 = compute_md5(x.image).md5
+                    cache.add_or_update(row.file, md5, row.og_file, row.managed, row.tmp_file)
             else:
                 if not os.path.exists(x.image):
                     return
                 md5 = compute_md5(x.image).md5
-                cache.add(x.image, md5)
+                cache.add_if_not_exists(x.image, md5, og_path, ManagedLifecycle.NOT_MANAGED, None)
             # pylint: disable = cell-var-from-loop
             sql.add(WithMD5(md5, x.version, x.p))
 

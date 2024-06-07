@@ -11,7 +11,6 @@ class DBFilesConfig:
     image_to_text_jsonl: str = "data/output-image-to-text.jsonl"
     exif_jsonl: str = "data/output-exif.jsonl"
     geo_address_jsonl: str = "data/output-geo.jsonl"
-    files_jsonl: str = "data/output-files.jsonl"
     photos_db: str = "data/photos.db"
 
 

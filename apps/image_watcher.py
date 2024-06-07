@@ -13,8 +13,8 @@ import asyncinotify
 
 from data_model.config import Config, DBFilesConfig
 from data_model.features import PathWithMd5
-from db.cache import FilesCache
 from db import FeaturesTable, Connection, FilesTable
+from db.types import ManagedLifecycle
 from annots.md5 import compute_md5
 from annots.annotator import Annotator
 from utils import assert_never
@@ -24,6 +24,7 @@ from utils.progress_bar import ProgressBar
 T = t.TypeVar("T")
 
 DEFAULT_PRIORITY = 47
+REALTIME_PRIORITY = 23
 
 
 class JobType(enum.Enum):
@@ -36,9 +37,8 @@ class GlobalContext:
         self,
         annotator: Annotator,
         files: FilesTable,
-        files_config: DBFilesConfig,
     ) -> None:
-        self.files = FilesCache(files, files_config.files_jsonl)
+        self.files = files
         self.annotator = annotator
 
         self.prio_progress = {
@@ -112,12 +112,19 @@ class Queues:
             return
         if supported_media(path) is None:
             return
-        file_row = context.files.get(path)
+        file_row = context.files.by_path(path)
         if file_row is None:
             path_with_md5 = compute_md5(path)
-            context.files.add(path, path_with_md5.md5)
+            context.files.add_if_not_exists(path, path_with_md5.md5, None, ManagedLifecycle.NOT_MANAGED, None)
         else:
-            path_with_md5 = PathWithMd5(path, file_row.md5)
+            md5 = file_row.md5
+            if md5 is None:
+                path_with_md5 = compute_md5(path)
+                context.files.add_or_update(
+                    file_row.file, path_with_md5.md5, file_row.og_file, file_row.managed, file_row.tmp_file
+                )
+            else:
+                path_with_md5 = PathWithMd5(path, md5)
         self.cheap_features.put_nowait(
             QueueItem(priority, self._index, (path_with_md5, JobType.CHEAP_FEATURES))
         )
@@ -189,7 +196,7 @@ async def main() -> None:
 
     async with aiohttp.ClientSession() as session:
         annotator = Annotator(config.directory_matching, files_config, features, session, args.annotate_url)
-        context = GlobalContext(annotator, files, files_config)
+        context = GlobalContext(annotator, files)
         queues = Queues()
 
         tasks.append(asyncio.create_task(reingest_directories_worker(context, config, queues)))
