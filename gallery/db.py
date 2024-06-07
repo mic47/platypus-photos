@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+import itertools
 import typing as t
 
 from dataclasses_json import DataClassJsonMixin
@@ -151,7 +152,17 @@ class ImageSqlDB(OmgDB):
             exif,
             addr,
             text_cls,
-            [x for x in (self._path_to_date.extract_date(file.file) for file in files) if x is not None],
+            [
+                x
+                for x in itertools.chain.from_iterable(
+                    [
+                        self._path_to_date.extract_date(file.file),
+                        None if file.og_file is None else self._path_to_date.extract_date(file.og_file),
+                    ]
+                    for file in files
+                )
+                if x is not None
+            ],
             max_last_update,
         )
         assert max_last_update > 0.0
