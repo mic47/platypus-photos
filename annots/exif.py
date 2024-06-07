@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 import sys
+import traceback
 import typing as t
 
 import exif
@@ -241,10 +242,19 @@ class Exif:
         ret = self._cache.get(inp.md5)
         if ret is not None:
             return ret.payload
-        return self._cache.add(self.process_image_impl(inp))
+        ex = self.process_image_impl(inp)
+        if ex is not None:
+            self._cache.add(ex)
+        return ex
 
-    def process_image_impl(self: "Exif", inp: PathWithMd5) -> WithMD5[ImageExif]:
-        img = exif.Image(inp.path)
+    def process_image_impl(self: "Exif", inp: PathWithMd5) -> t.Optional[WithMD5[ImageExif]]:
+        try:
+            img = exif.Image(inp.path)
+        # pylint: disable = broad-exception-caught
+        except Exception as e:
+            traceback.print_exc()
+            print("Error while processing exif path in ", inp, e, file=sys.stderr)
+            return None
         d = UnparsedTags()
         for tag in img.list_all():
             if tag in IGNORED_TAGS:
