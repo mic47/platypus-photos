@@ -128,6 +128,8 @@ CREATE INDEX IF NOT EXISTS features_idx_is_error ON features (is_error);
             last_update,
             version,
         ) = res
+        # Payload column cannot be null, so we need handle empty strings
+        payload = None if not payload else payload
         return FeaturePayload(
             payload if is_error == 0 else None,
             None if is_error == 0 else payload,
