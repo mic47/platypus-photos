@@ -3,7 +3,6 @@ import base64
 import io
 import json
 import os
-import sys
 import itertools
 import traceback
 import typing as t
@@ -96,12 +95,7 @@ class Models:
     ) -> WithMD5[ImageClassification]:
         x = self._cache.get(path.md5)
         if x is None or x.payload is None:
-            if os.path.getsize(path.path) > 10_000_000:
-                for _i in range(5):
-                    print(f"Warning large file {path.path}", file=sys.stderr)
             if os.path.getsize(path.path) > 100_000_000:
-                for _i in range(5):
-                    print(f"ERROR huge file {path.path}", file=sys.stderr)
                 return self._cache.add(
                     WithMD5(path.md5, self._version, None, Error("SkippingHugeFile", None, None))
                 )
