@@ -1,20 +1,12 @@
 import sys
 import typing as t
-import json
-import os
-import traceback
 
-from tqdm import tqdm
-
-from data_model.config import DBFilesConfig
-from data_model.features import WithImage, HasCurrentVersion, WithMD5, Error
-from db.connection import Connection
+from data_model.features import HasCurrentVersion, WithMD5, Error
 from db.features_table import FeaturesTable
-from db.files_table import FilesTable
-from db.types import FeaturePayload, ManagedLifecycle
+from db.types import FeaturePayload
 
 
-Ser = t.TypeVar("Ser", bound="HasCurrentVersion")
+Ser = t.TypeVar("Ser", bound=HasCurrentVersion)
 
 DEFAULT_VERSION = 0
 
@@ -33,60 +25,6 @@ class NoCache(t.Generic[Ser], Cache[Ser]):
 
     def add(self, data: WithMD5[Ser]) -> WithMD5[Ser]:
         return data
-
-
-class WithImageLoader(t.Generic[Ser]):
-    def __init__(self, path: str, type_: t.Type[Ser], loader: t.Callable[[WithImage[Ser]], None]):
-        self._position = 0
-        # pylint: disable=consider-using-with
-        self._file = open(path, encoding="utf-8")
-        self._loader = loader
-        self._type = type_
-
-    def load(self, show_progress: bool) -> None:
-        self._file.seek(0, 2)
-        end_of_file = self._file.tell()
-        self._file.seek(self._position, 0)
-        last_position = self._position
-        if self._position == end_of_file:
-            return
-        with tqdm(
-            desc=self._type.__name__,
-            total=end_of_file - last_position,
-            disable=not show_progress,
-            unit="bytes",
-            unit_scale=True,
-        ) as pbar:
-            while True:
-                position = self._file.tell()
-                try:
-                    line = self._file.readline()
-                    if not line:
-                        # End of file reached
-                        break
-                    j = json.loads(line)
-                    if "version" not in j:
-                        j["version"] = DEFAULT_VERSION
-                    if j.get("version", 0) != self._type.current_version():
-                        continue
-                    data = self._type.from_dict(j)
-                    self._loader(WithImage.load(j, data))
-                # pylint: disable = broad-exception-caught
-                except Exception as e:
-                    # Revert position in the file
-                    self._position = position
-                    self._file.seek(self._position, 0)
-                    print("Error while loading input", e, file=sys.stderr)
-                    traceback.print_exc()
-                    break
-                finally:
-                    # Advance position in the file
-                    self._position = self._file.tell()
-                    pbar.update(self._position - last_position)
-                    last_position = self._position
-
-    def __del__(self) -> None:
-        self._file.close()
 
 
 class JsonlWriter:
@@ -169,71 +107,3 @@ class SQLiteCache(t.Generic[Ser], Cache[Ser]):
         self._jsonl.append(data.to_json())
         # NOTE: local cache is just for fetching
         return data
-
-
-def main() -> None:
-    # TODO: remove this migration
-    # pylint: disable=import-outside-toplevel
-    from annots.md5 import compute_md5
-
-    # pylint: disable=import-outside-toplevel
-    from data_model.features import ImageClassification
-
-    # pylint: disable=import-outside-toplevel
-    from data_model.features import ImageExif
-
-    # pylint: disable=import-outside-toplevel
-    from data_model.features import GeoAddress
-
-    # pylint: disable=import-outside-toplevel
-    from data_model.features import MD5Annot
-
-    files = DBFilesConfig()
-    conn = Connection(files.photos_db)
-    conn.execute("PRAGMA synchronous=OFF;")
-    cache = FilesTable(conn)
-
-    def ldmd5(x: WithImage[MD5Annot]) -> None:
-        cache.add_if_not_exists(x.image, x.p.md5, None, ManagedLifecycle.NOT_MANAGED, None)
-
-    loader_md5 = WithImageLoader("output-md5.jsonl", MD5Annot, ldmd5)
-    loader_md5.load(show_progress=True)
-    conn.reconnect()
-
-    to_iter: t.List[t.Tuple[str, t.Type[HasCurrentVersion]]] = [
-        ("output-exif.jsonl", ImageExif),
-        ("output-geo.jsonl", GeoAddress),
-        ("output-image-to-text.jsonl", ImageClassification),
-    ]
-    for path, type_ in to_iter:
-        sql = SQLiteCache(FeaturesTable(conn), type_, f"data/{path}")
-
-        def load(x: WithImage[HasCurrentVersion]) -> None:
-            row = cache.by_path(x.image)
-            og_path = None
-            if row is not None:
-                og_path = row.og_file
-                if row.md5 is not None:
-                    md5 = row.md5
-                else:
-                    if not os.path.exists(x.image):
-                        return
-                    if not os.path.isfile(x.image):
-                        return
-                    md5 = compute_md5(x.image).md5
-                    cache.add_or_update(row.file, md5, row.og_file, row.managed, row.tmp_file)
-            else:
-                if not os.path.exists(x.image):
-                    return
-                md5 = compute_md5(x.image).md5
-                cache.add_if_not_exists(x.image, md5, og_path, ManagedLifecycle.NOT_MANAGED, None)
-            # pylint: disable = cell-var-from-loop
-            sql.add(WithMD5(md5, x.version, x.p, None))
-
-        loader = WithImageLoader(path, type_, load)
-        loader.load(show_progress=True)
-        conn.reconnect()
-
-
-if __name__ == "__main__":
-    main()
