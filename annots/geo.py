@@ -16,7 +16,7 @@ RETRIES = 10
 
 class Geolocator:
     def __init__(self, cache: Cache[GeoAddress]) -> None:
-        self._cache = cache
+        self.cache = cache
         self.geolocator = Nominatim(user_agent="Mic's photo lookups")
         self.last_api = time.time() - 10
         self._version = GeoAddress.current_version()
@@ -24,10 +24,10 @@ class Geolocator:
     def address(
         self, inp: PathWithMd5, lat: float, lon: float, recompute: bool = False
     ) -> WithMD5[GeoAddress]:
-        ret = self._cache.get(inp.md5)
+        ret = self.cache.get(inp.md5)
         if ret is not None and ret.payload is not None and not recompute:
             return ret.payload
-        return self._cache.add(self.address_impl(inp, lat, lon))
+        return self.cache.add(self.address_impl(inp, lat, lon))
 
     def address_impl(self, inp: PathWithMd5, lat: float, lon: float) -> WithMD5[GeoAddress]:
         now = time.time()

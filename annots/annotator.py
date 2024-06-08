@@ -50,8 +50,8 @@ class Annotator:
                 path, exif_item.p.gps.latitude, exif_item.p.gps.longitude, recompute=False
             )
         else:
-            geo = WithMD5(
-                path.md5, GeoAddress.current_version(), None, Error("DependencyMissing", None, None)
+            geo = self.geolocator.cache.add(
+                WithMD5(path.md5, GeoAddress.current_version(), None, Error("DependencyMissing", None, None))
             )
         path_date = self.path_to_date.extract_date(path.path)
         return (path, exif_item, geo, path_date)
