@@ -97,7 +97,15 @@ class TestFilesTable(unittest.TestCase):
                 msg=f"{c} {tmp_path}",
             ):
                 table.add_or_update("asdf", None, "fdsf", c, tmp_path)
+            with self.assertRaises(
+                FilesTableWrongLifecycleParams,
+                msg=f"{c} {tmp_path}",
+            ):
                 table.add_if_not_exists("asdf", None, "fdsf", c, tmp_path)
+            with self.assertRaises(
+                FilesTableWrongLifecycleParams,
+                msg=f"{c} {tmp_path}",
+            ):
                 table.set_lifecycle("asdf", c, tmp_path)
 
     def test_add_and_get_by_path(self) -> None:
