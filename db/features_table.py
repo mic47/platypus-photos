@@ -129,8 +129,8 @@ CREATE INDEX IF NOT EXISTS features_idx_is_error ON features (is_error);
             version,
         ) = res
         return FeaturePayload(
-            None if is_error == 0 else payload,
             payload if is_error == 0 else None,
+            None if is_error == 0 else payload,
             version,
             last_update,
             rowid,
@@ -156,6 +156,6 @@ ON CONFLICT(type, md5) DO UPDATE SET
   payload=excluded.payload,
   is_error=excluded.is_error
 WHERE excluded.version > features.version""",
-            (type_, md5, version, payload or error, 0 if payload is None else 1),
+            (type_, md5, version, payload or error, 1 if payload is None else 0),
         )
         self._con.commit()
