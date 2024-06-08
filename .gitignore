@@ -9,4 +9,5 @@ config.yaml
 config.json
 .cache/
 htmlcov/
+mypy/
 .coverage
