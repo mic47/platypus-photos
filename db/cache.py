@@ -7,7 +7,7 @@ import traceback
 from tqdm import tqdm
 
 from data_model.config import DBFilesConfig
-from data_model.features import WithImage, HasCurrentVersion, WithMD5
+from data_model.features import WithImage, HasCurrentVersion, WithMD5, Error
 from db.connection import Connection
 from db.features_table import FeaturesTable
 from db.files_table import FilesTable
@@ -20,7 +20,7 @@ DEFAULT_VERSION = 0
 
 
 class Cache(t.Generic[Ser]):
-    def get(self, key: str) -> t.Optional[FeaturePayload[WithMD5[Ser]]]:
+    def get(self, key: str) -> t.Optional[FeaturePayload[WithMD5[Ser], Error]]:
         raise NotImplementedError
 
     def add(self, data: WithMD5[Ser]) -> WithMD5[Ser]:
@@ -28,7 +28,7 @@ class Cache(t.Generic[Ser]):
 
 
 class NoCache(t.Generic[Ser], Cache[Ser]):
-    def get(self, key: str) -> t.Optional[FeaturePayload[WithMD5[Ser]]]:
+    def get(self, key: str) -> t.Optional[FeaturePayload[WithMD5[Ser], Error]]:
         pass
 
     def add(self, data: WithMD5[Ser]) -> WithMD5[Ser]:
@@ -116,12 +116,12 @@ class SQLiteCache(t.Generic[Ser], Cache[Ser]):
         self._features_table = features_table
         self._loader = loader
         self._type = loader.__name__
-        self._data: t.Dict[str, FeaturePayload[WithMD5[Ser]]] = {}
+        self._data: t.Dict[str, FeaturePayload[WithMD5[Ser], Error]] = {}
         self._current_version = loader.current_version()
         self._enforce_version = enforce_version
         self._jsonl = JsonlWriter(jsonl_path)
 
-    def get(self, key: str) -> t.Optional[FeaturePayload[WithMD5[Ser]]]:
+    def get(self, key: str) -> t.Optional[FeaturePayload[WithMD5[Ser], Error]]:
         cached = self._data.get(key)
         res = self._features_table.get_payload(self._type, key)
         if res is None:

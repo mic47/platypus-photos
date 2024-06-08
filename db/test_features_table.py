@@ -1,7 +1,7 @@
 import unittest
 
 from db.connection import Connection
-from db.features_table import FeaturesTable
+from db.features_table import FeaturesTable, FeaturesFableWrongParams
 from db.types import FeaturePayload
 
 
@@ -28,38 +28,66 @@ class TestFeaturesTable(unittest.TestCase):
         self.assertIsNone(table.get_payload(type_, md5))
         self.assertIsNone(table.get_payload(wrong_type, md5))
         # Add old version
-        table.add(old_payload, type_, md5, old_version)
+        table.add(old_payload, None, type_, md5, old_version)
         # This should not be returned
         self.assertIsNone(table.get_payload(wrong_type, md5))
         ret = table.get_payload(type_, md5)
         if ret is None:
             self.assertIsNotNone(ret, "Inserted element should be returned")
             return
-        self.assertEqual(ret, FeaturePayload(old_payload, old_version, ret.last_update, ret.rowid))
+        self.assertEqual(ret, FeaturePayload(old_payload, None, old_version, ret.last_update, ret.rowid))
         old_return = ret
 
         # Add new version
-        table.add(new_payload, type_, md5, new_version)
+        table.add(new_payload, None, type_, md5, new_version)
         ret = table.get_payload(type_, md5)
         if ret is None:
             self.assertIsNotNone(ret, "Inserted element should be returned")
             return
-        self.assertEqual(ret, FeaturePayload(new_payload, new_version, ret.last_update, ret.rowid))
+        self.assertEqual(ret, FeaturePayload(new_payload, None, new_version, ret.last_update, ret.rowid))
         self.assertLessEqual(old_return.last_update, ret.last_update)
         new_return = ret
 
         # Old version should not be added
-        table.add(old_payload, type_, md5, old_version)
+        table.add(old_payload, None, type_, md5, old_version)
         ret = table.get_payload(type_, md5)
         # Nothing should be added, as version is older
         self.assertEqual(ret, new_return)
 
+    def test_add_and_get_errors(self) -> None:
+        table = FeaturesTable(connection())
+        payload = b"Yay this payload!"
+        error = b"Yay this is error!"
+        type_ = "CorrectType"
+        md5 = "foo_bar"
+        version = 1
+        error_version = 2
+        with self.assertRaises(FeaturesFableWrongParams, msg="Allowing to add payload and error"):
+            table.add(payload, error, type_, md5, version)
+        with self.assertRaises(FeaturesFableWrongParams, msg="Allowing to add no payload with no error"):
+            table.add(None, None, type_, md5, version)
+        table.add(payload, None, type_, md5, version)
+        res = table.get_payload(type_, md5)
+        self.assertIsNotNone(res)
+        if res is None:
+            self.assertIsNone(res)
+        else:
+            self.assertIsNone(res.error)
+            self.assertEqual(res.payload, payload)
+        table.add(None, error, type_, md5, error_version)
+        res = table.get_payload(type_, md5)
+        if res is None:
+            self.assertIsNotNone(res)
+        else:
+            self.assertIsNone(res.payload)
+            self.assertEqual(res.error, error)
+
     def test_dirty_md5s(self) -> None:
         table = FeaturesTable(connection())
-        table.add(b"P1", "T1", "M1", 0)
-        table.add(b"P2", "T2", "M2", 0)
-        table.add(b"P3", "T3", "M1", 0)
-        table.add(b"P4", "T1", "M4", 0)
+        table.add(b"P1", None, "T1", "M1", 0)
+        table.add(b"P2", None, "T2", "M2", 0)
+        table.add(b"P3", None, "T3", "M1", 0)
+        table.add(b"P4", None, "T1", "M4", 0)
         e1 = table.get_payload("T1", "M1")
         e2 = table.get_payload("T2", "M2")
         e3 = table.get_payload("T3", "M1")

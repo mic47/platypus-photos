@@ -42,11 +42,19 @@ class WithImage(t.Generic[Ser]):
         )
 
 
+@dataclass
+class Error(DataClassJsonMixin):
+    name: str
+    message: str
+    traceback: str
+
+
 class WithMD5(t.Generic[Ser]):
-    def __init__(self, md5: str, version: int, payload: Ser):
+    def __init__(self, md5: str, version: int, payload: t.Optional[Ser], e: t.Optional[Error]):
         self.md5 = md5
         self.version = version
         self.p = payload
+        self.e = e
 
     @staticmethod
     def load(d: t.Dict[str, t.Any], payload: Ser) -> "WithMD5[Ser]":
