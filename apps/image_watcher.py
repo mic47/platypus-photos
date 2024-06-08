@@ -1,7 +1,6 @@
 import argparse
 import asyncio
 import datetime
-import enum
 import json
 import os
 import random
@@ -13,26 +12,18 @@ import typing as t
 import aiofiles
 import aiohttp
 import asyncinotify
+import tqdm
 
 from data_model.config import Config, DBFilesConfig
 from data_model.features import PathWithMd5
-from db import FeaturesTable, Connection, FilesTable
+from db import FeaturesTable, Connection, FilesTable, Queries
 from annots.annotator import Annotator
-from file_mgmt.jobs import Jobs
+from file_mgmt.jobs import Jobs, JobType, IMPORT_PRIORITY, DEFAULT_PRIORITY, REALTIME_PRIORITY
 from utils import assert_never, DefaultDict, CacheTTL
 from utils.files import get_paths, expand_vars_in_path
 from utils.progress_bar import ProgressBar
 
 T = t.TypeVar("T")
-
-IMPORT_PRIORITY = 46
-DEFAULT_PRIORITY = 47
-REALTIME_PRIORITY = 23
-
-
-class JobType(enum.Enum):
-    CHEAP_FEATURES = 1
-    IMAGE_TO_TEXT = 2
 
 
 class QueueItem(t.Generic[T]):
@@ -60,22 +51,24 @@ class Queues:
         )
         self._index = 0
 
-    def enqueue_path(self, path_with_md5: PathWithMd5, priority: int) -> None:
-        self.cheap_features.put_nowait(
-            QueueItem(priority, self._index, (path_with_md5, JobType.CHEAP_FEATURES))
-        )
-        self._index += 1
-        self.enqueue_path_for_image_to_text(path_with_md5, priority)
-
-    def enqueue_path_for_image_to_text(self, path_with_md5: PathWithMd5, priority: int) -> None:
-        self.image_to_text.put_nowait(
-            QueueItem(priority, random.random(), (path_with_md5, JobType.IMAGE_TO_TEXT))
-        )
+    def enqueue_path(self, path_with_md5: PathWithMd5, priority: int, types: t.Iterable[JobType]) -> None:
+        for type_ in set(types):
+            if type_ == JobType.CHEAP_FEATURES:
+                self.cheap_features.put_nowait(
+                    QueueItem(priority, self._index, (path_with_md5, JobType.CHEAP_FEATURES))
+                )
+                self._index += 1
+            elif type_ == JobType.IMAGE_TO_TEXT:
+                self.image_to_text.put_nowait(
+                    QueueItem(priority, random.random(), (path_with_md5, JobType.IMAGE_TO_TEXT))
+                )
+            else:
+                assert_never(type_)
 
     def enqueue_path_skipped_known(self, path: PathWithMd5, priority: int) -> None:
         if not self.known_paths.mutable_should_update(path):
             return
-        self.enqueue_path(path, priority)
+        self.enqueue_path(path, priority, list(JobType))
 
     def mark_failed(self, path: PathWithMd5) -> None:
         self.known_paths.delete(path)
@@ -85,10 +78,12 @@ class GlobalContext:
     def __init__(
         self,
         jobs: Jobs,
+        files: FilesTable,
         queues: Queues,
     ) -> None:
         self.queues = queues
         self.jobs = jobs
+        self.files = files
 
         self.prio_progress: DefaultDict[JobType, ProgressBar] = DefaultDict(
             default_factory=lambda tp: ProgressBar(desc=f"Realtime ingest {tp.name}", permanent=True)
@@ -164,6 +159,8 @@ async def reingest_directories_worker(context: GlobalContext, config: Config) ->
         await context.queues.cheap_features.join()
         found_something = False
         for path in get_paths(config.input_patterns, config.input_directories):
+            if context.files.by_path(path) is not None:
+                continue
             path_with_md5 = context.jobs.get_path_with_md5_to_enqueue(path, can_add=True)
             if path_with_md5 is None:
                 return
@@ -212,8 +209,8 @@ async def managed_worker_and_import_worker(context: GlobalContext, config: Confi
                         try:
                             action = context.jobs.import_file(path)
                             if action is not None:
-                                context.queues.enqueue_path_for_image_to_text(
-                                    action.path_with_md5, action.priority
+                                context.queues.enqueue_path(
+                                    action.path_with_md5, action.priority, action.job_types
                                 )
                         # pylint: disable = broad-exception-caught
                         except Exception as e:
@@ -259,14 +256,20 @@ async def main() -> None:
 
     async with aiohttp.ClientSession() as session:
         annotator = Annotator(config.directory_matching, files_config, features, session, args.annotate_url)
-        jobs = Jobs(config.managed_folder, files, annotator)
+        jobs = Jobs(config.managed_folder, files, Queries(connection), annotator)
         queues = Queues()
-        context = GlobalContext(jobs, queues)
+        context = GlobalContext(jobs, files, queues)
 
         # Fix inconsistencies in the DB before we start.
         context.jobs.fix_in_progress_moved_files_at_startup()
         context.jobs.fix_imported_files_at_startup()
 
+        unannotated = context.jobs.find_unannotated_files()
+        for action in tqdm.tqdm(unannotated, desc="Enqueuing unannotated files"):
+            context.queues.enqueue_path(action.path_with_md5, action.priority, action.job_types)
+        del unannotated
+
+        # Starting async tasks
         tasks.append(asyncio.create_task(managed_worker_and_import_worker(context, config)))
         tasks.append(asyncio.create_task(reingest_directories_worker(context, config)))
         for i in range(1):

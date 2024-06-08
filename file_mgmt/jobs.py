@@ -1,3 +1,4 @@
+import enum
 import dataclasses
 import datetime
 import os
@@ -10,9 +11,15 @@ import tqdm
 from annots.md5 import compute_md5
 from annots.annotator import Annotator
 from data_model.features import PathWithMd5, GeoAddress
-from db import FilesTable
+from db import FilesTable, Queries
 from db.types import ManagedLifecycle
 from utils.files import supported_media, pathify
+
+
+class JobType(enum.Enum):
+    CHEAP_FEATURES = 1
+    IMAGE_TO_TEXT = 2
+
 
 IMPORT_PRIORITY = 46
 DEFAULT_PRIORITY = 47
@@ -23,12 +30,14 @@ REALTIME_PRIORITY = 23
 class EnqueuePathAction:
     path_with_md5: PathWithMd5
     priority: int
+    job_types: t.List[JobType]
 
 
 class Jobs:
-    def __init__(self, managed_folder: str, files: FilesTable, annotator: Annotator):
+    def __init__(self, managed_folder: str, files: FilesTable, queries: Queries, annotator: Annotator):
         self.photos_dir = managed_folder
         self._files = files
+        self._queries = queries
         self._annotator = annotator
 
     async def image_to_text(self, path: PathWithMd5) -> None:
@@ -86,7 +95,7 @@ class Jobs:
         shutil.move(path_with_md5.path, new_path.path)
         self._files.set_lifecycle(new_path.path, ManagedLifecycle.SYNCED, None)
         # Schedule expensive annotation
-        return EnqueuePathAction(new_path, IMPORT_PRIORITY)
+        return EnqueuePathAction(new_path, IMPORT_PRIORITY, [JobType.IMAGE_TO_TEXT])
 
     def cheap_features(self, path: PathWithMd5) -> None:
         # Annotate features
@@ -148,6 +157,23 @@ class Jobs:
             ):
                 shutil.move(old_path, new_path)
             self._files.set_lifecycle(new_path, ManagedLifecycle.SYNCED, None)
+
+    def find_unannotated_files(self) -> t.List[EnqueuePathAction]:
+        progress = tqdm.tqdm(desc="Getting files with missing annotations", total=3)
+        cheap = set(self._queries.get_not_annotated_files(self._annotator.cheap_features_types))
+        progress.update(1)
+        image_to_text = set(self._queries.get_not_annotated_files(self._annotator.image_to_text_types))
+        progress.update(1)
+        output = []
+        for path in cheap.union(image_to_text):
+            jobs = []
+            if path in cheap:
+                jobs.append(JobType.CHEAP_FEATURES)
+            if path in image_to_text:
+                jobs.append(JobType.IMAGE_TO_TEXT)
+            output.append(EnqueuePathAction(path, DEFAULT_PRIORITY, jobs))
+        progress.update(1)
+        return output
 
 
 def _resolve_dir(photos_dir: str, date: t.Optional[datetime.datetime], geo: t.Optional[GeoAddress]) -> str:

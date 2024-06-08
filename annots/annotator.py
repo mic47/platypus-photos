@@ -8,7 +8,7 @@ from annots.exif import Exif, ImageExif
 from annots.geo import Geolocator, GeoAddress
 from annots.text import Models, ImageClassification
 from data_model.config import DirectoryMatchingConfig, DBFilesConfig
-from data_model.features import WithMD5, PathWithMd5, Error
+from data_model.features import WithMD5, PathWithMd5, Error, HasCurrentVersion
 from db.cache import SQLiteCache
 from db import FeaturesTable
 
@@ -34,6 +34,8 @@ class Annotator:
             features, GeoAddress, files_config.geo_address_jsonl, enforce_version=True
         )
         self.geolocator = Geolocator(geolocator_cache)
+        self.cheap_features_types: t.List[t.Type[HasCurrentVersion]] = [ImageExif, GeoAddress]
+        self.image_to_text_types: t.List[t.Type[HasCurrentVersion]] = [ImageClassification]
 
     def cheap_features(self, path: PathWithMd5) -> t.Tuple[
         PathWithMd5,
