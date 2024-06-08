@@ -1,5 +1,7 @@
 import json
+import traceback
 import typing as t
+
 from datetime import datetime
 from dataclasses import dataclass, field
 from dataclasses_json import DataClassJsonMixin
@@ -45,8 +47,16 @@ class WithImage(t.Generic[Ser]):
 @dataclass
 class Error(DataClassJsonMixin):
     name: str
-    message: str
-    traceback: str
+    message: t.Optional[str]
+    traceback: t.Optional[str]
+
+    @staticmethod
+    def from_exception(e: Exception) -> "Error":
+        return Error(
+            type(e).__name__,
+            str(e),
+            traceback.format_exc(),
+        )
 
 
 class WithMD5(t.Generic[Ser]):
@@ -56,14 +66,11 @@ class WithMD5(t.Generic[Ser]):
         self.p = payload
         self.e = e
 
-    @staticmethod
-    def load(d: t.Dict[str, t.Any], payload: Ser) -> "WithMD5[Ser]":
-        return WithMD5(cast(d["md5"], str), cast(d["version"], int), payload)
-
     def to_json(self) -> str:
         return json.dumps(
             {
-                **self.p.to_dict(encode_json=True),
+                "p": None if self.p is None else self.p.to_dict(encode_json=True),
+                "e": None if self.e is None else self.e.to_dict(encode_json=True),
                 "md5": self.md5,
                 "version": self.version,
             },

@@ -20,7 +20,7 @@ DEFAULT_VERSION = 0
 
 
 class Cache(t.Generic[Ser]):
-    def get(self, key: str) -> t.Optional[FeaturePayload[WithMD5[Ser], Error]]:
+    def get(self, key: str) -> t.Optional[FeaturePayload[WithMD5[Ser], None]]:
         raise NotImplementedError
 
     def add(self, data: WithMD5[Ser]) -> WithMD5[Ser]:
@@ -28,7 +28,7 @@ class Cache(t.Generic[Ser]):
 
 
 class NoCache(t.Generic[Ser], Cache[Ser]):
-    def get(self, key: str) -> t.Optional[FeaturePayload[WithMD5[Ser], Error]]:
+    def get(self, key: str) -> t.Optional[FeaturePayload[WithMD5[Ser], None]]:
         pass
 
     def add(self, data: WithMD5[Ser]) -> WithMD5[Ser]:
@@ -116,21 +116,27 @@ class SQLiteCache(t.Generic[Ser], Cache[Ser]):
         self._features_table = features_table
         self._loader = loader
         self._type = loader.__name__
-        self._data: t.Dict[str, FeaturePayload[WithMD5[Ser], Error]] = {}
+        self._data: t.Dict[str, FeaturePayload[WithMD5[Ser], None]] = {}
         self._current_version = loader.current_version()
         self._enforce_version = enforce_version
         self._jsonl = JsonlWriter(jsonl_path)
 
-    def get(self, key: str) -> t.Optional[FeaturePayload[WithMD5[Ser], Error]]:
+    def get(self, key: str) -> t.Optional[FeaturePayload[WithMD5[Ser], None]]:
         cached = self._data.get(key)
         res = self._features_table.get_payload(self._type, key)
         if res is None:
             return None
-        if cached is not None and cached.rowid == res.rowid:
+        if cached is not None and cached.rowid == res.rowid and cached.last_update == res.last_update:
             return cached
-        parsed = WithMD5(key, res.version, self._loader.from_json(res.payload))
-        ret = t.cast(FeaturePayload[WithMD5[Ser]], res)
+        if res.payload is not None:
+            parsed = WithMD5(key, res.version, self._loader.from_json(res.payload), None)
+        elif res.error is not None:
+            parsed = WithMD5(key, res.version, None, Error.from_json(res.error))
+        else:
+            assert False, "FeaturePayload is missing payload and error"
+        ret = t.cast(FeaturePayload[WithMD5[Ser], None], res)
         ret.payload = parsed
+        ret.error = None
         self._data[key] = ret
         return ret
 
@@ -144,9 +150,17 @@ class SQLiteCache(t.Generic[Ser], Cache[Ser]):
                 file=sys.stderr,
             )
             return data
-        d = data.p.to_json()
+        if data.p is None:
+            d = None
+        else:
+            d = data.p.to_json().encode("utf-8")
+        if data.e is None:
+            e = None
+        else:
+            e = data.e.to_json().encode("utf-8")
         self._features_table.add(
-            d.encode("utf-8"),
+            d,
+            e,
             self._type,
             data.md5,
             data.version,
@@ -158,6 +172,7 @@ class SQLiteCache(t.Generic[Ser], Cache[Ser]):
 
 
 def main() -> None:
+    # TODO: remove this migration
     # pylint: disable=import-outside-toplevel
     from annots.md5 import compute_md5
 
@@ -213,7 +228,7 @@ def main() -> None:
                 md5 = compute_md5(x.image).md5
                 cache.add_if_not_exists(x.image, md5, og_path, ManagedLifecycle.NOT_MANAGED, None)
             # pylint: disable = cell-var-from-loop
-            sql.add(WithMD5(md5, x.version, x.p))
+            sql.add(WithMD5(md5, x.version, x.p, None))
 
         loader = WithImageLoader(path, type_, load)
         loader.load(show_progress=True)

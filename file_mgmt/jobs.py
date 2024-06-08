@@ -66,7 +66,7 @@ class Jobs:
             return None
         # Do cheap annotation
         (_path, exif, geo, path_date) = self._annotator.cheap_features(path_with_md5)
-        date = (None if exif is None or exif.p.date is None else exif.p.date.datetime) or path_date
+        date = (None if exif.p is None or exif.p.date is None else exif.p.date.datetime) or path_date
         # Move file
         # TODO: we need to extract date and location from the path
         new_dir = _resolve_dir(self.photos_dir, date, None if geo is None else geo.p)
@@ -91,7 +91,7 @@ class Jobs:
         (path, exif, geo, path_date) = self._annotator.cheap_features(path)
 
         # Figure out if file should be moved
-        date = (None if exif is None or exif.p.date is None else exif.p.date.datetime) or path_date
+        date = (None if exif.p is None or exif.p.date is None else exif.p.date.datetime) or path_date
         new_dir = _resolve_dir(self.photos_dir, date, None if geo is None else geo.p)
         old_dir = os.path.dirname(path.path)
         if old_dir == new_dir:

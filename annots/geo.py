@@ -25,7 +25,7 @@ class Geolocator:
         self, inp: PathWithMd5, lat: float, lon: float, recompute: bool = False
     ) -> WithMD5[GeoAddress]:
         ret = self._cache.get(inp.md5)
-        if ret is not None and not recompute:
+        if ret is not None and ret.payload is not None and not recompute:
             return ret.payload
         return self._cache.add(self.address_impl(inp, lat, lon))
 
@@ -43,6 +43,7 @@ class Geolocator:
             # pylint: disable = broad-exception-caught
             except Exception as e:
                 if retries_left <= 0:
+                    # This is valid case of transient error, we raise exception
                     raise
                 print(
                     f"Gelolocation request for {inp.path} {inp.md5} failed. Retrying ({retries_left} left)",
@@ -71,7 +72,7 @@ class Geolocator:
                 or None  # In case of empty string
             )
             country = raw_add.get("country")
-        return WithMD5(inp.md5, self._version, GeoAddress(ret.address, country, name, raw_data, query))
+        return WithMD5(inp.md5, self._version, GeoAddress(ret.address, country, name, raw_data, query), None)
 
 
 class POIDetector:
@@ -90,4 +91,4 @@ class POIDetector:
         best_distance, poi = best
         if best_distance > self._max_distance:
             return None
-        return WithMD5(inp.md5, self._version, NearestPOI(poi, best_distance))
+        return WithMD5(inp.md5, self._version, NearestPOI(poi, best_distance), None)

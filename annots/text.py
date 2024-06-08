@@ -22,6 +22,7 @@ from data_model.features import (
     Box,
     WithMD5,
     PathWithMd5,
+    Error,
 )
 from db.cache import Cache
 
@@ -56,7 +57,25 @@ async def fetch_ann(
     async with aioh.ClientSession() as session:
         async with session.post(url, json=request.to_dict(), timeout=600) as data:
             dct = json.loads(await data.text())
-            return WithMD5.load(dct, ImageClassification.from_dict(dct["p"]))
+            error = None
+            e = dct.get("e")
+            if e is not None:
+                error = Error.from_json(e)
+            payload = None
+            p = dct.get("d")
+            if p is not None:
+                payload = ImageClassification.from_dict(p)
+            return WithMD5(cast(dct["md5"], str), cast(dct["version"], int), payload, error)
+
+
+T = t.TypeVar("T")
+
+
+def cast(x: t.Any, type_: t.Type[T]) -> T:
+    if not isinstance(x, type_):
+        # pylint: disable = broad-exception-raised
+        raise Exception(f"Expected value of type '{type_}', got value '{x}'")
+    return x
 
 
 class Models:
@@ -75,18 +94,17 @@ class Models:
         gap_threshold: float = 0.2,
         discard_threshold: float = 0.1,
     ) -> WithMD5[ImageClassification]:
-        output = []
-        not_cached = []
         x = self._cache.get(path.md5)
-        if x is None:
+        if x is None or x.payload is None:
             if os.path.getsize(path.path) > 10_000_000:
                 for _i in range(5):
                     print(f"Warning large file {path.path}", file=sys.stderr)
             if os.path.getsize(path.path) > 100_000_000:
                 for _i in range(5):
                     print(f"ERROR huge file {path.path}", file=sys.stderr)
-                # pylint: disable = broad-exception-raised
-                raise Exception("Skipping huge file")
+                return self._cache.add(
+                    WithMD5(path.md5, self._version, None, Error("SkippingHugeFile", None, None))
+                )
             if self._remote is not None:
                 try:
                     with open(path.path, "rb") as f:
@@ -96,23 +114,15 @@ class Models:
                         self._remote,
                         AnnotateRequest(path, data.decode("utf-8"), gap_threshold, discard_threshold),
                     )
-                    self._cache.add(ret)
-                    output.append(ret)
+                    return self._cache.add(ret)
                 # pylint: disable = bare-except
                 except:
                     traceback.print_exc()
-                    not_cached.append(path)
-            else:
-                not_cached.append(path)
         else:
-            output.append(x.payload)
-        if not_cached:
-            for p in self.process_image_batch_impl(
-                ((x, None) for x in not_cached), gap_threshold, discard_threshold
-            ):
-                self._cache.add(p)
-                output.append(p)
-        return output[0]
+            return x.payload
+        for p in self.process_image_batch_impl(((x, None) for x in [path]), gap_threshold, discard_threshold):
+            return self._cache.add(p)
+        assert False, "Process image batch retruned empty output. This should never happen"
 
     def process_image_data(
         self,
@@ -200,7 +210,7 @@ class Models:
                     prev_conf = conf
                     classifications.append(Classification(names[index], float(conf)))
                 box_class.append(BoxClassification(box, classifications))
-            yield WithMD5(path.md5, self._version, ImageClassification(list(captions), box_class))
+            yield WithMD5(path.md5, self._version, ImageClassification(list(captions), box_class), None)
         for (path, image), captions, _ in all_input:
             if path.path in visited:
                 continue
@@ -210,4 +220,4 @@ class Models:
                 gt = c.get("generated_text")
                 if gt is not None:
                     captions.add(remove_consecutive_words(gt))
-            yield WithMD5(path.md5, self._version, ImageClassification(list(captions), []))
+            yield WithMD5(path.md5, self._version, ImageClassification(list(captions), []), None)
