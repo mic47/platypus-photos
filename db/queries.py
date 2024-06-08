@@ -11,7 +11,7 @@ class Queries:
     def get_not_annotated_files(self, models: t.List[t.Type[HasCurrentVersion]]) -> t.List[PathWithMd5]:
         assert len(models) > 0, "You have to provide at least single model"
         clauses = [
-            f"(type == '{model.__name__}' AND version == {model.current_version()}" for model in models
+            f"(type == '{model.__name__}' AND version == {model.current_version()})" for model in models
         ]
         clauses_str = "WHERE " + " OR ".join(clauses)
         ret = self._con.execute(
