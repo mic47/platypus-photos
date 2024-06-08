@@ -20,13 +20,18 @@ class ProgressBar:
             position = _get_position()
         self._tqdm = tqdm(desc=desc, position=position, smoothing=smoothing)
         self._progress = 0
+        self._total = 0
 
     def update(self, value: int) -> "ProgressBar":
         self._progress += value
         self._tqdm.update(value)
         return self
 
-    def update_total(self, new_total: int) -> "ProgressBar":
-        self._tqdm.reset(total=new_total)
+    def add_to_total(self, value: int) -> "ProgressBar":
+        self._total += value
+        return self
+
+    def update_total(self) -> "ProgressBar":
+        self._tqdm.reset(total=self._total)
         self._tqdm.update(self._progress)
         return self

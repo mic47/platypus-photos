@@ -5,7 +5,7 @@ import typing as t
 
 import exif
 
-from data_model.features import ImageExif, Date, Camera, GPSCoord, WithMD5, PathWithMd5
+from data_model.features import ImageExif, Date, Camera, GPSCoord, WithMD5, PathWithMd5, Error
 from db.cache import Cache
 from utils.files import SupportedMedia, supported_media
 
@@ -236,25 +236,26 @@ class Exif:
         self._cache = cache
         self._version = ImageExif.current_version()
 
-    def process_image(self, inp: PathWithMd5) -> t.Optional[WithMD5[ImageExif]]:
-        if supported_media(inp.path) != SupportedMedia.JPEG:
-            return None
+    def process_image(self, inp: PathWithMd5) -> WithMD5[ImageExif]:
         ret = self._cache.get(inp.md5)
-        if ret is not None:
+        if ret is not None and ret.payload is not None:
             return ret.payload
-        ex = self.process_image_impl(inp)
-        if ex is not None:
-            self._cache.add(ex)
-        return ex
+        if supported_media(inp.path) != SupportedMedia.JPEG:
+            ex: WithMD5[ImageExif] = WithMD5(
+                inp.md5, self._version, None, Error("UnsupportedMedia", None, None)
+            )
+        else:
+            ex = self.process_image_impl(inp)
+        return self._cache.add(ex)
 
-    def process_image_impl(self: "Exif", inp: PathWithMd5) -> t.Optional[WithMD5[ImageExif]]:
+    def process_image_impl(self: "Exif", inp: PathWithMd5) -> WithMD5[ImageExif]:
         try:
             img = exif.Image(inp.path)
         # pylint: disable = broad-exception-caught
         except Exception as e:
             traceback.print_exc()
             print("Error while processing exif path in ", inp, e, file=sys.stderr)
-            return None
+            return WithMD5(inp.md5, self._version, None, Error.from_exception(e))
         d = UnparsedTags()
         for tag in img.list_all():
             if tag in IGNORED_TAGS:
@@ -274,4 +275,4 @@ class Exif:
         for tag, value in d.all().items():
             print("ERR: unprocessed tag", tag, value, type(value), file=sys.stderr)
 
-        return WithMD5(inp.md5, self._version, ImageExif(gps, camera, date))
+        return WithMD5(inp.md5, self._version, ImageExif(gps, camera, date), None)

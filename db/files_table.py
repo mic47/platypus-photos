@@ -1,17 +1,14 @@
 import typing as t
 
 from db.connection import Connection
-from db.types import FileRow, ManagedLifecycle
-
-
-class InternalError(Exception):
-    def __init__(self, message: str) -> None:
-        super().__init__(f"Internal error, this si bug: {message}")
+from db.types import FileRow, ManagedLifecycle, InternalError
 
 
 class FilesTableWrongLifecycleParams(InternalError):
     def __init__(self, message: str, managed: ManagedLifecycle, tmp_path: t.Optional[str]) -> None:
-        super().__init__(f"Wrong parameters, {message}: `managed`=`{managed}`, `tmp_path`=`{tmp_path}`")
+        super().__init__(
+            f"Files table, wrong parameters, {message}: `managed`=`{managed}`, `tmp_path`=`{tmp_path}`"
+        )
 
 
 class FilesTable:

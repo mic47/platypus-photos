@@ -1,5 +1,7 @@
 import json
+import traceback
 import typing as t
+
 from datetime import datetime
 from dataclasses import dataclass, field
 from dataclasses_json import DataClassJsonMixin
@@ -21,41 +23,33 @@ class PathWithMd5:
     md5: str
 
 
-class WithImage(t.Generic[Ser]):
-    def __init__(self, image: str, version: int, payload: Ser):
-        self.image = image
-        self.version = version
-        self.p = payload
+@dataclass
+class Error(DataClassJsonMixin):
+    name: str
+    message: t.Optional[str]
+    traceback: t.Optional[str]
 
     @staticmethod
-    def load(d: t.Dict[str, t.Any], payload: Ser) -> "WithImage[Ser]":
-        return WithImage(cast(d["image"], str), cast(d["version"], int), payload)
-
-    def to_json(self) -> str:
-        return json.dumps(
-            {
-                **self.p.to_dict(encode_json=True),
-                "image": self.image,
-                "version": self.version,
-            },
-            ensure_ascii=False,
+    def from_exception(e: Exception) -> "Error":
+        return Error(
+            type(e).__name__,
+            str(e),
+            traceback.format_exc(),
         )
 
 
 class WithMD5(t.Generic[Ser]):
-    def __init__(self, md5: str, version: int, payload: Ser):
+    def __init__(self, md5: str, version: int, payload: t.Optional[Ser], e: t.Optional[Error]):
         self.md5 = md5
         self.version = version
         self.p = payload
-
-    @staticmethod
-    def load(d: t.Dict[str, t.Any], payload: Ser) -> "WithMD5[Ser]":
-        return WithMD5(cast(d["md5"], str), cast(d["version"], int), payload)
+        self.e = e
 
     def to_json(self) -> str:
         return json.dumps(
             {
-                **self.p.to_dict(encode_json=True),
+                "p": None if self.p is None else self.p.to_dict(encode_json=True),
+                "e": None if self.e is None else self.e.to_dict(encode_json=True),
                 "md5": self.md5,
                 "version": self.version,
             },

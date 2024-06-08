@@ -1,6 +1,13 @@
 import typing as t
 from db.connection import Connection
-from db.types import FeaturePayload
+from db.types import FeaturePayload, InternalError
+
+
+class FeaturesFableWrongParams(InternalError):
+    def __init__(self, message: str, payload: t.Optional[bytes], error: t.Optional[bytes]) -> None:
+        super().__init__(
+            f"FeaturesTable wrong parameters, {message}: `payload is None`=`{payload is None}`, `error is None`=`{error is None}`"
+        )
 
 
 class FeaturesTable:
@@ -40,6 +47,15 @@ CREATE INDEX IF NOT EXISTS features_idx_md5 ON features (md5);
         self._con.execute(
             """
 CREATE INDEX IF NOT EXISTS features_idx_last_update ON features (last_update);
+        """
+        )
+        self._con.execute_add_column(
+            """
+ALTER TABLE features ADD column is_error INT NOT NULL DEFAULT 0;"""
+        )
+        self._con.execute(
+            """
+CREATE INDEX IF NOT EXISTS features_idx_is_error ON features (is_error);
         """
         )
 
@@ -95,9 +111,9 @@ CREATE INDEX IF NOT EXISTS features_idx_last_update ON features (last_update);
         self,
         type_: str,
         key: str,
-    ) -> t.Optional[FeaturePayload[bytes]]:
+    ) -> t.Optional[FeaturePayload[bytes, bytes]]:
         res = self._con.execute(
-            "SELECT rowid, payload, last_update, version FROM features WHERE type = ? AND md5 = ?",
+            "SELECT rowid, payload, is_error, last_update, version FROM features WHERE type = ? AND md5 = ?",
             (
                 type_,
                 key,
@@ -108,11 +124,13 @@ CREATE INDEX IF NOT EXISTS features_idx_last_update ON features (last_update);
         (
             rowid,
             payload,
+            is_error,
             last_update,
             version,
         ) = res
         return FeaturePayload(
-            payload,
+            None if is_error == 0 else payload,
+            payload if is_error == 0 else None,
             version,
             last_update,
             rowid,
@@ -120,25 +138,24 @@ CREATE INDEX IF NOT EXISTS features_idx_last_update ON features (last_update);
 
     def add(
         self,
-        payload: bytes,
+        payload: t.Optional[bytes],
+        error: t.Optional[bytes],
         type_: str,
         md5: str,
         version: int,
     ) -> None:
+        if (payload is None) == (error is None):
+            raise FeaturesFableWrongParams("You have to provide payload XOR error", payload, error)
         self._con.execute(
             """
-INSERT INTO features VALUES (?, ?, ?, strftime('%s'), 1, ?)
+INSERT INTO features VALUES (?, ?, ?, strftime('%s'), 1, ?, ?)
 ON CONFLICT(type, md5) DO UPDATE SET
   version=excluded.version,
   last_update=excluded.last_update,
   dirty=excluded.dirty,
-  payload=excluded.payload
+  payload=excluded.payload,
+  is_error=excluded.is_error
 WHERE excluded.version > features.version""",
-            (
-                type_,
-                md5,
-                version,
-                payload,
-            ),
+            (type_, md5, version, payload or error, 0 if payload is None else 1),
         )
         self._con.commit()

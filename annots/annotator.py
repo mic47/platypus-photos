@@ -8,7 +8,7 @@ from annots.exif import Exif, ImageExif
 from annots.geo import Geolocator, GeoAddress
 from annots.text import Models, ImageClassification
 from data_model.config import DirectoryMatchingConfig, DBFilesConfig
-from data_model.features import WithMD5, PathWithMd5
+from data_model.features import WithMD5, PathWithMd5, Error, HasCurrentVersion
 from db.cache import SQLiteCache
 from db import FeaturesTable
 
@@ -34,19 +34,24 @@ class Annotator:
             features, GeoAddress, files_config.geo_address_jsonl, enforce_version=True
         )
         self.geolocator = Geolocator(geolocator_cache)
+        self.cheap_features_types: t.List[t.Type[HasCurrentVersion]] = [ImageExif, GeoAddress]
+        self.image_to_text_types: t.List[t.Type[HasCurrentVersion]] = [ImageClassification]
 
     def cheap_features(self, path: PathWithMd5) -> t.Tuple[
         PathWithMd5,
-        t.Optional[WithMD5[ImageExif]],
-        t.Optional[WithMD5[GeoAddress]],
+        WithMD5[ImageExif],
+        WithMD5[GeoAddress],
         t.Optional[datetime.datetime],
     ]:
         exif_item = self.exif.process_image(path)
-        geo = None
-        if exif_item is not None and exif_item.p.gps is not None:
+        if exif_item.p is not None and exif_item.p.gps is not None:
             # TODO: do recomputation based on the last_update
             geo = self.geolocator.address(
                 path, exif_item.p.gps.latitude, exif_item.p.gps.longitude, recompute=False
+            )
+        else:
+            geo = WithMD5(
+                path.md5, GeoAddress.current_version(), None, Error("DependencyMissing", None, None)
             )
         path_date = self.path_to_date.extract_date(path.path)
         return (path, exif_item, geo, path_date)

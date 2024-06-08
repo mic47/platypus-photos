@@ -128,9 +128,9 @@ class ImageSqlDB(OmgDB):
     def _reindex(self, md5: str) -> None:
         max_last_update = 0.0
 
-        def extract_data(x: t.Optional[FeaturePayload[WithMD5[Ser]]]) -> t.Optional[Ser]:
+        def extract_data(x: t.Optional[FeaturePayload[WithMD5[Ser], None]]) -> t.Optional[Ser]:
             nonlocal max_last_update
-            if x is None:
+            if x is None or x.payload is None:
                 return None
             max_last_update = max(max_last_update, x.last_update)
             return x.payload.p

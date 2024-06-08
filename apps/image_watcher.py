@@ -1,7 +1,7 @@
 import argparse
 import asyncio
 import datetime
-import enum
+import itertools
 import json
 import os
 import random
@@ -13,26 +13,18 @@ import typing as t
 import aiofiles
 import aiohttp
 import asyncinotify
+import tqdm
 
 from data_model.config import Config, DBFilesConfig
 from data_model.features import PathWithMd5
-from db import FeaturesTable, Connection, FilesTable
+from db import FeaturesTable, Connection, FilesTable, Queries
 from annots.annotator import Annotator
-from file_mgmt.jobs import Jobs
+from file_mgmt.jobs import Jobs, JobType, IMPORT_PRIORITY, DEFAULT_PRIORITY, REALTIME_PRIORITY
 from utils import assert_never, DefaultDict, CacheTTL
 from utils.files import get_paths, expand_vars_in_path
 from utils.progress_bar import ProgressBar
 
 T = t.TypeVar("T")
-
-IMPORT_PRIORITY = 46
-DEFAULT_PRIORITY = 47
-REALTIME_PRIORITY = 23
-
-
-class JobType(enum.Enum):
-    CHEAP_FEATURES = 1
-    IMAGE_TO_TEXT = 2
 
 
 class QueueItem(t.Generic[T]):
@@ -60,22 +52,48 @@ class Queues:
         )
         self._index = 0
 
-    def enqueue_path(self, path_with_md5: PathWithMd5, priority: int) -> None:
-        self.cheap_features.put_nowait(
-            QueueItem(priority, self._index, (path_with_md5, JobType.CHEAP_FEATURES))
+        self._prio_progress: DefaultDict[JobType, ProgressBar] = DefaultDict(
+            default_factory=lambda tp: ProgressBar(desc=f"Realtime ingest {tp.name}", permanent=True)
         )
-        self._index += 1
-        self.enqueue_path_for_image_to_text(path_with_md5, priority)
+        self._import_progress: DefaultDict[JobType, ProgressBar] = DefaultDict(
+            default_factory=lambda tp: ProgressBar(desc=f"Import ingest {tp.name}", permanent=True)
+        )
+        self._default_progress: DefaultDict[JobType, ProgressBar] = DefaultDict(
+            default_factory=lambda tp: ProgressBar(desc=f"Default ingest {tp.name}", permanent=True)
+        )
 
-    def enqueue_path_for_image_to_text(self, path_with_md5: PathWithMd5, priority: int) -> None:
-        self.image_to_text.put_nowait(
-            QueueItem(priority, random.random(), (path_with_md5, JobType.IMAGE_TO_TEXT))
-        )
+    def get_progress_bar(self, type_: JobType, priority: int) -> ProgressBar:
+        if priority >= DEFAULT_PRIORITY:
+            return self._default_progress[type_]
+        if priority == IMPORT_PRIORITY:
+            return self._import_progress[type_]
+        return self._prio_progress[type_]
+
+    def update_progress_bars(self) -> None:
+        for p in itertools.chain(
+            self._prio_progress.values(), self._import_progress.values(), self._default_progress.values()
+        ):
+            p.update_total()
+
+    def enqueue_path(self, path_with_md5: PathWithMd5, priority: int, types: t.Iterable[JobType]) -> None:
+        for type_ in set(types):
+            self.get_progress_bar(type_, priority).add_to_total(1)
+            if type_ == JobType.CHEAP_FEATURES:
+                self.cheap_features.put_nowait(
+                    QueueItem(priority, self._index, (path_with_md5, JobType.CHEAP_FEATURES))
+                )
+                self._index += 1
+            elif type_ == JobType.IMAGE_TO_TEXT:
+                self.image_to_text.put_nowait(
+                    QueueItem(priority, random.random(), (path_with_md5, JobType.IMAGE_TO_TEXT))
+                )
+            else:
+                assert_never(type_)
 
     def enqueue_path_skipped_known(self, path: PathWithMd5, priority: int) -> None:
         if not self.known_paths.mutable_should_update(path):
             return
-        self.enqueue_path(path, priority)
+        self.enqueue_path(path, priority, list(JobType))
 
     def mark_failed(self, path: PathWithMd5) -> None:
         self.known_paths.delete(path)
@@ -85,20 +103,12 @@ class GlobalContext:
     def __init__(
         self,
         jobs: Jobs,
+        files: FilesTable,
         queues: Queues,
     ) -> None:
         self.queues = queues
         self.jobs = jobs
-
-        self.prio_progress: DefaultDict[JobType, ProgressBar] = DefaultDict(
-            default_factory=lambda tp: ProgressBar(desc=f"Realtime ingest {tp.name}", permanent=True)
-        )
-        self.import_progress: DefaultDict[JobType, ProgressBar] = DefaultDict(
-            default_factory=lambda tp: ProgressBar(desc=f"Import ingest {tp.name}", permanent=True)
-        )
-        self.default_progress: DefaultDict[JobType, ProgressBar] = DefaultDict(
-            default_factory=lambda tp: ProgressBar(desc=f"Default ingest {tp.name}", permanent=True)
-        )
+        self.files = files
 
 
 async def worker(
@@ -124,12 +134,7 @@ async def worker(
             context.queues.mark_failed(path)
         finally:
             # Notify the queue that the "work item" has been processed.
-            if item.priority >= DEFAULT_PRIORITY:
-                context.default_progress[type_].update(1)
-            elif item.priority == IMPORT_PRIORITY:
-                context.import_progress[type_].update(1)
-            else:
-                context.prio_progress[type_].update(1)
+            context.queues.get_progress_bar(type_, item.priority).update(1)
             queue.task_done()
             # So that we gave up place for other workers too
             await asyncio.sleep(0)
@@ -164,6 +169,8 @@ async def reingest_directories_worker(context: GlobalContext, config: Config) ->
         await context.queues.cheap_features.join()
         found_something = False
         for path in get_paths(config.input_patterns, config.input_directories):
+            if context.files.by_path(path) is not None:
+                continue
             path_with_md5 = context.jobs.get_path_with_md5_to_enqueue(path, can_add=True)
             if path_with_md5 is None:
                 return
@@ -173,9 +180,7 @@ async def reingest_directories_worker(context: GlobalContext, config: Config) ->
                 await asyncio.sleep(0)
             found_something = True
         if found_something:
-            for p in context.default_progress.values():
-                p.update_total(total_for_reingest)
-
+            context.queues.update_progress_bars()
         # Check for new features once every 8 hours
         await asyncio.sleep(3600 * 8)
 
@@ -193,11 +198,8 @@ async def managed_worker_and_import_worker(context: GlobalContext, config: Confi
         traceback.print_exc()
         print("Unable to create fifo file", config.import_fifo, e, file=sys.stderr)
         sys.exit(1)
-    context.jobs.fix_in_progress_moved_files_at_startup()
-    context.jobs.fix_imported_files_at_startup()
     # TODO: check for new files in managed folders, and add them. Run it from time to time
-    total = 0
-    progress_bar = context.import_progress[JobType.CHEAP_FEATURES]
+    progress_bar = context.queues.get_progress_bar(JobType.CHEAP_FEATURES, IMPORT_PRIORITY)
     while True:
         async with aiofiles.open(config.import_fifo, "r") as import_fifo:
             async for line in import_fifo:
@@ -208,14 +210,16 @@ async def managed_worker_and_import_worker(context: GlobalContext, config: Confi
                     data = json.loads(line)
                     path = data["import_path"]
                     paths = list(get_paths([], [path]))
-                    total += len(paths)
-                    progress_bar.update_total(total)
+                    progress_bar.add_to_total(len(paths))
+                    progress_bar.update_total()
+                    enqueued = False
                     for path in paths:
                         try:
                             action = context.jobs.import_file(path)
                             if action is not None:
-                                context.queues.enqueue_path_for_image_to_text(
-                                    action.path_with_md5, action.priority
+                                enqueued = True
+                                context.queues.enqueue_path(
+                                    action.path_with_md5, action.priority, action.job_types
                                 )
                         # pylint: disable = broad-exception-caught
                         except Exception as e:
@@ -226,6 +230,8 @@ async def managed_worker_and_import_worker(context: GlobalContext, config: Confi
                             progress_bar.update(1)
                             # So that we gave up place for other workers too
                             await asyncio.sleep(0)
+                    if enqueued:
+                        context.queues.update_progress_bars()
                 # pylint: disable = broad-exception-caught
                 except Exception as e:
                     traceback.print_exc()
@@ -261,9 +267,21 @@ async def main() -> None:
 
     async with aiohttp.ClientSession() as session:
         annotator = Annotator(config.directory_matching, files_config, features, session, args.annotate_url)
-        jobs = Jobs(config.managed_folder, files, annotator)
+        jobs = Jobs(config.managed_folder, files, Queries(connection), annotator)
         queues = Queues()
-        context = GlobalContext(jobs, queues)
+        context = GlobalContext(jobs, files, queues)
+
+        # Fix inconsistencies in the DB before we start.
+        context.jobs.fix_in_progress_moved_files_at_startup()
+        context.jobs.fix_imported_files_at_startup()
+
+        unannotated = context.jobs.find_unannotated_files()
+        for action in tqdm.tqdm(unannotated, desc="Enqueuing unannotated files"):
+            context.queues.enqueue_path(action.path_with_md5, action.priority, action.job_types)
+        del unannotated
+        context.queues.update_progress_bars()
+
+        # Starting async tasks
         tasks.append(asyncio.create_task(managed_worker_and_import_worker(context, config)))
         tasks.append(asyncio.create_task(reingest_directories_worker(context, config)))
         for i in range(1):
