@@ -62,7 +62,7 @@ async def fetch_ann(
             if e is not None:
                 error = Error.from_json(e)
             payload = None
-            p = dct.get("d")
+            p = dct.get("p")
             if p is not None:
                 payload = ImageClassification.from_dict(p)
             return WithMD5(cast(dct["md5"], str), cast(dct["version"], int), payload, error)

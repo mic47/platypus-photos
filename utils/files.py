@@ -7,7 +7,7 @@ import typing as t
 
 class SupportedMedia(enum.Enum):
     JPEG = 0
-    PNG = 0
+    PNG = 1
     # VIDEO = 1 TODO
 
 

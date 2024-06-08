@@ -31,7 +31,7 @@ FROM
     GROUP BY md5
   ) AS fts
   ON files.md5 = fts.md5
-WHERE correct_versions != ?
+WHERE correct_versions IS NULL OR correct_versions != ?
             """,
             (len(models),),
         )
