@@ -5,6 +5,8 @@ import shutil
 import typing as t
 import sys
 
+import tqdm
+
 from annots.md5 import compute_md5
 from annots.annotator import Annotator
 from data_model.features import PathWithMd5, GeoAddress
@@ -114,7 +116,10 @@ class Jobs:
         self._files.set_lifecycle(new_path.path, ManagedLifecycle.SYNCED, None)
 
     def fix_in_progress_moved_files_at_startup(self) -> None:
-        for file_row in self._files.by_managed_lifecycle(ManagedLifecycle.BEING_MOVED_AROUND):
+        for file_row in tqdm.tqdm(
+            self._files.by_managed_lifecycle(ManagedLifecycle.BEING_MOVED_AROUND),
+            desc="Finish move of files from previous run",
+        ):
             old_path = file_row.file
             new_path = file_row.tmp_file
             if new_path is None:
@@ -129,7 +134,10 @@ class Jobs:
             self._files.set_lifecycle(new_path, ManagedLifecycle.SYNCED, None)
 
     def fix_imported_files_at_startup(self) -> None:
-        for file_row in self._files.by_managed_lifecycle(ManagedLifecycle.IMPORTED):
+        for file_row in tqdm.tqdm(
+            self._files.by_managed_lifecycle(ManagedLifecycle.IMPORTED),
+            desc="Finish files in the middle of import",
+        ):
             old_path = file_row.og_file
             new_path = file_row.file
             if old_path is None:

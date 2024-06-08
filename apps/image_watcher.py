@@ -193,8 +193,6 @@ async def managed_worker_and_import_worker(context: GlobalContext, config: Confi
         traceback.print_exc()
         print("Unable to create fifo file", config.import_fifo, e, file=sys.stderr)
         sys.exit(1)
-    context.jobs.fix_in_progress_moved_files_at_startup()
-    context.jobs.fix_imported_files_at_startup()
     # TODO: check for new files in managed folders, and add them. Run it from time to time
     total = 0
     progress_bar = context.import_progress[JobType.CHEAP_FEATURES]
@@ -264,6 +262,11 @@ async def main() -> None:
         jobs = Jobs(config.managed_folder, files, annotator)
         queues = Queues()
         context = GlobalContext(jobs, queues)
+
+        # Fix inconsistencies in the DB before we start.
+        context.jobs.fix_in_progress_moved_files_at_startup()
+        context.jobs.fix_imported_files_at_startup()
+
         tasks.append(asyncio.create_task(managed_worker_and_import_worker(context, config)))
         tasks.append(asyncio.create_task(reingest_directories_worker(context, config)))
         for i in range(1):
