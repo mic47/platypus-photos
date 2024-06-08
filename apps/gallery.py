@@ -7,6 +7,7 @@ import time
 import enum
 from datetime import datetime
 from dataclasses import dataclass
+import traceback
 
 from PIL import Image, ImageFile
 
@@ -68,6 +69,7 @@ async def auto_load() -> None:
                 sleep_time = 1
         # pylint: disable = broad-exception-caught
         except Exception as e:
+            traceback.print_exc()
             print("Error while trying to refresh data in db:", e)
             sleep_time = 1
             print("Reconnecting")
