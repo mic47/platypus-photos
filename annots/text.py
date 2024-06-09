@@ -10,8 +10,6 @@ import typing as t
 import aiohttp as aioh
 from dataclasses_json import DataClassJsonMixin
 from PIL import Image, ImageFile
-from transformers import pipeline
-from ultralytics import YOLO
 
 
 from data_model.features import (
@@ -24,6 +22,7 @@ from data_model.features import (
     Error,
 )
 from db.cache import Cache
+from utils import Lazy
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
@@ -70,6 +69,14 @@ async def fetch_ann(
 T = t.TypeVar("T")
 
 
+class YoloProtocol(t.Protocol):
+    def __call__(self, source: t.List[Image.Image], verbose: bool) -> t.Any: ...
+
+
+class PipelineProtocol(t.Protocol):
+    def __call__(self, source: t.List[Image.Image]) -> t.Any: ...
+
+
 def cast(x: t.Any, type_: t.Type[T]) -> T:
     if not isinstance(x, type_):
         # pylint: disable = broad-exception-raised
@@ -77,12 +84,28 @@ def cast(x: t.Any, type_: t.Type[T]) -> T:
     return x
 
 
+def yolo_model(model: str) -> YoloProtocol:
+    # pylint: disable = import-outside-toplevel
+    import ultralytics
+
+    ret = ultralytics.YOLO(model)
+    return t.cast(YoloProtocol, ret)
+
+
+def image_to_text_model() -> PipelineProtocol:
+    # pylint: disable = import-outside-toplevel
+    import transformers
+
+    ret = transformers.pipeline("image-to-text", model="Salesforce/blip-image-captioning-base")
+    return t.cast(PipelineProtocol, ret)
+
+
 class Models:
     def __init__(self, cache: Cache[ImageClassification], remote: t.Optional[str]) -> None:
         self._cache = cache
-        self.predict_model = YOLO("yolov8x.pt")
-        self.classify_model = YOLO("yolov8x-cls.pt")
-        self.captioner = pipeline("image-to-text", model="Salesforce/blip-image-captioning-base")
+        self._predict_model = Lazy(lambda: yolo_model("yolov8x.pt"))
+        self._classify_model = Lazy(lambda: yolo_model("yolov8x-cls.pt"))
+        self._captioner = Lazy(image_to_text_model)
         self._version = ImageClassification.current_version()
         self._remote = remote
 
@@ -140,8 +163,8 @@ class Models:
             (path, Image.open(path.path) if data is None else Image.open(io.BytesIO(data)))
             for path, data in paths
         ]
-        captions = self.captioner([image for (_, image) in images])
-        results = self.predict_model([img for (_, img) in images], verbose=False)
+        captions = self._captioner.get()([image for (_, image) in images])
+        results = self._predict_model.get()([img for (_, img) in images], verbose=False)
         boxes_to_classify = []
         all_input = list(zip(images, results, captions))
         for (path, image), result, caption in all_input:
@@ -164,7 +187,7 @@ class Models:
             results = list(
                 zip(
                     boxes_to_classify,
-                    self.classify_model(
+                    self._classify_model.get()(
                         [
                             image.crop(
                                 (
