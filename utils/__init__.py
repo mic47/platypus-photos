@@ -1,6 +1,8 @@
 import typing as t
 import datetime
+import gc
 import random
+import sys
 
 
 def assert_never(x: t.NoReturn) -> t.NoReturn:
@@ -26,13 +28,27 @@ class Lazy(t.Generic[T]):
     @staticmethod
     def check_ttl() -> None:
         now = datetime.datetime.now()
+        freed = False
         for lz in _LAZY_WITH_TTL:
-            lz.internal_check_ttl(now)
+            freed |= lz.internal_check_ttl(now)
+        if freed:
+            gc.collect()
 
-    def internal_check_ttl(self, now: datetime.datetime) -> None:
+    def internal_check_ttl(self, now: datetime.datetime) -> bool:
         if self._value is not None and self._ttl is not None and self._last_use + self._ttl < now:
-            del self._value
-            self._value = None
+            gc.collect()
+            if len(gc.get_referrers(self._value)) > 1:
+                print(
+                    "ERROR: Not freeing memory for as there are multiple references",
+                    type(self._value).__name__,
+                    file=sys.stderr,
+                )
+            else:
+                print("Freeing memory for", type(self._value).__name__, file=sys.stderr)
+                del self._value
+                self._value = None
+                return True
+        return False
 
     def get(self) -> T:
         if self._ttl is not None:

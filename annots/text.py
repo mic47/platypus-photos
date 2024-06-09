@@ -1,6 +1,5 @@
 from dataclasses import dataclass
 import base64
-import datetime
 import io
 import json
 import os
@@ -94,22 +93,31 @@ def yolo_model(model: str) -> YoloProtocol:
 
 
 def image_to_text_model() -> PipelineProtocol:
-    # pylint: disable = import-outside-toplevel,import-error
-    import transformers
+    # pylint: disable = import-outside-toplevel,import-error,unused-import
+    import transformers  # noqa: F401
 
-    ret = transformers.pipeline("image-to-text", model="Salesforce/blip-image-captioning-base")
+    # pylint: disable = import-outside-toplevel,import-error
+    from transformers import pipeline
+
+    ret = pipeline("image-to-text", model="Salesforce/blip-image-captioning-base")
     return t.cast(PipelineProtocol, ret)
 
 
 class Models:
     def __init__(self, cache: Cache[ImageClassification], remote: t.Optional[str]) -> None:
         self._cache = cache
-        ttl = datetime.timedelta(seconds=5 * 60)
+        # ttl is disabled because of undiagnosed memory leak
+        ttl = None  # datetime.timedelta(seconds=5 * 60)
         self._predict_model = Lazy(lambda: yolo_model("yolov8x.pt"), ttl=ttl)
         self._classify_model = Lazy(lambda: yolo_model("yolov8x-cls.pt"), ttl=ttl)
         self._captioner = Lazy(image_to_text_model, ttl=ttl)
         self._version = ImageClassification.current_version()
         self._remote = remote
+
+    def load(self) -> None:
+        self._predict_model.get()
+        self._classify_model.get()
+        self._captioner.get()
 
     async def process_image(
         self: "Models",

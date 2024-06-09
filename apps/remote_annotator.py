@@ -13,6 +13,8 @@ from db.cache import NoCache
 from utils import Lazy
 
 MODELS = Models(NoCache(), None)
+# Load models because of undiagnosed memory leak
+MODELS.load()
 
 app = FastAPI()
 
