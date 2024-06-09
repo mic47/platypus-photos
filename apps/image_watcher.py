@@ -1,6 +1,5 @@
 import argparse
 import asyncio
-import json
 import os
 import stat
 import sys
@@ -17,6 +16,7 @@ from db import FeaturesTable, Connection, FilesTable, Queries
 from annots.annotator import Annotator
 from file_mgmt.jobs import Jobs, JobType, IMPORT_PRIORITY, DEFAULT_PRIORITY, REALTIME_PRIORITY
 from file_mgmt.queues import Queues, Queue
+from file_mgmt.remote_control import ImportCommand
 from utils import assert_never, Lazy
 from utils.files import get_paths, expand_vars_in_path
 
@@ -129,16 +129,15 @@ async def managed_worker_and_import_worker(context: GlobalContext, config: Confi
                 if not line:
                     continue
                 try:
-                    data = json.loads(line)
-                    path = data["import_path"]
-                    paths = list(get_paths([], [path]))
+                    import_command = ImportCommand.from_json(line)
+                    paths = list(get_paths([], [import_command.import_path]))
                     if paths:
                         progress_bar.get().add_to_total(len(paths))
                         progress_bar.get().update_total()
                     enqueued = False
                     for path in paths:
                         try:
-                            action = context.jobs.import_file(path)
+                            action = context.jobs.import_file(path, import_command.mode)
                             if action is not None:
                                 enqueued = True
                                 context.queues.enqueue_path(
@@ -153,7 +152,7 @@ async def managed_worker_and_import_worker(context: GlobalContext, config: Confi
                             progress_bar.get().update(1)
                             # So that we gave up place for other workers too
                             await asyncio.sleep(0)
-                    if enqueued and path:
+                    if enqueued and paths:
                         context.queues.update_progress_bars()
                 # pylint: disable = broad-exception-caught
                 except Exception as e:

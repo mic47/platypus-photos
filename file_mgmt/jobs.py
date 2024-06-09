@@ -13,6 +13,8 @@ from annots.annotator import Annotator
 from data_model.features import PathWithMd5, GeoAddress
 from db import FilesTable, Queries
 from db.types import ManagedLifecycle
+from file_mgmt.remote_control import ImportMode
+from utils import assert_never
 from utils.files import supported_media, pathify
 
 
@@ -67,13 +69,14 @@ class Jobs:
                 path_with_md5 = PathWithMd5(path, md5)
         return path_with_md5
 
-    def import_file(self, path: str) -> t.Optional[EnqueuePathAction]:
+    def import_file(self, path: str, mode: ImportMode) -> t.Optional[EnqueuePathAction]:
         if not _is_valid_file(path):
             return None
         path_with_md5 = compute_md5(path)
         if any(os.path.exists(x.file) and x.file != path for x in self._files.by_md5(path_with_md5.md5)):
             # There exists file with this md5, we can skip this file.
-            # TODO: maybe we should delete it (or delete with parameters?)
+            if mode.should_delete_original_if_exists():
+                os.remove(path)
             return None
         # Do cheap annotation
         (_path, exif, geo, path_date) = self._annotator.cheap_features(path_with_md5)
@@ -92,7 +95,13 @@ class Jobs:
         self._files.add_if_not_exists(
             new_path.path, new_path.md5, path_with_md5.path, ManagedLifecycle.IMPORTED, None
         )
-        shutil.move(path_with_md5.path, new_path.path)
+        # pylint: disable = consider-using-in
+        if mode == ImportMode.MOVE or mode == ImportMode.MOVE_OR_DELETE:
+            shutil.move(path_with_md5.path, new_path.path)
+        elif mode == ImportMode.COPY:
+            shutil.copy2(path_with_md5.path, new_path.path)
+        else:
+            assert_never(mode)
         self._files.set_lifecycle(new_path.path, ManagedLifecycle.SYNCED, None)
         # Schedule expensive annotation
         return EnqueuePathAction(new_path, IMPORT_PRIORITY, [JobType.IMAGE_TO_TEXT])
@@ -155,7 +164,12 @@ class Jobs:
             if old_path != new_path and (
                 not os.path.exists(new_path) or compute_md5(new_path).md5 != file_row.md5
             ):
-                shutil.move(old_path, new_path)
+                print(
+                    "WARNING: found in-progress imported file. Copying it instead of moving as I don't know what user wanted",
+                    old_path,
+                    file=sys.stderr,
+                )
+                shutil.copy2(old_path, new_path)
             self._files.set_lifecycle(new_path, ManagedLifecycle.SYNCED, None)
 
     def find_unannotated_files(self) -> t.List[EnqueuePathAction]:
