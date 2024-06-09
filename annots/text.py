@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 import base64
+import datetime
 import io
 import json
 import os
@@ -103,9 +104,10 @@ def image_to_text_model() -> PipelineProtocol:
 class Models:
     def __init__(self, cache: Cache[ImageClassification], remote: t.Optional[str]) -> None:
         self._cache = cache
-        self._predict_model = Lazy(lambda: yolo_model("yolov8x.pt"))
-        self._classify_model = Lazy(lambda: yolo_model("yolov8x-cls.pt"))
-        self._captioner = Lazy(image_to_text_model)
+        ttl = datetime.timedelta(seconds=5 * 60)
+        self._predict_model = Lazy(lambda: yolo_model("yolov8x.pt"), ttl=ttl)
+        self._classify_model = Lazy(lambda: yolo_model("yolov8x-cls.pt"), ttl=ttl)
+        self._captioner = Lazy(image_to_text_model, ttl=ttl)
         self._version = ImageClassification.current_version()
         self._remote = remote
 

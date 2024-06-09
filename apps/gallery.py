@@ -20,7 +20,7 @@ from data_model.config import Config, DBFilesConfig
 from db.types import LocationCluster, LocPoint
 from db import Connection
 from annots.date import PathDateExtractor
-from utils import assert_never
+from utils import assert_never, Lazy
 
 from gallery.db import OmgDB, ImageSqlDB
 from gallery.url import UrlParameters
@@ -52,6 +52,7 @@ async def on_startup() -> None:
 async def check_db_connection() -> None:
     while True:
         DB.check_unused()
+        Lazy.check_ttl()
         await asyncio.sleep(10)
 
 

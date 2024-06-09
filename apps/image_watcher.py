@@ -182,6 +182,7 @@ async def main() -> None:
     async def check_db_connection() -> None:
         while True:
             connection.check_unused()
+            Lazy.check_ttl()
             await asyncio.sleep(10)
 
     tasks = []

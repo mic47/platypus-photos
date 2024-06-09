@@ -1,3 +1,4 @@
+import asyncio
 import dataclasses
 import datetime
 import sys
@@ -9,10 +10,22 @@ from fastapi import FastAPI
 from annots.text import AnnotateRequest, Models, ImageClassification
 from data_model.features import Error
 from db.cache import NoCache
+from utils import Lazy
 
 MODELS = Models(NoCache(), None)
 
 app = FastAPI()
+
+
+@app.on_event("startup")
+async def on_startup() -> None:
+    asyncio.create_task(check_db_connection())
+
+
+async def check_db_connection() -> None:
+    while True:
+        Lazy.check_ttl()
+        await asyncio.sleep(60)
 
 
 @dataclasses.dataclass

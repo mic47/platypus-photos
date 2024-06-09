@@ -11,17 +11,37 @@ T = t.TypeVar("T")
 K = t.TypeVar("K")
 V = t.TypeVar("V")
 
+_LAZY_WITH_TTL: "t.List[Lazy[t.Any]]" = []
+
 
 class Lazy(t.Generic[T]):
-    def __init__(self, constructor: t.Callable[[], T]) -> None:
+    def __init__(self, constructor: t.Callable[[], T], ttl: t.Optional[datetime.timedelta] = None) -> None:
         self._constructor = constructor
         self._value: t.Optional[T] = None
+        self._ttl = ttl
+        self._last_use = datetime.datetime.now()
+        if self._ttl is not None:
+            _LAZY_WITH_TTL.append(self)
+
+    @staticmethod
+    def check_ttl() -> None:
+        now = datetime.datetime.now()
+        for lz in _LAZY_WITH_TTL:
+            lz.internal_check_ttl(now)
+
+    def internal_check_ttl(self, now: datetime.datetime) -> None:
+        if self._value is not None and self._ttl is not None and self._last_use + self._ttl < now:
+            del self._value
+            self._value = None
 
     def get(self) -> T:
+        if self._ttl is not None:
+            self._last_use = datetime.datetime.now()
         if self._value is not None:
             return self._value
         self._value = (self._constructor)()
-        del self._constructor
+        if self._ttl is None:
+            del self._constructor
         return self._value
 
 
