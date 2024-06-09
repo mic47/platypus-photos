@@ -55,6 +55,8 @@ async def check_db_connection() -> None:
 
 
 async def auto_load() -> None:
+    # Allow other tasks to start
+    await asyncio.sleep(0)
     sleep_time = 1
     max_sleep_time = 64
     while True:
