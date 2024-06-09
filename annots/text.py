@@ -59,7 +59,7 @@ async def fetch_ann(
             error = None
             e = dct.get("e")
             if e is not None:
-                error = Error.from_json(e)
+                error = Error.from_dict(e)
             payload = None
             p = dct.get("p")
             if p is not None:
