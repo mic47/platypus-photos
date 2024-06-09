@@ -1,4 +1,3 @@
-from abc import ABC, abstractmethod
 import itertools
 import typing as t
 
@@ -14,41 +13,7 @@ from gallery.url import UrlParameters
 Ser = t.TypeVar("Ser", bound=DataClassJsonMixin)
 
 
-class OmgDB(ABC):
-    @abstractmethod
-    def load(self, show_progress: bool) -> int: ...
-
-    @abstractmethod
-    def get_matching_images(self, url: UrlParameters) -> t.Iterable[Image]: ...
-
-    @abstractmethod
-    def get_aggregate_stats(self, url: UrlParameters) -> ImageAggregation: ...
-
-    @abstractmethod
-    def get_image_clusters(
-        self,
-        url: UrlParameters,
-        top_left: LocPoint,
-        bottom_right: LocPoint,
-        latitude_resolution: float,
-        longitude_resolution: float,
-        over_fetch: float,
-    ) -> t.List[LocationCluster]: ...
-
-    @abstractmethod
-    def files(self, md5: str) -> t.List[FileRow]: ...
-
-    @abstractmethod
-    def get_path_from_hash(self, hsh: t.Union[int, str]) -> t.Optional[str]: ...
-
-    @abstractmethod
-    def reconnect(self) -> None: ...
-
-    @abstractmethod
-    def check_unused(self) -> None: ...
-
-
-class ImageSqlDB(OmgDB):
+class ImageSqlDB:
     def __init__(self, path_to_date: PathDateExtractor, connection: Connection) -> None:
         # TODO: this should be a feature with loader
         self._path_to_date = path_to_date

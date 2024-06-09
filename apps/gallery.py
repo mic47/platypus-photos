@@ -22,7 +22,7 @@ from db import Connection
 from annots.date import PathDateExtractor
 from utils import assert_never, Lazy
 
-from gallery.db import OmgDB, ImageSqlDB
+from gallery.db import ImageSqlDB
 from gallery.url import UrlParameters
 from gallery.utils import maybe_datetime_to_date, maybe_datetime_to_timestamp
 
@@ -36,7 +36,7 @@ templates = Jinja2Templates(directory="templates")
 
 config = Config.load("config.yaml")
 
-DB: OmgDB = ImageSqlDB(
+DB = ImageSqlDB(
     PathDateExtractor(config.directory_matching),
     Connection(DBFilesConfig().photos_db, check_same_thread=False),
 )
