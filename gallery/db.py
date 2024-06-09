@@ -14,22 +14,27 @@ Ser = t.TypeVar("Ser", bound=DataClassJsonMixin)
 
 
 class Reindexer:
-    def __init__(self, path_to_date: PathDateExtractor, connection: Connection) -> None:
+    def __init__(
+        self, path_to_date: PathDateExtractor, photos_connection: Connection, gallery_connection: Connection
+    ) -> None:
         # TODO: this should be a feature with loader
         self._path_to_date = path_to_date
-        self._con = connection
-        self._features_table = FeaturesTable(self._con)
-        self._files_table = FilesTable(self._con)
+        self._p_con = photos_connection
+        self._g_con = gallery_connection
+        self._features_table = FeaturesTable(self._p_con)
+        self._files_table = FilesTable(self._p_con)
         self._exif = SQLiteCache(self._features_table, ImageExif)
         self._address = SQLiteCache(self._features_table, GeoAddress)
         self._text_classification = SQLiteCache(self._features_table, ImageClassification)
-        self._gallery_index = GalleryIndexTable(self._con)
+        self._gallery_index = GalleryIndexTable(self._g_con)
 
     def reconnect(self) -> None:
-        self._con.reconnect()
+        self._p_con.reconnect()
+        self._g_con.reconnect()
 
     def check_unused(self) -> None:
-        self._con.check_unused()
+        self._p_con.check_unused()
+        self._g_con.check_unused()
 
     def load(self, show_progress: bool) -> int:
         reindexed = 0
@@ -93,19 +98,22 @@ class Reindexer:
 
 
 class ImageSqlDB:
-    def __init__(self, connection: Connection) -> None:
+    def __init__(self, photos_connection: Connection, gallery_connection: Connection) -> None:
         # TODO: this should be a feature with loader
-        self._con = connection
-        self._files_table = FilesTable(self._con)
-        self._gallery_index = GalleryIndexTable(self._con)
+        self._p_con = photos_connection
+        self._g_con = gallery_connection
+        self._files_table = FilesTable(self._p_con)
+        self._gallery_index = GalleryIndexTable(self._g_con)
         self._hash_to_image: t.Dict[int, str] = {}
         self._md5_to_image: t.Dict[str, str] = {}
 
     def reconnect(self) -> None:
-        self._con.reconnect()
+        self._p_con.reconnect()
+        self._g_con.reconnect()
 
     def check_unused(self) -> None:
-        self._con.check_unused()
+        self._p_con.check_unused()
+        self._g_con.check_unused()
 
     def files(self, md5: str) -> t.List[FileRow]:
         return self._files_table.by_md5(md5)

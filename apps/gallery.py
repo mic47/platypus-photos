@@ -35,12 +35,15 @@ app.mount("/static", StaticFiles(directory="static/"), name="static")
 templates = Jinja2Templates(directory="templates")
 
 config = Config.load("config.yaml")
-connection = Connection(DBFilesConfig().photos_db, check_same_thread=False)
+photos_connection = Connection(DBFilesConfig().photos_db, check_same_thread=False)
+gallery_connection = Connection(DBFilesConfig().gallery_db, check_same_thread=False)
 
-DB = ImageSqlDB(connection)
-REINDEXER = Reindexer(PathDateExtractor(config.directory_matching), connection)
+DB = ImageSqlDB(photos_connection, gallery_connection)
+REINDEXER = Reindexer(PathDateExtractor(config.directory_matching), photos_connection, gallery_connection)
+
 del config
-del connection
+del photos_connection
+del gallery_connection
 
 
 @app.on_event("startup")
@@ -78,7 +81,7 @@ async def auto_load() -> None:
             print("Error while trying to refresh data in db:", e)
             sleep_time = 1
             print("Reconnecting")
-            DB.reconnect()
+            REINDEXER.reconnect()
         await asyncio.sleep(sleep_time)
 
 
