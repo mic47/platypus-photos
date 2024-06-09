@@ -115,9 +115,10 @@ class Models:
         self._remote = remote
 
     def load(self) -> None:
-        self._predict_model.get()
-        self._classify_model.get()
-        self._captioner.get()
+        image = [Image.new(mode="RGB", size=(200, 200))]
+        self._predict_model.get()(image, verbose=False)
+        self._classify_model.get()(image, verbose=False)
+        self._captioner.get()(image)
 
     async def process_image(
         self: "Models",
