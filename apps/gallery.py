@@ -22,7 +22,7 @@ from db import Connection
 from annots.date import PathDateExtractor
 from utils import assert_never, Lazy
 
-from gallery.db import ImageSqlDB
+from gallery.db import ImageSqlDB, Reindexer
 from gallery.url import UrlParameters
 from gallery.utils import maybe_datetime_to_date, maybe_datetime_to_timestamp
 
@@ -35,12 +35,12 @@ app.mount("/static", StaticFiles(directory="static/"), name="static")
 templates = Jinja2Templates(directory="templates")
 
 config = Config.load("config.yaml")
+connection = Connection(DBFilesConfig().photos_db, check_same_thread=False)
 
-DB = ImageSqlDB(
-    PathDateExtractor(config.directory_matching),
-    Connection(DBFilesConfig().photos_db, check_same_thread=False),
-)
+DB = ImageSqlDB(connection)
+REINDEXER = Reindexer(PathDateExtractor(config.directory_matching), connection)
 del config
+del connection
 
 
 @app.on_event("startup")
@@ -52,6 +52,7 @@ async def on_startup() -> None:
 async def check_db_connection() -> None:
     while True:
         DB.check_unused()
+        REINDEXER.check_unused()
         Lazy.check_ttl()
         await asyncio.sleep(10)
 
@@ -63,7 +64,7 @@ async def auto_load() -> None:
     max_sleep_time = 64
     while True:
         try:
-            done = DB.load(show_progress=False)
+            done = REINDEXER.load(show_progress=False)
             if done <= 100:
                 sleep_time = min(sleep_time * 2, max_sleep_time)
                 if done > 0:
