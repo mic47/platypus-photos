@@ -1,5 +1,5 @@
 ---
-name: Platypul Gallery CI
+name: Platypul Photos CI
 run-name: ${{ github.actor }} is running CI🚀
 on:
   push:
@@ -14,11 +14,12 @@ jobs:
     steps:
       - name: Check out repository code
         uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
-          cache: 'pip'
-      - run: pip install -r requirements.txt
+      # Uncomment this to enable cache. Currently it's small so it's not necessary and it slows down CI
+      # - uses: actions/setup-python@v5
+      #  with:
+      #    python-version: '3.10'
+      #    cache: 'pip'
+      - run: pip install -r <(cat requirements.txt | grep -v '^\(transformers\|ultralytics\)==')
       - run: pip freeze
       - run: make ci
       - run: git diff --exit-code
