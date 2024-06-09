@@ -16,4 +16,4 @@ class ImportMode(enum.Enum):
 @dataclasses.dataclass
 class ImportCommand(dataclasses_json.DataClassJsonMixin):
     import_path: str
-    mode: ImportMode = dataclasses.field(default=ImportMode.MOVE)
+    mode: ImportMode = dataclasses.field(default=ImportMode.COPY)
