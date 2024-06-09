@@ -20,7 +20,7 @@ from data_model.features import PathWithMd5
 from db import FeaturesTable, Connection, FilesTable, Queries
 from annots.annotator import Annotator
 from file_mgmt.jobs import Jobs, JobType, IMPORT_PRIORITY, DEFAULT_PRIORITY, REALTIME_PRIORITY
-from utils import assert_never, DefaultDict, CacheTTL
+from utils import assert_never, DefaultDict, CacheTTL, Lazy
 from utils.files import get_paths, expand_vars_in_path
 from utils.progress_bar import ProgressBar
 
@@ -199,7 +199,7 @@ async def managed_worker_and_import_worker(context: GlobalContext, config: Confi
         print("Unable to create fifo file", config.import_fifo, e, file=sys.stderr)
         sys.exit(1)
     # TODO: check for new files in managed folders, and add them. Run it from time to time
-    progress_bar = context.queues.get_progress_bar(JobType.CHEAP_FEATURES, IMPORT_PRIORITY)
+    progress_bar = Lazy(lambda: context.queues.get_progress_bar(JobType.CHEAP_FEATURES, IMPORT_PRIORITY))
     while True:
         async with aiofiles.open(config.import_fifo, "r") as import_fifo:
             async for line in import_fifo:
@@ -210,8 +210,9 @@ async def managed_worker_and_import_worker(context: GlobalContext, config: Confi
                     data = json.loads(line)
                     path = data["import_path"]
                     paths = list(get_paths([], [path]))
-                    progress_bar.add_to_total(len(paths))
-                    progress_bar.update_total()
+                    if paths:
+                        progress_bar.get().add_to_total(len(paths))
+                        progress_bar.get().update_total()
                     enqueued = False
                     for path in paths:
                         try:
@@ -227,10 +228,10 @@ async def managed_worker_and_import_worker(context: GlobalContext, config: Confi
                             print("Error while importing path", path, e, file=sys.stderr)
                             continue
                         finally:
-                            progress_bar.update(1)
+                            progress_bar.get().update(1)
                             # So that we gave up place for other workers too
                             await asyncio.sleep(0)
-                    if enqueued:
+                    if enqueued and path:
                         context.queues.update_progress_bars()
                 # pylint: disable = broad-exception-caught
                 except Exception as e:

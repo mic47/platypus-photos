@@ -7,8 +7,22 @@ def assert_never(x: t.NoReturn) -> t.NoReturn:
     assert False, f"Unhandled type: {type(x).__name__}"
 
 
+T = t.TypeVar("T")
 K = t.TypeVar("K")
 V = t.TypeVar("V")
+
+
+class Lazy(t.Generic[T]):
+    def __init__(self, constructor: t.Callable[[], T]) -> None:
+        self._constructor = constructor
+        self._value: t.Optional[T] = None
+
+    def get(self) -> T:
+        if self._value is not None:
+            return self._value
+        self._value = (self._constructor)()
+        del self._constructor
+        return self._value
 
 
 class DefaultDict(dict[K, V]):
