@@ -85,7 +85,7 @@ def cast(x: t.Any, type_: t.Type[T]) -> T:
 
 
 def yolo_model(model: str) -> YoloProtocol:
-    # pylint: disable = import-outside-toplevel
+    # pylint: disable = import-outside-toplevel,import-error
     import ultralytics
 
     ret = ultralytics.YOLO(model)
@@ -93,7 +93,7 @@ def yolo_model(model: str) -> YoloProtocol:
 
 
 def image_to_text_model() -> PipelineProtocol:
-    # pylint: disable = import-outside-toplevel
+    # pylint: disable = import-outside-toplevel,import-error
     import transformers
 
     ret = transformers.pipeline("image-to-text", model="Salesforce/blip-image-captioning-base")
