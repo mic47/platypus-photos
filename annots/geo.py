@@ -1,12 +1,10 @@
 import json
 import time
 import sys
-import typing as t
 
-from geopy.distance import distance
 from geopy.geocoders import Nominatim
 
-from data_model.features import GeoAddress, POI, NearestPOI, WithMD5, PathWithMd5
+from data_model.features import GeoAddress, WithMD5, PathWithMd5
 from db.cache import Cache
 
 
@@ -73,22 +71,3 @@ class Geolocator:
             )
             country = raw_add.get("country")
         return WithMD5(inp.md5, self._version, GeoAddress(ret.address, country, name, raw_data, query), None)
-
-
-class POIDetector:
-    def __init__(self, pois: t.Iterable[POI]):
-        self._max_distance = 0.25
-        self._pois = list(pois)
-        self._version = NearestPOI.current_version()
-
-    def find(self, inp: PathWithMd5, latitude: float, longitude: float) -> t.Optional[WithMD5[NearestPOI]]:
-        if not self._pois:
-            return None
-        best = min(
-            ((distance((poi.latitude, poi.longitude), (latitude, longitude)), poi) for poi in self._pois),
-            key=lambda x: t.cast(float, x[0]),
-        )
-        best_distance, poi = best
-        if best_distance > self._max_distance:
-            return None
-        return WithMD5(inp.md5, self._version, NearestPOI(poi, best_distance), None)

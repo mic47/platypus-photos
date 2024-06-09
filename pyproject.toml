@@ -22,3 +22,8 @@ disable = '''
   too-many-locals,
   too-many-branches,
 '''
+
+[tool.vulture]
+
+ignore_decorators = ["@app.*"]
+ignore_names = ["LOAD_TRUNCATED_IMAGES"]

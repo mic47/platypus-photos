@@ -21,3 +21,4 @@ pylint==3.2.3
 types-aiofiles==23.2.0.20240403
 types-Pillow==10.2.0.20240520
 types-PyYAML==6.0.12.20240311
+vulture==2.11

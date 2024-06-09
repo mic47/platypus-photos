@@ -8,8 +8,6 @@ from db.types import FeaturePayload
 
 Ser = t.TypeVar("Ser", bound=HasCurrentVersion)
 
-DEFAULT_VERSION = 0
-
 
 class Cache(t.Generic[Ser]):
     def get(self, key: str) -> t.Optional[FeaturePayload[WithMD5[Ser], None]]:
@@ -49,14 +47,12 @@ class SQLiteCache(t.Generic[Ser], Cache[Ser]):
         features_table: FeaturesTable,
         loader: t.Type[Ser],
         jsonl_path: t.Optional[str] = None,
-        enforce_version: bool = False,
     ) -> None:
         self._features_table = features_table
         self._loader = loader
         self._type = loader.__name__
         self._data: t.Dict[str, FeaturePayload[WithMD5[Ser], None]] = {}
         self._current_version = loader.current_version()
-        self._enforce_version = enforce_version
         self._jsonl = JsonlWriter(jsonl_path)
 
     def get(self, key: str) -> t.Optional[FeaturePayload[WithMD5[Ser], None]]:

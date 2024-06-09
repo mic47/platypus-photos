@@ -6,7 +6,7 @@ from dataclasses_json import DataClassJsonMixin
 from tqdm import tqdm
 
 from annots.date import PathDateExtractor
-from data_model.features import ImageExif, GeoAddress, ImageClassification, MD5Annot, WithMD5
+from data_model.features import ImageExif, GeoAddress, ImageClassification, WithMD5
 from db import FeaturesTable, GalleryIndexTable, Connection, FilesTable, SQLiteCache
 from db.types import ImageAggregation, Image, LocationCluster, LocPoint, FeaturePayload, FileRow
 from gallery.url import UrlParameters
@@ -58,7 +58,6 @@ class ImageSqlDB(OmgDB):
         self._exif = SQLiteCache(self._features_table, ImageExif)
         self._address = SQLiteCache(self._features_table, GeoAddress)
         self._text_classification = SQLiteCache(self._features_table, ImageClassification)
-        self._md5 = SQLiteCache(self._features_table, MD5Annot)
         self._gallery_index = GalleryIndexTable(self._con)
         self._hash_to_image: t.Dict[int, str] = {}
         self._md5_to_image: t.Dict[str, str] = {}

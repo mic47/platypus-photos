@@ -74,16 +74,16 @@ class GPSCoord(DataClassJsonMixin):
 
 @dataclass
 class Camera(DataClassJsonMixin):
-    make: str
+    make: str  # noqa: F841
     model: str
-    serial_number: str
-    software: str
+    serial_number: str  # noqa: F841
+    software: str  # noqa: F841
 
 
 @dataclass
 class Date(DataClassJsonMixin):
     datetime: t.Optional[datetime]
-    time_str: t.Optional[str]
+    time_str: t.Optional[str]  # noqa: F841
 
 
 @dataclass
@@ -112,32 +112,6 @@ class GeoAddress(HasCurrentVersion):
 
 
 @dataclass
-class POI(DataClassJsonMixin):
-    name: str
-    latitude: float
-    longitude: float
-
-
-@dataclass
-class NearestPOI(HasCurrentVersion):
-    poi: POI
-    distance: float
-
-    @staticmethod
-    def current_version() -> int:
-        return 0
-
-
-@dataclass
-class MD5Annot(HasCurrentVersion):
-    md5: str
-
-    @staticmethod
-    def current_version() -> int:
-        return 1
-
-
-@dataclass
 class Box(DataClassJsonMixin):
     classification: str
     confidence: float
@@ -160,7 +134,7 @@ class BoxClassification(DataClassJsonMixin):
 class ImageClassification(HasCurrentVersion):
     captions: t.List[str]
     boxes: t.List[BoxClassification]
-    exception: t.Optional[str] = field(default=None)
+    exception: t.Optional[str] = field(default=None)  # noqa: F841
 
     @staticmethod
     def current_version() -> int:

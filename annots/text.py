@@ -70,11 +70,11 @@ T = t.TypeVar("T")
 
 
 class YoloProtocol(t.Protocol):
-    def __call__(self, source: t.List[Image.Image], verbose: bool) -> t.Any: ...
+    def __call__(self, source: t.List[Image.Image], verbose: bool) -> t.Any: ...  # noqa: F841
 
 
 class PipelineProtocol(t.Protocol):
-    def __call__(self, source: t.List[Image.Image]) -> t.Any: ...
+    def __call__(self, source: t.List[Image.Image]) -> t.Any: ...  # noqa: F841
 
 
 def cast(x: t.Any, type_: t.Type[T]) -> T:

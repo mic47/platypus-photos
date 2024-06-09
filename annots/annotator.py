@@ -24,15 +24,11 @@ class Annotator:
     ):
         self._session = session
         self.path_to_date = PathDateExtractor(directory_matching)
-        models_cache = SQLiteCache(
-            features, ImageClassification, files_config.image_to_text_jsonl, enforce_version=True
-        )
+        models_cache = SQLiteCache(features, ImageClassification, files_config.image_to_text_jsonl)
         self.models = Models(models_cache, annotate_url)
-        exif_cache = SQLiteCache(features, ImageExif, files_config.exif_jsonl, enforce_version=True)
+        exif_cache = SQLiteCache(features, ImageExif, files_config.exif_jsonl)
         self.exif = Exif(exif_cache)
-        geolocator_cache = SQLiteCache(
-            features, GeoAddress, files_config.geo_address_jsonl, enforce_version=True
-        )
+        geolocator_cache = SQLiteCache(features, GeoAddress, files_config.geo_address_jsonl)
         self.geolocator = Geolocator(geolocator_cache)
         self.cheap_features_types: t.List[t.Type[HasCurrentVersion]] = [ImageExif, GeoAddress]
         self.image_to_text_types: t.List[t.Type[HasCurrentVersion]] = [ImageClassification]

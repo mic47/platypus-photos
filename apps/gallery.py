@@ -28,6 +28,7 @@ from gallery.utils import maybe_datetime_to_date, maybe_datetime_to_timestamp
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
+
 app = FastAPI()
 # TODO: serve these differenty
 app.mount("/static", StaticFiles(directory="static/"), name="static")
