@@ -17,8 +17,14 @@ _LAZY_WITH_TTL: "t.List[Lazy[t.Any]]" = []
 
 
 class Lazy(t.Generic[T]):
-    def __init__(self, constructor: t.Callable[[], T], ttl: t.Optional[datetime.timedelta] = None) -> None:
+    def __init__(
+        self,
+        constructor: t.Callable[[], T],
+        ttl: t.Optional[datetime.timedelta] = None,
+        destructor: t.Optional[t.Callable[[T], None]] = None,
+    ) -> None:
         self._constructor = constructor
+        self._destructor = destructor
         self._value: t.Optional[T] = None
         self._ttl = ttl
         self._last_use = datetime.datetime.now()
@@ -45,6 +51,8 @@ class Lazy(t.Generic[T]):
                 )
             else:
                 print("Freeing memory for", type(self._value).__name__, file=sys.stderr)
+                if self._destructor is not None:
+                    self._destructor(self._value)
                 del self._value
                 self._value = None
                 return True

@@ -1,9 +1,11 @@
 from dataclasses import dataclass
 import base64
+import datetime
 import io
 import json
 import os
 import itertools
+import multiprocessing
 import sys
 import traceback
 import typing as t
@@ -22,7 +24,7 @@ from data_model.features import (
     PathWithMd5,
     Error,
 )
-from db.cache import Cache
+from db.cache import Cache, NoCache
 from utils import Lazy
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
@@ -129,15 +131,38 @@ def image_to_text_model() -> PipelineProtocol:
     return t.cast(PipelineProtocol, ret)
 
 
+def _close_pool(pool: 'multiprocessing.pool.Pool') -> None:
+    pool.close()
+    pool.terminate()
+
+
+_POOL_MODELS = Lazy(lambda: Models(NoCache(), remote=None))
+
+
+def process_image_in_pool(
+    path: PathWithMd5, gap_threshold: float, discard_threshold: float
+) -> WithMD5[ImageClassification]:
+    return list(
+        _POOL_MODELS.get().process_image_batch_impl(
+            ((x, None) for x in [path]), gap_threshold, discard_threshold
+        )
+    )[0]
+
+
 class Models:
     def __init__(self, cache: Cache[ImageClassification], remote: t.Optional[str]) -> None:
         self._cache = cache
-        # ttl is disabled because of undiagnosed memory leak
-        ttl = None  # datetime.timedelta(seconds=5 * 60)
-        self._predict_model = Lazy(lambda: yolo_model("yolov8x.pt"), ttl=ttl)
-        self._classify_model = Lazy(lambda: yolo_model("yolov8x-cls.pt"), ttl=ttl)
-        self._captioner = Lazy(image_to_text_model, ttl=ttl)
+        self._predict_model = Lazy(lambda: yolo_model("yolov8x.pt"))
+        self._classify_model = Lazy(lambda: yolo_model("yolov8x-cls.pt"))
+        self._captioner = Lazy(image_to_text_model)
         self._version = ImageClassification.current_version()
+        ttl = datetime.timedelta(seconds=5 * 60)
+        self._pool = Lazy(
+            # pylint: disable = consider-using-with
+            lambda: multiprocessing.Pool(processes=1),
+            ttl=ttl,
+            destructor=_close_pool,
+        )
         self._remote = remote
 
     def load(self) -> None:
@@ -174,9 +199,8 @@ class Models:
                     traceback.print_exc()
         else:
             return x.payload
-        for p in self.process_image_batch_impl(((x, None) for x in [path]), gap_threshold, discard_threshold):
-            return self._cache.add(p)
-        assert False, "Process image batch retruned empty output. This should never happen"
+        p = self._pool.get().apply(process_image_in_pool, (path, gap_threshold, discard_threshold))
+        return self._cache.add(p)
 
     def process_image_data(
         self,
