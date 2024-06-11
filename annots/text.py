@@ -4,6 +4,7 @@ import io
 import json
 import os
 import itertools
+import sys
 import traceback
 import typing as t
 
@@ -42,11 +43,36 @@ def remove_consecutive_words(sentence: str) -> str:
 
 
 @dataclass
+class ImageClassificationWithMD5:
+    md5: str
+    version: int
+    p: t.Optional[ImageClassification]
+    e: t.Optional[Error]
+    # TODO: make test that make sure it's same as WithMD5[ImageClassification]
+
+
+@dataclass
 class AnnotateRequest(DataClassJsonMixin):
     path: PathWithMd5
     data_base64: str
     gap_threshold: float
     discard_threshold: float
+
+
+def image_endpoint(models: "Models", image: AnnotateRequest) -> ImageClassificationWithMD5:
+    try:
+        x = models.process_image_data(image)
+        return ImageClassificationWithMD5(x.md5, x.version, x.p, x.e)
+    # pylint: disable = broad-exception-caught
+    except Exception as e:
+        traceback.print_exc()
+        print("Error processing file:", image.path, file=sys.stderr)
+        return ImageClassificationWithMD5(
+            image.path.md5,
+            ImageClassification.current_version(),
+            None,
+            Error.from_exception(e),
+        )
 
 
 async def fetch_ann(

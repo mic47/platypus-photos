@@ -1,14 +1,17 @@
 import asyncio
-import dataclasses
 import datetime
-import sys
-import traceback
+import time
 import typing as t
+import sys
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, Response
 
-from annots.text import AnnotateRequest, Models, ImageClassification
-from data_model.features import Error
+from annots.text import (
+    AnnotateRequest,
+    Models,
+    ImageClassificationWithMD5,
+    image_endpoint as image_endpoint_impl,
+)
 from db.cache import NoCache
 from utils import Lazy
 
@@ -30,13 +33,12 @@ async def check_db_connection() -> None:
         await asyncio.sleep(60)
 
 
-@dataclasses.dataclass
-class ImageClassificationWithMD5:
-    md5: str
-    version: int
-    p: t.Optional[ImageClassification]
-    e: t.Optional[Error]
-    # TODO: make test that make sure it's same as WithMD5[ImageClassification]
+@app.middleware("http")
+async def log_metadata(request: Request, func: t.Callable[[Request], t.Awaitable[Response]]) -> Response:
+    start_time = time.time()
+    response = await func(request)
+    print("Remote annotator server request took", request.url, time.time() - start_time, file=sys.stderr)
+    return response
 
 
 @app.post(
@@ -45,19 +47,7 @@ class ImageClassificationWithMD5:
 )
 def image_endpoint(image: AnnotateRequest) -> ImageClassificationWithMD5:
     now = datetime.datetime.now()
-    try:
-        x = MODELS.process_image_data(image)
-        ret = ImageClassificationWithMD5(x.md5, x.version, x.p, x.e)
-    # pylint: disable = broad-exception-caught
-    except Exception as e:
-        ret = ImageClassificationWithMD5(
-            image.path.md5,
-            ImageClassification.current_version(),
-            None,
-            Error.from_exception(e),
-        )
-        traceback.print_exc()
-        print("Error processing file:", image.path, file=sys.stderr)
+    ret = image_endpoint_impl(MODELS, image)
     after = datetime.datetime.now()
     print(after - now)
     return ret
