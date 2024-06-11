@@ -131,7 +131,7 @@ def image_to_text_model() -> PipelineProtocol:
     return t.cast(PipelineProtocol, ret)
 
 
-def _close_pool(pool: 'multiprocessing.pool.Pool') -> None:
+def _close_pool(pool: "multiprocessing.pool.Pool") -> None:
     pool.close()
     pool.terminate()
 
