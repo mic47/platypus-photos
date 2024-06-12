@@ -343,6 +343,7 @@ function init_dates(location_url_json, map) {
           );
           const dataX = chart.scales.x.getValueForPixel(canvasPosition.x);
           const dataY = chart.scales.y.getValueForPixel(canvasPosition.y);
+          console.log(event.type, dataX, dataY, state);
           if (event.type === "mousedown") {
             state.clickTimeSTart = dataX;
           } else if (event.type === "mouseup") {
