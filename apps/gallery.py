@@ -32,6 +32,8 @@ ImageFile.LOAD_TRUNCATED_IMAGES = True
 app = FastAPI()
 # TODO: serve these differenty
 app.mount("/static", StaticFiles(directory="static/"), name="static")
+app.mount("/js", StaticFiles(directory="js/"), name="static")
+app.mount("/css", StaticFiles(directory="css/"), name="static")
 templates = Jinja2Templates(directory="templates")
 
 config = Config.load("config.yaml")
