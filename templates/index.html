@@ -59,13 +59,16 @@ function init_fun() {
   {% for t in top.addr %}
     <a href="{{t[2]}}">{{t[0]}} ({{t[1]}})</a>
   {% endfor %} <br/>
-  <div id="map"></div>
-  <div class="date_chart"><canvas id="DateChart"></canvas></div>
-  {% if urls.prev %}<a href="{{urls.prev}}">{% endif %}Prev Page{% if urls.prev %}</a>{% endif %}
-  {% if urls.next %}<a href="{{urls.next}}">{% endif %}Next Page{% if urls.next %}</a>{% endif %}
 </div>
-<div>
 
+<div id="map"></div>
+<div class="date_chart"><canvas id="DateChart"></canvas></div>
+<div id="GalleryImages"></div>
+
+<div>
+{% if urls.prev %}<a href="{{urls.prev}}">{% endif %}Prev Page{% if urls.prev %}</a>{% endif %}
+{% if urls.next %}<a href="{{urls.next}}">{% endif %}Next Page{% if urls.next %}</a>{% endif %}
+</div>
 {% for image in images %}
   {% if loop.index0 == oi %}
   <div class="gallery_item overlay">
