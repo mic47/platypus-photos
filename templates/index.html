@@ -24,7 +24,7 @@ function init_fun() {
     fetch_gallery(url_json, {{ input.page }}, {% if oi %}{{oi}}{% else %}null{% endif %});
     map = new PhotoMap("map", bounds, location_url_json);
     // TODO: dates should be dynamic
-    init_dates(state, location_url_json);
+    init_dates(location_url_json, map);
 }
 </script>
 </head>

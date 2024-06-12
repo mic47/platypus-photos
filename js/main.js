@@ -134,7 +134,7 @@ class PhotoMap {
     this.last_update_timestamp = 0;
     this.location_url_json = location_url_json;
     const that = this;
-    const update_markers = (e) => {that.update_markers(e)};
+    const update_markers = (e) => {that.update_markers(false)};
     this.map.on("load", update_markers);
     this.map.on("zoomend", update_markers);
     this.map.on("moveend", update_markers);
@@ -156,8 +156,9 @@ class PhotoMap {
     this.location_url_json = {...this.location_url_json, ...update};
   }
 
-  update_markers(e) {
+  update_markers(change_view=false) {
     // TODO: wrapped maps: shift from 0 + wrap around
+
     var bounds = this.map.getBounds();
     var nw = bounds.getNorthWest();
     var se = bounds.getSouthEast();
@@ -191,6 +192,16 @@ class PhotoMap {
       .then((clusters) => {
         if (timestamp < this.last_update_timestamp) {
           return;
+        }
+        if (change_view && clusters.length > 0) {
+          const lats = clusters.map((x) => x.position.latitude);
+          const longs = clusters.map((x) => x.position.longitude);
+          var bounds = [[Math.max(...lats), Math.max(...longs)], [Math.min(...lats), Math.min(...longs)]];
+          this.map.fitBounds(bounds);
+          bounds = this.map.getBounds();
+          var nw = bounds.getNorthWest();
+          var se = bounds.getSouthEast();
+          update_boundary(nw, se);
         }
         this.last_update_timestamp = timestamp;
         var new_markers = {};
@@ -245,7 +256,6 @@ function fetch_gallery(url_data, page, oi) {
   })
     .then((response) => response.text())
     .then((text) => {
-      console.log(url_data);
       const gallery = document.getElementById("GalleryImages");
       gallery.innerHTML = text;
       const prev = gallery.getElementsByClassName("prev-url");
@@ -287,7 +297,7 @@ function update_dates(chart, location_url_json) {
       chart.update();
     });
 }
-function init_dates(location_url_json) {
+function init_dates(location_url_json, map) {
   var state = {
     clickTimeStart: null,
     location_url_json: location_url_json,
@@ -333,8 +343,6 @@ function init_dates(location_url_json) {
           );
           const dataX = chart.scales.x.getValueForPixel(canvasPosition.x);
           const dataY = chart.scales.y.getValueForPixel(canvasPosition.y);
-          console.log(event);
-          console.log(dataX, dataY);
           if (event.type === "mousedown") {
             state.clickTimeSTart = dataX;
           } else if (event.type === "mouseup") {
@@ -344,6 +352,8 @@ function init_dates(location_url_json) {
             const u = {...state.location_url_json, tsfrom: f, tsto: t};
             fetch_gallery(u, 0, null);
             update_dates(chart, u);
+            map.update_url({tsfrom: f, tsto: t});
+            map.update_markers(true);
           }
         },
       },
