@@ -196,7 +196,7 @@ function init_map(bounds, location_url_json) {
   }
 }
 
-function fetch_gallery(url_data, oi) {
+function fetch_gallery(url_data, page, oi) {
   var url = `/internal/gallery.html?oi=${oi}`;
   if (oi === undefined || oi === null) {
     url = `/internal/gallery.html`;
@@ -212,6 +212,22 @@ function fetch_gallery(url_data, oi) {
     .then((text) => {
       const gallery = document.getElementById("GalleryImages");
       gallery.innerHTML = text;
+      const prev = gallery.getElementsByClassName("prev-url");
+      for (var i = 0; i < prev.length; i++) {
+        p = prev[i];
+        p.onclick=(e) => {
+          const u = {...url_data, page: page - 1};
+          fetch_gallery(u, page - 1, null); // TODO: fix oi parameter
+        };
+      }
+      const next = gallery.getElementsByClassName("next-url");
+      for (var i = 0; i < next.length; i++) {
+        p = next[i];
+        p.onclick=(e) => {
+          const u = {...url_data, page: page + 1};
+          fetch_gallery(u, page + 1, null); // TODO: fix oi parameter
+        };
+      }
     });
 }
 

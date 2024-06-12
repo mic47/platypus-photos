@@ -187,6 +187,7 @@ def date_clusters_endpoint(params: DateClusterParams) -> t.List[DateCluster]:
 
 @app.post("/internal/gallery.html", response_class=HTMLResponse)
 async def gallery_div(request: Request, url: UrlParameters, oi: t.Optional[int] = None) -> HTMLResponse:
+    print(url)
     images = []
     omgs, has_next_page = DB.get_matching_images(url)
     for omg in omgs:
@@ -240,6 +241,7 @@ async def gallery_div(request: Request, url: UrlParameters, oi: t.Optional[int] 
                 "prev": url.prev_url(),
                 "prev_overlay": url.prev_url(overlay=True),
             },
+            "has_next_page": has_next_page,
             "input": {
                 "page": url.page,
             },
@@ -249,7 +251,7 @@ async def gallery_div(request: Request, url: UrlParameters, oi: t.Optional[int] 
 
 @app.get("/index.html", response_class=HTMLResponse)
 @app.get("/", response_class=HTMLResponse)
-async def read_item(
+async def index_page(
     request: Request,
     tag: str = "",
     cls: str = "",
@@ -301,7 +303,9 @@ async def read_item(
             "bounds": bounds,
             "total": aggr.total,
             "location_url_json": json.dumps(url.to_filtered_dict(["addr", "page", "paging"])),
+            "url_json": json.dumps(url.to_filtered_dict([])),
             "input": {
+                "page": url.page,
                 "tag": url.tag,
                 "cls": url.cls,
                 "addr": url.addr,

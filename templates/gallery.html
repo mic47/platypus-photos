@@ -1,6 +1,6 @@
 <div>
-{% if urls.prev %}<a href="{{urls.prev}}">{% endif %}Prev Page{% if urls.prev %}</a>{% endif %}
-{% if urls.next %}<a href="{{urls.next}}">{% endif %}Next Page{% if urls.next %}</a>{% endif %}
+  {% if input.page > 0 %}<a href="#" class="prev-url">Prev Page</a>{% else %}Prev Page{% endif %}
+  {% if has_next_page %}<a href="#" class="next-url">Next Page</a>{% else %}Next Page{% endif %}
 </div>
 {% for image in images %}
   {% if loop.index0 == oi %}
@@ -44,6 +44,6 @@
 </div>
 <br>
 <div style="float: left; background: #CCCCCC; height: 10em;">
-  {% if urls.prev %}<a href="{{urls.prev}}">{% endif %}Prev Page{% if urls.prev %}</a>{% endif %}
-  {% if urls.next %}<a href="{{urls.next}}">{% endif %}Next Page{% if urls.next %}</a>{% endif %}
+  {% if input.page > 0 %}<a href="#" class="prev-url">Prev Page</a>{% else %}Prev Page{% endif %}
+  {% if has_next_page %}<a href="#" class="next-url">Next Page</a>{% else %}Next Page{% endif %}
 </div>
