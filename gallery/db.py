@@ -7,7 +7,15 @@ from tqdm import tqdm
 
 from annots.date import PathDateExtractor
 from data_model.features import ImageExif, GeoAddress, ImageClassification, WithMD5
-from db import FeaturesTable, GalleryIndexTable, Connection, FilesTable, SQLiteCache, DirectoriesTable
+from db import (
+    FeaturesTable,
+    GalleryIndexTable,
+    PhotosConnection,
+    GalleryConnection,
+    FilesTable,
+    SQLiteCache,
+    DirectoriesTable,
+)
 from db.types import ImageAggregation, Image, LocationCluster, LocPoint, FeaturePayload, FileRow, DateCluster
 from gallery.url import UrlParameters
 
@@ -16,7 +24,10 @@ Ser = t.TypeVar("Ser", bound=DataClassJsonMixin)
 
 class Reindexer:
     def __init__(
-        self, path_to_date: PathDateExtractor, photos_connection: Connection, gallery_connection: Connection
+        self,
+        path_to_date: PathDateExtractor,
+        photos_connection: PhotosConnection,
+        gallery_connection: GalleryConnection,
     ) -> None:
         # TODO: this should be a feature with loader
         self._path_to_date = path_to_date
@@ -115,12 +126,13 @@ class Reindexer:
 
 
 class ImageSqlDB:
-    def __init__(self, photos_connection: Connection, gallery_connection: Connection) -> None:
+    def __init__(self, photos_connection: PhotosConnection, gallery_connection: GalleryConnection) -> None:
         # TODO: this should be a feature with loader
         self._p_con = photos_connection
         self._g_con = gallery_connection
         self._files_table = FilesTable(self._p_con)
         self._gallery_index = GalleryIndexTable(self._g_con)
+        self._directories_table = DirectoriesTable(self._g_con)
         self._hash_to_image: t.Dict[int, str] = {}
         self._md5_to_image: t.Dict[str, str] = {}
 

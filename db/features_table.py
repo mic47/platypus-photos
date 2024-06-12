@@ -1,5 +1,5 @@
 import typing as t
-from db.connection import Connection
+from db.connection import PhotosConnection
 from db.types import FeaturePayload, InternalError
 
 
@@ -13,7 +13,7 @@ class FeaturesFableWrongParams(InternalError):
 class FeaturesTable:
     def __init__(
         self,
-        connection: Connection,
+        connection: PhotosConnection,
     ) -> None:
         self._con = connection
         self._init_db()

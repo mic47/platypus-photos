@@ -6,7 +6,7 @@ import sqlite3
 import typing as t
 
 
-class Connection:
+class _Connection:
     def __init__(self, path: str, timeout: int = 120, check_same_thread: bool = True) -> None:
         self._path = path
         self._timeout = timeout
@@ -76,3 +76,11 @@ class Connection:
         if self._connection is None:
             self._connection = self._connect()
         return self._connection.commit()
+
+
+class PhotosConnection(_Connection):
+    pass
+
+
+class GalleryConnection(_Connection):
+    pass

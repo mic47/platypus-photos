@@ -1,6 +1,6 @@
 import typing as t
 
-from db.connection import Connection
+from db.connection import PhotosConnection
 from db.types import FileRow, ManagedLifecycle, InternalError
 
 
@@ -12,7 +12,7 @@ class FilesTableWrongLifecycleParams(InternalError):
 
 
 class FilesTable:
-    def __init__(self, connection: Connection) -> None:
+    def __init__(self, connection: PhotosConnection) -> None:
         self._con = connection
         self._init_db()
 

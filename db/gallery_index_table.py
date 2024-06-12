@@ -17,7 +17,7 @@ from gallery.utils import (
 from gallery.url import (
     UrlParameters,
 )
-from db.connection import Connection
+from db.connection import GalleryConnection
 from db.types import Image, ImageAggregation, LocationCluster, LocPoint, DateCluster
 
 
@@ -30,7 +30,7 @@ class WrongAggregateTypeReturned(Exception):
 class GalleryIndexTable:
     def __init__(
         self,
-        connection: Connection,
+        connection: GalleryConnection,
     ) -> None:
         self._con = connection
         self._init_db()

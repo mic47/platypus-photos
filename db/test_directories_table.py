@@ -1,11 +1,11 @@
 import unittest
 
-from db.connection import Connection
+from db.connection import GalleryConnection
 from db.directories_table import DirectoriesTable
 
 
-def connection() -> Connection:
-    return Connection(":memory:")
+def connection() -> GalleryConnection:
+    return GalleryConnection(":memory:")
 
 
 class TestDirectoriesTable(unittest.TestCase):

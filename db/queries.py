@@ -1,11 +1,11 @@
 import typing as t
 
 from data_model.features import HasCurrentVersion, PathWithMd5
-from db.connection import Connection
+from db.connection import PhotosConnection
 
 
-class Queries:
-    def __init__(self, con: Connection) -> None:
+class PhotosQueries:
+    def __init__(self, con: PhotosConnection) -> None:
         self._con = con
 
     def get_not_annotated_files(self, models: t.List[t.Type[HasCurrentVersion]]) -> t.List[PathWithMd5]:

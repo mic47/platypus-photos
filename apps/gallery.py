@@ -17,7 +17,7 @@ from fastapi.templating import Jinja2Templates
 
 from data_model.config import DBFilesConfig
 from db.types import LocationCluster, LocPoint, DateCluster
-from db import Connection
+from db import PhotosConnection, GalleryConnection
 from utils import assert_never, Lazy
 
 from gallery.db import ImageSqlDB
@@ -36,8 +36,8 @@ templates = Jinja2Templates(directory="templates")
 
 DB = Lazy(
     lambda: ImageSqlDB(
-        Connection(DBFilesConfig().photos_db, check_same_thread=False),
-        Connection(DBFilesConfig().gallery_db, check_same_thread=False),
+        PhotosConnection(DBFilesConfig().photos_db, check_same_thread=False),
+        GalleryConnection(DBFilesConfig().gallery_db, check_same_thread=False),
     )
 )
 

@@ -1,13 +1,13 @@
 import typing as t
 import unittest
 
-from db.connection import Connection
+from db.connection import PhotosConnection
 from db.files_table import FilesTable, FilesTableWrongLifecycleParams
 from db.types import FileRow, ManagedLifecycle
 
 
-def connection() -> Connection:
-    return Connection(":memory:")
+def connection() -> PhotosConnection:
+    return PhotosConnection(":memory:")
 
 
 def sanitize(row: t.Optional[FileRow]) -> t.Optional[FileRow]:

@@ -2,7 +2,7 @@ from datetime import datetime
 import typing as t
 import unittest
 
-from db.connection import Connection
+from db.connection import GalleryConnection
 from db.gallery_index_table import GalleryIndexTable, WrongAggregateTypeReturned
 from db.types import Image, ImageAggregation, LocPoint, LocationCluster
 from gallery.url import (
@@ -10,8 +10,8 @@ from gallery.url import (
 )
 
 
-def connection() -> Connection:
-    return Connection(":memory:")
+def connection() -> GalleryConnection:
+    return GalleryConnection(":memory:")
 
 
 def _image(

@@ -12,7 +12,7 @@ import asyncinotify
 import tqdm
 
 from data_model.config import Config, DBFilesConfig
-from db import FeaturesTable, Connection, FilesTable, Queries
+from db import FeaturesTable, PhotosConnection, GalleryConnection, FilesTable, PhotosQueries
 from annots.annotator import Annotator
 from annots.date import PathDateExtractor
 from file_mgmt.jobs import Jobs, JobType, IMPORT_PRIORITY, DEFAULT_PRIORITY, REALTIME_PRIORITY
@@ -202,8 +202,8 @@ async def main() -> None:
     parser.add_argument("--annotate-url", default=None, type=str)
     args = parser.parse_args()
     config = Config.load(args.config)
-    photos_connection = Connection(args.db)
-    gallery_connection = Connection(files_config.gallery_db)
+    photos_connection = PhotosConnection(args.db)
+    gallery_connection = GalleryConnection(files_config.gallery_db)
     reindexer = Reindexer(PathDateExtractor(config.directory_matching), photos_connection, gallery_connection)
     features = FeaturesTable(photos_connection)
     files = FilesTable(photos_connection)
@@ -221,7 +221,7 @@ async def main() -> None:
 
     async with aiohttp.ClientSession() as session:
         annotator = Annotator(config.directory_matching, files_config, features, session, args.annotate_url)
-        jobs = Jobs(config.managed_folder, files, Queries(photos_connection), annotator)
+        jobs = Jobs(config.managed_folder, files, PhotosQueries(photos_connection), annotator)
         queues = Queues()
         context = GlobalContext(jobs, files, queues)
 

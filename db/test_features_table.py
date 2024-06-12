@@ -1,12 +1,12 @@
 import unittest
 
-from db.connection import Connection
+from db.connection import PhotosConnection
 from db.features_table import FeaturesTable, FeaturesFableWrongParams
 from db.types import FeaturePayload
 
 
-def connection() -> Connection:
-    return Connection(":memory:")
+def connection() -> PhotosConnection:
+    return PhotosConnection(":memory:")
 
 
 class TestFeaturesTable(unittest.TestCase):

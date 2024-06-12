@@ -1,10 +1,10 @@
 import typing as t
 
-from db.connection import Connection
+from db.connection import GalleryConnection
 
 
 class DirectoriesTable:
-    def __init__(self, connection: Connection) -> None:
+    def __init__(self, connection: GalleryConnection) -> None:
         self._con = connection
         self._init_db()
 
