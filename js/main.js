@@ -177,6 +177,25 @@ function init_map(bounds, location_url_json) {
   }
 }
 
+function fetch_gallery(url_data, oi) {
+  var url = `/internal/gallery.html?oi=${oi}`;
+  if (oi === undefined || oi === null) {
+    url = `/internal/gallery.html`;
+  }
+  fetch(url, {
+    method: "POST",
+    body: JSON.stringify(url_data),
+    headers: {
+      "Content-type": "application/json; charset=UTF-8"
+    }
+  })
+    .then((response) => response.text())
+    .then((text) => {
+        const gallery = document.getElementById("GalleryImages");
+        gallery.innerHTML = text;
+    })
+}
+
 function init_dates(location_url_json) {
   fetch("/api/date_clusters", {
     method: "POST",
@@ -191,7 +210,6 @@ function init_dates(location_url_json) {
     .then((response) => response.json())
     .then((clusters) => {
   const ctx = document.getElementById('DateChart');
-  console.log(dates);
   dates = clusters.map((c) => {return {x: c.avg_timestamp * 1000, y: c.total}})
   new Chart(ctx, {
     type: 'line',

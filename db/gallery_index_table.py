@@ -434,8 +434,9 @@ SELECT "alt", 'min', MIN(altitude) FROM matched_images WHERE altitude IS NOT NUL
     def get_matching_images(
         self,
         url: UrlParameters,
-    ) -> t.Iterable[Image]:
+    ) -> t.Tuple[t.List[Image], bool]:
         # TODO: aggregations could be done separately
+        actual_paging = url.paging + 1
         (
             query,
             variables,
@@ -444,21 +445,46 @@ SELECT "alt", 'min', MIN(altitude) FROM matched_images WHERE altitude IS NOT NUL
             url,
         )
         if url.paging:
-            query = f"{query}\nORDER BY timestamp\nDESC LIMIT {url.paging}\nOFFSET {url.paging * url.page}"
+            query = f"{query}\nORDER BY timestamp\nDESC LIMIT {actual_paging}\nOFFSET {url.paging * url.page}"
         res = self._con.execute(
             query,
             variables,
         )
-        while True:
-            items = res.fetchmany(size=url.paging)
-            if not items:
-                return
-            for (
+        items = res.fetchall()
+        has_extra_data = len(items) > url.paging
+        output = []
+        for (
+            md5,
+            timestamp,
+            tags,
+            tags_probs,
+            classifications,
+            address_country,
+            address_name,
+            address_full,
+            feature_last_update,
+            latitude,
+            longitude,
+            altitude,
+            version,
+        ) in items[:url.paging]:
+            output.append(Image(
                 md5,
-                timestamp,
-                tags,
-                tags_probs,
-                classifications,
+                None if timestamp is None else datetime.fromtimestamp(timestamp),  # TODO convert
+                (
+                    None
+                    if not tags
+                    else dict(
+                        zip(
+                            tags.split(":"),
+                            map(
+                                float,
+                                tags_probs.split(":"),
+                            ),
+                        )
+                    )
+                ),
+                None if not classifications else classifications,
                 address_country,
                 address_name,
                 address_full,
@@ -467,33 +493,8 @@ SELECT "alt", 'min', MIN(altitude) FROM matched_images WHERE altitude IS NOT NUL
                 longitude,
                 altitude,
                 version,
-            ) in items:
-                yield Image(
-                    md5,
-                    None if timestamp is None else datetime.fromtimestamp(timestamp),  # TODO convert
-                    (
-                        None
-                        if not tags
-                        else dict(
-                            zip(
-                                tags.split(":"),
-                                map(
-                                    float,
-                                    tags_probs.split(":"),
-                                ),
-                            )
-                        )
-                    ),
-                    None if not classifications else classifications,
-                    address_country,
-                    address_name,
-                    address_full,
-                    feature_last_update,
-                    latitude,
-                    longitude,
-                    altitude,
-                    version,
-                )
+            ))
+        return output, has_extra_data
 
 
 def round_to_significant_digits(value: float, significant_digits: int) -> float:

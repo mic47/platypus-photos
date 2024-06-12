@@ -61,22 +61,22 @@ class TestGalleryIndexTable(unittest.TestCase):
             "M1", caption="WAAAT", dependent_features_last_update=100, version=old_version
         )
         table.add(old_omg)
-        res = list(table.get_matching_images(UrlParameters()))
+        res = table.get_matching_images(UrlParameters())[0]
         self.assertEqual(len(res), 1)
         self.assertEqual(old_omg, res[0])
 
         table.add(new_omg)
-        res = list(table.get_matching_images(UrlParameters()))
+        res = table.get_matching_images(UrlParameters())[0]
         self.assertEqual(len(res), 1)
         self.assertEqual(new_omg, res[0])
 
         table.add(changed_omg)
-        res = list(table.get_matching_images(UrlParameters()))
+        res = table.get_matching_images(UrlParameters())[0]
         self.assertEqual(len(res), 1)
         self.assertEqual(new_omg, res[0])
 
         table.add(changed_old_omg)
-        res = list(table.get_matching_images(UrlParameters()))
+        res = table.get_matching_images(UrlParameters())[0]
         self.assertEqual(len(res), 1)
         self.assertEqual(new_omg, res[0])
 
@@ -192,52 +192,48 @@ class TestGalleryIndexTable(unittest.TestCase):
         table.add(i2)
         table.add(i3)
         table.add(i4)
-        ret = list(table.get_matching_images(UrlParameters(addr="Foud")))
+        ret = table.get_matching_images(UrlParameters(addr="Foud"))[0]
         self.assertListEqual(ret, [i3])
-        ret = list(table.get_matching_images(UrlParameters(addr="Foud", cls="fishy")))
+        ret = table.get_matching_images(UrlParameters(addr="Foud", cls="fishy"))[0]
         self.assertListEqual(ret, [i3])
-        ret = sorted(list(table.get_matching_images(UrlParameters(cls="fishy"))), key=lambda x: x.md5)
+        ret = sorted(table.get_matching_images(UrlParameters(cls="fishy"))[0], key=lambda x: x.md5)
         self.assertListEqual(ret, [i3, i4])
         ret = sorted(
-            list(table.get_matching_images(UrlParameters(cls="fishy", directory="this is not used"))),
+            table.get_matching_images(UrlParameters(cls="fishy", directory="this is not used"))[0],
             key=lambda x: x.md5,
         )
         self.assertListEqual(ret, [i3, i4])
         ret = sorted(
-            list(table.get_matching_images(UrlParameters(datefrom=datetime(2022, 1, 1)))),
+            table.get_matching_images(UrlParameters(datefrom=datetime(2022, 1, 1)))[0],
             key=lambda x: x.md5,
         )
         self.assertListEqual(ret, [i1, i2, i3])
         ret = sorted(
-            list(table.get_matching_images(UrlParameters(datefrom=datetime(2024, 1, 1)))),
+            table.get_matching_images(UrlParameters(datefrom=datetime(2024, 1, 1)))[0],
             key=lambda x: x.md5,
         )
         self.assertListEqual(ret, [i2, i3])
         ret = sorted(
-            list(table.get_matching_images(UrlParameters(dateto=datetime(2024, 1, 1)))),
+            table.get_matching_images(UrlParameters(dateto=datetime(2024, 1, 1)))[0],
             key=lambda x: x.md5,
         )
         self.assertListEqual(ret, [i1])
         ret = sorted(
-            list(table.get_matching_images(UrlParameters(dateto=datetime(2024, 1, 2)))),
+            table.get_matching_images(UrlParameters(dateto=datetime(2024, 1, 2)))[0],
             key=lambda x: x.md5,
         )
         self.assertListEqual(ret, [i1, i2, i3])
         ret = sorted(
-            list(
-                table.get_matching_images(
-                    UrlParameters(datefrom=datetime(2024, 1, 1), dateto=datetime(2024, 1, 2))
-                )
-            ),
+            table.get_matching_images(
+                UrlParameters(datefrom=datetime(2024, 1, 1), dateto=datetime(2024, 1, 2))
+            )[0],
             key=lambda x: x.md5,
         )
         self.assertListEqual(ret, [i2, i3])
         ret = sorted(
-            list(
-                table.get_matching_images(
-                    UrlParameters(datefrom=datetime(2023, 1, 1), dateto=datetime(2024, 1, 2))
-                )
-            ),
+            table.get_matching_images(
+                UrlParameters(datefrom=datetime(2023, 1, 1), dateto=datetime(2024, 1, 2))
+            )[0],
             key=lambda x: x.md5,
         )
         self.assertListEqual(ret, [i1, i2, i3])

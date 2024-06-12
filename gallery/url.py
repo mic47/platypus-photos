@@ -80,8 +80,8 @@ class UrlParameters:
             oi = None
         return self.to_url(page=self.page - 1, oi=oi)
 
-    def next_url(self, total_images: int, overlay: bool = False) -> t.Optional[str]:
-        if (self.page + 1) * self.paging >= total_images:
+    def next_url(self, has_next_page: bool, overlay: bool = False) -> t.Optional[str]:
+        if not has_next_page:
             return None
         if overlay:
             oi = 0

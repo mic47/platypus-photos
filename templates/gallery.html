@@ -1,0 +1,49 @@
+<div>
+{% if urls.prev %}<a href="{{urls.prev}}">{% endif %}Prev Page{% if urls.prev %}</a>{% endif %}
+{% if urls.next %}<a href="{{urls.next}}">{% endif %}Next Page{% if urls.next %}</a>{% endif %}
+</div>
+{% for image in images %}
+  {% if loop.index0 == oi %}
+  <div class="gallery_item overlay">
+  {% else %}
+  <div class="gallery_item">
+  {% endif %}
+    <span id="i{{loop.index0}}"></span>
+    <div class="gallery_item_nav">
+        {% if loop.index0 == 0 %}
+        {% if urls.prev_overlay %}<a href="{{urls.prev_overlay}}">prev</a>{% else %} prev {% endif %}
+        {% else %}
+        <a href="#i{{ loop.index0}}" onclick="overlay_prev(this, {{ loop.index0 }})">prev</a>
+        {% endif %}
+        <a href="#i{{ loop.index0}}" onclick="overlay_close(this)">close</a>
+        {% if loop.index == images|length %}
+        {% if urls.next_overlay %}<a href="{{urls.next_overlay}}">next</a>{% else %} next {% endif %}
+        {% else %}
+        <a href="#i{{ loop.index0}}" onclick="overlay_next(this, {{ loop.index0 }})">next</a>
+        {% endif %}
+    </div>
+    <div class="gallery_container" onclick="overlay(this, {{ loop.index0 }})">
+    <img loading="lazy" src="/img?hsh={{image.hsh}}&size={% if loop.index0 == oi %}original{%else%}preview{%endif%}" class="gallery_image"/>
+    </div>
+    {{ image.classifications}} <br/>
+    {% for tag in image.tags %}
+    <span class="tag"><a href="{{tag[2]}}">{{tag[1]}}{{tag[0]}}</a></span>
+    {% endfor %}
+
+    {% for a in image.addrs %}
+    <span class="location"><a href="{{a.url}}">{{ a.address }}</a></span>
+    {% endfor %}
+    {% if image.date.date %}
+    <span class="date"><a href="{{image.date.url}}">{{image.date.date}}</a></span>
+    {% endif %}
+    {% for path in image.paths %}
+    <span class="dir"><a href="{{path.dir_url}}">{{path.dir}}</a></span>
+    {% endfor %}
+  </div>
+{% endfor %}
+</div>
+<br>
+<div style="float: left; background: #CCCCCC; height: 10em;">
+  {% if urls.prev %}<a href="{{urls.prev}}">{% endif %}Prev Page{% if urls.prev %}</a>{% endif %}
+  {% if urls.next %}<a href="{{urls.next}}">{% endif %}Next Page{% if urls.next %}</a>{% endif %}
+</div>

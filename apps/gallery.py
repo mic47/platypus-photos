@@ -185,6 +185,73 @@ def date_clusters_endpoint(params: DateClusterParams) -> t.List[DateCluster]:
     return clusters
 
 
+@app.post("/internal/gallery.html", response_class=HTMLResponse)
+async def gallery_div(request: Request, url: UrlParameters, oi: t.Optional[int] = None) -> HTMLResponse:
+    images = []
+    omgs, has_next_page = DB.get_matching_images(url)
+    for omg in omgs:
+
+        max_tag = min(1, max((omg.tags or {}).values(), default=1.0))
+        loc = None
+        if omg.latitude is not None and omg.longitude is not None:
+            loc = {"lat": omg.latitude, "lon": omg.longitude}
+
+        paths = [
+            {
+                "filename": os.path.basename(file.file),
+                "dir": os.path.dirname(file.file),
+                "dir_url": url.to_url(directory=os.path.dirname(file.file)),
+            }
+            for file in DB.files(omg.md5)
+        ]
+        images.append(
+            {
+                "hsh": omg.md5,
+                "paths": paths,
+                "loc": loc,
+                "classifications": omg.classifications or "",
+                "tags": [
+                    (tg, classify_tag(x / max_tag), url.to_url(add_tag=tg))
+                    for tg, x in sorted((omg.tags or {}).items(), key=lambda x: -x[1])
+                ],
+                "addrs": [
+                    {"address": a, "url": url.to_url(addr=a or None)}
+                    for a in [omg.address_name, omg.address_country]
+                    if a
+                ],
+                "date": {
+                    "date": maybe_datetime_to_date(omg.date),
+                    "url": url.to_url(datefrom=omg.date, dateto=omg.date),
+                },
+                "timestamp": maybe_datetime_to_timestamp(omg.date) or 0.0,
+            }
+        )
+
+    return templates.TemplateResponse(
+        request=request,
+        name="gallery.html",
+        context={
+            "oi": oi,
+            "images": images,
+            "location_url_json": json.dumps(url.to_filtered_dict(["addr", "page", "paging"])),
+            "urls": {
+                "next": url.next_url(has_next_page),
+                "next_overlay": url.next_url(has_next_page, overlay=True),
+                "prev": url.prev_url(),
+                "prev_overlay": url.prev_url(overlay=True),
+            },
+            "input": {
+                "tag": url.tag,
+                "cls": url.cls,
+                "addr": url.addr,
+                "datefrom": maybe_datetime_to_date(url.datefrom) or "",
+                "dateto": maybe_datetime_to_date(url.dateto) or "",
+                "dir": url.directory,
+            },
+        },
+    )
+
+
 @app.get("/index.html", response_class=HTMLResponse)
 @app.get("/", response_class=HTMLResponse)
 async def read_item(
@@ -217,8 +284,6 @@ async def read_item(
     del datefrom
     del dateto
     del dir_
-    images = []
-    dates = []
     aggr = DB.get_aggregate_stats(url)
     if url.page * url.paging >= aggr.total:
         url.page = aggr.total // url.paging
@@ -229,48 +294,6 @@ async def read_item(
             "lon": aggr.longitude,
         }
 
-    for omg in DB.get_matching_images(url):
-
-        max_tag = min(1, max((omg.tags or {}).values(), default=1.0))
-        loc = None
-        if omg.latitude is not None and omg.longitude is not None:
-            loc = {"lat": omg.latitude, "lon": omg.longitude}
-
-        paths = [
-            {
-                "filename": os.path.basename(file.file),
-                "dir": os.path.dirname(file.file),
-                "dir_url": url.to_url(directory=os.path.dirname(file.file)),
-            }
-            for file in DB.files(omg.md5)
-        ]
-        dt = maybe_datetime_to_timestamp(omg.date)
-        if dt is not None:
-            dates.append(dt)
-
-        images.append(
-            {
-                "hsh": omg.md5,
-                "paths": paths,
-                "loc": loc,
-                "classifications": omg.classifications or "",
-                "tags": [
-                    (tg, classify_tag(x / max_tag), url.to_url(add_tag=tg))
-                    for tg, x in sorted((omg.tags or {}).items(), key=lambda x: -x[1])
-                ],
-                "addrs": [
-                    {"address": a, "url": url.to_url(addr=a or None)}
-                    for a in [omg.address_name, omg.address_country]
-                    if a
-                ],
-                "date": {
-                    "date": maybe_datetime_to_date(omg.date),
-                    "url": url.to_url(datefrom=omg.date, dateto=omg.date),
-                },
-                "timestamp": maybe_datetime_to_timestamp(omg.date) or 0.0,
-            }
-        )
-    dd: t.Dict[float, int] = {}
     top_tags = sorted(aggr.tag.items(), key=lambda x: -x[1])
     top_cls = sorted(aggr.classification.items(), key=lambda x: -x[1])
     top_addr = sorted(aggr.address.items(), key=lambda x: -x[1])
@@ -281,15 +304,8 @@ async def read_item(
         context={
             "oi": oi,
             "bounds": bounds,
-            "images": images,
             "total": aggr.total,
             "location_url_json": json.dumps(url.to_filtered_dict(["addr", "page", "paging"])),
-            "urls": {
-                "next": url.next_url(aggr.total),
-                "next_overlay": url.next_url(aggr.total, overlay=True),
-                "prev": url.prev_url(),
-                "prev_overlay": url.prev_url(overlay=True),
-            },
             "input": {
                 "tag": url.tag,
                 "cls": url.cls,
