@@ -241,12 +241,7 @@ async def gallery_div(request: Request, url: UrlParameters, oi: t.Optional[int] 
                 "prev_overlay": url.prev_url(overlay=True),
             },
             "input": {
-                "tag": url.tag,
-                "cls": url.cls,
-                "addr": url.addr,
-                "datefrom": maybe_datetime_to_date(url.datefrom) or "",
-                "dateto": maybe_datetime_to_date(url.dateto) or "",
-                "dir": url.directory,
+                "page": url.page,
             },
         },
     )

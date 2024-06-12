@@ -1,6 +1,3 @@
-[warn] --jsx-bracket-same-line is deprecated.
-[warn] Ignored unknown option --loglevel=error. Did you mean --log-level?
-[warn] Ignored unknown option --stdin.
 function changeState(index) {
   var url = new URL(window.location.href);
   old_parameter = url.searchParams.get("oi");
