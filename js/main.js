@@ -1,5 +1,9 @@
 function changeState(index) {
   var url = new URL(window.location.href);
+  old_parameter = url.searchParams.get("oi")
+  if (old_parameter !== index) {
+    return
+  }
   if (index == null) {
     url.searchParams.delete("oi");
   } else {
