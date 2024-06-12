@@ -7,7 +7,7 @@ from tqdm import tqdm
 from annots.date import PathDateExtractor
 from data_model.features import ImageExif, GeoAddress, ImageClassification, WithMD5
 from db import FeaturesTable, GalleryIndexTable, Connection, FilesTable, SQLiteCache
-from db.types import ImageAggregation, Image, LocationCluster, LocPoint, FeaturePayload, FileRow
+from db.types import ImageAggregation, Image, LocationCluster, LocPoint, FeaturePayload, FileRow, DateCluster
 from gallery.url import UrlParameters
 
 Ser = t.TypeVar("Ser", bound=DataClassJsonMixin)
@@ -132,6 +132,9 @@ class ImageSqlDB:
 
     def get_aggregate_stats(self, url: "UrlParameters") -> ImageAggregation:
         return self._gallery_index.get_aggregate_stats(url)
+
+    def get_date_clusters(self, url: UrlParameters, buckets: int) -> t.List[DateCluster]:
+        return self._gallery_index.get_date_clusters(url, buckets)
 
     def get_image_clusters(
         self,

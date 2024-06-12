@@ -17,7 +17,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from data_model.config import Config, DBFilesConfig
-from db.types import LocationCluster, LocPoint
+from db.types import LocationCluster, LocPoint, DateCluster
 from db import Connection
 from annots.date import PathDateExtractor
 from utils import assert_never, Lazy
@@ -170,6 +170,21 @@ def location_clusters_endpoint(params: LocClusterParams) -> t.List[LocationClust
     return clusters
 
 
+@dataclass
+class DateClusterParams:
+    url: UrlParameters
+    buckets: int
+
+
+@app.post("/api/date_clusters")
+def date_clusters_endpoint(params: DateClusterParams) -> t.List[DateCluster]:
+    clusters = DB.get_date_clusters(
+        params.url,
+        params.buckets,
+    )
+    return clusters
+
+
 @app.get("/index.html", response_class=HTMLResponse)
 @app.get("/", response_class=HTMLResponse)
 async def read_item(
@@ -264,7 +279,9 @@ async def read_item(
         for date in dates:
             bucket = int(resolution * (date - mn) / df) * df / resolution + mn
             dd[bucket] = dd.setdefault(bucket, 0) + 1
-    dates_render = sorted([{"x": int(key * 1000), "y": value} for key, value in dd.items()], key=lambda x: x["x"])
+    dates_render = sorted(
+        [{"x": int(key * 1000), "y": value} for key, value in dd.items()], key=lambda x: x["x"]
+    )
     top_tags = sorted(aggr.tag.items(), key=lambda x: -x[1])
     top_cls = sorted(aggr.classification.items(), key=lambda x: -x[1])
     top_addr = sorted(aggr.address.items(), key=lambda x: -x[1])

@@ -177,9 +177,22 @@ function init_map(bounds, location_url_json) {
   }
 }
 
-function init_dates(dates) {
+function init_dates(dates, location_url_json) {
+  fetch("/api/date_clusters", {
+    method: "POST",
+    body: JSON.stringify({
+      "url": location_url_json,
+      "buckets": 100,
+    }),
+    headers: {
+      "Content-type": "application/json; charset=UTF-8"
+    }
+  })
+    .then((response) => response.json())
+    .then((clusters) => {
   const ctx = document.getElementById('DateChart');
   console.log(dates);
+  dates = clusters.map((c) => {return {x: c.avg_timestamp * 1000, y: c.total}})
   new Chart(ctx, {
     type: 'line',
     data: {
@@ -223,4 +236,5 @@ function init_dates(dates) {
       }
     }]
   });
+  })
 }

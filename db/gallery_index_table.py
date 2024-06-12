@@ -18,7 +18,7 @@ from gallery.url import (
     UrlParameters,
 )
 from db.connection import Connection
-from db.types import Image, ImageAggregation, LocationCluster, LocPoint
+from db.types import Image, ImageAggregation, LocationCluster, LocPoint, DateCluster
 
 
 class WrongAggregateTypeReturned(Exception):
@@ -197,6 +197,60 @@ WHERE
             query,
             variables,
         )
+
+    def get_date_clusters(self, url: UrlParameters, buckets: int) -> t.List[DateCluster]:
+        minmax_select = self._matching_query("timestamp", url)
+        minmax = self._con.execute(
+            f"""
+            SELECT MIN(timestamp), MAX(timestamp) FROM ({minmax_select[0]})
+            """,
+            minmax_select[1],
+        ).fetchone()
+        if minmax is None:
+            return []
+        bucket_size = max(1.0, (1.0 + float(minmax[1]) - float(minmax[0])) / buckets)
+        final_subselect_query = self._matching_query("timestamp, md5", url)
+        final = self._con.execute(
+            f"""
+SELECT
+  (bucket) * {bucket_size} + {minmax[0]} AS bucket_min,
+  (bucket + 1) * {bucket_size} + {minmax[0]} AS bucket_max,
+  min_timestamp,
+  max_timestamp,
+  avg_timestamp,
+  total,
+  example_md5
+FROM (
+  SELECT
+    CAST((timestamp - {minmax[0]})/ {bucket_size} AS INT) AS bucket,
+    MIN(timestamp) AS min_timestamp,
+    MAX(timestamp) AS max_timestamp,
+    AVG(timestamp) AS avg_timestamp,
+    COUNT(1) as total,
+    MIN(md5) as example_md5
+  FROM
+    ({final_subselect_query[0]}) sl
+  WHERE timestamp IS NOT NULL
+  GROUP BY bucket
+
+) fl
+            """,
+            final_subselect_query[1],
+        )
+        return [
+            DateCluster(
+                example_path_md5, bucket_min, bucket_max, min_timestamp, max_timestamp, avg_timestamp, total
+            )
+            for (
+                bucket_min,
+                bucket_max,
+                min_timestamp,
+                max_timestamp,
+                avg_timestamp,
+                total,
+                example_path_md5,
+            ) in final.fetchall()
+        ]
 
     def get_image_clusters(
         self,
