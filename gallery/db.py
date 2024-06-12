@@ -1,4 +1,5 @@
 import itertools
+import os
 import typing as t
 
 from dataclasses_json import DataClassJsonMixin
@@ -6,7 +7,7 @@ from tqdm import tqdm
 
 from annots.date import PathDateExtractor
 from data_model.features import ImageExif, GeoAddress, ImageClassification, WithMD5
-from db import FeaturesTable, GalleryIndexTable, Connection, FilesTable, SQLiteCache
+from db import FeaturesTable, GalleryIndexTable, Connection, FilesTable, SQLiteCache, DirectoriesTable
 from db.types import ImageAggregation, Image, LocationCluster, LocPoint, FeaturePayload, FileRow, DateCluster
 from gallery.url import UrlParameters
 
@@ -23,6 +24,7 @@ class Reindexer:
         self._g_con = gallery_connection
         self._features_table = FeaturesTable(self._p_con)
         self._files_table = FilesTable(self._p_con)
+        self._directories_table = DirectoriesTable(self._g_con)
         self._exif = SQLiteCache(self._features_table, ImageExif)
         self._address = SQLiteCache(self._features_table, GeoAddress)
         self._text_classification = SQLiteCache(self._features_table, ImageClassification)
@@ -72,6 +74,14 @@ class Reindexer:
         addr = extract_data(self._address.get(md5))
         text_cls = extract_data(self._text_classification.get(md5))
         files = self._files_table.by_md5(md5)
+        directories = set()
+        for file in files:
+            # TODO: is this the right thing?
+            max_last_update = max(max_last_update, file.last_update)
+            for path in [file.file, file.og_file]:
+                if path is not None:
+                    directories.add(os.path.dirname(path))
+
         omg = Image.from_updates(
             md5,
             exif,
@@ -90,8 +100,10 @@ class Reindexer:
             ],
             max_last_update,
         )
+
         assert max_last_update > 0.0
         self._gallery_index.add(omg)
+        self._directories_table.multi_add([(d, md5) for d in directories])
         self._features_table.undirty(
             md5, [ImageExif.__name__, GeoAddress.__name__, ImageClassification.__name__], max_last_update
         )

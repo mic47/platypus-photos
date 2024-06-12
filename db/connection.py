@@ -46,6 +46,16 @@ class Connection:
             return self._connection.execute(sql)
         return self._connection.execute(sql, parameters)
 
+    def executemany(
+        self,
+        sql: str,
+        parameters: t.Sequence[t.Tuple[t.Union[str, bytes, int, float, None], ...]],
+    ) -> sqlite3.Cursor:
+        self._last_use = datetime.now()
+        if self._connection is None:
+            self._connection = self._connect()
+        return self._connection.executemany(sql, parameters)
+
     def execute_add_column(
         self,
         sql: str,

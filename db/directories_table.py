@@ -33,9 +33,8 @@ CREATE TABLE IF NOT EXISTS directories (
     def add(
         self,
         directory: str,
-        md5: t.Optional[str],
+        md5: str,
     ) -> None:
-        # TODO: maybe insert multiple in rows?
         self._con.execute(
             """
 INSERT OR IGNORE INTO directories VALUES (?, ?)
@@ -44,6 +43,18 @@ INSERT OR IGNORE INTO directories VALUES (?, ?)
                 directory,
                 md5,
             ),
+        )
+        self._con.commit()
+
+    def multi_add(
+        self,
+        items: t.List[t.Tuple[str, str]],
+    ) -> None:
+        self._con.executemany(
+            """
+INSERT OR IGNORE INTO directories VALUES (?, ?)
+            """,
+            items,
         )
         self._con.commit()
 
