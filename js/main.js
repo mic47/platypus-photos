@@ -126,14 +126,43 @@ function update_boundary(nw, se) {
     },
   });
 }
-function update_markers(map, state) {
-  function inner(e) {
+
+class PhotoMap {
+  constructor (div_id, bounds, location_url_json) {
+    this.map = L.map("map").setView([51.505, -0.09], 13);
+    this.markers = {};
+    this.last_update_timestamp = 0;
+    this.location_url_json = location_url_json;
+    const that = this;
+    const update_markers = (e) => {that.update_markers(e)};
+    this.map.on("load", update_markers);
+    this.map.on("zoomend", update_markers);
+    this.map.on("moveend", update_markers);
+    this.map.on("zoom", update_markers);
+    this.map.on("move", update_markers);
+    this.map.on("resize", update_markers);
+
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19,
+      attribution:
+        '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    }).addTo(this.map);
+    if (bounds !== undefined && bounds !== null) {
+      this.map.fitBounds(bounds);
+    }
+  }
+
+  update_url(update) {
+    this.location_url_json = {...this.location_url_json, ...update};
+  }
+
+  update_markers(e) {
     // TODO: wrapped maps: shift from 0 + wrap around
-    var bounds = map.getBounds();
+    var bounds = this.map.getBounds();
     var nw = bounds.getNorthWest();
     var se = bounds.getSouthEast();
     update_boundary(nw, se);
-    var sz = map.getSize();
+    var sz = this.map.getSize();
     var cluster_pixel_size = 10;
     var timestamp = new Date().getTime();
     fetch("/api/location_clusters", {
@@ -152,7 +181,7 @@ function update_markers(map, state) {
           longitude: sz.x / cluster_pixel_size,
         },
         of: 0.5,
-        url: state.location_url_json,
+        url: this.location_url_json,
       }),
       headers: {
         "Content-type": "application/json; charset=UTF-8",
@@ -160,23 +189,23 @@ function update_markers(map, state) {
     })
       .then((response) => response.json())
       .then((clusters) => {
-        if (timestamp < state.last_update_timestamp) {
+        if (timestamp < this.last_update_timestamp) {
           return;
         }
-        state.last_update_timestamp = timestamp;
+        this.last_update_timestamp = timestamp;
         var new_markers = {};
         for (var i = 0; i < clusters.length; i++) {
           var cluster = clusters[i];
-          var existing = state.markers[cluster.example_path_md5];
+          var existing = this.markers[cluster.example_path_md5];
           if (existing !== undefined) {
             new_markers[cluster.example_path_md5] = existing;
-            delete state.markers[cluster.example_path_md5];
+            delete this.markers[cluster.example_path_md5];
             continue;
           }
           var marker = L.marker([
             cluster.position.latitude,
             cluster.position.longitude,
-          ]).addTo(map);
+          ]).addTo(this.map);
           marker.bindPopup(
             [
               cluster.example_classification,
@@ -193,37 +222,12 @@ function update_markers(map, state) {
           );
           new_markers[cluster.example_path_md5] = marker;
         }
-        Object.values(state.markers).forEach((m) => m.remove());
-        Object.keys(state.markers).forEach((m) => delete state.markers[m]);
+        Object.values(this.markers).forEach((m) => m.remove());
+        Object.keys(this.markers).forEach((m) => delete this.markers[m]);
         Object.entries(new_markers).forEach(
-          (m) => (state.markers[m[0]] = m[1])
+          (m) => (this.markers[m[0]] = m[1])
         );
       });
-  }
-  return inner;
-}
-
-function init_map(bounds, location_url_json) {
-  var map = L.map("map").setView([51.505, -0.09], 13);
-  var state = {
-    markers: {},
-    last_update_timestamp: 0,
-    location_url_json: location_url_json,
-  };
-  map.on("load", update_markers(map, state));
-  map.on("zoomend", update_markers(map, state));
-  map.on("moveend", update_markers(map, state));
-  map.on("zoom", update_markers(map, state));
-  map.on("move", update_markers(map, state));
-  map.on("resize", update_markers(map, state));
-
-  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-    maxZoom: 19,
-    attribution:
-      '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-  }).addTo(map);
-  if (bounds !== undefined && bounds !== null) {
-    map.fitBounds(bounds);
   }
 }
 

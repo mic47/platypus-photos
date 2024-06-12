@@ -22,7 +22,7 @@ function init_fun() {
     location_url_json = {{location_url_json | safe}};
     url_json = {{url_json | safe}};
     fetch_gallery(url_json, {{ input.page }}, {% if oi %}{{oi}}{% else %}null{% endif %});
-    init_map(bounds, location_url_json);
+    map = new PhotoMap("map", bounds, location_url_json);
     // TODO: dates should be dynamic
     init_dates(state, location_url_json);
 }
