@@ -105,7 +105,17 @@ div.gallery_item:hover {
   height: 380px;
   z-index: 0;
 }
+
+.date_chart {
+  height: 20em;
+  width: 100%;
+}
 </style>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js/dist/chart.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+
+
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
   integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
   crossorigin=""/>
@@ -269,7 +279,8 @@ function update_markers(map, state) {
     return inner
 
 }
-function init_fun() {
+
+function init_map() {
   var map = L.map('map').setView([51.505, -0.09], 13);
   var state = {
     "markers": {},
@@ -292,6 +303,57 @@ function init_fun() {
     [{{bounds.lat[1]}}, {{bounds.lon[1]}}],
   ]);
   {% endif %}
+}
+function init_dates() {
+  const ctx = document.getElementById('DateChart');
+  console.log('{{ dates | safe}}');
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      datasets: [{
+        label: '# of Images',
+        data: {{ dates | safe }},
+        borderWidth: 1,
+        showLine: false
+      }]
+    },
+    options: {
+      events: ["mousedown", "mouseup", "click", "keydown", "keyup"],
+      parsing: false,
+      scales: {
+        y: {
+          beginAtZero: true
+        },
+        x: {
+                type: 'time',
+                time: {
+                    displayFormats: {
+                        quarter: 'MMM YYYY'
+                    }
+                }
+            }
+
+      }
+    },
+    plugins: [{
+      id: 'Events',
+      beforeEvent(chart, args, pluginOptions) {
+        const event = args.event;
+        const canvasPosition = Chart.helpers.getRelativePosition(event, chart);
+        const dataX = chart.scales.x.getValueForPixel(canvasPosition.x);
+        const dataY = chart.scales.y.getValueForPixel(canvasPosition.y);
+        console.log(event);
+        console.log(dataX, dataY);
+        if (event.type === 'mouseout') {
+          // process the event
+        }
+      }
+    }]
+  });
+}
+function init_fun() {
+    init_map();
+    init_dates();
 }
 </script>
 
@@ -326,6 +388,7 @@ function init_fun() {
     <a href="{{t[2]}}">{{t[0]}} ({{t[1]}})</a>
   {% endfor %} <br/>
   <div id="map"></div>
+  <div class="date_chart"><canvas id="DateChart"></canvas></div>
   {% if urls.prev %}<a href="{{urls.prev}}">{% endif %}Prev Page{% if urls.prev %}</a>{% endif %}
   {% if urls.next %}<a href="{{urls.next}}">{% endif %}Next Page{% if urls.next %}</a>{% endif %}
 </div>
