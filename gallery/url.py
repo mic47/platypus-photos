@@ -15,6 +15,8 @@ class UrlParameters:
     page: int = 0
     paging: int = 100
     directory: str = ""
+    tsfrom: t.Optional[float] = None
+    tsto: t.Optional[float] = None
 
     def to_filtered_dict(self, skip_keys: t.List[str]) -> t.Dict[str, t.Any]:
         ret = {
@@ -26,6 +28,8 @@ class UrlParameters:
             "page": self.page,
             "paging": self.paging,
             "directory": self.directory,
+            "tsfrom": self.tsfrom,
+            "tsto": self.tsto,
         }
         return {k: v for k, v in ret.items() if k not in skip_keys and v}
 
@@ -41,6 +45,8 @@ class UrlParameters:
         paging: t.Optional[int] = None,
         oi: t.Optional[int] = None,
         directory: t.Optional[str] = None,
+        tsfrom: t.Optional[float] = None,
+        tsto: t.Optional[float] = None,
     ) -> str:
         tag = tag or self.tag
         if add_tag:
@@ -55,7 +61,9 @@ class UrlParameters:
         datefrom_ = maybe_datetime_to_date(datefrom or self.datefrom) or ""
         dateto_ = maybe_datetime_to_date(dateto or self.dateto) or ""
         directory = directory or self.directory
-        parts: t.List[t.Tuple[str, t.Union[str, int]]] = [
+        tsfrom = tsfrom or self.tsfrom
+        tsto = tsto or self.tsto
+        parts: t.List[t.Tuple[str, t.Union[str, int, float, None]]] = [
             ("tag", tag),
             ("cls", cls),
             ("addr", addr),
@@ -64,6 +72,8 @@ class UrlParameters:
             ("page", page),
             ("paging", paging),
             ("dir", directory),
+            ("tsfrom", tsfrom),
+            ("tsto", tsto),
         ]
         if oi is not None:
             parts.append(("oi", oi))

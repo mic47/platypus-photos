@@ -1,3 +1,34 @@
+class AppState {
+  constructor(url_params) {
+    this._url_params = url_params;
+    this._url_params_hooks= [];
+  }
+
+  update_url(new_parts) {
+    this._url_params = {...this.url_params, ...new_parts};
+    const url = this._url_params;
+    this._url_params_hooks((x) => x(url));
+  }
+
+  replace_url(new_url) {
+    this._url_params = {};
+    this.update_url(new_url);
+  }
+
+  register_hook(hook) {
+    this._url_params_hooks.push(hook);
+  }
+}
+
+let _state = null;
+function init_state(url_params) {
+  if (_state !== null) {
+    throw new Error('State is already initialized!');
+  }
+  _state = new AppState(url_params);
+  return _state
+}
+
 function changeState(index) {
   var url = new URL(window.location.href);
   old_parameter = url.searchParams.get("oi");
@@ -210,6 +241,7 @@ function fetch_gallery(url_data, page, oi) {
   })
     .then((response) => response.text())
     .then((text) => {
+      console.log(url_data);
       const gallery = document.getElementById("GalleryImages");
       gallery.innerHTML = text;
       const prev = gallery.getElementsByClassName("prev-url");
@@ -231,7 +263,7 @@ function fetch_gallery(url_data, page, oi) {
     });
 }
 
-function init_dates(location_url_json) {
+function update_dates(chart, location_url_json) {
   fetch("/api/date_clusters", {
     method: "POST",
     body: JSON.stringify({
@@ -244,58 +276,75 @@ function init_dates(location_url_json) {
   })
     .then((response) => response.json())
     .then((clusters) => {
-      const ctx = document.getElementById("DateChart");
       dates = clusters.map((c) => {
         return { x: c.avg_timestamp * 1000, y: c.total };
       });
-      new Chart(ctx, {
-        type: "line",
-        data: {
-          datasets: [
-            {
-              label: "# of Images",
-              data: dates,
-              borderWidth: 1,
-              showLine: false,
-            },
-          ],
-        },
-        options: {
-          events: ["mousedown", "mouseup", "click", "keydown", "keyup"],
-          parsing: false,
-          scales: {
-            y: {
-              beginAtZero: true,
-            },
-            x: {
-              type: "time",
-              time: {
-                displayFormats: {
-                  quarter: "MMM YYYY",
-                },
-              },
-            },
-          },
-        },
-        plugins: [
-          {
-            id: "Events",
-            beforeEvent(chart, args, pluginOptions) {
-              const event = args.event;
-              const canvasPosition = Chart.helpers.getRelativePosition(
-                event,
-                chart
-              );
-              const dataX = chart.scales.x.getValueForPixel(canvasPosition.x);
-              const dataY = chart.scales.y.getValueForPixel(canvasPosition.y);
-              console.log(event);
-              console.log(dataX, dataY);
-              if (event.type === "mouseout") {
-                // process the event
-              }
-            },
-          },
-        ],
-      });
+      chart.data.datasets[0].data = dates;
+      chart.update();
     });
+}
+function init_dates(location_url_json) {
+  var state = {
+    clickTimeStart: null,
+    location_url_json: location_url_json,
+  };
+  const ctx = document.getElementById("DateChart");
+  const chart = new Chart(ctx, {
+    type: "line",
+    data: {
+      datasets: [
+        {
+          label: "# of Images",
+          data: [],
+          borderWidth: 1,
+          showLine: false,
+        },
+      ],
+    },
+    options: {
+      events: ["mousedown", "mouseup"],
+      parsing: false,
+      scales: {
+        y: {
+          beginAtZero: true,
+        },
+        x: {
+          type: "time",
+          time: {
+            displayFormats: {
+              quarter: "MMM YYYY",
+            },
+          },
+        },
+      },
+    },
+    plugins: [
+      {
+        id: "Events",
+        beforeEvent(chart, args, pluginOptions) {
+          const event = args.event;
+          const canvasPosition = Chart.helpers.getRelativePosition(
+            event,
+            chart
+          );
+          const dataX = chart.scales.x.getValueForPixel(canvasPosition.x);
+          const dataY = chart.scales.y.getValueForPixel(canvasPosition.y);
+          console.log(event);
+          console.log(dataX, dataY);
+          if (event.type === "mousedown") {
+            state.clickTimeSTart = dataX;
+          } else if (event.type === "mouseup") {
+            const x = [state.clickTimeStart / 1000.0, dataX / 1000.0]
+            x.sort()
+            const [f, t] = x;
+            const u = {...state.location_url_json, tsfrom: f, tsto: t};
+            fetch_gallery(u, 0, null);
+            update_dates(chart, u);
+          }
+        },
+      },
+    ],
+  });
+  update_dates(chart, location_url_json);
+  return chart
 }

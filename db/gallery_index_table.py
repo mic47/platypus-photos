@@ -172,15 +172,21 @@ WHERE
         if url.datefrom:
             clauses.append("timestamp >= ?")
             variables.append(maybe_datetime_to_timestamp(url.datefrom))
-        if url.directory:  # TODO: this does not work, fix it
-            pass
-            # clauses.append("file like ?")
-            # variables.append(f"{url.directory}%")
         if url.dateto:
             clauses.append("timestamp <= ?")
             variables.append(
                 maybe_datetime_to_timestamp(None if url.dateto is None else url.dateto + timedelta(days=1))
             )
+        if url.directory:  # TODO: this does not work, fix it
+            pass
+            # clauses.append("file like ?")
+            # variables.append(f"{url.directory}%")
+        if url.tsfrom:
+            clauses.append("timestamp >= ?")
+            variables.append(url.tsfrom)
+        if url.tsto:
+            clauses.append("timestamp <= ?")
+            variables.append(url.tsto)
         for txt, vrs in extra_clauses or []:
             clauses.append(f"({txt})")
             variables.extend(vrs)
