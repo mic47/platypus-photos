@@ -41,9 +41,12 @@ class Reindexer:
     def load(self, show_progress: bool) -> int:
         reindexed = 0
         for md5, _last_update in tqdm(
-            list(
-                self._features_table.dirty_md5s(
-                    [ImageExif.__name__, GeoAddress.__name__, ImageClassification.__name__]
+            set(
+                itertools.chain(
+                    self._features_table.dirty_md5s(
+                        [ImageExif.__name__, GeoAddress.__name__, ImageClassification.__name__]
+                    ),
+                    ((x, None) for x in self._files_table.dirty_md5s()),
                 )
             ),
             desc="reindexing",
@@ -75,9 +78,9 @@ class Reindexer:
         text_cls = extract_data(self._text_classification.get(md5))
         files = self._files_table.by_md5(md5)
         directories = set()
+        max_dir_last_update = 0.0
         for file in files:
-            # TODO: is this the right thing?
-            max_last_update = max(max_last_update, file.last_update)
+            max_dir_last_update = max(max_dir_last_update, file.last_update)
             for path in [file.file, file.og_file]:
                 if path is not None:
                     directories.add(os.path.dirname(path))
@@ -98,12 +101,14 @@ class Reindexer:
                 )
                 if x is not None
             ],
+            # TODO: add max_dir_last_update?
             max_last_update,
         )
 
         assert max_last_update > 0.0
-        self._gallery_index.add(omg)
         self._directories_table.multi_add([(d, md5) for d in directories])
+        self._files_table.undirty(md5, max_dir_last_update)
+        self._gallery_index.add(omg)
         self._features_table.undirty(
             md5, [ImageExif.__name__, GeoAddress.__name__, ImageClassification.__name__], max_last_update
         )

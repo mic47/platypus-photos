@@ -43,10 +43,16 @@ ALTER TABLE files ADD COLUMN tmp_path TEXT
 ALTER TABLE files ADD COLUMN managed INTEGER NOT NULL DEFAULT 0
         """
         )
+        self._con.execute_add_column(
+            """
+ALTER TABLE files ADD COLUMN dirty INTEGER NOT NULL DEFAULT 1
+        """
+        )
         for suffix, rows in [
             ("path", "path"),
             ("md5", "md5"),
             ("managed", "managed"),
+            ("dirty", "dirty"),
             # Explicitly skipping indices for these
             # `og_path` -- it is just payload, no intention to search for it
             # `tmp_path` -- again, this is payload
@@ -68,7 +74,7 @@ ALTER TABLE files ADD COLUMN managed INTEGER NOT NULL DEFAULT 0
         self._validate_lifecycle(managed, tmp_path)
         self._con.execute(
             """
-INSERT OR IGNORE INTO files VALUES (?, strftime('%s'), ?, ?, ?, ?)
+INSERT OR IGNORE INTO files VALUES (?, strftime('%s'), ?, ?, ?, ?, 1)
             """,
             (
                 path,
@@ -91,7 +97,7 @@ INSERT OR IGNORE INTO files VALUES (?, strftime('%s'), ?, ?, ?, ?)
         self._validate_lifecycle(managed, tmp_path)
         self._con.execute(
             """
-INSERT INTO files VALUES (?, strftime('%s'), ?, ?, ?, ?)
+INSERT INTO files VALUES (?, strftime('%s'), ?, ?, ?, ?, 1)
 ON CONFLICT(path) DO UPDATE SET
   last_update=excluded.last_update,
   md5=excluded.md5,
@@ -131,7 +137,7 @@ ON CONFLICT(path) DO UPDATE SET
     ) -> None:
         self._con.execute(
             """
-UPDATE files SET path=? WHERE path = ?
+UPDATE files SET path=?, dirty=1 WHERE path = ?
             """,
             (new_path, old_path),
         )
@@ -146,7 +152,7 @@ UPDATE files SET path=? WHERE path = ?
         self._validate_lifecycle(managed, tmp_path)
         self._con.execute(
             """
-UPDATE files SET managed=? , tmp_path=? WHERE path = ?
+UPDATE files SET managed=? , tmp_path=?, dirty=1 WHERE path = ?
             """,
             (
                 managed.value,
@@ -155,6 +161,25 @@ UPDATE files SET managed=? , tmp_path=? WHERE path = ?
             ),
         )
         self._con.commit()
+
+    def dirty_md5s(self, limit: int = 1000) -> t.List[str]:
+        res = self._con.execute(
+            f"""
+SELECT DISTINCT md5 FROM files WHERE dirty=1 AND managed <> {ManagedLifecycle.BEING_MOVED_AROUND.value} AND managed <> {ManagedLifecycle.IMPORTED.value} LIMIT {limit}
+            """
+        ).fetchall()
+        out = []
+        for (md5,) in res:
+            out.append(md5)
+        return out
+
+    def undirty(self, md5: str, max_last_update: float) -> None:
+        self._con.execute(
+            """
+UPDATE files SET dirty = 0 WHERE dirty=1 AND md5 = ? AND last_update <= ?
+            """,
+            (md5, max_last_update),
+        )
 
     def by_managed_lifecycle(self, managed: ManagedLifecycle) -> t.List[FileRow]:
         # TODO: test
