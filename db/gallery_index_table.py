@@ -473,33 +473,35 @@ SELECT "alt", 'min', MIN(altitude) FROM matched_images WHERE altitude IS NOT NUL
             longitude,
             altitude,
             version,
-        ) in items[:url.paging]:
-            output.append(Image(
-                md5,
-                None if timestamp is None else datetime.fromtimestamp(timestamp),  # TODO convert
-                (
-                    None
-                    if not tags
-                    else dict(
-                        zip(
-                            tags.split(":"),
-                            map(
-                                float,
-                                tags_probs.split(":"),
-                            ),
+        ) in items[: url.paging]:
+            output.append(
+                Image(
+                    md5,
+                    None if timestamp is None else datetime.fromtimestamp(timestamp),  # TODO convert
+                    (
+                        None
+                        if not tags
+                        else dict(
+                            zip(
+                                tags.split(":"),
+                                map(
+                                    float,
+                                    tags_probs.split(":"),
+                                ),
+                            )
                         )
-                    )
-                ),
-                None if not classifications else classifications,
-                address_country,
-                address_name,
-                address_full,
-                feature_last_update,
-                latitude,
-                longitude,
-                altitude,
-                version,
-            ))
+                    ),
+                    None if not classifications else classifications,
+                    address_country,
+                    address_name,
+                    address_full,
+                    feature_last_update,
+                    latitude,
+                    longitude,
+                    altitude,
+                    version,
+                )
+            )
         return output, has_extra_data
 
 

@@ -7,7 +7,6 @@ import time
 import enum
 from datetime import datetime
 from dataclasses import dataclass
-import traceback
 
 from PIL import Image, ImageFile
 
@@ -16,13 +15,12 @@ from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from data_model.config import Config, DBFilesConfig
+from data_model.config import DBFilesConfig
 from db.types import LocationCluster, LocPoint, DateCluster
 from db import Connection
-from annots.date import PathDateExtractor
 from utils import assert_never, Lazy
 
-from gallery.db import ImageSqlDB, Reindexer
+from gallery.db import ImageSqlDB
 from gallery.url import UrlParameters
 from gallery.utils import maybe_datetime_to_date, maybe_datetime_to_timestamp
 
@@ -36,55 +34,25 @@ app.mount("/js", StaticFiles(directory="js/"), name="static")
 app.mount("/css", StaticFiles(directory="css/"), name="static")
 templates = Jinja2Templates(directory="templates")
 
-config = Config.load("config.yaml")
-photos_connection = Connection(DBFilesConfig().photos_db, check_same_thread=False)
-gallery_connection = Connection(DBFilesConfig().gallery_db, check_same_thread=False)
-
-DB = ImageSqlDB(photos_connection, gallery_connection)
-REINDEXER = Reindexer(PathDateExtractor(config.directory_matching), photos_connection, gallery_connection)
-
-del config
-del photos_connection
-del gallery_connection
+DB = Lazy(
+    lambda: ImageSqlDB(
+        Connection(DBFilesConfig().photos_db, check_same_thread=False),
+        Connection(DBFilesConfig().gallery_db, check_same_thread=False),
+    )
+)
 
 
 @app.on_event("startup")
 async def on_startup() -> None:
-    asyncio.create_task(auto_load())
     asyncio.create_task(check_db_connection())
 
 
 async def check_db_connection() -> None:
+    await asyncio.sleep(1)
     while True:
-        DB.check_unused()
-        REINDEXER.check_unused()
+        DB.get().check_unused()
         Lazy.check_ttl()
         await asyncio.sleep(10)
-
-
-async def auto_load() -> None:
-    # Allow other tasks to start
-    await asyncio.sleep(0)
-    sleep_time = 1
-    max_sleep_time = 64
-    while True:
-        try:
-            done = REINDEXER.load(show_progress=False)
-            if done <= 100:
-                sleep_time = min(sleep_time * 2, max_sleep_time)
-                if done > 0:
-                    print(f"Reindexed {done} images.", file=sys.stderr)
-            else:
-                print(f"Reindexed {done} images.", file=sys.stderr)
-                sleep_time = 1
-        # pylint: disable = broad-exception-caught
-        except Exception as e:
-            traceback.print_exc()
-            print("Error while trying to refresh data in db:", e)
-            sleep_time = 1
-            print("Reconnecting")
-            REINDEXER.reconnect()
-        await asyncio.sleep(sleep_time)
 
 
 @app.middleware("http")
@@ -127,7 +95,7 @@ def image_endpoint(hsh: t.Union[int, str], size: ImageSize = ImageSize.ORIGINAL)
     if sz is not None and isinstance(hsh, str):
         cache_file = get_cache_file(sz, hsh)
         if not os.path.exists(cache_file):
-            file_path = DB.get_path_from_hash(hsh)
+            file_path = DB.get().get_path_from_hash(hsh)
             if file_path is None:
                 return {"error": "File not found!"}
             img = Image.open(file_path)
@@ -141,7 +109,7 @@ def image_endpoint(hsh: t.Union[int, str], size: ImageSize = ImageSize.ORIGINAL)
             else:
                 img.save(cache_file)
         return FileResponse(cache_file, media_type="image/jpeg", filename=cache_file.split("/")[-1])
-    file_path = DB.get_path_from_hash(hsh)
+    file_path = DB.get().get_path_from_hash(hsh)
     if file_path is not None and os.path.exists(file_path):
         # TODO: fix media type
         return FileResponse(file_path, media_type="image/jpeg", filename=file_path.split("/")[-1])
@@ -159,7 +127,7 @@ class LocClusterParams:
 
 @app.post("/api/location_clusters")
 def location_clusters_endpoint(params: LocClusterParams) -> t.List[LocationCluster]:
-    clusters = DB.get_image_clusters(
+    clusters = DB.get().get_image_clusters(
         params.url,
         params.tl,
         params.br,
@@ -178,7 +146,7 @@ class DateClusterParams:
 
 @app.post("/api/date_clusters")
 def date_clusters_endpoint(params: DateClusterParams) -> t.List[DateCluster]:
-    clusters = DB.get_date_clusters(
+    clusters = DB.get().get_date_clusters(
         params.url,
         params.buckets,
     )
@@ -189,7 +157,7 @@ def date_clusters_endpoint(params: DateClusterParams) -> t.List[DateCluster]:
 async def gallery_div(request: Request, url: UrlParameters, oi: t.Optional[int] = None) -> HTMLResponse:
     print(url)
     images = []
-    omgs, has_next_page = DB.get_matching_images(url)
+    omgs, has_next_page = DB.get().get_matching_images(url)
     for omg in omgs:
 
         max_tag = min(1, max((omg.tags or {}).values(), default=1.0))
@@ -203,7 +171,7 @@ async def gallery_div(request: Request, url: UrlParameters, oi: t.Optional[int] 
                 "dir": os.path.dirname(file.file),
                 "dir_url": url.to_url(directory=os.path.dirname(file.file)),
             }
-            for file in DB.files(omg.md5)
+            for file in DB.get().files(omg.md5)
         ]
         images.append(
             {
@@ -281,7 +249,7 @@ async def index_page(
     del datefrom
     del dateto
     del dir_
-    aggr = DB.get_aggregate_stats(url)
+    aggr = DB.get().get_aggregate_stats(url)
     if url.page * url.paging >= aggr.total:
         url.page = aggr.total // url.paging
     bounds = None
