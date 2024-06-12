@@ -345,7 +345,7 @@ function init_dates(location_url_json, map) {
           const dataY = chart.scales.y.getValueForPixel(canvasPosition.y);
           console.log(event.type, dataX, dataY, state);
           if (event.type === "mousedown") {
-            state.clickTimeSTart = dataX;
+            state.clickTimeStart = dataX;
           } else if (event.type === "mouseup") {
             const x = [state.clickTimeStart / 1000.0, dataX / 1000.0]
             x.sort()
