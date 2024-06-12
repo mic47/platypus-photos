@@ -177,7 +177,7 @@ function init_map(bounds, location_url_json) {
   }
 }
 
-function init_dates(dates, location_url_json) {
+function init_dates(location_url_json) {
   fetch("/api/date_clusters", {
     method: "POST",
     body: JSON.stringify({

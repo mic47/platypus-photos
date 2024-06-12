@@ -271,17 +271,6 @@ async def read_item(
             }
         )
     dd: t.Dict[float, int] = {}
-    if dates:
-        mn = min(dates)
-        mx = max(dates)
-        df = mx - mn
-        resolution = 1000
-        for date in dates:
-            bucket = int(resolution * (date - mn) / df) * df / resolution + mn
-            dd[bucket] = dd.setdefault(bucket, 0) + 1
-    dates_render = sorted(
-        [{"x": int(key * 1000), "y": value} for key, value in dd.items()], key=lambda x: x["x"]
-    )
     top_tags = sorted(aggr.tag.items(), key=lambda x: -x[1])
     top_cls = sorted(aggr.classification.items(), key=lambda x: -x[1])
     top_addr = sorted(aggr.address.items(), key=lambda x: -x[1])
@@ -292,7 +281,6 @@ async def read_item(
         context={
             "oi": oi,
             "bounds": bounds,
-            "dates": json.dumps(dates_render),
             "images": images,
             "total": aggr.total,
             "location_url_json": json.dumps(url.to_filtered_dict(["addr", "page", "paging"])),

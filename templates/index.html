@@ -23,10 +23,9 @@ Gallery
 function init_fun() {
     bounds = {% if bounds %}[[{{bounds.lat[0]}}, {{bounds.lon[0]}}],[{{bounds.lat[1]}}, {{bounds.lon[1]}}]]{% else %}null{% endif %};
     location_url_json = {{location_url_json | safe}};
-    dates = {{ dates | safe}};
     init_map(bounds, location_url_json);
     // TODO: dates should be dynamic
-    init_dates(dates, location_url_json);
+    init_dates(location_url_json);
 }
 </script>
 </head>
