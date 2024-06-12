@@ -349,6 +349,7 @@ function init_dates(location_url_json, map) {
             const x = [state.clickTimeStart / 1000.0, dataX / 1000.0]
             x.sort()
             const [f, t] = x;
+            console.log(f, t);
             const u = {...state.location_url_json, tsfrom: f, tsto: t};
             fetch_gallery(u, 0, null);
             update_dates(chart, u);
