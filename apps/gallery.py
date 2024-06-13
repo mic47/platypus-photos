@@ -277,7 +277,7 @@ async def index_page(
     dateto: str = "",
     tsfrom: t.Optional[float] = None,
     tsto: t.Optional[float] = None,
-    dir_: str = Query("", alias="dir"),
+    directory: str = "",
     oi: t.Optional[int] = None,
 ) -> HTMLResponse:
     url = UrlParameters(
@@ -288,7 +288,7 @@ async def index_page(
         datetime.strptime(dateto, "%Y-%m-%d") if dateto else None,
         page,
         paging,
-        dir_,
+        directory,
         tsfrom,
         tsto,
     )
@@ -299,7 +299,7 @@ async def index_page(
     del paging
     del datefrom
     del dateto
-    del dir_
+    del directory
     del tsfrom
     del tsto
     aggr = DB.get().get_aggregate_stats(url)
@@ -327,7 +327,7 @@ async def index_page(
                 "addr": url.addr,
                 "datefrom": maybe_datetime_to_date(url.datefrom) or "",
                 "dateto": maybe_datetime_to_date(url.dateto) or "",
-                "dir": url.directory,
+                "directory": url.directory,
             },
         },
     )
