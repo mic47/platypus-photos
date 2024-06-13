@@ -32,10 +32,10 @@ div.gallery_item:hover {
   max-height: 90%;
   height: 90%;
 }
-.gallery_item_nav{
+.gallery_item_fs{
   display: none;
 }
-.overlay .gallery_item_nav {
+.overlay .gallery_item_fs {
   display: block;
 }
 .gallery_image {
@@ -112,4 +112,15 @@ div.gallery_item:hover {
 .date_chart {
   height: 20em;
   width: 100%;
+}
+
+.overflow {
+  overflow:auto;
+  background-color: white;
+}
+.raw {
+  background-color: #FF000033;
+  border-radius: 1em;
+  padding: 0.1em;
+  margin: 0.2em;
 }

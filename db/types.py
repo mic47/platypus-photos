@@ -3,6 +3,8 @@ from datetime import datetime
 import enum
 import typing as t
 
+from dataclasses_json import DataClassJsonMixin
+
 from data_model.features import ImageExif, GeoAddress, ImageClassification
 
 T = t.TypeVar("T")
@@ -83,7 +85,7 @@ class ImageAggregation:
 
 
 @dataclass
-class Image:
+class Image(DataClassJsonMixin):
     md5: str
     date: t.Optional[datetime]
     tags: t.Optional[t.Dict[str, float]]

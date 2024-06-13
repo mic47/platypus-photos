@@ -9,7 +9,7 @@
   <div class="gallery_item">
   {% endif %}
     <span id="i{{loop.index0}}"></span>
-    <div class="gallery_item_nav">
+    <div class="gallery_item_fs">
         {% if loop.index0 == 0 %}
         {% if urls.prev_overlay %}<a href="{{urls.prev_overlay}}">prev</a>{% else %} prev {% endif %}
         {% else %}
@@ -38,6 +38,11 @@
     {% endif %}
     {% for path in image.paths %}
     <span class="dir"><a href="{{path.dir_url}}">{{path.dir}}</a></span>
+    <div class="gallery_item_fs overflow">
+    {% for raw in image.raw_data %}
+      <span class="raw">{{ raw.k }}: {{raw.v}}</span>
+    {% endfor %}
+    </div>
     {% endfor %}
   </div>
 {% endfor %}

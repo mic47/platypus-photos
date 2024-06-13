@@ -217,6 +217,10 @@ async def gallery_div(request: Request, url: UrlParameters, oi: t.Optional[int] 
                     "url": url.to_url(datefrom=omg.date, dateto=omg.date),
                 },
                 "timestamp": maybe_datetime_to_timestamp(omg.date) or 0.0,
+                "raw_data": [
+                    {"k": k, "v": json.dumps(v, ensure_ascii=True)}
+                    for k, v in omg.to_dict(encode_json=True).items()
+                ],
             }
         )
 
