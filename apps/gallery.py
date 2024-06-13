@@ -21,7 +21,7 @@ from db import PhotosConnection, GalleryConnection
 from utils import assert_never, Lazy
 
 from gallery.db import ImageSqlDB
-from gallery.url import UrlParameters
+from gallery.url import SearchQuery
 from gallery.utils import maybe_datetime_to_date, maybe_datetime_to_timestamp
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
@@ -120,7 +120,7 @@ def image_endpoint(hsh: t.Union[int, str], size: ImageSize = ImageSize.ORIGINAL)
 class LocClusterParams:
     tl: LocPoint
     br: LocPoint
-    url: UrlParameters
+    url: SearchQuery
     res: LocPoint
     of: float = 0.5
 
@@ -140,7 +140,7 @@ def location_clusters_endpoint(params: LocClusterParams) -> t.List[LocationClust
 
 @dataclass
 class DateClusterParams:
-    url: UrlParameters
+    url: SearchQuery
     buckets: int
 
 
@@ -154,7 +154,7 @@ def date_clusters_endpoint(params: DateClusterParams) -> t.List[DateCluster]:
 
 
 @app.post("/internal/directories.html", response_class=HTMLResponse)
-def directories_endpoint(request: Request, url: UrlParameters) -> HTMLResponse:
+def directories_endpoint(request: Request, url: SearchQuery) -> HTMLResponse:
     directories = sorted(DB.get().get_matching_directories(url), key=lambda x: x.directory)
     dirs = []
     for directory in directories:
@@ -179,7 +179,7 @@ def directories_endpoint(request: Request, url: UrlParameters) -> HTMLResponse:
 
 
 @app.post("/internal/gallery.html", response_class=HTMLResponse)
-async def gallery_div(request: Request, url: UrlParameters, oi: t.Optional[int] = None) -> HTMLResponse:
+async def gallery_div(request: Request, url: SearchQuery, oi: t.Optional[int] = None) -> HTMLResponse:
     images = []
     omgs, has_next_page = DB.get().get_matching_images(url)
     for omg in omgs:
@@ -245,7 +245,7 @@ async def gallery_div(request: Request, url: UrlParameters, oi: t.Optional[int] 
 
 
 @app.post("/internal/aggregate.html", response_class=HTMLResponse)
-def aggregate_endpoint(request: Request, url: UrlParameters) -> HTMLResponse:
+def aggregate_endpoint(request: Request, url: SearchQuery) -> HTMLResponse:
     aggr = DB.get().get_aggregate_stats(url)
     top_tags = sorted(aggr.tag.items(), key=lambda x: -x[1])
     top_cls = sorted(aggr.classification.items(), key=lambda x: -x[1])
@@ -280,7 +280,7 @@ async def index_page(
     directory: str = "",
     oi: t.Optional[int] = None,
 ) -> HTMLResponse:
-    url = UrlParameters(
+    url = SearchQuery(
         tag,
         cls,
         addr,
@@ -318,7 +318,7 @@ async def index_page(
         context={
             "oi": oi,
             "bounds": bounds,
-            "url_parameters_fields": json.dumps([x.name for x in fields(UrlParameters)]),
+            "url_parameters_fields": json.dumps([x.name for x in fields(SearchQuery)]),
             "input": {
                 "page": url.page,
                 "tag": url.tag,

@@ -15,7 +15,7 @@ from gallery.utils import (
 
 # TODO: extract this type into query payload
 from gallery.url import (
-    UrlParameters,
+    SearchQuery,
 )
 from db.connection import GalleryConnection
 from db.directories_table import DirectoriesTable
@@ -140,7 +140,7 @@ WHERE
     def _matching_query(
         self,
         select: str,
-        url: UrlParameters,
+        url: SearchQuery,
         extra_clauses: t.Optional[t.List[t.Tuple[str, t.List[t.Union[str, int, float, None]]]]] = None,
     ) -> t.Tuple[
         "str",
@@ -206,7 +206,7 @@ WHERE
             variables,
         )
 
-    def get_date_clusters(self, url: UrlParameters, buckets: int) -> t.List[DateCluster]:
+    def get_date_clusters(self, url: SearchQuery, buckets: int) -> t.List[DateCluster]:
         minmax_select = self._matching_query("timestamp", url)
         minmax = self._con.execute(
             f"""
@@ -262,7 +262,7 @@ FROM (
 
     def get_image_clusters(
         self,
-        url: UrlParameters,
+        url: SearchQuery,
         top_left: LocPoint,
         bottom_right: LocPoint,
         latitude_resolution: float,
@@ -343,7 +343,7 @@ GROUP BY
 
     def get_aggregate_stats(
         self,
-        url: UrlParameters,
+        url: SearchQuery,
         _extra_query_for_tests: str = "",
     ) -> ImageAggregation:
         # do aggregate query
@@ -441,7 +441,7 @@ SELECT "alt", 'min', MIN(altitude) FROM matched_images WHERE altitude IS NOT NUL
 
     def get_matching_images(
         self,
-        url: UrlParameters,
+        url: SearchQuery,
     ) -> t.Tuple[t.List[Image], bool]:
         # TODO: aggregations could be done separately
         actual_paging = url.paging + 1
@@ -506,7 +506,7 @@ SELECT "alt", 'min', MIN(altitude) FROM matched_images WHERE altitude IS NOT NUL
             )
         return output, has_extra_data
 
-    def get_matching_directories(self, url: UrlParameters) -> t.List[DirectoryStats]:
+    def get_matching_directories(self, url: SearchQuery) -> t.List[DirectoryStats]:
         (match_query, match_params) = self._matching_query("md5, address_full, timestamp", url)
         ret = self._con.execute(
             f"""

@@ -7,7 +7,7 @@ from db.directories_table import DirectoriesTable
 from db.gallery_index_table import GalleryIndexTable, WrongAggregateTypeReturned
 from db.types import Image, ImageAggregation, LocPoint, LocationCluster
 from gallery.url import (
-    UrlParameters,
+    SearchQuery,
 )
 
 
@@ -62,22 +62,22 @@ class TestGalleryIndexTable(unittest.TestCase):
             "M1", caption="WAAAT", dependent_features_last_update=100, version=old_version
         )
         table.add(old_omg)
-        res = table.get_matching_images(UrlParameters())[0]
+        res = table.get_matching_images(SearchQuery())[0]
         self.assertEqual(len(res), 1)
         self.assertEqual(old_omg, res[0])
 
         table.add(new_omg)
-        res = table.get_matching_images(UrlParameters())[0]
+        res = table.get_matching_images(SearchQuery())[0]
         self.assertEqual(len(res), 1)
         self.assertEqual(new_omg, res[0])
 
         table.add(changed_omg)
-        res = table.get_matching_images(UrlParameters())[0]
+        res = table.get_matching_images(SearchQuery())[0]
         self.assertEqual(len(res), 1)
         self.assertEqual(new_omg, res[0])
 
         table.add(changed_old_omg)
-        res = table.get_matching_images(UrlParameters())[0]
+        res = table.get_matching_images(SearchQuery())[0]
         self.assertEqual(len(res), 1)
         self.assertEqual(new_omg, res[0])
 
@@ -97,7 +97,7 @@ class TestGalleryIndexTable(unittest.TestCase):
         table.add(_image("M2", tags={"lol": 10.0}, caption="This is ridiculous"))
         table.add(_image("M3", address="Jaskd, Foudlekf", lat=12.0, lon=-18.0, alt=None))
         table.add(_image("M4", lon=34.0))
-        stats = table.get_aggregate_stats(UrlParameters())
+        stats = table.get_aggregate_stats(SearchQuery())
         expected = ImageAggregation(
             4,
             {"Bristol": 3, "Portlandia": 3, "Foudlekf": 1, "Jaskd": 1},
@@ -108,7 +108,7 @@ class TestGalleryIndexTable(unittest.TestCase):
             (13.0, 127.47),
         )
         self.assertEqual(stats, expected)
-        stats = table.get_aggregate_stats(UrlParameters(tag="missing"))
+        stats = table.get_aggregate_stats(SearchQuery(tag="missing"))
         self.assertEqual(stats, ImageAggregation(0, {}, {}, {}, None, None, None))
 
     def test_get_image_clusters(self) -> None:
@@ -118,9 +118,7 @@ class TestGalleryIndexTable(unittest.TestCase):
         table.add(_image("M3", address="Jaskd, Foudlekf", lat=12.0, lon=-18.0, alt=None))
         table.add(_image("M4", lon=34.0))
         clusters = sorted(
-            table.get_image_clusters(
-                UrlParameters(), LocPoint(1000, -1000), LocPoint(-1000, 30), 10, 10, 0.0
-            ),
+            table.get_image_clusters(SearchQuery(), LocPoint(1000, -1000), LocPoint(-1000, 30), 10, 10, 0.0),
             key=lambda x: x.example_path_md5,
         )
         self.assertListEqual(
@@ -150,9 +148,7 @@ class TestGalleryIndexTable(unittest.TestCase):
         )
         # Try overfetch
         clusters = sorted(
-            table.get_image_clusters(
-                UrlParameters(), LocPoint(1000, -1000), LocPoint(-1000, 30), 10, 10, 0.5
-            ),
+            table.get_image_clusters(SearchQuery(), LocPoint(1000, -1000), LocPoint(-1000, 30), 10, 10, 0.5),
             key=lambda x: x.example_path_md5,
         )
         self.assertListEqual(
@@ -195,64 +191,64 @@ class TestGalleryIndexTable(unittest.TestCase):
         table.add(i2)
         table.add(i3)
         table.add(i4)
-        ret = table.get_matching_images(UrlParameters(addr="Foud"))[0]
+        ret = table.get_matching_images(SearchQuery(addr="Foud"))[0]
         self.assertListEqual(ret, [i3])
-        ret = table.get_matching_images(UrlParameters(addr="Foud", cls="fishy"))[0]
+        ret = table.get_matching_images(SearchQuery(addr="Foud", cls="fishy"))[0]
         self.assertListEqual(ret, [i3])
-        ret = sorted(table.get_matching_images(UrlParameters(cls="fishy"))[0], key=lambda x: x.md5)
+        ret = sorted(table.get_matching_images(SearchQuery(cls="fishy"))[0], key=lambda x: x.md5)
         self.assertListEqual(ret, [i3, i4])
         ret = sorted(
-            table.get_matching_images(UrlParameters(cls="fishy"))[0],
+            table.get_matching_images(SearchQuery(cls="fishy"))[0],
             key=lambda x: x.md5,
         )
         self.assertListEqual(ret, [i3, i4])
         ret = sorted(
-            table.get_matching_images(UrlParameters(datefrom=datetime(2022, 1, 1)))[0],
+            table.get_matching_images(SearchQuery(datefrom=datetime(2022, 1, 1)))[0],
             key=lambda x: x.md5,
         )
         self.assertListEqual(ret, [i1, i2, i3])
         ret = sorted(
-            table.get_matching_images(UrlParameters(datefrom=datetime(2024, 1, 1)))[0],
+            table.get_matching_images(SearchQuery(datefrom=datetime(2024, 1, 1)))[0],
             key=lambda x: x.md5,
         )
         self.assertListEqual(ret, [i2, i3])
         ret = sorted(
-            table.get_matching_images(UrlParameters(dateto=datetime(2024, 1, 1)))[0],
+            table.get_matching_images(SearchQuery(dateto=datetime(2024, 1, 1)))[0],
             key=lambda x: x.md5,
         )
         self.assertListEqual(ret, [i1])
         ret = sorted(
-            table.get_matching_images(UrlParameters(dateto=datetime(2024, 1, 2)))[0],
+            table.get_matching_images(SearchQuery(dateto=datetime(2024, 1, 2)))[0],
             key=lambda x: x.md5,
         )
         self.assertListEqual(ret, [i1, i2, i3])
         ret = sorted(
             table.get_matching_images(
-                UrlParameters(datefrom=datetime(2024, 1, 1), dateto=datetime(2024, 1, 2))
+                SearchQuery(datefrom=datetime(2024, 1, 1), dateto=datetime(2024, 1, 2))
             )[0],
             key=lambda x: x.md5,
         )
         self.assertListEqual(ret, [i2, i3])
         ret = sorted(
             table.get_matching_images(
-                UrlParameters(datefrom=datetime(2023, 1, 1), dateto=datetime(2024, 1, 2))
+                SearchQuery(datefrom=datetime(2023, 1, 1), dateto=datetime(2024, 1, 2))
             )[0],
             key=lambda x: x.md5,
         )
         self.assertListEqual(ret, [i1, i2, i3])
-        ret = table.get_matching_images(UrlParameters(directory="/foo/bar"))[0]
+        ret = table.get_matching_images(SearchQuery(directory="/foo/bar"))[0]
         self.assertListEqual(ret, [])
         directories.add("/foo/bar", "M1")
         directories.add("/foo/lol", "M1")
         directories.add("/foo/lol", "M3")
         directories.add("/foo/bar", "M2")
-        ret = sorted(table.get_matching_images(UrlParameters(directory="/foo/bar"))[0], key=lambda x: x.md5)
+        ret = sorted(table.get_matching_images(SearchQuery(directory="/foo/bar"))[0], key=lambda x: x.md5)
         self.assertListEqual(ret, [i1, i2])
-        ret = sorted(table.get_matching_images(UrlParameters(directory="/foo/lol"))[0], key=lambda x: x.md5)
+        ret = sorted(table.get_matching_images(SearchQuery(directory="/foo/lol"))[0], key=lambda x: x.md5)
         self.assertListEqual(ret, [i1, i3])
-        ret = sorted(table.get_matching_images(UrlParameters(directory="/foo"))[0], key=lambda x: x.md5)
+        ret = sorted(table.get_matching_images(SearchQuery(directory="/foo"))[0], key=lambda x: x.md5)
         self.assertListEqual(ret, [i1, i2, i3])
-        ret = sorted(table.get_matching_images(UrlParameters(directory="/wat"))[0], key=lambda x: x.md5)
+        ret = sorted(table.get_matching_images(SearchQuery(directory="/wat"))[0], key=lambda x: x.md5)
         self.assertListEqual(ret, [])
 
     def test_errors_aggregate_states(self) -> None:
@@ -260,14 +256,14 @@ class TestGalleryIndexTable(unittest.TestCase):
         self.assertRaises(
             WrongAggregateTypeReturned,
             lambda: table.get_aggregate_stats(
-                UrlParameters(),
+                SearchQuery(),
                 _extra_query_for_tests="UNION ALL SELECT 'what', null, COUNT(1) FROM matched_images",
             ),
         )
         self.assertRaises(
             WrongAggregateTypeReturned,
             lambda: table.get_aggregate_stats(
-                UrlParameters(),
+                SearchQuery(),
                 _extra_query_for_tests="UNION ALL SELECT 'lat', 'wut', COUNT(1) FROM matched_images",
             ),
         )

@@ -6,7 +6,7 @@ from gallery.utils import maybe_datetime_to_date
 
 
 @dataclass
-class UrlParameters:
+class SearchQuery:
     tag: str = ""
     cls: str = ""
     addr: str = ""

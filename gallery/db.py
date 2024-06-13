@@ -26,7 +26,7 @@ from db.types import (
     DateCluster,
     DirectoryStats,
 )
-from gallery.url import UrlParameters
+from gallery.url import SearchQuery
 
 Ser = t.TypeVar("Ser", bound=DataClassJsonMixin)
 
@@ -168,18 +168,18 @@ class ImageSqlDB:
         self._md5_to_image[hsh] = path.file
         return path.file
 
-    def get_aggregate_stats(self, url: "UrlParameters") -> ImageAggregation:
+    def get_aggregate_stats(self, url: "SearchQuery") -> ImageAggregation:
         return self._gallery_index.get_aggregate_stats(url)
 
-    def get_date_clusters(self, url: UrlParameters, buckets: int) -> t.List[DateCluster]:
+    def get_date_clusters(self, url: SearchQuery, buckets: int) -> t.List[DateCluster]:
         return self._gallery_index.get_date_clusters(url, buckets)
 
-    def get_matching_directories(self, url: UrlParameters) -> t.List[DirectoryStats]:
+    def get_matching_directories(self, url: SearchQuery) -> t.List[DirectoryStats]:
         return self._gallery_index.get_matching_directories(url)
 
     def get_image_clusters(
         self,
-        url: UrlParameters,
+        url: SearchQuery,
         top_left: LocPoint,
         bottom_right: LocPoint,
         latitude_resolution: float,
@@ -190,5 +190,5 @@ class ImageSqlDB:
             url, top_left, bottom_right, latitude_resolution, longitude_resolution, over_fetch
         )
 
-    def get_matching_images(self, url: UrlParameters) -> t.Tuple[t.List[Image], bool]:
+    def get_matching_images(self, url: SearchQuery) -> t.Tuple[t.List[Image], bool]:
         return self._gallery_index.get_matching_images(url)
