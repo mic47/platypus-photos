@@ -264,7 +264,8 @@ class Directories {
 }
 
 class Gallery {
-  constructor(page, oi) {
+  constructor(div_id, page, oi) {
+    this._div_id = div_id;
     this._page = page;
     this._oi = oi;
   }
@@ -288,7 +289,7 @@ class Gallery {
     })
       .then((response) => response.text())
       .then((text) => {
-        const gallery = document.getElementById("GalleryImages");
+        const gallery = document.getElementById(this._div_id);
         gallery.innerHTML = text;
         const prev = gallery.getElementsByClassName("prev-url");
         for (var i = 0; i < prev.length; i++) {

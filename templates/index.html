@@ -22,19 +22,22 @@ function update_dir(data) {
 }
 
 function init_fun() {
-    bounds = {% if bounds %}[[{{bounds.lat[0]}}, {{bounds.lon[0]}}],[{{bounds.lat[1]}}, {{bounds.lon[1]}}]]{% else %}null{% endif %};
-    url_json = {{url_json | safe}};
-
     if (___state !== null) {
       throw new Error('State is already initialized!');
     }
-    ___state = new AppState({})
 
-    const gallery = new Gallery({{ input.page }}, {% if oi %}{{oi}}{% else %}null{% endif %});
+    // Set parameters
+    bounds = {% if bounds %}[[{{bounds.lat[0]}}, {{bounds.lon[0]}}],[{{bounds.lat[1]}}, {{bounds.lon[1]}}]]{% else %}null{% endif %};
+    url_json = {{url_json | safe}};
+    page = {{ input.page }};
+    oi = {% if oi %}{{oi}}{% else %}null{% endif %};
+
+    // Initialize all components
+    ___state = new AppState({})
+    const gallery = new Gallery("GalleryImages", page, oi);
     const map = new PhotoMap("map", bounds, () => ___state.get_url());
     const dates = new Dates("DateChart", (x) => {___state.update_url(x);});
     const directories = new Directories("Directories");
-
     ___state.register_hook((url_params) => {
         gallery.update_page(0, null);
         gallery.fetch(url_params);
@@ -46,6 +49,7 @@ function init_fun() {
         map.update_markers(url_params, true);
     })
 
+    // Set initial url, redraw everything
     ___state.replace_url(url_json);
 }
 </script>
