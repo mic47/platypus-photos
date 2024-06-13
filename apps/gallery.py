@@ -226,7 +226,6 @@ async def gallery_div(request: Request, url: UrlParameters, oi: t.Optional[int] 
         context={
             "oi": oi,
             "images": images,
-            "location_url_json": json.dumps(url.to_filtered_dict(["addr", "page", "paging"])),
             "urls": {
                 "next": url.next_url(has_next_page),
                 "next_overlay": url.next_url(has_next_page, overlay=True),
@@ -294,7 +293,6 @@ async def index_page(
             "oi": oi,
             "bounds": bounds,
             "total": aggr.total,
-            "location_url_json": json.dumps(url.to_filtered_dict(["addr", "page", "paging"])),
             "url_json": json.dumps(url.to_filtered_dict([])),
             "input": {
                 "page": url.page,

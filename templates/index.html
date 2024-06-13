@@ -16,16 +16,37 @@ Gallery
 
 <script src="js/main.js"></script> 
 <script>
+var ___state = null;
+function update_dir(data) {
+  ___state.update_url({"directory": data});
+}
+
 function init_fun() {
-    const state = init_state();
     bounds = {% if bounds %}[[{{bounds.lat[0]}}, {{bounds.lon[0]}}],[{{bounds.lat[1]}}, {{bounds.lon[1]}}]]{% else %}null{% endif %};
-    location_url_json = {{location_url_json | safe}};
     url_json = {{url_json | safe}};
-    fetch_gallery(url_json, {{ input.page }}, {% if oi %}{{oi}}{% else %}null{% endif %});
-    fetch_directories(url_json);
-    map = new PhotoMap("map", bounds, location_url_json);
-    // TODO: dates should be dynamic
-    init_dates(location_url_json, map);
+
+    if (___state !== null) {
+      throw new Error('State is already initialized!');
+    }
+    ___state = new AppState({})
+
+    const gallery = new Gallery({{ input.page }}, {% if oi %}{{oi}}{% else %}null{% endif %});
+    const map = new PhotoMap("map", bounds, () => ___state.get_url());
+    const dates = new Dates("DateChart", (x) => {___state.update_url(x);});
+    const directories = new Directories("Directories");
+
+    ___state.register_hook((url_params) => {
+        gallery.update_page(0, null);
+        gallery.fetch(url_params);
+
+        dates.fetch(url_params);
+
+        directories.fetch_directories(url_params);
+
+        map.update_markers(url_params, true);
+    })
+
+    ___state.replace_url(url_json);
 }
 </script>
 </head>

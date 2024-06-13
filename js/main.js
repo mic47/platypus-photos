@@ -1,16 +1,22 @@
 class AppState {
   constructor(url_params) {
     this._url_params = url_params;
-    this._url_params_hooks= [];
+    this._url_params_hooks = [];
+  }
+
+  get_url() {
+    return { ...this._url_params };
   }
 
   update_url(new_parts) {
-    this._url_params = {...this.url_params, ...new_parts};
+    // TODO: do this only on change
+    this._url_params = { ...this.url_params, ...new_parts };
     const url = this._url_params;
-    this._url_params_hooks((x) => x(url));
+    this._url_params_hooks.forEach((x) => x(url));
   }
 
   replace_url(new_url) {
+    // TODO: do this only on change
     this._url_params = {};
     this.update_url(new_url);
   }
@@ -18,15 +24,6 @@ class AppState {
   register_hook(hook) {
     this._url_params_hooks.push(hook);
   }
-}
-
-let _state = null;
-function init_state(url_params) {
-  if (_state !== null) {
-    throw new Error('State is already initialized!');
-  }
-  _state = new AppState(url_params);
-  return _state
 }
 
 function changeState(index) {
@@ -128,13 +125,14 @@ function update_boundary(nw, se) {
 }
 
 class PhotoMap {
-  constructor (div_id, bounds, location_url_json) {
+  constructor(div_id, bounds, get_url) {
     this.map = L.map("map").setView([51.505, -0.09], 13);
     this.markers = {};
     this.last_update_timestamp = 0;
-    this.location_url_json = location_url_json;
     const that = this;
-    const update_markers = (e) => {that.update_markers(false)};
+    const update_markers = (e) => {
+      that.update_markers(get_url(), false);
+    };
     this.map.on("load", update_markers);
     this.map.on("zoomend", update_markers);
     this.map.on("moveend", update_markers);
@@ -152,11 +150,7 @@ class PhotoMap {
     }
   }
 
-  update_url(update) {
-    this.location_url_json = {...this.location_url_json, ...update};
-  }
-
-  update_markers(change_view=false) {
+  update_markers(location_url_json, change_view = false) {
     // TODO: wrapped maps: shift from 0 + wrap around
 
     var bounds = this.map.getBounds();
@@ -182,7 +176,11 @@ class PhotoMap {
           longitude: sz.x / cluster_pixel_size,
         },
         of: 0.5,
-        url: this.location_url_json,
+        url: Object.fromEntries(
+          Object.entries(location_url_json).filter(
+            (x) => x[0] !== "page" && x[0] !== "paging"
+          )
+        ),
       }),
       headers: {
         "Content-type": "application/json; charset=UTF-8",
@@ -196,7 +194,10 @@ class PhotoMap {
         if (change_view && clusters.length > 0) {
           const lats = clusters.map((x) => x.position.latitude);
           const longs = clusters.map((x) => x.position.longitude);
-          var bounds = [[Math.max(...lats), Math.max(...longs)], [Math.min(...lats), Math.min(...longs)]];
+          var bounds = [
+            [Math.max(...lats), Math.max(...longs)],
+            [Math.min(...lats), Math.min(...longs)],
+          ];
           this.map.fitBounds(bounds);
           bounds = this.map.getBounds();
           var nw = bounds.getNorthWest();
@@ -235,154 +236,160 @@ class PhotoMap {
         }
         Object.values(this.markers).forEach((m) => m.remove());
         Object.keys(this.markers).forEach((m) => delete this.markers[m]);
-        Object.entries(new_markers).forEach(
-          (m) => (this.markers[m[0]] = m[1])
-        );
+        Object.entries(new_markers).forEach((m) => (this.markers[m[0]] = m[1]));
       });
   }
 }
 
-function fetch_directories(url_data) {
-  const url = `/internal/directories.html`;
-  fetch(url, {
-    method: "POST",
-    body: JSON.stringify(url_data),
-    headers: {
-      "Content-type": "application/json; charset=UTF-8",
-    },
-  })
-    .then((response) => response.text())
-    .then((text) => {
-      const gallery = document.getElementById("Directories");
-      gallery.innerHTML = text;
+class Directories {
+  constructor(div_id) {
+    this._div_id = div_id;
+  }
+
+  fetch_directories(url_data) {
+    const url = `/internal/directories.html`;
+    fetch(url, {
+      method: "POST",
+      body: JSON.stringify(url_data),
+      headers: {
+        "Content-type": "application/json; charset=UTF-8",
+      },
     })
-}
-function update_dir(data) {
-  url = {"directory": data};
-  fetch_directories(url);
-  fetch_gallery(url, 0, null);
-}
-
-function fetch_gallery(url_data, page, oi) {
-  var url = `/internal/gallery.html?oi=${oi}`;
-  if (oi === undefined || oi === null) {
-    url = `/internal/gallery.html`;
-  }
-  fetch(url, {
-    method: "POST",
-    body: JSON.stringify(url_data),
-    headers: {
-      "Content-type": "application/json; charset=UTF-8",
-    },
-  })
-    .then((response) => response.text())
-    .then((text) => {
-      const gallery = document.getElementById("GalleryImages");
-      gallery.innerHTML = text;
-      const prev = gallery.getElementsByClassName("prev-url");
-      for (var i = 0; i < prev.length; i++) {
-        p = prev[i];
-        p.onclick=(e) => {
-          const u = {...url_data, page: page - 1};
-          fetch_gallery(u, page - 1, null); // TODO: fix oi parameter
-        };
-      }
-      const next = gallery.getElementsByClassName("next-url");
-      for (var i = 0; i < next.length; i++) {
-        p = next[i];
-        p.onclick=(e) => {
-          const u = {...url_data, page: page + 1};
-          fetch_gallery(u, page + 1, null); // TODO: fix oi parameter
-        };
-      }
-    });
-}
-
-function update_dates(chart, location_url_json) {
-  fetch("/api/date_clusters", {
-    method: "POST",
-    body: JSON.stringify({
-      url: location_url_json,
-      buckets: 100,
-    }),
-    headers: {
-      "Content-type": "application/json; charset=UTF-8",
-    },
-  })
-    .then((response) => response.json())
-    .then((clusters) => {
-      dates = clusters.map((c) => {
-        return { x: c.avg_timestamp * 1000, y: c.total };
+      .then((response) => response.text())
+      .then((text) => {
+        const gallery = document.getElementById(this._div_id);
+        gallery.innerHTML = text;
       });
-      chart.data.datasets[0].data = dates;
-      chart.update();
-    });
+  }
 }
-function init_dates(location_url_json, map) {
-  var state = {
-    clickTimeStart: null,
-    location_url_json: location_url_json,
-  };
-  const ctx = document.getElementById("DateChart");
-  const chart = new Chart(ctx, {
-    type: "line",
-    data: {
-      datasets: [
-        {
-          label: "# of Images",
-          data: [],
-          borderWidth: 1,
-          showLine: false,
-        },
-      ],
-    },
-    options: {
-      events: ["mousedown", "mouseup"],
-      parsing: false,
-      scales: {
-        y: {
-          beginAtZero: true,
-        },
-        x: {
-          type: "time",
-          time: {
-            displayFormats: {
-              quarter: "MMM YYYY",
+
+class Gallery {
+  constructor(page, oi) {
+    this._page = page;
+    this._oi = oi;
+  }
+
+  update_page(page, oi) {
+    this._page = page;
+    this._oi = oi;
+  }
+
+  fetch(url_data) {
+    var url = `/internal/gallery.html?oi=${this._oi}`;
+    if (this._oi === undefined || this._oi === null) {
+      url = `/internal/gallery.html`;
+    }
+    fetch(url, {
+      method: "POST",
+      body: JSON.stringify(url_data),
+      headers: {
+        "Content-type": "application/json; charset=UTF-8",
+      },
+    })
+      .then((response) => response.text())
+      .then((text) => {
+        const gallery = document.getElementById("GalleryImages");
+        gallery.innerHTML = text;
+        const prev = gallery.getElementsByClassName("prev-url");
+        for (var i = 0; i < prev.length; i++) {
+          const p = prev[i];
+          p.onclick = (e) => {
+            const u = { ...url_data, page: this._page - 1 };
+            this.update_page(this._page - 1, null);
+            this.fetch(u); // TODO: fix oi parameter
+          };
+        }
+        const next = gallery.getElementsByClassName("next-url");
+        for (var i = 0; i < next.length; i++) {
+          const p = next[i];
+          p.onclick = (e) => {
+            const u = { ...url_data, page: this._page + 1 };
+            this.update_page(this._page + 1, null);
+            this.fetch(u); // TODO: fix oi parameter
+          };
+        }
+      });
+  }
+}
+
+class Dates {
+  constructor(div_id, update_url) {
+    this._clickTimeStart = null;
+    const ctx = document.getElementById(div_id);
+    this._chart = new Chart(ctx, {
+      type: "line",
+      data: {
+        datasets: [
+          {
+            label: "# of Images",
+            data: [],
+            borderWidth: 1,
+            showLine: false,
+          },
+        ],
+      },
+      options: {
+        events: ["mousedown", "mouseup"],
+        parsing: false,
+        scales: {
+          y: {
+            beginAtZero: true,
+          },
+          x: {
+            type: "time",
+            time: {
+              displayFormats: {
+                quarter: "MMM YYYY",
+              },
             },
           },
         },
       },
-    },
-    plugins: [
-      {
-        id: "Events",
-        beforeEvent(chart, args, pluginOptions) {
-          const event = args.event;
-          const canvasPosition = Chart.helpers.getRelativePosition(
-            event,
-            chart
-          );
-          const dataX = chart.scales.x.getValueForPixel(canvasPosition.x);
-          const dataY = chart.scales.y.getValueForPixel(canvasPosition.y);
-          console.log(event.type, dataX, dataY, state);
-          if (event.type === "mousedown") {
-            state.clickTimeStart = dataX;
-          } else if (event.type === "mouseup") {
-            const x = [state.clickTimeStart / 1000.0, dataX / 1000.0]
-            x.sort()
-            const [f, t] = x;
-            console.log(f, t);
-            const u = {...state.location_url_json, tsfrom: f, tsto: t};
-            fetch_gallery(u, 0, null);
-            update_dates(chart, u);
-            fetch_directories(u);
-            map.update_url({tsfrom: f, tsto: t});
-            map.update_markers(true);
-          }
+      plugins: [
+        {
+          id: "Events",
+          beforeEvent(chart, args, pluginOptions) {
+            const event = args.event;
+            const canvasPosition = Chart.helpers.getRelativePosition(
+              event,
+              chart
+            );
+            const dataX = chart.scales.x.getValueForPixel(canvasPosition.x);
+            const dataY = chart.scales.y.getValueForPixel(canvasPosition.y);
+            console.log(event.type, dataX, dataY, this._clickTimeStart);
+            if (event.type === "mousedown") {
+              this._clickTimeStart = dataX;
+            } else if (event.type === "mouseup") {
+              const x = [this._clickTimeStart / 1000.0, dataX / 1000.0];
+              x.sort();
+              const [f, t] = x;
+              console.log(f, t);
+              update_url({ tsfrom: f, tsto: t });
+            }
+          },
         },
+      ],
+    });
+  }
+
+  fetch(location_url_json) {
+    fetch("/api/date_clusters", {
+      method: "POST",
+      body: JSON.stringify({
+        url: location_url_json,
+        buckets: 100,
+      }),
+      headers: {
+        "Content-type": "application/json; charset=UTF-8",
       },
-    ],
-  });
-  update_dates(chart, location_url_json);
-  return chart
+    })
+      .then((response) => response.json())
+      .then((clusters) => {
+        const dates = clusters.map((c) => {
+          return { x: c.avg_timestamp * 1000, y: c.total };
+        });
+        this._chart.data.datasets[0].data = dates;
+        this._chart.update();
+      });
+  }
 }
