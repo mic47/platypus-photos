@@ -33,8 +33,8 @@
     {% for address in image.addrs %}
     <span class="location"><a onclick='update_url({"addr": "{{address}}"})' href="#">{{ address }}</a></span>
     {% endfor %}
-    {% if image.date.date %}
-    <span class="date"><a href="{{image.date.url}}">{{image.date.date}}</a></span>
+    {% if image.date %}
+    <span class="date"><a onclick='update_url({"datefrom": "{{image.date}}", "dateto": "{{image.date}}"})' href="#">{{image.date}}</a></span>
     {% endif %}
     {% for path in image.paths %}
     <span class="dir"><a onclick='update_dir("{{path.dir}}")' href="#">{{path.dir}}</a></span>
