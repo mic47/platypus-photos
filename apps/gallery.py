@@ -203,7 +203,7 @@ async def gallery_div(request: Request, url: SearchQuery, oi: t.Optional[int] = 
                 "loc": loc,
                 "classifications": omg.classifications or "",
                 "tags": [
-                    (tg, classify_tag(x / max_tag), url.to_url(add_tag=tg))
+                    (tg, classify_tag(x / max_tag))
                     for tg, x in sorted((omg.tags or {}).items(), key=lambda x: -x[1])
                 ],
                 "addrs": [a for a in [omg.address_name, omg.address_country] if a],
@@ -248,9 +248,9 @@ def aggregate_endpoint(request: Request, url: SearchQuery) -> HTMLResponse:
         context={
             "total": aggr.total,
             "top": {
-                "tag": [(tg, s, url.to_url(add_tag=tg)) for tg, s in top_tags[:15]],
-                "cls": [(cl, s) for cl, s in top_cls[:5]],
-                "addr": [(ad, s) for ad, s in top_addr[:15]],
+                "tag": top_tags[:15],
+                "cls": top_cls[:5],
+                "addr": top_addr[:15],
             },
         },
     )

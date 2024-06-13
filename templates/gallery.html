@@ -27,17 +27,17 @@
     </div>
     {{ image.classifications}} <br/>
     {% for tag in image.tags %}
-    <span class="tag"><a href="{{tag[2]}}">{{tag[1]}}{{tag[0]}}</a></span>
+    <span class="tag"><a onclick='update_url_add_tag("{{tag[0]|safe}}")' href="#">{{tag[1]}}{{tag[0]}}</a></span>
     {% endfor %}
 
     {% for address in image.addrs %}
-    <span class="location"><a onclick='update_url({"addr": "{{address}}"})' href="#">{{ address }}</a></span>
+    <span class="location"><a onclick='update_url({"addr": "{{address|safe}}"})' href="#">{{ address }}</a></span>
     {% endfor %}
     {% if image.date %}
     <span class="date"><a onclick='update_url({"datefrom": "{{image.date}}", "dateto": "{{image.date}}"})' href="#">{{image.date}}</a></span>
     {% endif %}
     {% for path in image.paths %}
-    <span class="dir"><a onclick='update_dir("{{path.dir}}")' href="#">{{path.dir}}</a></span>
+    <span class="dir"><a onclick='update_dir("{{path.dir|safe}}")' href="#">{{path.dir}}</a></span>
     <div class="gallery_item_fs overflow">
     {% for raw in image.raw_data %}
       <span class="raw">{{ raw.k }}: {{raw.v}}</span>
