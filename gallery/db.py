@@ -16,7 +16,16 @@ from db import (
     SQLiteCache,
     DirectoriesTable,
 )
-from db.types import ImageAggregation, Image, LocationCluster, LocPoint, FeaturePayload, FileRow, DateCluster
+from db.types import (
+    ImageAggregation,
+    Image,
+    LocationCluster,
+    LocPoint,
+    FeaturePayload,
+    FileRow,
+    DateCluster,
+    DirectoryStats,
+)
 from gallery.url import UrlParameters
 
 Ser = t.TypeVar("Ser", bound=DataClassJsonMixin)
@@ -165,7 +174,7 @@ class ImageSqlDB:
     def get_date_clusters(self, url: UrlParameters, buckets: int) -> t.List[DateCluster]:
         return self._gallery_index.get_date_clusters(url, buckets)
 
-    def get_matching_directories(self, url: UrlParameters) -> t.List[t.Tuple[str, int]]:
+    def get_matching_directories(self, url: UrlParameters) -> t.List[DirectoryStats]:
         return self._gallery_index.get_matching_directories(url)
 
     def get_image_clusters(

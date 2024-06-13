@@ -1,4 +1,6 @@
 {% for d in dirs %}&gt; 
-{% for part in d[0] %}<span class="pdir"><a onclick="update_dir('{{ part[1] }}')" href="#">{{ part[0] }}/</a></span>{% endfor %}: {{ d[1] }} photos
+{% for part in d[0] %}<span class="pdir"><a onclick="update_dir('{{ part[1] }}')" href="#">{{ part[0] }}/</a></span>{% endfor %}: {{ d[1].total_images }} photos,
+{{ '%.1f'|format(d[1].has_location * 100.0 / d[1].total_images|float) }}% with location,
+{{ '%.1f'|format(d[1].has_timestamp * 100.0 / d[1].total_images|float) }}% with time
 <br/>
 {% endfor %}

@@ -85,6 +85,14 @@ class ImageAggregation:
 
 
 @dataclass
+class DirectoryStats:
+    directory: str
+    total_images: int
+    has_location: int
+    has_timestamp: int
+
+
+@dataclass
 class Image(DataClassJsonMixin):
     md5: str
     date: t.Optional[datetime]

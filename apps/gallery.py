@@ -155,10 +155,10 @@ def date_clusters_endpoint(params: DateClusterParams) -> t.List[DateCluster]:
 
 @app.post("/internal/directories.html", response_class=HTMLResponse)
 def directories_endpoint(request: Request, url: UrlParameters) -> HTMLResponse:
-    directories = sorted(DB.get().get_matching_directories(url))
+    directories = sorted(DB.get().get_matching_directories(url), key=lambda x: x.directory)
     dirs = []
-    for d, total in directories:
-        parts = d.split("/")
+    for directory in directories:
+        parts = directory.directory.split("/")
         prefixes = []
         prefix = ""
         for part in parts:
@@ -168,12 +168,12 @@ def directories_endpoint(request: Request, url: UrlParameters) -> HTMLResponse:
             else:
                 prefix = ""
                 prefixes.append((part, ""))
-        dirs.append((prefixes, total))
+        dirs.append((prefixes, directory))
     return templates.TemplateResponse(
         request=request,
         name="directories.html",
         context={
-            "dirs": sorted(dirs, key=lambda x: [x[1], x[0]], reverse=True),
+            "dirs": sorted(dirs, key=lambda x: [x[1].total_images, x[0]], reverse=True),
         },
     )
 

@@ -19,7 +19,7 @@ from gallery.url import (
 )
 from db.connection import GalleryConnection
 from db.directories_table import DirectoriesTable
-from db.types import Image, ImageAggregation, LocationCluster, LocPoint, DateCluster
+from db.types import Image, ImageAggregation, LocationCluster, LocPoint, DateCluster, DirectoryStats
 
 
 class WrongAggregateTypeReturned(Exception):
@@ -506,15 +506,26 @@ SELECT "alt", 'min', MIN(altitude) FROM matched_images WHERE altitude IS NOT NUL
             )
         return output, has_extra_data
 
-    def get_matching_directories(self, url: UrlParameters) -> t.List[t.Tuple[str, int]]:
-        (match_query, match_params) = self._matching_query("md5", url)
+    def get_matching_directories(self, url: UrlParameters) -> t.List[DirectoryStats]:
+        (match_query, match_params) = self._matching_query("md5, address_full, timestamp", url)
         ret = self._con.execute(
             f"""
-SELECT directory, COUNT(DISTINCT md5) AS total FROM directories WHERE md5 IN ({match_query}) GROUP BY directory
+SELECT
+  directory,
+  COUNT(directories.md5) as total,
+  SUM(gallery.address_full IS NOT NULL) AS has_location,
+  SUM(timestamp IS NOT NULL) AS has_timestamp
+FROM directories JOIN ({match_query}) AS gallery
+ON directories.md5 = gallery.md5
+WHERE gallery.md5 IS NOT NULL
+GROUP BY directory
             """,
             match_params,
         ).fetchall()
-        return list(ret)
+        return [
+            DirectoryStats(directory, total, has_location, has_timestamp)
+            for (directory, total, has_location, has_timestamp) in ret
+        ]
 
 
 def round_to_significant_digits(value: float, significant_digits: int) -> float:
