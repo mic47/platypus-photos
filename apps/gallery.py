@@ -193,7 +193,6 @@ async def gallery_div(request: Request, url: SearchQuery, oi: t.Optional[int] = 
             {
                 "filename": os.path.basename(file.file),
                 "dir": os.path.dirname(file.file),
-                "dir_url": url.to_url(directory=os.path.dirname(file.file)),
             }
             for file in DB.get().files(omg.md5)
         ]

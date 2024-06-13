@@ -37,7 +37,7 @@
     <span class="date"><a href="{{image.date.url}}">{{image.date.date}}</a></span>
     {% endif %}
     {% for path in image.paths %}
-    <span class="dir"><a href="{{path.dir_url}}">{{path.dir}}</a></span>
+    <span class="dir"><a onclick='update_dir("{{path.dir}}")' href="#">{{path.dir}}</a></span>
     <div class="gallery_item_fs overflow">
     {% for raw in image.raw_data %}
       <span class="raw">{{ raw.k }}: {{raw.v}}</span>
