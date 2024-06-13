@@ -18,6 +18,7 @@ from gallery.url import (
     UrlParameters,
 )
 from db.connection import GalleryConnection
+from db.directories_table import DirectoriesTable
 from db.types import Image, ImageAggregation, LocationCluster, LocPoint, DateCluster
 
 
@@ -73,6 +74,8 @@ CREATE TABLE IF NOT EXISTS gallery_index (
             name = f"gallery_index_idx_{'_'.join(columns)}"
             cols_str = ", ".join(columns)
             self._con.execute(f"CREATE INDEX IF NOT EXISTS {name} ON gallery_index ({cols_str});")
+        # Just init this table
+        DirectoriesTable(self._con)
 
     def add(
         self,
@@ -177,10 +180,9 @@ WHERE
             variables.append(
                 maybe_datetime_to_timestamp(None if url.dateto is None else url.dateto + timedelta(days=1))
             )
-        if url.directory:  # TODO: this does not work, fix it
-            pass
-            # clauses.append("file like ?")
-            # variables.append(f"{url.directory}%")
+        if url.directory:
+            clauses.append("md5 in (SELECT md5 FROM directories WHERE directory like ?)")
+            variables.append(f"{url.directory}%")
         if url.tsfrom:
             clauses.append("timestamp >= ?")
             variables.append(url.tsfrom)
@@ -503,6 +505,16 @@ SELECT "alt", 'min', MIN(altitude) FROM matched_images WHERE altitude IS NOT NUL
                 )
             )
         return output, has_extra_data
+
+    def get_matching_directories(self, url: UrlParameters) -> t.List[t.Tuple[str, int]]:
+        (match_query, match_params) = self._matching_query("md5", url)
+        ret = self._con.execute(
+            f"""
+SELECT directory, COUNT(DISTINCT md5) AS total FROM directories WHERE md5 IN ({match_query}) GROUP BY directory
+            """,
+            match_params,
+        ).fetchall()
+        return list(ret)
 
 
 def round_to_significant_digits(value: float, significant_digits: int) -> float:

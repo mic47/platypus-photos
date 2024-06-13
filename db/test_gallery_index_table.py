@@ -3,6 +3,7 @@ import typing as t
 import unittest
 
 from db.connection import GalleryConnection
+from db.directories_table import DirectoriesTable
 from db.gallery_index_table import GalleryIndexTable, WrongAggregateTypeReturned
 from db.types import Image, ImageAggregation, LocPoint, LocationCluster
 from gallery.url import (
@@ -181,7 +182,9 @@ class TestGalleryIndexTable(unittest.TestCase):
         )
 
     def test_querying(self) -> None:
-        table = GalleryIndexTable(connection())
+        con = connection()
+        table = GalleryIndexTable(con)
+        directories = DirectoriesTable(con)
         i1 = _image(
             "M1", alt=127.47, caption=None, tags=None, lon=32.0, datetm=datetime(2023, 1, 1, 12, 12, 12)
         )
@@ -199,7 +202,7 @@ class TestGalleryIndexTable(unittest.TestCase):
         ret = sorted(table.get_matching_images(UrlParameters(cls="fishy"))[0], key=lambda x: x.md5)
         self.assertListEqual(ret, [i3, i4])
         ret = sorted(
-            table.get_matching_images(UrlParameters(cls="fishy", directory="this is not used"))[0],
+            table.get_matching_images(UrlParameters(cls="fishy"))[0],
             key=lambda x: x.md5,
         )
         self.assertListEqual(ret, [i3, i4])
@@ -237,6 +240,20 @@ class TestGalleryIndexTable(unittest.TestCase):
             key=lambda x: x.md5,
         )
         self.assertListEqual(ret, [i1, i2, i3])
+        ret = table.get_matching_images(UrlParameters(directory="/foo/bar"))[0]
+        self.assertListEqual(ret, [])
+        directories.add("/foo/bar", "M1")
+        directories.add("/foo/lol", "M1")
+        directories.add("/foo/lol", "M3")
+        directories.add("/foo/bar", "M2")
+        ret = sorted(table.get_matching_images(UrlParameters(directory="/foo/bar"))[0], key=lambda x: x.md5)
+        self.assertListEqual(ret, [i1, i2])
+        ret = sorted(table.get_matching_images(UrlParameters(directory="/foo/lol"))[0], key=lambda x: x.md5)
+        self.assertListEqual(ret, [i1, i3])
+        ret = sorted(table.get_matching_images(UrlParameters(directory="/foo"))[0], key=lambda x: x.md5)
+        self.assertListEqual(ret, [i1, i2, i3])
+        ret = sorted(table.get_matching_images(UrlParameters(directory="/wat"))[0], key=lambda x: x.md5)
+        self.assertListEqual(ret, [])
 
     def test_errors_aggregate_states(self) -> None:
         table = GalleryIndexTable(connection())

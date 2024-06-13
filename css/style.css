@@ -83,6 +83,12 @@ div.gallery_item:hover {
   padding: 0.1em;
   margin: 0.2em;
 }
+.pdir {
+  background-color: #00BBBB33;
+  border-radius: 1em;
+  padding: 0.1em;
+  margin: 0.1em;
+}
 .date{
   background-color: #BBBB0033;
   border-radius: 1em;
@@ -96,6 +102,11 @@ div.gallery_item:hover {
 #map {
   height: 380px;
   z-index: 0;
+}
+
+.directories {
+  max-height: 20em;
+  overflow:auto;
 }
 
 .date_chart {

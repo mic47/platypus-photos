@@ -1,6 +1,7 @@
 [tool.black]
 
 line-length = 110
+exclude = "node_modules/"
 
 
 [tool.pylint.format]

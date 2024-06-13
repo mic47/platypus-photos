@@ -242,6 +242,27 @@ class PhotoMap {
   }
 }
 
+function fetch_directories(url_data) {
+  const url = `/internal/directories.html`;
+  fetch(url, {
+    method: "POST",
+    body: JSON.stringify(url_data),
+    headers: {
+      "Content-type": "application/json; charset=UTF-8",
+    },
+  })
+    .then((response) => response.text())
+    .then((text) => {
+      const gallery = document.getElementById("Directories");
+      gallery.innerHTML = text;
+    })
+}
+function update_dir(data) {
+  url = {"directory": data};
+  fetch_directories(url);
+  fetch_gallery(url, 0, null);
+}
+
 function fetch_gallery(url_data, page, oi) {
   var url = `/internal/gallery.html?oi=${oi}`;
   if (oi === undefined || oi === null) {
@@ -354,6 +375,7 @@ function init_dates(location_url_json, map) {
             const u = {...state.location_url_json, tsfrom: f, tsto: t};
             fetch_gallery(u, 0, null);
             update_dates(chart, u);
+            fetch_directories(u);
             map.update_url({tsfrom: f, tsto: t});
             map.update_markers(true);
           }

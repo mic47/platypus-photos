@@ -11,3 +11,4 @@ config.json
 htmlcov/
 mypy/
 .coverage
+node_modules/

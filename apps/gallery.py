@@ -153,9 +153,33 @@ def date_clusters_endpoint(params: DateClusterParams) -> t.List[DateCluster]:
     return clusters
 
 
+@app.post("/internal/directories.html", response_class=HTMLResponse)
+def directories_endpoint(request: Request, url: UrlParameters) -> HTMLResponse:
+    directories = sorted(DB.get().get_matching_directories(url))
+    dirs = []
+    for d, total in directories:
+        parts = d.split("/")
+        prefixes = []
+        prefix = ""
+        for part in parts:
+            if part:
+                prefix = f"{prefix}/{part}"
+                prefixes.append((part, prefix))
+            else:
+                prefix = ""
+                prefixes.append((part, ""))
+        dirs.append((prefixes, total))
+    return templates.TemplateResponse(
+        request=request,
+        name="directories.html",
+        context={
+            "dirs": sorted(dirs, key=lambda x: [x[1], x[0]], reverse=True),
+        },
+    )
+
+
 @app.post("/internal/gallery.html", response_class=HTMLResponse)
 async def gallery_div(request: Request, url: UrlParameters, oi: t.Optional[int] = None) -> HTMLResponse:
-    print(url)
     images = []
     omgs, has_next_page = DB.get().get_matching_images(url)
     for omg in omgs:
