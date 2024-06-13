@@ -244,6 +244,26 @@ async def gallery_div(request: Request, url: UrlParameters, oi: t.Optional[int] 
     )
 
 
+@app.post("/internal/aggregate.html", response_class=HTMLResponse)
+def aggregate_endpoint(request: Request, url: UrlParameters) -> HTMLResponse:
+    aggr = DB.get().get_aggregate_stats(url)
+    top_tags = sorted(aggr.tag.items(), key=lambda x: -x[1])
+    top_cls = sorted(aggr.classification.items(), key=lambda x: -x[1])
+    top_addr = sorted(aggr.address.items(), key=lambda x: -x[1])
+    return templates.TemplateResponse(
+        request=request,
+        name="aggregate.html",
+        context={
+            "total": aggr.total,
+            "top": {
+                "tag": [(tg, s, url.to_url(add_tag=tg)) for tg, s in top_tags[:15]],
+                "cls": [(cl, s, url.to_url(cls=cl)) for cl, s in top_cls[:5]],
+                "addr": [(ad, s, url.to_url(addr=ad)) for ad, s in top_addr[:15]],
+            },
+        },
+    )
+
+
 @app.get("/index.html", response_class=HTMLResponse)
 @app.get("/", response_class=HTMLResponse)
 async def index_page(
@@ -292,17 +312,12 @@ async def index_page(
             "lon": aggr.longitude,
         }
 
-    top_tags = sorted(aggr.tag.items(), key=lambda x: -x[1])
-    top_cls = sorted(aggr.classification.items(), key=lambda x: -x[1])
-    top_addr = sorted(aggr.address.items(), key=lambda x: -x[1])
-
     return templates.TemplateResponse(
         request=request,
         name="index.html",
         context={
             "oi": oi,
             "bounds": bounds,
-            "total": aggr.total,
             "url_json": json.dumps(url.to_filtered_dict([])),
             "url_parameters_fields": json.dumps([x.name for x in fields(UrlParameters)]),
             "input": {
@@ -313,11 +328,6 @@ async def index_page(
                 "datefrom": maybe_datetime_to_date(url.datefrom) or "",
                 "dateto": maybe_datetime_to_date(url.dateto) or "",
                 "dir": url.directory,
-            },
-            "top": {
-                "tag": [(tg, s, url.to_url(add_tag=tg)) for tg, s in top_tags[:15]],
-                "cls": [(cl, s, url.to_url(cls=cl)) for cl, s in top_cls[:5]],
-                "addr": [(ad, s, url.to_url(addr=ad)) for ad, s in top_addr[:15]],
             },
         },
     )

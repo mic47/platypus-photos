@@ -266,8 +266,30 @@ class Directories {
     this._div_id = div_id;
   }
 
-  fetch_directories(url_data) {
+  fetch(url_data) {
     const url = `/internal/directories.html`;
+    fetch(url, {
+      method: "POST",
+      body: JSON.stringify(url_data),
+      headers: {
+        "Content-type": "application/json; charset=UTF-8",
+      },
+    })
+      .then((response) => response.text())
+      .then((text) => {
+        const gallery = document.getElementById(this._div_id);
+        gallery.innerHTML = text;
+      });
+  }
+}
+
+class AggregateInfo {
+  constructor(div_id) {
+    this._div_id = div_id;
+  }
+
+  fetch(url_data) {
+    const url = `/internal/aggregate.html`;
     fetch(url, {
       method: "POST",
       body: JSON.stringify(url_data),

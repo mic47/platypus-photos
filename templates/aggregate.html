@@ -1,0 +1,13 @@
+Found {{ total }} matches. <br>
+Top tags: 
+{% for tag in top.tag %}
+<a href="{{tag[2]}}">{{tag[0]}} ({{tag[1]}})</a>
+{% endfor %} <br/>
+Top texts: 
+{% for t in top.cls %}
+<a href="{{t[2]}}">{{t[0]}} ({{t[1]}})</a>
+{% endfor %} <br/>
+Top locs: 
+{% for t in top.addr %}
+<a href="{{t[2]}}">{{t[0]}} ({{t[1]}})</a>
+{% endfor %} <br/>

@@ -40,14 +40,16 @@ function init_fun() {
     const map = new PhotoMap("map", bounds, () => ___state.get_url());
     const dates = new Dates("DateChart", (x) => {___state.update_url(x);});
     const directories = new Directories("Directories");
+    const aggregate_info = new AggregateInfo("AggregateInfo");
     ___state.register_hook((url_params) => {
         url_sync.update(url_params);
         gallery.update_page(0, null);
         gallery.fetch(url_params);
+        aggregate_info.fetch(url_params);
 
         dates.fetch(url_params);
 
-        directories.fetch_directories(url_params);
+        directories.fetch(url_params);
 
         map.update_markers(url_params, true);
     })
@@ -72,21 +74,7 @@ function init_fun() {
     <input type="reset"> 
   </form>
 </div>
-<div>
-  Found {{ total }} matches. <br>
-  Top tags: 
-  {% for tag in top.tag %}
-    <a href="{{tag[2]}}">{{tag[0]}} ({{tag[1]}})</a>
-  {% endfor %} <br/>
-  Top texts: 
-  {% for t in top.cls %}
-    <a href="{{t[2]}}">{{t[0]}} ({{t[1]}})</a>
-  {% endfor %} <br/>
-  Top locs: 
-  {% for t in top.addr %}
-    <a href="{{t[2]}}">{{t[0]}} ({{t[1]}})</a>
-  {% endfor %} <br/>
-</div>
+<div id="AggregateInfo"></div>
 
 <div id="map"></div>
 <div class="date_chart"><canvas id="DateChart"></canvas></div>
