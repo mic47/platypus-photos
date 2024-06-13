@@ -18,21 +18,6 @@ class UrlParameters:
     tsfrom: t.Optional[float] = None
     tsto: t.Optional[float] = None
 
-    def to_filtered_dict(self, skip_keys: t.List[str]) -> t.Dict[str, t.Any]:
-        ret = {
-            "tag": self.tag,
-            "cls": self.cls,
-            "addr": self.addr,
-            "datefrom": maybe_datetime_to_date(self.datefrom),
-            "dateto": maybe_datetime_to_date(self.dateto),
-            "page": self.page,
-            "paging": self.paging,
-            "directory": self.directory,
-            "tsfrom": self.tsfrom,
-            "tsto": self.tsto,
-        }
-        return {k: v for k, v in ret.items() if k not in skip_keys and v}
-
     def to_url(
         self,
         tag: t.Optional[str] = None,
