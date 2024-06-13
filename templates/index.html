@@ -28,7 +28,6 @@ function init_fun() {
 
     // Set parameters
     const bounds = {% if bounds %}[[{{bounds.lat[0]}}, {{bounds.lon[0]}}],[{{bounds.lat[1]}}, {{bounds.lon[1]}}]]{% else %}null{% endif %};
-    const url_json = {{url_json | safe}};
     const page = {{ input.page }};
     const oi = {% if oi %}{{oi}}{% else %}null{% endif %};
     const url_parameters_fields = {{ url_parameters_fields | safe }};
@@ -55,7 +54,7 @@ function init_fun() {
     })
 
     // Set initial url, redraw everything
-    ___state.replace_url(url_json);
+    ___state.replace_url(url_sync.get_url());
 }
 </script>
 </head>

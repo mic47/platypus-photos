@@ -318,7 +318,6 @@ async def index_page(
         context={
             "oi": oi,
             "bounds": bounds,
-            "url_json": json.dumps(url.to_filtered_dict([])),
             "url_parameters_fields": json.dumps([x.name for x in fields(UrlParameters)]),
             "input": {
                 "page": url.page,

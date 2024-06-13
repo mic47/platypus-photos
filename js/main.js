@@ -30,6 +30,14 @@ class UrlSync {
   constructor(registered_fields) {
     this._registered_fields = registered_fields;
   }
+  get_url() {
+    var url = new URL(window.location.href);
+    return Object.fromEntries(
+      this._registered_fields
+        .map((field) => [field, url.searchParams.get(field)])
+        .filter((x) => x[1] !== undefined && x[1] !== null && x[1])
+    );
+  }
   update(new_url) {
     var url = new URL(window.location.href);
     this._registered_fields.forEach((field) => {
