@@ -6,7 +6,7 @@ import sys
 import time
 import enum
 from datetime import datetime
-from dataclasses import dataclass
+from dataclasses import dataclass, fields
 
 from PIL import Image, ImageFile
 
@@ -251,6 +251,8 @@ async def index_page(
     paging: int = 100,
     datefrom: str = "",
     dateto: str = "",
+    tsfrom: t.Optional[float] = None,
+    tsto: t.Optional[float] = None,
     dir_: str = Query("", alias="dir"),
     oi: t.Optional[int] = None,
 ) -> HTMLResponse:
@@ -263,6 +265,8 @@ async def index_page(
         page,
         paging,
         dir_,
+        tsfrom,
+        tsto,
     )
     del tag
     del cls
@@ -272,6 +276,8 @@ async def index_page(
     del datefrom
     del dateto
     del dir_
+    del tsfrom
+    del tsto
     aggr = DB.get().get_aggregate_stats(url)
     if url.page * url.paging >= aggr.total:
         url.page = aggr.total // url.paging
@@ -294,6 +300,7 @@ async def index_page(
             "bounds": bounds,
             "total": aggr.total,
             "url_json": json.dumps(url.to_filtered_dict([])),
+            "url_parameters_fields": json.dumps([x.name for x in fields(UrlParameters)]),
             "input": {
                 "page": url.page,
                 "tag": url.tag,

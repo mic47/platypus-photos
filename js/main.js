@@ -10,7 +10,7 @@ class AppState {
 
   update_url(new_parts) {
     // TODO: do this only on change
-    this._url_params = { ...this.url_params, ...new_parts };
+    this._url_params = { ...this._url_params, ...new_parts };
     const url = this._url_params;
     this._url_params_hooks.forEach((x) => x(url));
   }
@@ -23,6 +23,26 @@ class AppState {
 
   register_hook(hook) {
     this._url_params_hooks.push(hook);
+  }
+}
+
+class UrlSync {
+  constructor(registered_fields) {
+    this._registered_fields = registered_fields;
+  }
+  update(new_url) {
+    var url = new URL(window.location.href);
+    this._registered_fields.forEach((field) => {
+      const new_value = new_url[field];
+      if (new_value === null || new_value === undefined) {
+        url.searchParams.delete(field);
+      } else {
+        url.searchParams.set(field, new_value);
+      }
+    });
+    if (window.history.replaceState) {
+      window.history.replaceState(window.history.state, "", url.href);
+    }
   }
 }
 

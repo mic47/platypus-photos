@@ -27,18 +27,21 @@ function init_fun() {
     }
 
     // Set parameters
-    bounds = {% if bounds %}[[{{bounds.lat[0]}}, {{bounds.lon[0]}}],[{{bounds.lat[1]}}, {{bounds.lon[1]}}]]{% else %}null{% endif %};
-    url_json = {{url_json | safe}};
-    page = {{ input.page }};
-    oi = {% if oi %}{{oi}}{% else %}null{% endif %};
+    const bounds = {% if bounds %}[[{{bounds.lat[0]}}, {{bounds.lon[0]}}],[{{bounds.lat[1]}}, {{bounds.lon[1]}}]]{% else %}null{% endif %};
+    const url_json = {{url_json | safe}};
+    const page = {{ input.page }};
+    const oi = {% if oi %}{{oi}}{% else %}null{% endif %};
+    const url_parameters_fields = {{ url_parameters_fields | safe }};
 
     // Initialize all components
     ___state = new AppState({})
+    const url_sync = new UrlSync(url_parameters_fields);
     const gallery = new Gallery("GalleryImages", page, oi);
     const map = new PhotoMap("map", bounds, () => ___state.get_url());
     const dates = new Dates("DateChart", (x) => {___state.update_url(x);});
     const directories = new Directories("Directories");
     ___state.register_hook((url_params) => {
+        url_sync.update(url_params);
         gallery.update_page(0, null);
         gallery.fetch(url_params);
 
