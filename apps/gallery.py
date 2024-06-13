@@ -206,11 +206,7 @@ async def gallery_div(request: Request, url: SearchQuery, oi: t.Optional[int] = 
                     (tg, classify_tag(x / max_tag), url.to_url(add_tag=tg))
                     for tg, x in sorted((omg.tags or {}).items(), key=lambda x: -x[1])
                 ],
-                "addrs": [
-                    {"address": a, "url": url.to_url(addr=a or None)}
-                    for a in [omg.address_name, omg.address_country]
-                    if a
-                ],
+                "addrs": [a for a in [omg.address_name, omg.address_country] if a],
                 "date": {
                     "date": maybe_datetime_to_date(omg.date),
                     "url": url.to_url(datefrom=omg.date, dateto=omg.date),

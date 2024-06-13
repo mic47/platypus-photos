@@ -30,8 +30,8 @@
     <span class="tag"><a href="{{tag[2]}}">{{tag[1]}}{{tag[0]}}</a></span>
     {% endfor %}
 
-    {% for a in image.addrs %}
-    <span class="location"><a href="{{a.url}}">{{ a.address }}</a></span>
+    {% for address in image.addrs %}
+    <span class="location"><a onclick='update_url({"addr": "{{address}}"})' href="#">{{ address }}</a></span>
     {% endfor %}
     {% if image.date.date %}
     <span class="date"><a href="{{image.date.url}}">{{image.date.date}}</a></span>
