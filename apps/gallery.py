@@ -249,8 +249,8 @@ def aggregate_endpoint(request: Request, url: SearchQuery) -> HTMLResponse:
             "total": aggr.total,
             "top": {
                 "tag": [(tg, s, url.to_url(add_tag=tg)) for tg, s in top_tags[:15]],
-                "cls": [(cl, s, url.to_url(cls=cl)) for cl, s in top_cls[:5]],
-                "addr": [(ad, s, url.to_url(addr=ad)) for ad, s in top_addr[:15]],
+                "cls": [(cl, s) for cl, s in top_cls[:5]],
+                "addr": [(ad, s) for ad, s in top_addr[:15]],
             },
         },
     )

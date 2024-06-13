@@ -5,9 +5,9 @@ Top tags:
 {% endfor %} <br/>
 Top texts: 
 {% for t in top.cls %}
-<a href="{{t[2]}}">{{t[0]}} ({{t[1]}})</a>
+<a onclick='update_url({"cls": "{{t[0]}}"}' href="#">{{t[0]}} ({{t[1]}})</a>
 {% endfor %} <br/>
 Top locs: 
 {% for t in top.addr %}
-<a href="{{t[2]}}">{{t[0]}} ({{t[1]}})</a>
+<a onclick='update_url({"addr": "{{t[0]}}"}' href="#">{{t[0]}} ({{t[1]}})</a>
 {% endfor %} <br/>
