@@ -1,4 +1,5 @@
 import itertools
+import os
 import typing as t
 
 from dataclasses_json import DataClassJsonMixin
@@ -6,8 +7,16 @@ from tqdm import tqdm
 
 from annots.date import PathDateExtractor
 from data_model.features import ImageExif, GeoAddress, ImageClassification, WithMD5
-from db import FeaturesTable, GalleryIndexTable, Connection, FilesTable, SQLiteCache
-from db.types import ImageAggregation, Image, LocationCluster, LocPoint, FeaturePayload, FileRow
+from db import (
+    FeaturesTable,
+    GalleryIndexTable,
+    PhotosConnection,
+    GalleryConnection,
+    FilesTable,
+    SQLiteCache,
+    DirectoriesTable,
+)
+from db.types import ImageAggregation, Image, LocationCluster, LocPoint, FeaturePayload, FileRow, DateCluster
 from gallery.url import UrlParameters
 
 Ser = t.TypeVar("Ser", bound=DataClassJsonMixin)
@@ -15,7 +24,10 @@ Ser = t.TypeVar("Ser", bound=DataClassJsonMixin)
 
 class Reindexer:
     def __init__(
-        self, path_to_date: PathDateExtractor, photos_connection: Connection, gallery_connection: Connection
+        self,
+        path_to_date: PathDateExtractor,
+        photos_connection: PhotosConnection,
+        gallery_connection: GalleryConnection,
     ) -> None:
         # TODO: this should be a feature with loader
         self._path_to_date = path_to_date
@@ -23,6 +35,7 @@ class Reindexer:
         self._g_con = gallery_connection
         self._features_table = FeaturesTable(self._p_con)
         self._files_table = FilesTable(self._p_con)
+        self._directories_table = DirectoriesTable(self._g_con)
         self._exif = SQLiteCache(self._features_table, ImageExif)
         self._address = SQLiteCache(self._features_table, GeoAddress)
         self._text_classification = SQLiteCache(self._features_table, ImageClassification)
@@ -39,9 +52,12 @@ class Reindexer:
     def load(self, show_progress: bool) -> int:
         reindexed = 0
         for md5, _last_update in tqdm(
-            list(
-                self._features_table.dirty_md5s(
-                    [ImageExif.__name__, GeoAddress.__name__, ImageClassification.__name__]
+            set(
+                itertools.chain(
+                    self._features_table.dirty_md5s(
+                        [ImageExif.__name__, GeoAddress.__name__, ImageClassification.__name__]
+                    ),
+                    ((x, None) for x in self._files_table.dirty_md5s()),
                 )
             ),
             desc="reindexing",
@@ -72,6 +88,14 @@ class Reindexer:
         addr = extract_data(self._address.get(md5))
         text_cls = extract_data(self._text_classification.get(md5))
         files = self._files_table.by_md5(md5)
+        directories = set()
+        max_dir_last_update = 0.0
+        for file in files:
+            max_dir_last_update = max(max_dir_last_update, file.last_update)
+            for path in [file.file, file.og_file]:
+                if path is not None:
+                    directories.add(os.path.dirname(path))
+
         omg = Image.from_updates(
             md5,
             exif,
@@ -88,9 +112,13 @@ class Reindexer:
                 )
                 if x is not None
             ],
+            # TODO: add max_dir_last_update?
             max_last_update,
         )
+
         assert max_last_update > 0.0
+        self._directories_table.multi_add([(d, md5) for d in directories])
+        self._files_table.undirty(md5, max_dir_last_update)
         self._gallery_index.add(omg)
         self._features_table.undirty(
             md5, [ImageExif.__name__, GeoAddress.__name__, ImageClassification.__name__], max_last_update
@@ -98,12 +126,13 @@ class Reindexer:
 
 
 class ImageSqlDB:
-    def __init__(self, photos_connection: Connection, gallery_connection: Connection) -> None:
+    def __init__(self, photos_connection: PhotosConnection, gallery_connection: GalleryConnection) -> None:
         # TODO: this should be a feature with loader
         self._p_con = photos_connection
         self._g_con = gallery_connection
         self._files_table = FilesTable(self._p_con)
         self._gallery_index = GalleryIndexTable(self._g_con)
+        self._directories_table = DirectoriesTable(self._g_con)
         self._hash_to_image: t.Dict[int, str] = {}
         self._md5_to_image: t.Dict[str, str] = {}
 
@@ -133,6 +162,12 @@ class ImageSqlDB:
     def get_aggregate_stats(self, url: "UrlParameters") -> ImageAggregation:
         return self._gallery_index.get_aggregate_stats(url)
 
+    def get_date_clusters(self, url: UrlParameters, buckets: int) -> t.List[DateCluster]:
+        return self._gallery_index.get_date_clusters(url, buckets)
+
+    def get_matching_directories(self, url: UrlParameters) -> t.List[t.Tuple[str, int]]:
+        return self._gallery_index.get_matching_directories(url)
+
     def get_image_clusters(
         self,
         url: UrlParameters,
@@ -146,5 +181,5 @@ class ImageSqlDB:
             url, top_left, bottom_right, latitude_resolution, longitude_resolution, over_fetch
         )
 
-    def get_matching_images(self, url: UrlParameters) -> t.Iterable[Image]:
-        yield from self._gallery_index.get_matching_images(url)
+    def get_matching_images(self, url: UrlParameters) -> t.Tuple[t.List[Image], bool]:
+        return self._gallery_index.get_matching_images(url)

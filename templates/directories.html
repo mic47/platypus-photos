@@ -1,0 +1,4 @@
+{% for d in dirs %}&gt; 
+{% for part in d[0] %}<span class="pdir"><a onclick="update_dir('{{ part[1] }}')" href="#">{{ part[0] }}/</a></span>{% endfor %}: {{ d[1] }} photos
+<br/>
+{% endfor %}

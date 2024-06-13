@@ -3,6 +3,8 @@ from datetime import datetime
 import enum
 import typing as t
 
+from dataclasses_json import DataClassJsonMixin
+
 from data_model.features import ImageExif, GeoAddress, ImageClassification
 
 T = t.TypeVar("T")
@@ -61,6 +63,17 @@ class LocationCluster:
 
 
 @dataclass
+class DateCluster:
+    example_path_md5: str
+    bucket_min: float
+    bucket_max: float
+    min_timestamp: float
+    max_timestamp: float
+    avg_timestamp: float
+    total: int
+
+
+@dataclass
 class ImageAggregation:
     total: int
     address: t.Dict[str, int]
@@ -72,7 +85,7 @@ class ImageAggregation:
 
 
 @dataclass
-class Image:
+class Image(DataClassJsonMixin):
     md5: str
     date: t.Optional[datetime]
     tags: t.Optional[t.Dict[str, float]]

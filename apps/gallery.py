@@ -6,8 +6,7 @@ import sys
 import time
 import enum
 from datetime import datetime
-from dataclasses import dataclass
-import traceback
+from dataclasses import dataclass, fields
 
 from PIL import Image, ImageFile
 
@@ -16,13 +15,12 @@ from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from data_model.config import Config, DBFilesConfig
-from db.types import LocationCluster, LocPoint
-from db import Connection
-from annots.date import PathDateExtractor
+from data_model.config import DBFilesConfig
+from db.types import LocationCluster, LocPoint, DateCluster
+from db import PhotosConnection, GalleryConnection
 from utils import assert_never, Lazy
 
-from gallery.db import ImageSqlDB, Reindexer
+from gallery.db import ImageSqlDB
 from gallery.url import UrlParameters
 from gallery.utils import maybe_datetime_to_date, maybe_datetime_to_timestamp
 
@@ -32,57 +30,29 @@ ImageFile.LOAD_TRUNCATED_IMAGES = True
 app = FastAPI()
 # TODO: serve these differenty
 app.mount("/static", StaticFiles(directory="static/"), name="static")
+app.mount("/js", StaticFiles(directory="js/"), name="static")
+app.mount("/css", StaticFiles(directory="css/"), name="static")
 templates = Jinja2Templates(directory="templates")
 
-config = Config.load("config.yaml")
-photos_connection = Connection(DBFilesConfig().photos_db, check_same_thread=False)
-gallery_connection = Connection(DBFilesConfig().gallery_db, check_same_thread=False)
-
-DB = ImageSqlDB(photos_connection, gallery_connection)
-REINDEXER = Reindexer(PathDateExtractor(config.directory_matching), photos_connection, gallery_connection)
-
-del config
-del photos_connection
-del gallery_connection
+DB = Lazy(
+    lambda: ImageSqlDB(
+        PhotosConnection(DBFilesConfig().photos_db, check_same_thread=False),
+        GalleryConnection(DBFilesConfig().gallery_db, check_same_thread=False),
+    )
+)
 
 
 @app.on_event("startup")
 async def on_startup() -> None:
-    asyncio.create_task(auto_load())
     asyncio.create_task(check_db_connection())
 
 
 async def check_db_connection() -> None:
+    await asyncio.sleep(1)
     while True:
-        DB.check_unused()
-        REINDEXER.check_unused()
+        DB.get().check_unused()
         Lazy.check_ttl()
         await asyncio.sleep(10)
-
-
-async def auto_load() -> None:
-    # Allow other tasks to start
-    await asyncio.sleep(0)
-    sleep_time = 1
-    max_sleep_time = 64
-    while True:
-        try:
-            done = REINDEXER.load(show_progress=False)
-            if done <= 100:
-                sleep_time = min(sleep_time * 2, max_sleep_time)
-                if done > 0:
-                    print(f"Reindexed {done} images.", file=sys.stderr)
-            else:
-                print(f"Reindexed {done} images.", file=sys.stderr)
-                sleep_time = 1
-        # pylint: disable = broad-exception-caught
-        except Exception as e:
-            traceback.print_exc()
-            print("Error while trying to refresh data in db:", e)
-            sleep_time = 1
-            print("Reconnecting")
-            REINDEXER.reconnect()
-        await asyncio.sleep(sleep_time)
 
 
 @app.middleware("http")
@@ -125,7 +95,7 @@ def image_endpoint(hsh: t.Union[int, str], size: ImageSize = ImageSize.ORIGINAL)
     if sz is not None and isinstance(hsh, str):
         cache_file = get_cache_file(sz, hsh)
         if not os.path.exists(cache_file):
-            file_path = DB.get_path_from_hash(hsh)
+            file_path = DB.get().get_path_from_hash(hsh)
             if file_path is None:
                 return {"error": "File not found!"}
             img = Image.open(file_path)
@@ -139,7 +109,7 @@ def image_endpoint(hsh: t.Union[int, str], size: ImageSize = ImageSize.ORIGINAL)
             else:
                 img.save(cache_file)
         return FileResponse(cache_file, media_type="image/jpeg", filename=cache_file.split("/")[-1])
-    file_path = DB.get_path_from_hash(hsh)
+    file_path = DB.get().get_path_from_hash(hsh)
     if file_path is not None and os.path.exists(file_path):
         # TODO: fix media type
         return FileResponse(file_path, media_type="image/jpeg", filename=file_path.split("/")[-1])
@@ -157,7 +127,7 @@ class LocClusterParams:
 
 @app.post("/api/location_clusters")
 def location_clusters_endpoint(params: LocClusterParams) -> t.List[LocationCluster]:
-    clusters = DB.get_image_clusters(
+    clusters = DB.get().get_image_clusters(
         params.url,
         params.tl,
         params.br,
@@ -168,50 +138,51 @@ def location_clusters_endpoint(params: LocClusterParams) -> t.List[LocationClust
     return clusters
 
 
-@app.get("/index.html", response_class=HTMLResponse)
-@app.get("/", response_class=HTMLResponse)
-async def read_item(
-    request: Request,
-    tag: str = "",
-    cls: str = "",
-    addr: str = "",
-    page: int = 0,
-    paging: int = 100,
-    datefrom: str = "",
-    dateto: str = "",
-    dir_: str = Query("", alias="dir"),
-    oi: t.Optional[int] = None,
-) -> HTMLResponse:
-    url = UrlParameters(
-        tag,
-        cls,
-        addr,
-        datetime.strptime(datefrom, "%Y-%m-%d") if datefrom else None,
-        datetime.strptime(dateto, "%Y-%m-%d") if dateto else None,
-        page,
-        paging,
-        dir_,
-    )
-    del tag
-    del cls
-    del addr
-    del page
-    del paging
-    del datefrom
-    del dateto
-    del dir_
-    images = []
-    aggr = DB.get_aggregate_stats(url)
-    if url.page * url.paging >= aggr.total:
-        url.page = aggr.total // url.paging
-    bounds = None
-    if aggr.latitude is not None and aggr.longitude is not None:
-        bounds = {
-            "lat": aggr.latitude,
-            "lon": aggr.longitude,
-        }
+@dataclass
+class DateClusterParams:
+    url: UrlParameters
+    buckets: int
 
-    for omg in DB.get_matching_images(url):
+
+@app.post("/api/date_clusters")
+def date_clusters_endpoint(params: DateClusterParams) -> t.List[DateCluster]:
+    clusters = DB.get().get_date_clusters(
+        params.url,
+        params.buckets,
+    )
+    return clusters
+
+
+@app.post("/internal/directories.html", response_class=HTMLResponse)
+def directories_endpoint(request: Request, url: UrlParameters) -> HTMLResponse:
+    directories = sorted(DB.get().get_matching_directories(url))
+    dirs = []
+    for d, total in directories:
+        parts = d.split("/")
+        prefixes = []
+        prefix = ""
+        for part in parts:
+            if part:
+                prefix = f"{prefix}/{part}"
+                prefixes.append((part, prefix))
+            else:
+                prefix = ""
+                prefixes.append((part, ""))
+        dirs.append((prefixes, total))
+    return templates.TemplateResponse(
+        request=request,
+        name="directories.html",
+        context={
+            "dirs": sorted(dirs, key=lambda x: [x[1], x[0]], reverse=True),
+        },
+    )
+
+
+@app.post("/internal/gallery.html", response_class=HTMLResponse)
+async def gallery_div(request: Request, url: UrlParameters, oi: t.Optional[int] = None) -> HTMLResponse:
+    images = []
+    omgs, has_next_page = DB.get().get_matching_images(url)
+    for omg in omgs:
 
         max_tag = min(1, max((omg.tags or {}).values(), default=1.0))
         loc = None
@@ -224,9 +195,8 @@ async def read_item(
                 "dir": os.path.dirname(file.file),
                 "dir_url": url.to_url(directory=os.path.dirname(file.file)),
             }
-            for file in DB.files(omg.md5)
+            for file in DB.get().files(omg.md5)
         ]
-
         images.append(
             {
                 "hsh": omg.md5,
@@ -247,8 +217,81 @@ async def read_item(
                     "url": url.to_url(datefrom=omg.date, dateto=omg.date),
                 },
                 "timestamp": maybe_datetime_to_timestamp(omg.date) or 0.0,
+                "raw_data": [
+                    {"k": k, "v": json.dumps(v, ensure_ascii=True)}
+                    for k, v in omg.to_dict(encode_json=True).items()
+                ],
             }
         )
+
+    return templates.TemplateResponse(
+        request=request,
+        name="gallery.html",
+        context={
+            "oi": oi,
+            "images": images,
+            "urls": {
+                "next": url.next_url(has_next_page),
+                "next_overlay": url.next_url(has_next_page, overlay=True),
+                "prev": url.prev_url(),
+                "prev_overlay": url.prev_url(overlay=True),
+            },
+            "has_next_page": has_next_page,
+            "input": {
+                "page": url.page,
+            },
+        },
+    )
+
+
+@app.get("/index.html", response_class=HTMLResponse)
+@app.get("/", response_class=HTMLResponse)
+async def index_page(
+    request: Request,
+    tag: str = "",
+    cls: str = "",
+    addr: str = "",
+    page: int = 0,
+    paging: int = 100,
+    datefrom: str = "",
+    dateto: str = "",
+    tsfrom: t.Optional[float] = None,
+    tsto: t.Optional[float] = None,
+    dir_: str = Query("", alias="dir"),
+    oi: t.Optional[int] = None,
+) -> HTMLResponse:
+    url = UrlParameters(
+        tag,
+        cls,
+        addr,
+        datetime.strptime(datefrom, "%Y-%m-%d") if datefrom else None,
+        datetime.strptime(dateto, "%Y-%m-%d") if dateto else None,
+        page,
+        paging,
+        dir_,
+        tsfrom,
+        tsto,
+    )
+    del tag
+    del cls
+    del addr
+    del page
+    del paging
+    del datefrom
+    del dateto
+    del dir_
+    del tsfrom
+    del tsto
+    aggr = DB.get().get_aggregate_stats(url)
+    if url.page * url.paging >= aggr.total:
+        url.page = aggr.total // url.paging
+    bounds = None
+    if aggr.latitude is not None and aggr.longitude is not None:
+        bounds = {
+            "lat": aggr.latitude,
+            "lon": aggr.longitude,
+        }
+
     top_tags = sorted(aggr.tag.items(), key=lambda x: -x[1])
     top_cls = sorted(aggr.classification.items(), key=lambda x: -x[1])
     top_addr = sorted(aggr.address.items(), key=lambda x: -x[1])
@@ -259,16 +302,11 @@ async def read_item(
         context={
             "oi": oi,
             "bounds": bounds,
-            "images": images,
             "total": aggr.total,
-            "location_url_json": json.dumps(url.to_filtered_dict(["addr", "page", "paging"])),
-            "urls": {
-                "next": url.next_url(aggr.total),
-                "next_overlay": url.next_url(aggr.total, overlay=True),
-                "prev": url.prev_url(),
-                "prev_overlay": url.prev_url(overlay=True),
-            },
+            "url_json": json.dumps(url.to_filtered_dict([])),
+            "url_parameters_fields": json.dumps([x.name for x in fields(UrlParameters)]),
             "input": {
+                "page": url.page,
                 "tag": url.tag,
                 "cls": url.cls,
                 "addr": url.addr,

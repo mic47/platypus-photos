@@ -17,8 +17,9 @@ from gallery.utils import (
 from gallery.url import (
     UrlParameters,
 )
-from db.connection import Connection
-from db.types import Image, ImageAggregation, LocationCluster, LocPoint
+from db.connection import GalleryConnection
+from db.directories_table import DirectoriesTable
+from db.types import Image, ImageAggregation, LocationCluster, LocPoint, DateCluster
 
 
 class WrongAggregateTypeReturned(Exception):
@@ -30,7 +31,7 @@ class WrongAggregateTypeReturned(Exception):
 class GalleryIndexTable:
     def __init__(
         self,
-        connection: Connection,
+        connection: GalleryConnection,
     ) -> None:
         self._con = connection
         self._init_db()
@@ -73,6 +74,8 @@ CREATE TABLE IF NOT EXISTS gallery_index (
             name = f"gallery_index_idx_{'_'.join(columns)}"
             cols_str = ", ".join(columns)
             self._con.execute(f"CREATE INDEX IF NOT EXISTS {name} ON gallery_index ({cols_str});")
+        # Just init this table
+        DirectoriesTable(self._con)
 
     def add(
         self,
@@ -172,15 +175,20 @@ WHERE
         if url.datefrom:
             clauses.append("timestamp >= ?")
             variables.append(maybe_datetime_to_timestamp(url.datefrom))
-        if url.directory:  # TODO: this does not work, fix it
-            pass
-            # clauses.append("file like ?")
-            # variables.append(f"{url.directory}%")
         if url.dateto:
             clauses.append("timestamp <= ?")
             variables.append(
                 maybe_datetime_to_timestamp(None if url.dateto is None else url.dateto + timedelta(days=1))
             )
+        if url.directory:
+            clauses.append("md5 in (SELECT md5 FROM directories WHERE directory like ?)")
+            variables.append(f"{url.directory}%")
+        if url.tsfrom:
+            clauses.append("timestamp >= ?")
+            variables.append(url.tsfrom)
+        if url.tsto:
+            clauses.append("timestamp <= ?")
+            variables.append(url.tsto)
         for txt, vrs in extra_clauses or []:
             clauses.append(f"({txt})")
             variables.extend(vrs)
@@ -197,6 +205,60 @@ WHERE
             query,
             variables,
         )
+
+    def get_date_clusters(self, url: UrlParameters, buckets: int) -> t.List[DateCluster]:
+        minmax_select = self._matching_query("timestamp", url)
+        minmax = self._con.execute(
+            f"""
+            SELECT MIN(timestamp), MAX(timestamp) FROM ({minmax_select[0]})
+            """,
+            minmax_select[1],
+        ).fetchone()
+        if minmax is None:
+            return []
+        bucket_size = max(1.0, (1.0 + float(minmax[1]) - float(minmax[0])) / buckets)
+        final_subselect_query = self._matching_query("timestamp, md5", url)
+        final = self._con.execute(
+            f"""
+SELECT
+  (bucket) * {bucket_size} + {minmax[0]} AS bucket_min,
+  (bucket + 1) * {bucket_size} + {minmax[0]} AS bucket_max,
+  min_timestamp,
+  max_timestamp,
+  avg_timestamp,
+  total,
+  example_md5
+FROM (
+  SELECT
+    CAST((timestamp - {minmax[0]})/ {bucket_size} AS INT) AS bucket,
+    MIN(timestamp) AS min_timestamp,
+    MAX(timestamp) AS max_timestamp,
+    AVG(timestamp) AS avg_timestamp,
+    COUNT(1) as total,
+    MIN(md5) as example_md5
+  FROM
+    ({final_subselect_query[0]}) sl
+  WHERE timestamp IS NOT NULL
+  GROUP BY bucket
+
+) fl
+            """,
+            final_subselect_query[1],
+        )
+        return [
+            DateCluster(
+                example_path_md5, bucket_min, bucket_max, min_timestamp, max_timestamp, avg_timestamp, total
+            )
+            for (
+                bucket_min,
+                bucket_max,
+                min_timestamp,
+                max_timestamp,
+                avg_timestamp,
+                total,
+                example_path_md5,
+            ) in final.fetchall()
+        ]
 
     def get_image_clusters(
         self,
@@ -380,8 +442,9 @@ SELECT "alt", 'min', MIN(altitude) FROM matched_images WHERE altitude IS NOT NUL
     def get_matching_images(
         self,
         url: UrlParameters,
-    ) -> t.Iterable[Image]:
+    ) -> t.Tuple[t.List[Image], bool]:
         # TODO: aggregations could be done separately
+        actual_paging = url.paging + 1
         (
             query,
             variables,
@@ -390,31 +453,31 @@ SELECT "alt", 'min', MIN(altitude) FROM matched_images WHERE altitude IS NOT NUL
             url,
         )
         if url.paging:
-            query = f"{query}\nORDER BY timestamp\nDESC LIMIT {url.paging}\nOFFSET {url.paging * url.page}"
+            query = f"{query}\nORDER BY timestamp\nDESC LIMIT {actual_paging}\nOFFSET {url.paging * url.page}"
         res = self._con.execute(
             query,
             variables,
         )
-        while True:
-            items = res.fetchmany(size=url.paging)
-            if not items:
-                return
-            for (
-                md5,
-                timestamp,
-                tags,
-                tags_probs,
-                classifications,
-                address_country,
-                address_name,
-                address_full,
-                feature_last_update,
-                latitude,
-                longitude,
-                altitude,
-                version,
-            ) in items:
-                yield Image(
+        items = res.fetchall()
+        has_extra_data = len(items) > url.paging
+        output = []
+        for (
+            md5,
+            timestamp,
+            tags,
+            tags_probs,
+            classifications,
+            address_country,
+            address_name,
+            address_full,
+            feature_last_update,
+            latitude,
+            longitude,
+            altitude,
+            version,
+        ) in items[: url.paging]:
+            output.append(
+                Image(
                     md5,
                     None if timestamp is None else datetime.fromtimestamp(timestamp),  # TODO convert
                     (
@@ -440,6 +503,18 @@ SELECT "alt", 'min', MIN(altitude) FROM matched_images WHERE altitude IS NOT NUL
                     altitude,
                     version,
                 )
+            )
+        return output, has_extra_data
+
+    def get_matching_directories(self, url: UrlParameters) -> t.List[t.Tuple[str, int]]:
+        (match_query, match_params) = self._matching_query("md5", url)
+        ret = self._con.execute(
+            f"""
+SELECT directory, COUNT(DISTINCT md5) AS total FROM directories WHERE md5 IN ({match_query}) GROUP BY directory
+            """,
+            match_params,
+        ).fetchall()
+        return list(ret)
 
 
 def round_to_significant_digits(value: float, significant_digits: int) -> float:

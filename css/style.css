@@ -1,0 +1,126 @@
+body {
+  font-family: monospace;
+}
+.popup {
+  max-width: 5em;
+  max-height: 5em;
+}
+.gallery_item {
+  float: left;
+  width: 15em;
+  height: 25em;
+  background-color: #0000BB33;
+  margin: 0.5em;
+  border: 1px solid #fff;
+  text-align: center;
+}
+div.gallery_item:hover {
+  border: 1px solid #777;
+}
+.gallery_container {
+  display: flex;
+  width: 15em;
+  height: 15em;
+  justify-content: center;
+
+}
+.overlay .gallery_container {
+  display: flex;
+  justify-content: center;
+  width: initial;
+  height: initial;
+  max-height: 90%;
+  height: 90%;
+}
+.gallery_item_fs{
+  display: none;
+}
+.overlay .gallery_item_fs {
+  display: block;
+}
+.gallery_image {
+  object-fit: contain;
+  max-width: 15em;
+  max-height: 15em;
+}
+.overlay .gallery_image {
+  object-fit: contain;
+  max-width: 100%;
+  max-height: 100%;
+}
+.overlay {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background: #ffffffDD;
+}
+
+.tag a {
+  color: black;
+  text-decoration: none;
+}
+.tag {
+  background-color: #00BB0033;
+  border-radius: 1em;
+  padding: 0.1em;
+  margin: 0.2em;
+}
+.location {
+  background-color: #BB000033;
+  border-radius: 1em;
+  padding: 0.1em;
+  margin: 0.2em;
+}
+.location a {
+  color: black;
+  text-decoration: none;
+}
+.dir {
+  background-color: #00BBBB33;
+  border-radius: 1em;
+  padding: 0.1em;
+  margin: 0.2em;
+}
+.pdir {
+  background-color: #00BBBB33;
+  border-radius: 1em;
+  padding: 0.1em;
+  margin: 0.1em;
+}
+.date{
+  background-color: #BBBB0033;
+  border-radius: 1em;
+  padding: 0.1em;
+  margin: 0.2em;
+}
+.date a {
+  color: black;
+  text-decoration: none;
+}
+#map {
+  height: 380px;
+  z-index: 0;
+}
+
+.directories {
+  max-height: 20em;
+  overflow:auto;
+}
+
+.date_chart {
+  height: 20em;
+  width: 100%;
+}
+
+.overflow {
+  overflow:auto;
+  background-color: white;
+}
+.raw {
+  background-color: #FF000033;
+  border-radius: 1em;
+  padding: 0.1em;
+  margin: 0.2em;
+}

@@ -12,11 +12,13 @@ import asyncinotify
 import tqdm
 
 from data_model.config import Config, DBFilesConfig
-from db import FeaturesTable, Connection, FilesTable, Queries
+from db import FeaturesTable, PhotosConnection, GalleryConnection, FilesTable, PhotosQueries
 from annots.annotator import Annotator
+from annots.date import PathDateExtractor
 from file_mgmt.jobs import Jobs, JobType, IMPORT_PRIORITY, DEFAULT_PRIORITY, REALTIME_PRIORITY
 from file_mgmt.queues import Queues, Queue
 from file_mgmt.remote_control import ImportCommand
+from gallery.db import Reindexer
 from utils import assert_never, Lazy
 from utils.files import get_paths, expand_vars_in_path
 
@@ -166,6 +168,31 @@ async def managed_worker_and_import_worker(context: GlobalContext, config: Confi
             await asyncio.sleep(0)
 
 
+async def reindex_gallery(reindexer: Reindexer) -> None:
+    # Allow other tasks to start
+    await asyncio.sleep(0)
+    sleep_time = 1
+    max_sleep_time = 64
+    while True:
+        try:
+            done = reindexer.load(show_progress=False)
+            if done <= 100:
+                sleep_time = min(sleep_time * 2, max_sleep_time)
+                if done > 0:
+                    print(f"Reindexed {done} images.", file=sys.stderr)
+            else:
+                print(f"Reindexed {done} images.", file=sys.stderr)
+                sleep_time = 1
+        # pylint: disable = broad-exception-caught
+        except Exception as e:
+            traceback.print_exc()
+            print("Error while trying to refresh data in db:", e)
+            sleep_time = 1
+            print("Reconnecting")
+            reindexer.reconnect()
+        await asyncio.sleep(sleep_time)
+
+
 async def main() -> None:
     files_config = DBFilesConfig()
     parser = argparse.ArgumentParser(prog="Photo annotator")
@@ -175,22 +202,26 @@ async def main() -> None:
     parser.add_argument("--annotate-url", default=None, type=str)
     args = parser.parse_args()
     config = Config.load(args.config)
-    connection = Connection(args.db)
-    features = FeaturesTable(connection)
-    files = FilesTable(connection)
+    photos_connection = PhotosConnection(args.db)
+    gallery_connection = GalleryConnection(files_config.gallery_db)
+    reindexer = Reindexer(PathDateExtractor(config.directory_matching), photos_connection, gallery_connection)
+    features = FeaturesTable(photos_connection)
+    files = FilesTable(photos_connection)
 
     async def check_db_connection() -> None:
         while True:
-            connection.check_unused()
+            photos_connection.check_unused()
+            reindexer.check_unused()
             Lazy.check_ttl()
             await asyncio.sleep(10)
 
     tasks = []
     tasks.append(asyncio.create_task(check_db_connection()))
+    tasks.append(asyncio.create_task(reindex_gallery(reindexer)))
 
     async with aiohttp.ClientSession() as session:
         annotator = Annotator(config.directory_matching, files_config, features, session, args.annotate_url)
-        jobs = Jobs(config.managed_folder, files, Queries(connection), annotator)
+        jobs = Jobs(config.managed_folder, files, PhotosQueries(photos_connection), annotator)
         queues = Queues()
         context = GlobalContext(jobs, files, queues)
 

@@ -2,7 +2,8 @@ from datetime import datetime
 import typing as t
 import unittest
 
-from db.connection import Connection
+from db.connection import GalleryConnection
+from db.directories_table import DirectoriesTable
 from db.gallery_index_table import GalleryIndexTable, WrongAggregateTypeReturned
 from db.types import Image, ImageAggregation, LocPoint, LocationCluster
 from gallery.url import (
@@ -10,8 +11,8 @@ from gallery.url import (
 )
 
 
-def connection() -> Connection:
-    return Connection(":memory:")
+def connection() -> GalleryConnection:
+    return GalleryConnection(":memory:")
 
 
 def _image(
@@ -61,22 +62,22 @@ class TestGalleryIndexTable(unittest.TestCase):
             "M1", caption="WAAAT", dependent_features_last_update=100, version=old_version
         )
         table.add(old_omg)
-        res = list(table.get_matching_images(UrlParameters()))
+        res = table.get_matching_images(UrlParameters())[0]
         self.assertEqual(len(res), 1)
         self.assertEqual(old_omg, res[0])
 
         table.add(new_omg)
-        res = list(table.get_matching_images(UrlParameters()))
+        res = table.get_matching_images(UrlParameters())[0]
         self.assertEqual(len(res), 1)
         self.assertEqual(new_omg, res[0])
 
         table.add(changed_omg)
-        res = list(table.get_matching_images(UrlParameters()))
+        res = table.get_matching_images(UrlParameters())[0]
         self.assertEqual(len(res), 1)
         self.assertEqual(new_omg, res[0])
 
         table.add(changed_old_omg)
-        res = list(table.get_matching_images(UrlParameters()))
+        res = table.get_matching_images(UrlParameters())[0]
         self.assertEqual(len(res), 1)
         self.assertEqual(new_omg, res[0])
 
@@ -181,7 +182,9 @@ class TestGalleryIndexTable(unittest.TestCase):
         )
 
     def test_querying(self) -> None:
-        table = GalleryIndexTable(connection())
+        con = connection()
+        table = GalleryIndexTable(con)
+        directories = DirectoriesTable(con)
         i1 = _image(
             "M1", alt=127.47, caption=None, tags=None, lon=32.0, datetm=datetime(2023, 1, 1, 12, 12, 12)
         )
@@ -192,55 +195,65 @@ class TestGalleryIndexTable(unittest.TestCase):
         table.add(i2)
         table.add(i3)
         table.add(i4)
-        ret = list(table.get_matching_images(UrlParameters(addr="Foud")))
+        ret = table.get_matching_images(UrlParameters(addr="Foud"))[0]
         self.assertListEqual(ret, [i3])
-        ret = list(table.get_matching_images(UrlParameters(addr="Foud", cls="fishy")))
+        ret = table.get_matching_images(UrlParameters(addr="Foud", cls="fishy"))[0]
         self.assertListEqual(ret, [i3])
-        ret = sorted(list(table.get_matching_images(UrlParameters(cls="fishy"))), key=lambda x: x.md5)
+        ret = sorted(table.get_matching_images(UrlParameters(cls="fishy"))[0], key=lambda x: x.md5)
         self.assertListEqual(ret, [i3, i4])
         ret = sorted(
-            list(table.get_matching_images(UrlParameters(cls="fishy", directory="this is not used"))),
+            table.get_matching_images(UrlParameters(cls="fishy"))[0],
             key=lambda x: x.md5,
         )
         self.assertListEqual(ret, [i3, i4])
         ret = sorted(
-            list(table.get_matching_images(UrlParameters(datefrom=datetime(2022, 1, 1)))),
+            table.get_matching_images(UrlParameters(datefrom=datetime(2022, 1, 1)))[0],
             key=lambda x: x.md5,
         )
         self.assertListEqual(ret, [i1, i2, i3])
         ret = sorted(
-            list(table.get_matching_images(UrlParameters(datefrom=datetime(2024, 1, 1)))),
+            table.get_matching_images(UrlParameters(datefrom=datetime(2024, 1, 1)))[0],
             key=lambda x: x.md5,
         )
         self.assertListEqual(ret, [i2, i3])
         ret = sorted(
-            list(table.get_matching_images(UrlParameters(dateto=datetime(2024, 1, 1)))),
+            table.get_matching_images(UrlParameters(dateto=datetime(2024, 1, 1)))[0],
             key=lambda x: x.md5,
         )
         self.assertListEqual(ret, [i1])
         ret = sorted(
-            list(table.get_matching_images(UrlParameters(dateto=datetime(2024, 1, 2)))),
+            table.get_matching_images(UrlParameters(dateto=datetime(2024, 1, 2)))[0],
             key=lambda x: x.md5,
         )
         self.assertListEqual(ret, [i1, i2, i3])
         ret = sorted(
-            list(
-                table.get_matching_images(
-                    UrlParameters(datefrom=datetime(2024, 1, 1), dateto=datetime(2024, 1, 2))
-                )
-            ),
+            table.get_matching_images(
+                UrlParameters(datefrom=datetime(2024, 1, 1), dateto=datetime(2024, 1, 2))
+            )[0],
             key=lambda x: x.md5,
         )
         self.assertListEqual(ret, [i2, i3])
         ret = sorted(
-            list(
-                table.get_matching_images(
-                    UrlParameters(datefrom=datetime(2023, 1, 1), dateto=datetime(2024, 1, 2))
-                )
-            ),
+            table.get_matching_images(
+                UrlParameters(datefrom=datetime(2023, 1, 1), dateto=datetime(2024, 1, 2))
+            )[0],
             key=lambda x: x.md5,
         )
         self.assertListEqual(ret, [i1, i2, i3])
+        ret = table.get_matching_images(UrlParameters(directory="/foo/bar"))[0]
+        self.assertListEqual(ret, [])
+        directories.add("/foo/bar", "M1")
+        directories.add("/foo/lol", "M1")
+        directories.add("/foo/lol", "M3")
+        directories.add("/foo/bar", "M2")
+        ret = sorted(table.get_matching_images(UrlParameters(directory="/foo/bar"))[0], key=lambda x: x.md5)
+        self.assertListEqual(ret, [i1, i2])
+        ret = sorted(table.get_matching_images(UrlParameters(directory="/foo/lol"))[0], key=lambda x: x.md5)
+        self.assertListEqual(ret, [i1, i3])
+        ret = sorted(table.get_matching_images(UrlParameters(directory="/foo"))[0], key=lambda x: x.md5)
+        self.assertListEqual(ret, [i1, i2, i3])
+        ret = sorted(table.get_matching_images(UrlParameters(directory="/wat"))[0], key=lambda x: x.md5)
+        self.assertListEqual(ret, [])
 
     def test_errors_aggregate_states(self) -> None:
         table = GalleryIndexTable(connection())

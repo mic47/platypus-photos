@@ -11,7 +11,7 @@ import tqdm
 from annots.md5 import compute_md5
 from annots.annotator import Annotator
 from data_model.features import PathWithMd5, GeoAddress
-from db import FilesTable, Queries
+from db import FilesTable, PhotosQueries
 from db.types import ManagedLifecycle
 from file_mgmt.remote_control import ImportMode
 from utils import assert_never
@@ -36,7 +36,7 @@ class EnqueuePathAction:
 
 
 class Jobs:
-    def __init__(self, managed_folder: str, files: FilesTable, queries: Queries, annotator: Annotator):
+    def __init__(self, managed_folder: str, files: FilesTable, queries: PhotosQueries, annotator: Annotator):
         self.photos_dir = managed_folder
         self._files = files
         self._queries = queries

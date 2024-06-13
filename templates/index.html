@@ -5,296 +5,57 @@
   <title>
 Gallery
   </title>
-<style>
-body {
-  font-family: monospace;
-}
-.popup {
-  max-width: 5em;
-  max-height: 5em;
-}
-.gallery_item {
-  float: left;
-  width: 15em;
-  height: 25em;
-  background-color: #0000BB33;
-  margin: 0.5em;
-  border: 1px solid #fff;
-  text-align: center;
-}
-div.gallery_item:hover {
-  border: 1px solid #777;
-}
-.gallery_container {
-  display: flex;
-  width: 15em;
-  height: 15em;
-  justify-content: center;
+<link rel="stylesheet" href="css/style.css">
 
-}
-.overlay .gallery_container {
-  display: flex;
-  justify-content: center;
-  width: initial;
-  height: initial;
-  max-height: 90%;
-  height: 90%;
-}
-.gallery_item_nav{
-  display: none;
-}
-.overlay .gallery_item_nav {
-  display: block;
-}
-.gallery_image {
-  object-fit: contain;
-  max-width: 15em;
-  max-height: 15em;
-}
-.overlay .gallery_image {
-  object-fit: contain;
-  max-width: 100%;
-  max-height: 100%;
-}
-.overlay {
-  position: fixed;
-  left: 0;
-  top: 0;
-  width: 100%;
-  height: 100%;
-  background: #ffffffDD;
-}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js/dist/chart.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
 
-.tag a {
-  color: black;
-  text-decoration: none;
-}
-.tag {
-  background-color: #00BB0033;
-  border-radius: 1em;
-  padding: 0.1em;
-  margin: 0.2em;
-}
-.location {
-  background-color: #BB000033;
-  border-radius: 1em;
-  padding: 0.1em;
-  margin: 0.2em;
-}
-.location a {
-  color: black;
-  text-decoration: none;
-}
-.dir {
-  background-color: #00BBBB33;
-  border-radius: 1em;
-  padding: 0.1em;
-  margin: 0.2em;
-}
-.date{
-  background-color: #BBBB0033;
-  border-radius: 1em;
-  padding: 0.1em;
-  margin: 0.2em;
-}
-.date a {
-  color: black;
-  text-decoration: none;
-}
-#map {
-  height: 380px;
-  z-index: 0;
-}
-</style>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-  integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
-  crossorigin=""/>
- <!-- Make sure you put this AFTER Leaflet's CSS -->
- <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-   integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
-   crossorigin=""></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+<script src="js/main.js"></script> 
 <script>
-function changeState(index) {
-  var url = new URL(window.location.href);
-  if (index == null) {
-    url.searchParams.delete("oi");
-  } else {
-    url.searchParams.set("oi", index);
-  }
-  if (window.history.replaceState) {
-    window.history.replaceState(window.history.state, "", url.href);
-  }
-}
-function replace_image_size_inside(element, source, replacement) {
-  if (element == null) {
-    return;
-  }
-  var images = element.getElementsByTagName('img');
-  for (var i = 0; i < images.length; i ++) {
-    var image = images[i];
-    var repl = image.src.replace('size=' + source, 'size=' + replacement);
-    if (repl != image.src) {
-        image.src = repl;
-    }
-    if (replacement == 'original') {
-      image.loading = 'eager';
-    }
-  }
-}
-function this_is_overlay_element(element) {
-  replace_image_size_inside(element, "preview", "original");
-  var next = element.nextElementSibling;
-  if (next != null) {
-    replace_image_size_inside(next, "preview", "original");
-    next = next.nextElementSibling;
-  }
-  var prev = element.previousElementSibling;
-  if (prev != null) {
-    replace_image_size_inside(prev, "preview", "original");
-    prev = prev.previousElementSibling;
-  }
-  if (next != null) {
-    replace_image_size_inside(next, "original", "preview");
-  }
-  if (prev != null) {
-    replace_image_size_inside(prev, "original", "preview");
-  }
-}
-function overlay(element, index) {
-  this_is_overlay_element(element.parentElement);
-  element.parentElement.classList.add('overlay');
-  changeState(index);
-}
-function overlay_close(element) {
-  var root = element.parentElement.parentElement;
-  replace_image_size_inside(root, 'original', 'preview');
-  replace_image_size_inside(root.previousElementSibling, 'original', 'preview');
-  replace_image_size_inside(root.nextElementSibling, 'original', 'preview');
-  root.classList.remove('overlay');
-  changeState(null);
-}
-function overlay_prev(element, index) {
-  this_is_overlay_element(element.parentElement.parentElement.previousElementSibling);
-  element.parentElement.parentElement.previousElementSibling.classList.add('overlay');
-  element.parentElement.parentElement.classList.remove('overlay');
-  changeState(index - 1);
-}
-function overlay_next(element, index) {
-  this_is_overlay_element(element.parentElement.parentElement.nextElementSibling);
-  element.parentElement.parentElement.nextElementSibling.classList.add('overlay');
-  element.parentElement.parentElement.classList.remove('overlay');
-  changeState(index + 1);
+var ___state = null;
+function update_dir(data) {
+  ___state.update_url({"directory": data});
 }
 
-function update_boundary(nw, se) {
-  var input = document.getElementById('fbnd');
-  input.value = JSON.stringify({
-    "tl": {
-      "latitude": nw.lat,
-      "longitude": nw.lng,
-    },
-    "br": {
-      "latitude": se.lat,
-      "longitude": se.lng,
-    },
-  });
-}
-function update_markers(map, state) {
-    function inner(e) {
-        // TODO: wrapped maps: shift from 0 + wrap around
-        var bounds = map.getBounds();
-        var nw = bounds.getNorthWest();
-        var se = bounds.getSouthEast();
-        update_boundary(nw, se);
-        var sz = map.getSize();
-        var cluster_pixel_size = 10;
-        var timestamp = (new Date()).getTime();
-        fetch("/api/location_clusters", {
-          method: "POST",
-          body: JSON.stringify({
-            "tl": {
-              "latitude": nw.lat,
-              "longitude": nw.lng,
-            },
-            "br": {
-              "latitude": se.lat,
-              "longitude": se.lng,
-            },
-            "res": {
-              "latitude": sz.y / cluster_pixel_size,
-              "longitude": sz.x / cluster_pixel_size,
-            },
-            "of": 0.5,
-            url: {{location_url_json | safe}},
-          }),
-          headers: {
-            "Content-type": "application/json; charset=UTF-8"
-          }
-        })
-          .then((response) => response.json())
-          .then((clusters) => {
-            if (timestamp < state.last_update_timestamp) {
-              return;
-            }
-            state.last_update_timestamp = timestamp;
-            var new_markers = {};
-            for (var i = 0; i < clusters.length; i++) {
-                var cluster = clusters[i];
-                var existing = state.markers[cluster.example_path_md5];
-                if (existing !== undefined) {
-                  new_markers[cluster.example_path_md5] = existing;
-                  delete state.markers[cluster.example_path_md5];
-                  continue;
-                }
-                var marker = L.marker([cluster.position.latitude, cluster.position.longitude]).addTo(map);
-                marker.bindPopup([
-                    cluster.example_classification,
-                    "@ ",
-                    cluster.address_name,
-                    ", ",
-                    cluster.address_country,
-                    " (",
-                    cluster.size,
-                    ")<br/><img src='/img?hsh=",
-                    cluster.example_path_md5,
-                    "&size=preview' class='popup'>"
-                ].join(''));
-                new_markers[cluster.example_path_md5] = marker;
-            }
-            Object.values(state.markers).forEach((m) => m.remove());
-            Object.keys(state.markers).forEach((m) => delete state.markers[m]);
-            Object.entries(new_markers).forEach((m) => state.markers[m[0]] = m[1]);
-          });
-    };
-    return inner
-
-}
 function init_fun() {
-  var map = L.map('map').setView([51.505, -0.09], 13);
-  var state = {
-    "markers": {},
-    "last_update_timestamp": 0,
-  };
-  map.on('load', update_markers(map, state));
-  map.on('zoomend', update_markers(map, state));
-  map.on('moveend', update_markers(map, state));
-  map.on('zoom', update_markers(map, state));
-  map.on('move', update_markers(map, state));
-  map.on('resize', update_markers(map, state));
+    if (___state !== null) {
+      throw new Error('State is already initialized!');
+    }
 
-  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19,
-    attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-  }).addTo(map);
-  {% if bounds %}
-  map.fitBounds([
-    [{{bounds.lat[0]}}, {{bounds.lon[0]}}],
-    [{{bounds.lat[1]}}, {{bounds.lon[1]}}],
-  ]);
-  {% endif %}
+    // Set parameters
+    const bounds = {% if bounds %}[[{{bounds.lat[0]}}, {{bounds.lon[0]}}],[{{bounds.lat[1]}}, {{bounds.lon[1]}}]]{% else %}null{% endif %};
+    const url_json = {{url_json | safe}};
+    const page = {{ input.page }};
+    const oi = {% if oi %}{{oi}}{% else %}null{% endif %};
+    const url_parameters_fields = {{ url_parameters_fields | safe }};
+
+    // Initialize all components
+    ___state = new AppState({})
+    const url_sync = new UrlSync(url_parameters_fields);
+    const gallery = new Gallery("GalleryImages", page, oi);
+    const map = new PhotoMap("map", bounds, () => ___state.get_url());
+    const dates = new Dates("DateChart", (x) => {___state.update_url(x);});
+    const directories = new Directories("Directories");
+    ___state.register_hook((url_params) => {
+        url_sync.update(url_params);
+        gallery.update_page(0, null);
+        gallery.fetch(url_params);
+
+        dates.fetch(url_params);
+
+        directories.fetch_directories(url_params);
+
+        map.update_markers(url_params, true);
+    })
+
+    // Set initial url, redraw everything
+    ___state.replace_url(url_json);
 }
 </script>
-
 </head>
 <body onload="init_fun()">
 
@@ -325,56 +86,11 @@ function init_fun() {
   {% for t in top.addr %}
     <a href="{{t[2]}}">{{t[0]}} ({{t[1]}})</a>
   {% endfor %} <br/>
-  <div id="map"></div>
-  {% if urls.prev %}<a href="{{urls.prev}}">{% endif %}Prev Page{% if urls.prev %}</a>{% endif %}
-  {% if urls.next %}<a href="{{urls.next}}">{% endif %}Next Page{% if urls.next %}</a>{% endif %}
 </div>
-<div>
 
-{% for image in images %}
-  {% if loop.index0 == oi %}
-  <div class="gallery_item overlay">
-  {% else %}
-  <div class="gallery_item">
-  {% endif %}
-    <span id="i{{loop.index0}}"></span>
-    <div class="gallery_item_nav">
-        {% if loop.index0 == 0 %}
-        {% if urls.prev_overlay %}<a href="{{urls.prev_overlay}}">prev</a>{% else %} prev {% endif %}
-        {% else %}
-        <a href="#i{{ loop.index0}}" onclick="overlay_prev(this, {{ loop.index0 }})">prev</a>
-        {% endif %}
-        <a href="#i{{ loop.index0}}" onclick="overlay_close(this)">close</a>
-        {% if loop.index == images|length %}
-        {% if urls.next_overlay %}<a href="{{urls.next_overlay}}">next</a>{% else %} next {% endif %}
-        {% else %}
-        <a href="#i{{ loop.index0}}" onclick="overlay_next(this, {{ loop.index0 }})">next</a>
-        {% endif %}
-    </div>
-    <div class="gallery_container" onclick="overlay(this, {{ loop.index0 }})">
-    <img loading="lazy" src="/img?hsh={{image.hsh}}&size={% if loop.index0 == oi %}original{%else%}preview{%endif%}" class="gallery_image"/>
-    </div>
-    {{ image.classifications}} <br/>
-    {% for tag in image.tags %}
-    <span class="tag"><a href="{{tag[2]}}">{{tag[1]}}{{tag[0]}}</a></span>
-    {% endfor %}
-
-    {% for a in image.addrs %}
-    <span class="location"><a href="{{a.url}}">{{ a.address }}</a></span>
-    {% endfor %}
-    {% if image.date.date %}
-    <span class="date"><a href="{{image.date.url}}">{{image.date.date}}</a></span>
-    {% endif %}
-    {% for path in image.paths %}
-    <span class="dir"><a href="{{path.dir_url}}">{{path.dir}}</a></span>
-    {% endfor %}
-  </div>
-{% endfor %}
-</div>
-<br>
-<div style="float: left; background: #CCCCCC; height: 10em;">
-  {% if urls.prev %}<a href="{{urls.prev}}">{% endif %}Prev Page{% if urls.prev %}</a>{% endif %}
-  {% if urls.next %}<a href="{{urls.next}}">{% endif %}Next Page{% if urls.next %}</a>{% endif %}
-</div>
+<div id="map"></div>
+<div class="date_chart"><canvas id="DateChart"></canvas></div>
+<div class="directories" id="Directories"></div>
+<div id="GalleryImages"></div>
 </body>
 </html>

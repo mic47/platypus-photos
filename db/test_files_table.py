@@ -1,13 +1,13 @@
 import typing as t
 import unittest
 
-from db.connection import Connection
+from db.connection import PhotosConnection
 from db.files_table import FilesTable, FilesTableWrongLifecycleParams
 from db.types import FileRow, ManagedLifecycle
 
 
-def connection() -> Connection:
-    return Connection(":memory:")
+def connection() -> PhotosConnection:
+    return PhotosConnection(":memory:")
 
 
 def sanitize(row: t.Optional[FileRow]) -> t.Optional[FileRow]:
@@ -181,6 +181,25 @@ class TestFilesTable(unittest.TestCase):
                 sanitize_list(table.by_managed_lifecycle(ManagedLifecycle.NOT_MANAGED)), key=lambda x: x.file
             ),
         )
+
+    def test_dirty_files(self) -> None:
+        table = FilesTable(connection())
+        table.add_or_update("p1", "m1", None, ManagedLifecycle.SYNCED, None)
+        table.add_or_update("p2", "m2", None, ManagedLifecycle.BEING_MOVED_AROUND, "tmp2")
+        table.add_or_update("p3", "m3", "og3", ManagedLifecycle.SYNCED, None)
+        table.add_or_update("p4", "m4", None, ManagedLifecycle.IMPORTED, None)
+        table.add_or_update("p5", "m5", None, ManagedLifecycle.NOT_MANAGED, None)
+
+        self.assertListEqual(sorted(table.dirty_md5s()), ["m1", "m3", "m5"])
+
+        table.undirty("m1", 0.0)
+        self.assertListEqual(sorted(table.dirty_md5s()), ["m1", "m3", "m5"])
+
+        table.undirty("m1", 171822378600.0)
+        self.assertListEqual(sorted(table.dirty_md5s()), ["m3", "m5"])
+
+        table.change_path("p1", "p1'")
+        self.assertListEqual(sorted(table.dirty_md5s()), ["m1", "m3", "m5"])
 
 
 if __name__ == "__main__":
