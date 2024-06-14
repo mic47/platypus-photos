@@ -5,6 +5,7 @@ import os
 import sys
 import time
 import enum
+import traceback
 from datetime import datetime
 from dataclasses import dataclass, fields
 
@@ -166,11 +167,16 @@ class MapSearchRequest:
 @app.post("/internal/map_search.html", response_class=HTMLResponse)
 def map_search_endpoint(request: Request, req: MapSearchRequest) -> HTMLResponse:
     print("ms", req)
-    result = GEOLOCATOR.search(req.query, limit=10) if req.query is not None else []
+    error = ""
+    try:
+        result = GEOLOCATOR.search(req.query, limit=10) if req.query is not None else []
+    except Exception as e:
+        traceback.print_exc()
+        error = f"{e}\n{traceback.format_exc()}"
     return templates.TemplateResponse(
         request=request,
         name="map_search.html",
-        context={"req": req, "result": result},
+        context={"req": req, "result": result, "error": error},
     )
 
 
