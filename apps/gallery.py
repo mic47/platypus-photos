@@ -159,6 +159,22 @@ GEOLOCATOR = Geolocator()
 
 
 @dataclass
+class MapSearchRequest:
+    query: t.Optional[str] = None
+
+
+@app.post("/internal/map_search.html", response_class=HTMLResponse)
+def map_search_endpoint(request: Request, req: MapSearchRequest) -> HTMLResponse:
+    print("ms", req)
+    result = GEOLOCATOR.search(req.query, limit=10) if req.query is not None else []
+    return templates.TemplateResponse(
+        request=request,
+        name="map_search.html",
+        context={"req": req, "result": result},
+    )
+
+
+@dataclass
 class LocationInfoRequest:
     latitude: float
     longitude: float

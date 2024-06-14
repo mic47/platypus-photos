@@ -44,6 +44,23 @@ function update_form() {
   }
   ___state.replace_url(values);
 }
+___map_search = null;
+___map = null;
+function map_zoom(latitude, longitude) {
+   ___map.map.setView([latitude, longitude], 13);
+}
+function fetch_map_search() {
+  const formData = new FormData(document.getElementById('MapSearchId'));
+  const values = {}
+  for (const [key, value] of formData) {
+    if (value) {
+        values[key] = value;
+    }
+  }
+  if (___map_search !== null) {
+    ___map_search.fetch(values["query"] || null);
+  }
+}
 function update_url_add_tag(tag) {
   const old_tag = ___state.get_url()["tag"];
   if (old_tag === undefined || old_tag === null) {
@@ -89,7 +106,8 @@ function init_fun() {
     const paging_sync = new UrlSync(paging_fields);
     const input_form = new InputForm("InputForm");
     const gallery = new Gallery("GalleryImages", prev_page, next_page);
-    const map = new PhotoMap("map", bounds, () => ___state.get_url(), location_preview);
+    ___map = new PhotoMap("map", bounds, () => ___state.get_url(), location_preview);
+    ___map_search = new MapSearch("MapSearch");
     const dates = new Dates("DateChart", (x) => {___state.update_url(x);});
     const directories = new Directories("Directories");
     const aggregate_info = new AggregateInfo("AggregateInfo");
@@ -103,7 +121,7 @@ function init_fun() {
 
         directories.fetch(url_params);
 
-        map.update_markers(url_params, true);
+        ___map.update_markers(url_params, true);
     });
     ___state.register_paging_hook((paging) => {
         paging_sync.update(paging);
@@ -114,6 +132,7 @@ function init_fun() {
     // TODO: check that this does not trigger too many refreshes
     ___state.replace_paging(paging_sync.get_url());
     ___state.replace_url(url_sync.get_url());
+    ___map_search.fetch(null);
 }
 </script>
 </head>
@@ -121,6 +140,7 @@ function init_fun() {
 
 <div id="InputForm"></div>
 <div id="AggregateInfo"></div>
+<div id="MapSearch"></div>
 <div id="map"></div>
 <div class="date_chart"><canvas id="DateChart"></canvas></div>
 <div class="directories" id="Directories"></div>

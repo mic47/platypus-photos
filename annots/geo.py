@@ -4,6 +4,7 @@ import typing as t
 import sys
 
 from geopy.geocoders import Nominatim
+from geopy.location import Location
 
 from data_model.features import GeoAddress, WithMD5, PathWithMd5
 from db.cache import Cache, NoCache
@@ -19,6 +20,7 @@ class Geolocator:
         self.geolocator = Nominatim(user_agent="Mic's photo lookups")
         self.last_api = time.time() - 10
         self._version = GeoAddress.current_version()
+        self._search_cache: t.Dict[t.Tuple[str, int], t.List[Location]] = {}
 
     def address(
         self, inp: PathWithMd5, lat: float, lon: float, recompute: bool = False
@@ -28,11 +30,34 @@ class Geolocator:
             return ret.payload
         return self.cache.add(self.address_impl(inp, lat, lon))
 
-    def address_impl(self, inp: PathWithMd5, lat: float, lon: float) -> WithMD5[GeoAddress]:
+    def search(self, query: str, limit: int) -> t.List[Location]:
+        key = (query, limit)
+        value = self._search_cache.get(key)
+        if value is not None:
+            return value
+        ret = self.search_impl(query, limit)
+        self._search_cache[key] = ret
+        return ret
+
+    def search_impl(self, query: str, limit: int) -> t.List[Location]:
+        self._rate_limit()
+        ret = self.geolocator.geocode(query, exactly_one=False, limit=limit)
+        if ret is None:
+            return []
+        if isinstance(ret, Location):
+            return [ret]
+        if isinstance(ret, list):
+            return ret
+        return []
+
+    def _rate_limit(self) -> None:
         now = time.time()
         from_last_call = max(0, now - self.last_api)
         if from_last_call < RATE_LIMIT_SECONDS:
             time.sleep(RATE_LIMIT_SECONDS - from_last_call)
+
+    def address_impl(self, inp: PathWithMd5, lat: float, lon: float) -> WithMD5[GeoAddress]:
+        self._rate_limit()
         retries_left = RETRIES
         query = f"{lat}, {lon}"
         while True:

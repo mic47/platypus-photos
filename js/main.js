@@ -179,7 +179,7 @@ function update_boundary(nw, se) {
 
 class PhotoMap {
     constructor(div_id, bounds, get_url, context_menu_callback) {
-        this.map = L.map("map").setView([51.505, -0.09], 13);
+        this.map = L.map(div_id).setView([51.505, -0.09], 13);
         this.markers = {};
         this.last_update_timestamp = 0;
         this._context_menu_callback = context_menu_callback;
@@ -381,6 +381,15 @@ class GenericFetch {
                 const gallery = document.getElementById(this._div_id);
                 gallery.innerHTML = text;
             });
+    }
+}
+
+class MapSearch extends GenericFetch {
+    constructor(div_id) {
+        super(div_id, "/internal/map_search.html")
+    }
+    fetch(search_str) {
+        return this.fetch_impl({query: search_str})
     }
 }
 

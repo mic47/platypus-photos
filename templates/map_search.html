@@ -1,0 +1,10 @@
+<form id="MapSearchId" action="javascript:fetch_map_search()">
+<input type="text" name="query" value="{% if req.query %}{{req.query}}{% endif %}">
+</form>
+{% if result %}
+<div class="search_result">
+{% for result in result %}
+<a onclick="this.parentElement.hidden=false;map_zoom({{result.latitude}}, {{result.longitude}});" href="#" >{{result.address}}<br/>
+{% endfor %}
+</div>
+{% endif %}

@@ -124,3 +124,8 @@ div.gallery_item:hover {
   padding: 0.1em;
   margin: 0.2em;
 }
+.search_result {
+  position: relative;
+  background-color: #00000033;
+  z-index: 1;
+}
