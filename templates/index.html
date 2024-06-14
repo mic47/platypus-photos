@@ -33,7 +33,6 @@ function reset_param(key) {
   ___state.replace_url(state);
 }
 function update_form() {
-  console.log("UPDATE FORM");
   const formData = new FormData(document.getElementById('input'));
   const values = {};
   for (const [key, value] of formData) {
@@ -41,7 +40,6 @@ function update_form() {
         values[key] = value;
     }
   }
-  console.log(values);
   ___state.update_url(values);
 }
 function update_url_add_tag(tag) {

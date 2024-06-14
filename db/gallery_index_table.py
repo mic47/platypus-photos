@@ -1,6 +1,8 @@
 from collections import (
     Counter,
 )
+import copy
+import itertools
 import typing as t
 import math
 from datetime import (
@@ -214,13 +216,32 @@ WHERE
         ).fetchone()
         if minmax is None:
             return []
-        bucket_size = max(1.0, (1.0 + float(minmax[1]) - float(minmax[0])) / buckets)
+        diff = float(minmax[1]) - float(minmax[0])
+        bucket_size = max(1.0, (1.0 + diff) / buckets)
+        original_url = url
+        url = copy.copy(url)
+        if url.tsfrom:
+            url.tsfrom -= diff / 2
+        if url.tsto:
+            url.tsto += diff / 2
+        print(diff)
+        print(original_url)
+        print(url)
         final_subselect_query = self._matching_query("timestamp, md5", url)
+        final_params = tuple(
+            itertools.chain(
+                [original_url.tsfrom or minmax[0], original_url.tsto or minmax[1]], final_subselect_query[1]
+            )
+        )
+        print(final_subselect_query[0])
+        print(final_subselect_query[1])
+        print(final_params)
         final = self._con.execute(
             f"""
 SELECT
   (bucket) * {bucket_size} + {minmax[0]} AS bucket_min,
   (bucket + 1) * {bucket_size} + {minmax[0]} AS bucket_max,
+  overfetched,
   min_timestamp,
   max_timestamp,
   avg_timestamp,
@@ -229,6 +250,7 @@ SELECT
 FROM (
   SELECT
     CAST((timestamp - {minmax[0]})/ {bucket_size} AS INT) AS bucket,
+    timestamp < ? OR timestamp > ? as overfetched,
     MIN(timestamp) AS min_timestamp,
     MAX(timestamp) AS max_timestamp,
     AVG(timestamp) AS avg_timestamp,
@@ -237,19 +259,27 @@ FROM (
   FROM
     ({final_subselect_query[0]}) sl
   WHERE timestamp IS NOT NULL
-  GROUP BY bucket
+  GROUP BY bucket, overfetched
 
 ) fl
             """,
-            final_subselect_query[1],
+            final_params,
         )
         return [
             DateCluster(
-                example_path_md5, bucket_min, bucket_max, min_timestamp, max_timestamp, avg_timestamp, total
+                example_path_md5,
+                bucket_min,
+                bucket_max,
+                bool(overfetched),
+                min_timestamp,
+                max_timestamp,
+                avg_timestamp,
+                total,
             )
             for (
                 bucket_min,
                 bucket_max,
+                overfetched,
                 min_timestamp,
                 max_timestamp,
                 avg_timestamp,
