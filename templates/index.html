@@ -34,13 +34,16 @@ function reset_param(key) {
 }
 function update_form() {
   const formData = new FormData(document.getElementById('input'));
-  const values = {};
+  const values = ___state.get_url();
   for (const [key, value] of formData) {
     if (value) {
         values[key] = value;
+    } else {
+        console.log("deleting", key);
+        delete values[key]
     }
   }
-  ___state.update_url(values);
+  ___state.replace_url(values);
 }
 function update_url_add_tag(tag) {
   const old_tag = ___state.get_url()["tag"];
