@@ -19,7 +19,15 @@ from gallery.utils import (
 from gallery.url import SearchQuery, GalleryPaging
 from db.connection import GalleryConnection
 from db.directories_table import DirectoriesTable
-from db.types import Image, ImageAggregation, LocationCluster, LocPoint, DateCluster, DirectoryStats
+from db.types import (
+    Image,
+    ImageAddress,
+    ImageAggregation,
+    LocationCluster,
+    LocPoint,
+    DateCluster,
+    DirectoryStats,
+)
 
 
 class WrongAggregateTypeReturned(Exception):
@@ -112,9 +120,9 @@ WHERE
                 ":".join([t for t, _ in tags]),
                 ":".join([f"{p:.4f}" for _, p in tags]),
                 omg.classifications,
-                omg.address_country,
-                omg.address_name,
-                omg.address_full,
+                omg.address.country,
+                omg.address.name,
+                omg.address.full,
                 omg.latitude,
                 omg.longitude,
                 omg.altitude,
@@ -523,9 +531,11 @@ SELECT "alt", 'min', MIN(altitude) FROM matched_images WHERE altitude IS NOT NUL
                         )
                     ),
                     None if not classifications else classifications,
-                    address_country,
-                    address_name,
-                    address_full,
+                    ImageAddress(
+                        address_country,
+                        address_name,
+                        address_full,
+                    ),
                     feature_last_update,
                     latitude,
                     longitude,

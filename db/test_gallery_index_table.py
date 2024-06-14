@@ -5,7 +5,7 @@ import unittest
 from db.connection import GalleryConnection
 from db.directories_table import DirectoriesTable
 from db.gallery_index_table import GalleryIndexTable, WrongAggregateTypeReturned
-from db.types import Image, ImageAggregation, LocPoint, LocationCluster
+from db.types import Image, ImageAddress, ImageAggregation, LocPoint, LocationCluster
 from gallery.url import SearchQuery, GalleryPaging
 
 
@@ -32,9 +32,11 @@ def _image(
         datetm,
         tags,
         caption,
-        None if address is None else address.split(",")[0].strip(),
-        None if address is None else address.split(",")[-1].strip(),
-        address,
+        ImageAddress(
+            None if address is None else address.split(",")[0].strip(),
+            None if address is None else address.split(",")[-1].strip(),
+            address,
+        ),
         dependent_features_last_update,
         lat,
         lon,

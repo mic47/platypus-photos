@@ -212,7 +212,7 @@ async def gallery_div(request: Request, params: GalleryRequest, oi: t.Optional[i
                     (tg, classify_tag(x / max_tag))
                     for tg, x in sorted((omg.tags or {}).items(), key=lambda x: -x[1])
                 ],
-                "addrs": [a for a in [omg.address_name, omg.address_country] if a],
+                "addrs": [a for a in [omg.address.name, omg.address.country] if a],
                 "date": maybe_datetime_to_date(omg.date),
                 "timestamp": maybe_datetime_to_timestamp(omg.date) or 0.0,
                 "raw_data": [

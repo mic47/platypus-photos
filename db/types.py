@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
 from datetime import datetime
 import enum
@@ -94,14 +96,30 @@ class DirectoryStats:
 
 
 @dataclass
+class ImageAddress(DataClassJsonMixin):
+    country: t.Optional[str]
+    name: t.Optional[str]
+    full: t.Optional[str]
+
+    @staticmethod
+    def from_updates(address: t.Optional[GeoAddress]) -> ImageAddress:
+        country = None
+        name = None
+        full = None
+        if address is not None:
+            country = address.country
+            name = address.name
+            full = ", ".join(x for x in [name, country] if x)
+        return ImageAddress(country, name, full)
+
+
+@dataclass
 class Image(DataClassJsonMixin):
     md5: str
     date: t.Optional[datetime]
     tags: t.Optional[t.Dict[str, float]]
     classifications: t.Optional[str]
-    address_country: t.Optional[str]
-    address_name: t.Optional[str]
-    address_full: t.Optional[str]
+    address: ImageAddress
     dependent_features_last_update: float
     latitude: t.Optional[float]
     longitude: t.Optional[float]
@@ -148,22 +166,12 @@ class Image(DataClassJsonMixin):
             longitude = exif.gps.longitude
             altitude = exif.gps.altitude
 
-        address_country = None
-        address_name = None
-        address_full = None
-        if address is not None:
-            address_country = address.country
-            address_name = address.name
-            address_full = ", ".join(x for x in [address_name, address_country] if x)
-
         return Image(
             md5,
             date,
             tags,
             classifications,
-            address_country,
-            address_name,
-            address_full,
+            ImageAddress.from_updates(address),
             max_last_update,
             latitude,
             longitude,
