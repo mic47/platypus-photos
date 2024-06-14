@@ -1,11 +1,12 @@
 import json
 import time
+import typing as t
 import sys
 
 from geopy.geocoders import Nominatim
 
 from data_model.features import GeoAddress, WithMD5, PathWithMd5
-from db.cache import Cache
+from db.cache import Cache, NoCache
 
 
 RATE_LIMIT_SECONDS = 1
@@ -13,8 +14,8 @@ RETRIES = 10
 
 
 class Geolocator:
-    def __init__(self, cache: Cache[GeoAddress]) -> None:
-        self.cache = cache
+    def __init__(self, cache: t.Optional[Cache[GeoAddress]] = None) -> None:
+        self.cache = cache or NoCache()
         self.geolocator = Nominatim(user_agent="Mic's photo lookups")
         self.last_api = time.time() - 10
         self._version = GeoAddress.current_version()

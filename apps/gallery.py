@@ -15,8 +15,10 @@ from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
+from annots.geo import Geolocator
 from data_model.config import DBFilesConfig
-from db.types import LocationCluster, LocPoint, DateCluster
+from data_model.features import PathWithMd5
+from db.types import LocationCluster, LocPoint, DateCluster, ImageAddress
 from db import PhotosConnection, GalleryConnection
 from utils import assert_never, Lazy
 
@@ -151,6 +153,27 @@ def date_clusters_endpoint(params: DateClusterParams) -> t.List[DateCluster]:
         params.buckets,
     )
     return clusters
+
+
+GEOLOCATOR = Geolocator()
+
+
+@dataclass
+class LocationInfoRequest:
+    latitude: float
+    longitude: float
+
+
+@app.post("/internal/fetch_location_info.html", response_class=HTMLResponse)
+def fetch_location_info_endpoint(request: Request, location: LocationInfoRequest) -> HTMLResponse:
+    address = ImageAddress.from_updates(
+        GEOLOCATOR.address(PathWithMd5("", ""), location.latitude, location.longitude).p
+    )
+    return templates.TemplateResponse(
+        request=request,
+        name="fetch_location_info.html",
+        context={"address": address, "req": location},
+    )
 
 
 @app.post("/internal/directories.html", response_class=HTMLResponse)

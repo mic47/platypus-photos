@@ -167,12 +167,12 @@ function update_boundary(nw, se) {
     const fac = 1000000;
     input.innerHTML = JSON.stringify({
         tl: {
-            latitude: Math.round(nw.lat*fac)/fac,
-            longitude: Math.round(nw.lng*fac)/fac,
+            latitude: Math.round(nw.lat * fac) / fac,
+            longitude: Math.round(nw.lng * fac) / fac,
         },
         br: {
-            latitude: Math.round(se.lat*fac)/fac,
-            longitude: Math.round(se.lng*fac)/fac,
+            latitude: Math.round(se.lat * fac) / fac,
+            longitude: Math.round(se.lng * fac) / fac,
         },
     });
 }
@@ -189,14 +189,17 @@ class PhotoMap {
         };
         const context_menu = (e) => {
             that.context_menu(e);
-        }
+        };
         this.map.on("load", update_markers);
         this.map.on("zoomend", update_markers);
         this.map.on("moveend", update_markers);
         this.map.on("zoom", update_markers);
         this.map.on("move", update_markers);
         this.map.on("resize", update_markers);
-        if (this._context_menu_callback !== undefined && this._context_menu_callback !== null) {
+        if (
+            this._context_menu_callback !== undefined &&
+            this._context_menu_callback !== null
+        ) {
             this.map.on("contextmenu", context_menu);
         }
 
@@ -211,10 +214,12 @@ class PhotoMap {
     }
 
     context_menu(e) {
-        var popup = L.popup()
-            .setLatLng(e.latlng)
-            .setContent(context_menu_callback(e.latlng))
-            .openOn(this.map);
+        this._context_menu_callback(e.latlng, (content) => {
+            return L.popup()
+                .setLatLng(e.latlng)
+                .setContent(content)
+                .openOn(this.map);
+        });
     }
 
     update_markers(location_url_json, change_view = false) {
@@ -354,6 +359,48 @@ class AggregateInfo {
                 gallery.innerHTML = text;
             });
     }
+}
+
+class GenericFetch {
+    constructor(div_id, endpoint) {
+        this._div_id = div_id;
+        this._endpoint = endpoint;
+    }
+
+    fetch_impl(request) {
+        return fetch(this._endpoint, {
+            method: "POST",
+            body: JSON.stringify(request),
+            headers: {
+                "Content-type": "application/json; charset=UTF-8",
+            },
+        })
+            .then((response) => response.text())
+            .then((text) => {
+                console.log(this);
+                const gallery = document.getElementById(this._div_id);
+                gallery.innerHTML = text;
+            });
+    }
+}
+
+class AddressInfo extends GenericFetch {
+    constructor(div_id) {
+        super(div_id, "/internal/fetch_location_info.html");
+    }
+    fetch(latitude, longitude) {
+        return this.fetch_impl({ latitude, longitude });
+    }
+}
+
+function location_preview(loc, show_content_fn) {
+    const existing = document.getElementById("LocPreview");
+    if (existing !== undefined && existing !== null) {
+        existing.remove();
+    }
+    const popup = show_content_fn('<div id="LocPreview"></div>');
+    const info = new AddressInfo("LocPreview");
+    info.fetch(loc.lat, loc.lng).then((_) => {popup._updateLayout();});
 }
 
 class InputForm {
