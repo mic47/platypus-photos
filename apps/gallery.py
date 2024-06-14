@@ -255,6 +255,22 @@ def aggregate_endpoint(request: Request, url: SearchQuery) -> HTMLResponse:
         },
     )
 
+@app.post("/internal/input.html", response_class=HTMLResponse)
+def input_request(request: Request, url: SearchQuery) -> HTMLResponse:
+    return templates.TemplateResponse(
+        request=request,
+        name="input.html",
+        context={
+            "input": {
+                "tag": url.tag,
+                "cls": url.cls,
+                "addr": url.addr,
+                "datefrom": maybe_datetime_to_date(url.datefrom) or "",
+                "dateto": maybe_datetime_to_date(url.dateto) or "",
+                "directory": url.directory,
+            },
+        },
+    )
 
 @app.get("/index.html", response_class=HTMLResponse)
 @app.get("/", response_class=HTMLResponse)
@@ -313,12 +329,6 @@ async def index_page(
             "url_parameters_fields": json.dumps([x.name for x in fields(SearchQuery)]),
             "input": {
                 "page": url.page,
-                "tag": url.tag,
-                "cls": url.cls,
-                "addr": url.addr,
-                "datefrom": maybe_datetime_to_date(url.datefrom) or "",
-                "dateto": maybe_datetime_to_date(url.dateto) or "",
-                "directory": url.directory,
             },
         },
     )

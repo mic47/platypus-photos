@@ -140,6 +140,9 @@ function overlay_next(element, index) {
 
 function update_boundary(nw, se) {
   var input = document.getElementById("fbnd");
+  if (input === null || input === undefined) {
+      return
+  }
   input.value = JSON.stringify({
     tl: {
       latitude: nw.lat,
@@ -298,6 +301,28 @@ class AggregateInfo {
 
   fetch(url_data) {
     const url = `/internal/aggregate.html`;
+    fetch(url, {
+      method: "POST",
+      body: JSON.stringify(url_data),
+      headers: {
+        "Content-type": "application/json; charset=UTF-8",
+      },
+    })
+      .then((response) => response.text())
+      .then((text) => {
+        const gallery = document.getElementById(this._div_id);
+        gallery.innerHTML = text;
+      });
+  }
+}
+
+class InputForm {
+  constructor(div_id) {
+    this._div_id = div_id;
+  }
+
+  fetch(url_data) {
+    const url = `/internal/input.html`;
     fetch(url, {
       method: "POST",
       body: JSON.stringify(url_data),
