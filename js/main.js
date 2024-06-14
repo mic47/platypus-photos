@@ -164,14 +164,15 @@ function update_boundary(nw, se) {
     if (input === null || input === undefined) {
         return;
     }
-    input.value = JSON.stringify({
+    const fac = 1000000;
+    input.innerHTML = JSON.stringify({
         tl: {
-            latitude: nw.lat,
-            longitude: nw.lng,
+            latitude: Math.round(nw.lat*fac)/fac,
+            longitude: Math.round(nw.lng*fac)/fac,
         },
         br: {
-            latitude: se.lat,
-            longitude: se.lng,
+            latitude: Math.round(se.lat*fac)/fac,
+            longitude: Math.round(se.lng*fac)/fac,
         },
     });
 }
@@ -492,7 +493,6 @@ class Dates {
         })
             .then((response) => response.json())
             .then((clusters) => {
-                console.log(clusters);
                 const dates = clusters
                     .filter((c) => c.overfetched == false)
                     .map((c) => {

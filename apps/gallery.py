@@ -270,7 +270,17 @@ def input_request(request: Request, url: SearchQuery) -> HTMLResponse:
                 "dateto": maybe_datetime_to_date(url.dateto) or "",
                 "directory": url.directory,
                 "tsfrom": url.tsfrom or "",
+                "tsfrom_pretty": (
+                    datetime.fromtimestamp(url.tsfrom).strftime("%a %Y-%m-%d %H:%M:%S")
+                    if url.tsfrom is not None
+                    else ""
+                ),
                 "tsto": url.tsto or "",
+                "tsto_pretty": (
+                    datetime.fromtimestamp(url.tsto).strftime("%a %Y-%m-%d %H:%M:%S")
+                    if url.tsto is not None
+                    else ""
+                ),
             },
         },
     )

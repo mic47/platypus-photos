@@ -6,15 +6,17 @@
   <input type="button" value="reset" onclick='reset_param("addr")'>
   <label for="faddr">Address:</label><input type="text" id="faddr" name="addr" value="{{input.addr}}"><br>
   <input type="button" value="reset" onclick='reset_param("datefrom")'>
-  <label for="fdatefrom">Since</label><input type="date" id="fdatefrom" name="datefrom" value="{{input.datefrom}}" /><br/>
+  <label for="fdatefrom">Since:</label><input type="date" id="fdatefrom" name="datefrom" value="{{input.datefrom}}" /><br/>
   <input type="button" value="reset" onclick='reset_param("dateto")'>
-  <label for="fdateto">Until</label><input type="date" id="fdateto" name="dateto" value="{{input.dateto}}" /><br/>
+  <label for="fdateto">Until:</label><input type="date" id="fdateto" name="dateto" value="{{input.dateto}}" /><br/>
   <input type="button" value="reset" onclick='reset_param("directory")'>
   <label for="fdir">Directory:</label><input type="text" id="fdir" name="directory" value="{{input.directory}}"><br>
-  <input type="text" id="fbnd" name="bnd" value="">
-  <label for="boundary">Boundary:</label><br>
+  <label for="boundary">Boundary:</label>
+  <span class="location" id="fbnd"></span><br/>
   <input type="button" value="reset" onclick='reset_param("tsfrom")'>
-  <label for="tsfrom">Timestamp from:</label><input type="text" id="ftsfrom" name="tsfrom" value="{{input.tsfrom}}" disabled=true>
+  <label for="tsfrom">Timestamp from:</label>
+  <input type="text" id="ftsfrom" name="tsfrom" value="{{input.tsfrom}}" hidden=true >
+  <span class="date">{{input.tsfrom_pretty}}</span>
   <input type="button" value="-1y" onclick='add_to_float_param("tsfrom", -365.25*24*60*60)'>
   <input type="button" value="-1m" onclick='add_to_float_param("tsfrom", -30*24*60*60)'>
   <input type="button" value="-1w" onclick='add_to_float_param("tsfrom", -7*24*60*60)'>
@@ -29,7 +31,9 @@
   <input type="button" value="+1y" onclick='add_to_float_param("tsfrom", 365.25*24*60*60)'>
   <br>
   <input type="button" value="reset" onclick='reset_param("tsto")'>
-  <label for="tsto">Timestamp to:</label><input type="text" id="ftsto" name="tsfrom" value="{{input.tsto}}" disabled=true>
+  <label for="tsto">Timestamp to:&nbsp;&nbsp;</label>
+  <input type="text" id="ftsto" name="tsfrom" value="{{input.tsto}}" hidden=true>
+  <span class="date">{{input.tsto_pretty}}</span>
   <input type="button" value="-1y" onclick='add_to_float_param("tsto", -365.25*24*60*60)'>
   <input type="button" value="-1m" onclick='add_to_float_param("tsto", -300*24*60*60)'>
   <input type="button" value="-1w" onclick='add_to_float_param("tsto", -7*24*60*60)'>
