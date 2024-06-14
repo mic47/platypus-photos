@@ -14,9 +14,7 @@ from gallery.utils import (
 )
 
 # TODO: extract this type into query payload
-from gallery.url import (
-    SearchQuery,
-)
+from gallery.url import SearchQuery, GalleryPaging
 from db.connection import GalleryConnection
 from db.directories_table import DirectoriesTable
 from db.types import Image, ImageAggregation, LocationCluster, LocPoint, DateCluster, DirectoryStats
@@ -389,7 +387,7 @@ SELECT "alt", 'min', MIN(altitude) FROM matched_images WHERE altitude IS NOT NUL
         )
         position: t.Dict[str, t.Tuple[float, float]] = {}
         while True:
-            items = res.fetchmany(size=url.paging or 100)
+            items = res.fetchmany()
             if not items:
                 return ImageAggregation(
                     total,
@@ -442,9 +440,10 @@ SELECT "alt", 'min', MIN(altitude) FROM matched_images WHERE altitude IS NOT NUL
     def get_matching_images(
         self,
         url: SearchQuery,
+        gallery_paging: GalleryPaging,
     ) -> t.Tuple[t.List[Image], bool]:
         # TODO: aggregations could be done separately
-        actual_paging = url.paging + 1
+        actual_paging = gallery_paging.paging + 1
         (
             query,
             variables,
@@ -452,14 +451,14 @@ SELECT "alt", 'min', MIN(altitude) FROM matched_images WHERE altitude IS NOT NUL
             "md5, timestamp, tags, tags_probs, classifications, address_country, address_name, address_full, feature_last_update, latitude, longitude, altitude, version",
             url,
         )
-        if url.paging:
-            query = f"{query}\nORDER BY timestamp\nDESC LIMIT {actual_paging}\nOFFSET {url.paging * url.page}"
+        if gallery_paging.paging:
+            query = f"{query}\nORDER BY timestamp\nDESC LIMIT {actual_paging}\nOFFSET {gallery_paging.paging * gallery_paging.page}"
         res = self._con.execute(
             query,
             variables,
         )
         items = res.fetchall()
-        has_extra_data = len(items) > url.paging
+        has_extra_data = len(items) > gallery_paging.paging
         output = []
         for (
             md5,
@@ -475,7 +474,7 @@ SELECT "alt", 'min', MIN(altitude) FROM matched_images WHERE altitude IS NOT NUL
             longitude,
             altitude,
             version,
-        ) in items[: url.paging]:
+        ) in items[: gallery_paging.paging]:
             output.append(
                 Image(
                     md5,

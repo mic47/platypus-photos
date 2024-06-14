@@ -31,6 +31,17 @@ function update_url_add_tag(tag) {
     ___state.update_url({"tag": `${old_tag},${tag}`});
   }
 }
+function prev_page() {
+    const page = parseInt(___state.get_paging()["page"]) || 0;
+    if (page > 0) {
+        ___state.update_paging({"page": page - 1});
+    }
+}
+function next_page() {
+    const page = parseInt(___state.get_paging()["page"]) || 0;
+    const update = {"page": page + 1};
+    ___state.update_paging(update);
+}
 
 function init_fun() {
     if (___state !== null) {
@@ -39,24 +50,23 @@ function init_fun() {
 
     // Set parameters
     const bounds = {% if bounds %}[[{{bounds.lat[0]}}, {{bounds.lon[0]}}],[{{bounds.lat[1]}}, {{bounds.lon[1]}}]]{% else %}null{% endif %};
-    const page = {{ input.page }};
-    const oi = {% if oi %}{{oi}}{% else %}null{% endif %};
     const url_parameters_fields = {{ url_parameters_fields | safe }};
+    const paging_fields = {{ paging_fields | safe }};
 
     // Initialize all components
     ___state = new AppState({})
     const url_sync = new UrlSync(url_parameters_fields);
+    const paging_sync = new UrlSync(paging_fields);
     const input_form = new InputForm("InputForm");
-    const gallery = new Gallery("GalleryImages", page, oi);
+    const gallery = new Gallery("GalleryImages", prev_page, next_page);
     const map = new PhotoMap("map", bounds, () => ___state.get_url());
     const dates = new Dates("DateChart", (x) => {___state.update_url(x);});
     const directories = new Directories("Directories");
     const aggregate_info = new AggregateInfo("AggregateInfo");
-    ___state.register_hook((url_params) => {
+    ___state.register_url_hook((url_params) => {
         input_form.fetch(url_params);
         url_sync.update(url_params);
-        gallery.update_page(0, null);
-        gallery.fetch(url_params);
+        gallery.fetch(url_params, ___state.get_paging());
         aggregate_info.fetch(url_params);
 
         dates.fetch(url_params);
@@ -64,9 +74,15 @@ function init_fun() {
         directories.fetch(url_params);
 
         map.update_markers(url_params, true);
-    })
+    });
+    ___state.register_paging_hook((paging) => {
+        paging_sync.update(paging);
+        gallery.fetch(___state.get_url(), paging);
+    });
 
     // Set initial url, redraw everything
+    // TODO: check that this does not trigger too many refreshes
+    ___state.replace_paging(paging_sync.get_url());
     ___state.replace_url(url_sync.get_url());
 }
 </script>

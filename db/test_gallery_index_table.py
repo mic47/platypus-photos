@@ -6,9 +6,7 @@ from db.connection import GalleryConnection
 from db.directories_table import DirectoriesTable
 from db.gallery_index_table import GalleryIndexTable, WrongAggregateTypeReturned
 from db.types import Image, ImageAggregation, LocPoint, LocationCluster
-from gallery.url import (
-    SearchQuery,
-)
+from gallery.url import SearchQuery, GalleryPaging
 
 
 def connection() -> GalleryConnection:
@@ -62,22 +60,22 @@ class TestGalleryIndexTable(unittest.TestCase):
             "M1", caption="WAAAT", dependent_features_last_update=100, version=old_version
         )
         table.add(old_omg)
-        res = table.get_matching_images(SearchQuery())[0]
+        res = table.get_matching_images(SearchQuery(), GalleryPaging())[0]
         self.assertEqual(len(res), 1)
         self.assertEqual(old_omg, res[0])
 
         table.add(new_omg)
-        res = table.get_matching_images(SearchQuery())[0]
+        res = table.get_matching_images(SearchQuery(), GalleryPaging())[0]
         self.assertEqual(len(res), 1)
         self.assertEqual(new_omg, res[0])
 
         table.add(changed_omg)
-        res = table.get_matching_images(SearchQuery())[0]
+        res = table.get_matching_images(SearchQuery(), GalleryPaging())[0]
         self.assertEqual(len(res), 1)
         self.assertEqual(new_omg, res[0])
 
         table.add(changed_old_omg)
-        res = table.get_matching_images(SearchQuery())[0]
+        res = table.get_matching_images(SearchQuery(), GalleryPaging())[0]
         self.assertEqual(len(res), 1)
         self.assertEqual(new_omg, res[0])
 
@@ -191,64 +189,78 @@ class TestGalleryIndexTable(unittest.TestCase):
         table.add(i2)
         table.add(i3)
         table.add(i4)
-        ret = table.get_matching_images(SearchQuery(addr="Foud"))[0]
+        ret = table.get_matching_images(SearchQuery(addr="Foud"), GalleryPaging())[0]
         self.assertListEqual(ret, [i3])
-        ret = table.get_matching_images(SearchQuery(addr="Foud", cls="fishy"))[0]
+        ret = table.get_matching_images(SearchQuery(addr="Foud", cls="fishy"), GalleryPaging())[0]
         self.assertListEqual(ret, [i3])
-        ret = sorted(table.get_matching_images(SearchQuery(cls="fishy"))[0], key=lambda x: x.md5)
+        ret = sorted(
+            table.get_matching_images(SearchQuery(cls="fishy"), GalleryPaging())[0], key=lambda x: x.md5
+        )
         self.assertListEqual(ret, [i3, i4])
         ret = sorted(
-            table.get_matching_images(SearchQuery(cls="fishy"))[0],
+            table.get_matching_images(SearchQuery(cls="fishy"), GalleryPaging())[0],
             key=lambda x: x.md5,
         )
         self.assertListEqual(ret, [i3, i4])
         ret = sorted(
-            table.get_matching_images(SearchQuery(datefrom=datetime(2022, 1, 1)))[0],
+            table.get_matching_images(SearchQuery(datefrom=datetime(2022, 1, 1)), GalleryPaging())[0],
             key=lambda x: x.md5,
         )
         self.assertListEqual(ret, [i1, i2, i3])
         ret = sorted(
-            table.get_matching_images(SearchQuery(datefrom=datetime(2024, 1, 1)))[0],
+            table.get_matching_images(SearchQuery(datefrom=datetime(2024, 1, 1)), GalleryPaging())[0],
             key=lambda x: x.md5,
         )
         self.assertListEqual(ret, [i2, i3])
         ret = sorted(
-            table.get_matching_images(SearchQuery(dateto=datetime(2024, 1, 1)))[0],
+            table.get_matching_images(SearchQuery(dateto=datetime(2024, 1, 1)), GalleryPaging())[0],
             key=lambda x: x.md5,
         )
         self.assertListEqual(ret, [i1])
         ret = sorted(
-            table.get_matching_images(SearchQuery(dateto=datetime(2024, 1, 2)))[0],
+            table.get_matching_images(SearchQuery(dateto=datetime(2024, 1, 2)), GalleryPaging())[0],
             key=lambda x: x.md5,
         )
         self.assertListEqual(ret, [i1, i2, i3])
         ret = sorted(
             table.get_matching_images(
-                SearchQuery(datefrom=datetime(2024, 1, 1), dateto=datetime(2024, 1, 2))
+                SearchQuery(datefrom=datetime(2024, 1, 1), dateto=datetime(2024, 1, 2)),
+                GalleryPaging(),
             )[0],
             key=lambda x: x.md5,
         )
         self.assertListEqual(ret, [i2, i3])
         ret = sorted(
             table.get_matching_images(
-                SearchQuery(datefrom=datetime(2023, 1, 1), dateto=datetime(2024, 1, 2))
+                SearchQuery(datefrom=datetime(2023, 1, 1), dateto=datetime(2024, 1, 2)),
+                GalleryPaging(),
             )[0],
             key=lambda x: x.md5,
         )
         self.assertListEqual(ret, [i1, i2, i3])
-        ret = table.get_matching_images(SearchQuery(directory="/foo/bar"))[0]
+        ret = table.get_matching_images(SearchQuery(directory="/foo/bar"), GalleryPaging())[0]
         self.assertListEqual(ret, [])
         directories.add("/foo/bar", "M1")
         directories.add("/foo/lol", "M1")
         directories.add("/foo/lol", "M3")
         directories.add("/foo/bar", "M2")
-        ret = sorted(table.get_matching_images(SearchQuery(directory="/foo/bar"))[0], key=lambda x: x.md5)
+        ret = sorted(
+            table.get_matching_images(SearchQuery(directory="/foo/bar"), GalleryPaging())[0],
+            key=lambda x: x.md5,
+        )
         self.assertListEqual(ret, [i1, i2])
-        ret = sorted(table.get_matching_images(SearchQuery(directory="/foo/lol"))[0], key=lambda x: x.md5)
+        ret = sorted(
+            table.get_matching_images(SearchQuery(directory="/foo/lol"), GalleryPaging())[0],
+            key=lambda x: x.md5,
+        )
         self.assertListEqual(ret, [i1, i3])
-        ret = sorted(table.get_matching_images(SearchQuery(directory="/foo"))[0], key=lambda x: x.md5)
+        ret = sorted(
+            table.get_matching_images(SearchQuery(directory="/foo"), GalleryPaging())[0], key=lambda x: x.md5
+        )
         self.assertListEqual(ret, [i1, i2, i3])
-        ret = sorted(table.get_matching_images(SearchQuery(directory="/wat"))[0], key=lambda x: x.md5)
+        ret = sorted(
+            table.get_matching_images(SearchQuery(directory="/wat"), GalleryPaging())[0], key=lambda x: x.md5
+        )
         self.assertListEqual(ret, [])
 
     def test_errors_aggregate_states(self) -> None:

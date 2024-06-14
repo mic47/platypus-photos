@@ -1,7 +1,26 @@
 class AppState {
-  constructor(url_params) {
+  constructor(url_params, paging) {
     this._url_params = url_params;
     this._url_params_hooks = [];
+
+    this._paging = paging;
+    this._paging_hooks = [];
+  }
+
+  register_paging_hook(hook) {
+    this._paging_hooks.push(hook);
+  }
+  get_paging() {
+    return this._paging;
+  }
+  update_paging(new_parts) {
+    this._paging = { ...this._paging, ...new_parts };
+    const paging = this._paging;
+    this._paging_hooks.forEach((x) => x(paging));
+  }
+  replace_paging(new_paging) {
+    this._paging = {};
+    this.update_paging(new_paging);
   }
 
   get_url() {
@@ -14,14 +33,12 @@ class AppState {
     const url = this._url_params;
     this._url_params_hooks.forEach((x) => x(url));
   }
-
   replace_url(new_url) {
     // TODO: do this only on change
     this._url_params = {};
     this.update_url(new_url);
   }
-
-  register_hook(hook) {
+  register_url_hook(hook) {
     this._url_params_hooks.push(hook);
   }
 }
@@ -339,25 +356,20 @@ class InputForm {
 }
 
 class Gallery {
-  constructor(div_id, page, oi) {
+  constructor(div_id, prev_page, next_page) {
     this._div_id = div_id;
-    this._page = page;
-    this._oi = oi;
+    this._next_page = next_page;
+    this._prev_page = prev_page;
   }
 
-  update_page(page, oi) {
-    this._page = page;
-    this._oi = oi;
-  }
-
-  fetch(url_data) {
+  fetch(url_data, paging) {
     var url = `/internal/gallery.html?oi=${this._oi}`;
     if (this._oi === undefined || this._oi === null) {
       url = `/internal/gallery.html`;
     }
     fetch(url, {
       method: "POST",
-      body: JSON.stringify(url_data),
+      body: JSON.stringify({query: url_data, paging}),
       headers: {
         "Content-type": "application/json; charset=UTF-8",
       },
@@ -370,18 +382,14 @@ class Gallery {
         for (var i = 0; i < prev.length; i++) {
           const p = prev[i];
           p.onclick = (e) => {
-            const u = { ...url_data, page: this._page - 1 };
-            this.update_page(this._page - 1, null);
-            this.fetch(u); // TODO: fix oi parameter
+            (this._prev_page)()
           };
         }
         const next = gallery.getElementsByClassName("next-url");
         for (var i = 0; i < next.length; i++) {
           const p = next[i];
           p.onclick = (e) => {
-            const u = { ...url_data, page: this._page + 1 };
-            this.update_page(this._page + 1, null);
-            this.fetch(u); // TODO: fix oi parameter
+            (this._next_page)()
           };
         }
       });

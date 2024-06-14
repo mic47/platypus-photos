@@ -21,7 +21,7 @@ from db import PhotosConnection, GalleryConnection
 from utils import assert_never, Lazy
 
 from gallery.db import ImageSqlDB
-from gallery.url import SearchQuery
+from gallery.url import SearchQuery, GalleryPaging
 from gallery.utils import maybe_datetime_to_date, maybe_datetime_to_timestamp
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
@@ -178,10 +178,16 @@ def directories_endpoint(request: Request, url: SearchQuery) -> HTMLResponse:
     )
 
 
+@dataclass
+class GalleryRequest:
+    query: SearchQuery
+    paging: GalleryPaging
+
+
 @app.post("/internal/gallery.html", response_class=HTMLResponse)
-async def gallery_div(request: Request, url: SearchQuery, oi: t.Optional[int] = None) -> HTMLResponse:
+async def gallery_div(request: Request, params: GalleryRequest, oi: t.Optional[int] = None) -> HTMLResponse:
     images = []
-    omgs, has_next_page = DB.get().get_matching_images(url)
+    omgs, has_next_page = DB.get().get_matching_images(params.query, params.paging)
     for omg in omgs:
 
         max_tag = min(1, max((omg.tags or {}).values(), default=1.0))
@@ -222,15 +228,9 @@ async def gallery_div(request: Request, url: SearchQuery, oi: t.Optional[int] = 
         context={
             "oi": oi,
             "images": images,
-            "urls": {
-                "next": url.next_url(has_next_page),
-                "next_overlay": url.next_url(has_next_page, overlay=True),
-                "prev": url.prev_url(),
-                "prev_overlay": url.prev_url(overlay=True),
-            },
             "has_next_page": has_next_page,
             "input": {
-                "page": url.page,
+                "page": params.paging.page,
             },
         },
     )
@@ -255,6 +255,7 @@ def aggregate_endpoint(request: Request, url: SearchQuery) -> HTMLResponse:
         },
     )
 
+
 @app.post("/internal/input.html", response_class=HTMLResponse)
 def input_request(request: Request, url: SearchQuery) -> HTMLResponse:
     return templates.TemplateResponse(
@@ -272,6 +273,7 @@ def input_request(request: Request, url: SearchQuery) -> HTMLResponse:
         },
     )
 
+
 @app.get("/index.html", response_class=HTMLResponse)
 @app.get("/", response_class=HTMLResponse)
 async def index_page(
@@ -288,14 +290,13 @@ async def index_page(
     directory: str = "",
     oi: t.Optional[int] = None,
 ) -> HTMLResponse:
+    gallery_paging = GalleryPaging(page, paging)
     url = SearchQuery(
         tag,
         cls,
         addr,
         datetime.strptime(datefrom, "%Y-%m-%d") if datefrom else None,
         datetime.strptime(dateto, "%Y-%m-%d") if dateto else None,
-        page,
-        paging,
         directory,
         tsfrom,
         tsto,
@@ -311,8 +312,8 @@ async def index_page(
     del tsfrom
     del tsto
     aggr = DB.get().get_aggregate_stats(url)
-    if url.page * url.paging >= aggr.total:
-        url.page = aggr.total // url.paging
+    if gallery_paging.page * gallery_paging.paging >= aggr.total:
+        gallery_paging.page = aggr.total // gallery_paging.paging
     bounds = None
     if aggr.latitude is not None and aggr.longitude is not None:
         bounds = {
@@ -327,9 +328,7 @@ async def index_page(
             "oi": oi,
             "bounds": bounds,
             "url_parameters_fields": json.dumps([x.name for x in fields(SearchQuery)]),
-            "input": {
-                "page": url.page,
-            },
+            "paging_fields": json.dumps([x.name for x in fields(GalleryPaging)]),
         },
     )
 

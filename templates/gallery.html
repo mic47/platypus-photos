@@ -11,13 +11,13 @@
     <span id="i{{loop.index0}}"></span>
     <div class="gallery_item_fs">
         {% if loop.index0 == 0 %}
-        {% if urls.prev_overlay %}<a href="{{urls.prev_overlay}}">prev</a>{% else %} prev {% endif %}
+        {% if input.page > 0 %}<a onclick="prev_page()" href="#}">prev</a>{% else %} prev {% endif %}
         {% else %}
         <a href="#i{{ loop.index0}}" onclick="overlay_prev(this, {{ loop.index0 }})">prev</a>
         {% endif %}
         <a href="#i{{ loop.index0}}" onclick="overlay_close(this)">close</a>
         {% if loop.index == images|length %}
-        {% if urls.next_overlay %}<a href="{{urls.next_overlay}}">next</a>{% else %} next {% endif %}
+        {% if has_next_page %}<a onclick="next_page()" href="#">next</a>{% else %} next {% endif %}
         {% else %}
         <a href="#i{{ loop.index0}}" onclick="overlay_next(this, {{ loop.index0 }})">next</a>
         {% endif %}

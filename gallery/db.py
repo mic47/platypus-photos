@@ -26,7 +26,7 @@ from db.types import (
     DateCluster,
     DirectoryStats,
 )
-from gallery.url import SearchQuery
+from gallery.url import SearchQuery, GalleryPaging
 
 Ser = t.TypeVar("Ser", bound=DataClassJsonMixin)
 
@@ -190,5 +190,7 @@ class ImageSqlDB:
             url, top_left, bottom_right, latitude_resolution, longitude_resolution, over_fetch
         )
 
-    def get_matching_images(self, url: SearchQuery) -> t.Tuple[t.List[Image], bool]:
-        return self._gallery_index.get_matching_images(url)
+    def get_matching_images(
+        self, url: SearchQuery, gallery_paging: GalleryPaging
+    ) -> t.Tuple[t.List[Image], bool]:
+        return self._gallery_index.get_matching_images(url, gallery_paging)
