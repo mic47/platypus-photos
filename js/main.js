@@ -178,20 +178,27 @@ function update_boundary(nw, se) {
 }
 
 class PhotoMap {
-    constructor(div_id, bounds, get_url) {
+    constructor(div_id, bounds, get_url, context_menu_callback) {
         this.map = L.map("map").setView([51.505, -0.09], 13);
         this.markers = {};
         this.last_update_timestamp = 0;
+        this._context_menu_callback = context_menu_callback;
         const that = this;
         const update_markers = (e) => {
             that.update_markers(get_url(), false);
         };
+        const context_menu = (e) => {
+            that.context_menu(e);
+        }
         this.map.on("load", update_markers);
         this.map.on("zoomend", update_markers);
         this.map.on("moveend", update_markers);
         this.map.on("zoom", update_markers);
         this.map.on("move", update_markers);
         this.map.on("resize", update_markers);
+        if (this._context_menu_callback !== undefined && this._context_menu_callback !== null) {
+            this.map.on("contextmenu", context_menu);
+        }
 
         L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
             maxZoom: 19,
@@ -201,6 +208,13 @@ class PhotoMap {
         if (bounds !== undefined && bounds !== null) {
             this.map.fitBounds(bounds);
         }
+    }
+
+    context_menu(e) {
+        var popup = L.popup()
+            .setLatLng(e.latlng)
+            .setContent(context_menu_callback(e.latlng))
+            .openOn(this.map);
     }
 
     update_markers(location_url_json, change_view = false) {
