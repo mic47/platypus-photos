@@ -170,6 +170,7 @@ def map_search_endpoint(request: Request, req: MapSearchRequest) -> HTMLResponse
     error = ""
     try:
         result = GEOLOCATOR.search(req.query, limit=10) if req.query is not None else []
+    # pylint: disable = broad-exception-caught
     except Exception as e:
         traceback.print_exc()
         error = f"{e}\n{traceback.format_exc()}"
