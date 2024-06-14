@@ -23,6 +23,27 @@ function update_dir(data) {
 function update_url(data) {
   ___state.update_url(data);
 }
+function reset_param(key) {
+  if (key === "__ALL__") {
+    ___state.replace_url({});
+    return;
+  }
+  const state = ___state.get_url();
+  delete state[key];
+  ___state.replace_url(state);
+}
+function update_form() {
+  console.log("UPDATE FORM");
+  const formData = new FormData(document.getElementById('input'));
+  const values = {};
+  for (const [key, value] of formData) {
+    if (value) {
+        values[key] = value;
+    }
+  }
+  console.log(values);
+  ___state.update_url(values);
+}
 function update_url_add_tag(tag) {
   const old_tag = ___state.get_url()["tag"];
   if (old_tag === undefined || old_tag === null) {
@@ -41,6 +62,15 @@ function next_page() {
     const page = parseInt(___state.get_paging()["page"]) || 0;
     const update = {"page": page + 1};
     ___state.update_paging(update);
+}
+function add_to_float_param(param, new_value) {
+    const value = parseFloat(___state.get_url()[param]);
+    if (value != value) {
+        return;
+    }
+    const update = {};
+    update[param] = value + new_value;
+    ___state.update_url(update);
 }
 
 function init_fun() {

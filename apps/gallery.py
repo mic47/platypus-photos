@@ -269,6 +269,8 @@ def input_request(request: Request, url: SearchQuery) -> HTMLResponse:
                 "datefrom": maybe_datetime_to_date(url.datefrom) or "",
                 "dateto": maybe_datetime_to_date(url.dateto) or "",
                 "directory": url.directory,
+                "tsfrom": url.tsfrom or "",
+                "tsto": url.tsto or "",
             },
         },
     )
