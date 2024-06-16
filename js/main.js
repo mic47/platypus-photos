@@ -377,7 +377,6 @@ class GenericFetch {
         })
             .then((response) => response.text())
             .then((text) => {
-                console.log(this);
                 const gallery = document.getElementById(this._div_id);
                 gallery.innerHTML = text;
             });
@@ -409,6 +408,84 @@ class AnnotationOverlay extends GenericFetch {
     fetch(latitude, longitude, query) {
         return this.fetch_impl({ latitude, longitude, query });
     }
+}
+
+function null_if_empty(str) {
+    if (str === null || str === undefined || str.trim() === "") {
+        return null;
+    }
+    return str;
+}
+function parse_float_or_null(str) {
+    const value = parseFloat(str);
+    if (value != value) {
+        return null;
+    }
+    return value;
+}
+
+function submit_annotations(div_id, form_id, return_id) {
+    const formData = new FormData(document.getElementById(form_id));
+    const query = JSON.parse(window.atob(formData.get("query_json_base64")));
+    const latitude = parse_float_or_null(formData.get("latitude"));
+    if (latitude === null) {
+        alert("Invalid request, latitude", formData);
+        return;
+    }
+    const longitude = parse_float_or_null(formData.get("longitude"));
+    if (longitude === null) {
+        alert("Invalid request, latitude", formData);
+        return;
+    }
+    const location_override = formData.get("location_override");
+    let address_name = null_if_empty(formData.get("address_name"));
+    const address_name_original = formData.get("address_name_original");
+    if (address_name === null || address_name.trim() === address_name_original) {
+        address_name = null;
+    }
+    let address_country = null_if_empty(formData.get("address_country"));
+    const address_country_original = formData.get("address_country_original");
+    if (address_country === null || address_country.trim() === address_country_original) {
+        address_country = null;
+    }
+    const location_request = {
+        latitude,
+        longitude,
+        address_name,
+        address_country,
+        override: location_override,
+    };
+    const extra_tags = null_if_empty(formData.get("extra_tags"));
+    const extra_description = null_if_empty(formData.get("extra_description"));
+    const text_override = formData.get("text_override");
+    const text_request = {
+        tags: extra_tags,
+        description: extra_description,
+        override: text_override,
+    };
+    const checkbox_value = formData.get("sanity_check");
+    const request = {
+        location: location_request,
+        text: text_request,
+    };
+    if (checkbox_value !== "on") {
+        alert("You have to check 'Check this box' box to prevent accidental submissions");
+        return;
+    }
+    console.log(request);
+    return fetch("api/mass_manual_annotation", {
+        method: "POST",
+        body: JSON.stringify(request),
+        headers: {
+            "Content-type": "application/json; charset=UTF-8",
+        },
+    })
+        .then((response) => response.json())
+        .then((response) => {
+            alert(JSON.stringify(response));
+        })
+        // TODO: put error into stuff
+        .catch(err => alert(err))
 }
 
 function location_preview(loc, show_content_fn) {
