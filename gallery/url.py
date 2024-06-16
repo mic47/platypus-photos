@@ -1,6 +1,24 @@
 import typing as t
 from dataclasses import dataclass
 from datetime import datetime
+import enum
+
+from dataclasses_json import DataClassJsonMixin
+
+
+class SortBy(enum.Enum):
+    TIMESTAMP = "TIMESTAMP"
+    RANDOM = "RANDOM"
+
+
+class SortOrder(enum.Enum):
+    DESC = "DESC"
+
+
+@dataclass
+class SortParams:
+    sort_by: SortBy = SortBy.TIMESTAMP
+    order: SortOrder = SortOrder.DESC
 
 
 @dataclass
@@ -10,7 +28,7 @@ class GalleryPaging:
 
 
 @dataclass
-class SearchQuery:
+class SearchQuery(DataClassJsonMixin):
     tag: str = ""
     cls: str = ""
     addr: str = ""

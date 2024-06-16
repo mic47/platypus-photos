@@ -386,10 +386,10 @@ class GenericFetch {
 
 class MapSearch extends GenericFetch {
     constructor(div_id) {
-        super(div_id, "/internal/map_search.html")
+        super(div_id, "/internal/map_search.html");
     }
     fetch(search_str) {
-        return this.fetch_impl({query: search_str})
+        return this.fetch_impl({ query: search_str });
     }
 }
 
@@ -402,6 +402,15 @@ class AddressInfo extends GenericFetch {
     }
 }
 
+class AnnotationOverlay extends GenericFetch {
+    constructor(div_id) {
+        super(div_id, "/internal/submit_annotations_overlay.html");
+    }
+    fetch(latitude, longitude, query) {
+        return this.fetch_impl({ latitude, longitude, query });
+    }
+}
+
 function location_preview(loc, show_content_fn) {
     const existing = document.getElementById("LocPreview");
     if (existing !== undefined && existing !== null) {
@@ -409,7 +418,9 @@ function location_preview(loc, show_content_fn) {
     }
     const popup = show_content_fn('<div id="LocPreview"></div>');
     const info = new AddressInfo("LocPreview");
-    info.fetch(loc.lat, loc.lng).then((_) => {popup._updateLayout();});
+    info.fetch(loc.lat, loc.lng).then((_) => {
+        popup._updateLayout();
+    });
 }
 
 class InputForm {

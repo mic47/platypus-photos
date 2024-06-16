@@ -3,4 +3,8 @@
 <b>Country:</b> {{address.country}}<br/>
 <b>Latitude:</b> {{req.latitude}}<br/>
 <b>Longitude:</b> {{req.longitude}}<br/>
-<input type="button" value="Use this location for selected photos">
+<input 
+  type="button"
+  value="Use this location for selected photos"
+  onclick="annotation_overlay({{req.latitude}}, {{req.longitude}})"
+>

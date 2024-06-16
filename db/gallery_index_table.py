@@ -16,7 +16,8 @@ from gallery.utils import (
 )
 
 # TODO: extract this type into query payload
-from gallery.url import SearchQuery, GalleryPaging
+from gallery.url import SearchQuery, GalleryPaging, SortParams, SortBy
+from utils import assert_never
 from db.connection import GalleryConnection
 from db.directories_table import DirectoriesTable
 from db.types import (
@@ -478,6 +479,7 @@ SELECT "alt", 'min', MIN(altitude) FROM matched_images WHERE altitude IS NOT NUL
     def get_matching_images(
         self,
         url: SearchQuery,
+        sort_params: SortParams,
         gallery_paging: GalleryPaging,
     ) -> t.Tuple[t.List[Image], bool]:
         # TODO: aggregations could be done separately
@@ -489,8 +491,16 @@ SELECT "alt", 'min', MIN(altitude) FROM matched_images WHERE altitude IS NOT NUL
             "md5, timestamp, tags, tags_probs, classifications, address_country, address_name, address_full, feature_last_update, latitude, longitude, altitude, version",
             url,
         )
+        sort_by = None
+        if sort_params.sort_by == SortBy.TIMESTAMP:
+            sort_by = "timestamp"
+        elif sort_params.sort_by == SortBy.RANDOM:
+            sort_by = "RANDOM()"
+        else:
+            assert_never(sort_params.sort_by)
+
         if gallery_paging.paging:
-            query = f"{query}\nORDER BY timestamp\nDESC LIMIT {actual_paging}\nOFFSET {gallery_paging.paging * gallery_paging.page}"
+            query = f"{query}\nORDER BY {sort_by}\n{sort_params.order.value} LIMIT {actual_paging}\nOFFSET {gallery_paging.paging * gallery_paging.page}"
         res = self._con.execute(
             query,
             variables,

@@ -89,6 +89,10 @@ function add_to_float_param(param, new_value) {
     update[param] = value + new_value;
     ___state.update_url(update);
 }
+function annotation_overlay(latitude, longitude) {
+    const overlay = new AnnotationOverlay("SubmitDataOverlay");
+    overlay.fetch(latitude, longitude, ___state.get_url());
+}
 
 function init_fun() {
     if (___state !== null) {
@@ -142,6 +146,7 @@ function init_fun() {
 <div id="AggregateInfo"></div>
 <div id="MapSearch"></div>
 <div id="map"></div>
+<div id="SubmitDataOverlay"></div>
 <div class="date_chart"><canvas id="DateChart"></canvas></div>
 <div class="directories" id="Directories"></div>
 <div id="GalleryImages"></div>

@@ -9,6 +9,7 @@ import traceback
 from datetime import datetime
 from dataclasses import dataclass, fields
 
+from dataclasses_json import DataClassJsonMixin
 from PIL import Image, ImageFile
 
 from fastapi import FastAPI, Request, Response
@@ -23,8 +24,8 @@ from db.types import LocationCluster, LocPoint, DateCluster, ImageAddress
 from db import PhotosConnection, GalleryConnection
 from utils import assert_never, Lazy
 
-from gallery.db import ImageSqlDB
-from gallery.url import SearchQuery, GalleryPaging
+from gallery.db import ImageSqlDB, Image as ImageRow
+from gallery.url import SearchQuery, GalleryPaging, SortParams, SortBy
 from gallery.utils import maybe_datetime_to_date, maybe_datetime_to_timestamp
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
@@ -182,6 +183,48 @@ def map_search_endpoint(request: Request, req: MapSearchRequest) -> HTMLResponse
 
 
 @dataclass
+class AnnotationOverlayRequest(DataClassJsonMixin):
+    latitude: float
+    longitude: float
+    query: SearchQuery
+
+
+@app.post("/internal/submit_annotations_overlay.html", response_class=HTMLResponse)
+def submit_annotation_overlay_form_endpoint(request: Request, req: AnnotationOverlayRequest) -> HTMLResponse:
+    address = ImageAddress.from_updates(
+        GEOLOCATOR.address(PathWithMd5("", ""), req.latitude, req.longitude).p
+    )
+    aggr = DB.get().get_aggregate_stats(req.query)
+    top_tags = sorted(aggr.tag.items(), key=lambda x: -x[1])
+    top_cls = sorted(aggr.classification.items(), key=lambda x: -x[1])
+    top_addr = sorted(aggr.address.items(), key=lambda x: -x[1])
+
+    directories = sorted(DB.get().get_matching_directories(req.query), key=lambda x: x.directory)
+    omgs, _ = DB.get().get_matching_images(req.query, SortParams(sort_by=SortBy.RANDOM), GalleryPaging())
+    images = [image_template_params(omg) for omg in omgs]
+    return templates.TemplateResponse(
+        request=request,
+        name="submit_annotations_overlay.html",
+        context={
+            "total": aggr.total,
+            "top": {
+                "tag": top_tags[:15],
+                "cls": top_cls[:5],
+                "addr": top_addr[:15],
+                "show_links": False,
+            },
+            "address": address,
+            "req": req,
+            "query_json": json.dumps(
+                {k: v for k, v in req.query.to_dict(encode_json=True).items() if v}, indent=2
+            ),
+            "directories": directories,
+            "images": images,
+        },
+    )
+
+
+@dataclass
 class LocationInfoRequest:
     latitude: float
     longitude: float
@@ -230,43 +273,43 @@ class GalleryRequest:
     paging: GalleryPaging
 
 
+def image_template_params(omg: ImageRow) -> t.Dict[str, t.Any]:
+
+    max_tag = min(1, max((omg.tags or {}).values(), default=1.0))
+    loc = None
+    if omg.latitude is not None and omg.longitude is not None:
+        loc = {"lat": omg.latitude, "lon": omg.longitude}
+
+    paths = [
+        {
+            "filename": os.path.basename(file.file),
+            "dir": os.path.dirname(file.file),
+        }
+        for file in DB.get().files(omg.md5)
+    ]
+    return {
+        "hsh": omg.md5,
+        "paths": paths,
+        "loc": loc,
+        "classifications": omg.classifications or "",
+        "tags": [
+            (tg, classify_tag(x / max_tag)) for tg, x in sorted((omg.tags or {}).items(), key=lambda x: -x[1])
+        ],
+        "addrs": [a for a in [omg.address.name, omg.address.country] if a],
+        "date": maybe_datetime_to_date(omg.date),
+        "timestamp": maybe_datetime_to_timestamp(omg.date) or 0.0,
+        "raw_data": [
+            {"k": k, "v": json.dumps(v, ensure_ascii=True)} for k, v in omg.to_dict(encode_json=True).items()
+        ],
+    }
+
+
 @app.post("/internal/gallery.html", response_class=HTMLResponse)
 async def gallery_div(request: Request, params: GalleryRequest, oi: t.Optional[int] = None) -> HTMLResponse:
     images = []
-    omgs, has_next_page = DB.get().get_matching_images(params.query, params.paging)
+    omgs, has_next_page = DB.get().get_matching_images(params.query, SortParams(), params.paging)
     for omg in omgs:
-
-        max_tag = min(1, max((omg.tags or {}).values(), default=1.0))
-        loc = None
-        if omg.latitude is not None and omg.longitude is not None:
-            loc = {"lat": omg.latitude, "lon": omg.longitude}
-
-        paths = [
-            {
-                "filename": os.path.basename(file.file),
-                "dir": os.path.dirname(file.file),
-            }
-            for file in DB.get().files(omg.md5)
-        ]
-        images.append(
-            {
-                "hsh": omg.md5,
-                "paths": paths,
-                "loc": loc,
-                "classifications": omg.classifications or "",
-                "tags": [
-                    (tg, classify_tag(x / max_tag))
-                    for tg, x in sorted((omg.tags or {}).items(), key=lambda x: -x[1])
-                ],
-                "addrs": [a for a in [omg.address.name, omg.address.country] if a],
-                "date": maybe_datetime_to_date(omg.date),
-                "timestamp": maybe_datetime_to_timestamp(omg.date) or 0.0,
-                "raw_data": [
-                    {"k": k, "v": json.dumps(v, ensure_ascii=True)}
-                    for k, v in omg.to_dict(encode_json=True).items()
-                ],
-            }
-        )
+        images.append(image_template_params(omg))
 
     return templates.TemplateResponse(
         request=request,
@@ -297,6 +340,7 @@ def aggregate_endpoint(request: Request, url: SearchQuery) -> HTMLResponse:
                 "tag": top_tags[:15],
                 "cls": top_cls[:5],
                 "addr": top_addr[:15],
+                "show_links": True,
             },
         },
     )
