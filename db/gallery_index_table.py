@@ -68,6 +68,11 @@ CREATE TABLE IF NOT EXISTS gallery_index (
   PRIMARY KEY (md5)
 ) STRICT;"""
         )
+        self._con.execute_add_column(
+            """
+ALTER TABLE gallery_index ADD COLUMN manual_features TEXT NOT NULL DEFAULT ""
+        """
+        )
         for columns in [
             ["md5"],
             ["feature_last_update"],
@@ -78,6 +83,7 @@ CREATE TABLE IF NOT EXISTS gallery_index (
             ["latitude"],
             ["longitude"],
             ["altitude"],
+            ["manual_features"],
             ["version"],
         ]:
             name = f"gallery_index_idx_{'_'.join(columns)}"
@@ -93,7 +99,7 @@ CREATE TABLE IF NOT EXISTS gallery_index (
         tags = sorted(list((omg.tags or {}).items()))
         self._con.execute(
             """
-INSERT INTO gallery_index VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+INSERT INTO gallery_index VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT(md5) DO UPDATE SET
   feature_last_update=excluded.feature_last_update,
   timestamp=excluded.timestamp,
@@ -106,7 +112,8 @@ ON CONFLICT(md5) DO UPDATE SET
   latitude=excluded.latitude,
   longitude=excluded.longitude,
   altitude=excluded.altitude,
-  version=excluded.version
+  version=excluded.version,
+  manual_features=excluded.manual_features
 WHERE
   excluded.version > gallery_index.version
   OR (
@@ -128,6 +135,7 @@ WHERE
                 omg.longitude,
                 omg.altitude,
                 omg.version,
+                f',{",".join(omg.manual_features)},',
             ),
         )
         self._con.commit()
@@ -488,7 +496,7 @@ SELECT "alt", 'min', MIN(altitude) FROM matched_images WHERE altitude IS NOT NUL
             query,
             variables,
         ) = self._matching_query(
-            "md5, timestamp, tags, tags_probs, classifications, address_country, address_name, address_full, feature_last_update, latitude, longitude, altitude, version",
+            "md5, timestamp, tags, tags_probs, classifications, address_country, address_name, address_full, feature_last_update, latitude, longitude, altitude, version, manual_features",
             url,
         )
         sort_by = None
@@ -522,6 +530,7 @@ SELECT "alt", 'min', MIN(altitude) FROM matched_images WHERE altitude IS NOT NUL
             longitude,
             altitude,
             version,
+            manual_features,
         ) in items[: gallery_paging.paging]:
             output.append(
                 Image(
@@ -550,6 +559,7 @@ SELECT "alt", 'min', MIN(altitude) FROM matched_images WHERE altitude IS NOT NUL
                     latitude,
                     longitude,
                     altitude,
+                    [] if manual_features is None else [x for x in manual_features.split(",") if x],
                     version,
                 )
             )

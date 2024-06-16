@@ -134,6 +134,7 @@ class Image(DataClassJsonMixin):
     latitude: t.Optional[float]
     longitude: t.Optional[float]
     altitude: t.Optional[float]
+    manual_features: t.List[str]
     version: int
 
     @staticmethod
@@ -192,6 +193,12 @@ class Image(DataClassJsonMixin):
             latitude = manual_location.latitude
             longitude = manual_location.longitude
 
+        manual_features = []
+        if manual_location is not None:
+            manual_features.append(type(manual_location).__name__)
+        if manual_text is not None:
+            manual_features.append(type(manual_text).__name__)
+
         return Image(
             md5,
             date,
@@ -202,6 +209,7 @@ class Image(DataClassJsonMixin):
             latitude,
             longitude,
             altitude,
+            manual_features,
             Image.current_version(),
         )
 

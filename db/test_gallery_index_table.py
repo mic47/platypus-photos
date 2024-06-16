@@ -41,6 +41,7 @@ def _image(
         lat,
         lon,
         alt,
+        ["ManualLocation"],
         version,
     )
 
