@@ -8,7 +8,7 @@ from annots.exif import Exif, ImageExif
 from annots.geo import Geolocator, GeoAddress
 from annots.text import Models, ImageClassification
 from data_model.config import DirectoryMatchingConfig, DBFilesConfig
-from data_model.features import WithMD5, PathWithMd5, Error, HasCurrentVersion
+from data_model.features import WithMD5, PathWithMd5, Error, HasCurrentVersion, ManualLocation
 from db.cache import SQLiteCache
 from db import FeaturesTable
 
@@ -28,6 +28,7 @@ class Annotator:
         self.models = Models(models_cache, annotate_url)
         exif_cache = SQLiteCache(features, ImageExif, files_config.exif_jsonl)
         self.exif = Exif(exif_cache)
+        self.manual_location = SQLiteCache(features, ManualLocation, files_config.manual_location_jsonl)
         geolocator_cache = SQLiteCache(features, GeoAddress, files_config.geo_address_jsonl)
         self.geolocator = Geolocator(geolocator_cache)
         self.cheap_features_types: t.List[t.Type[HasCurrentVersion]] = [ImageExif, GeoAddress]
@@ -40,8 +41,16 @@ class Annotator:
         t.Optional[datetime.datetime],
     ]:
         exif_item = self.exif.process_image(path)
-        if exif_item.p is not None and exif_item.p.gps is not None:
-            # TODO: do recomputation based on the last_update
+        manual_location = self.manual_location.get(path.md5)
+        if (
+            manual_location is not None
+            and manual_location.payload is not None
+            and manual_location.payload.p is not None
+        ):
+            geo = self.geolocator.address(
+                path, manual_location.payload.p.latitude, manual_location.payload.p.longitude, recompute=False
+            )
+        elif exif_item.p is not None and exif_item.p.gps is not None:
             geo = self.geolocator.address(
                 path, exif_item.p.gps.latitude, exif_item.p.gps.longitude, recompute=False
             )

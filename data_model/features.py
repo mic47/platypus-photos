@@ -139,3 +139,25 @@ class ImageClassification(HasCurrentVersion):
     @staticmethod
     def current_version() -> int:
         return 0
+
+
+@dataclass
+class ManualLocation(HasCurrentVersion):
+    latitude: float
+    longitude: float
+    address_name: t.Optional[str]
+    address_country: t.Optional[str]
+
+    @staticmethod
+    def current_version() -> int:
+        return 0
+
+
+@dataclass
+class ManualText(HasCurrentVersion):
+    tags: t.List[str]
+    description: t.List[str]
+
+    @staticmethod
+    def current_version() -> int:
+        return 0

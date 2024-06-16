@@ -193,7 +193,7 @@ class AnnotationOverlayRequest(DataClassJsonMixin):
 @app.post("/internal/submit_annotations_overlay.html", response_class=HTMLResponse)
 def submit_annotation_overlay_form_endpoint(request: Request, req: AnnotationOverlayRequest) -> HTMLResponse:
     address = ImageAddress.from_updates(
-        GEOLOCATOR.address(PathWithMd5("", ""), req.latitude, req.longitude).p
+        GEOLOCATOR.address(PathWithMd5("", ""), req.latitude, req.longitude).p, None
     )
     aggr = DB.get().get_aggregate_stats(req.query)
     top_tags = sorted(aggr.tag.items(), key=lambda x: -x[1])
@@ -219,7 +219,9 @@ def submit_annotation_overlay_form_endpoint(request: Request, req: AnnotationOve
             "query_json": json.dumps(
                 {k: v for k, v in req.query.to_dict(encode_json=True).items() if v}, indent=2
             ),
-            "query_json_base64": base64.b64encode(req.query.to_json(ensure_ascii=True).encode("utf-8")).decode('utf-8'),
+            "query_json_base64": base64.b64encode(
+                req.query.to_json(ensure_ascii=True).encode("utf-8")
+            ).decode("utf-8"),
             "directories": directories,
             "images": images,
         },
@@ -235,7 +237,7 @@ class LocationInfoRequest:
 @app.post("/internal/fetch_location_info.html", response_class=HTMLResponse)
 def fetch_location_info_endpoint(request: Request, location: LocationInfoRequest) -> HTMLResponse:
     address = ImageAddress.from_updates(
-        GEOLOCATOR.address(PathWithMd5("", ""), location.latitude, location.longitude).p
+        GEOLOCATOR.address(PathWithMd5("", ""), location.latitude, location.longitude).p, None
     )
     return templates.TemplateResponse(
         request=request,

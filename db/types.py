@@ -3,11 +3,12 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime
 import enum
+import itertools
 import typing as t
 
 from dataclasses_json import DataClassJsonMixin
 
-from data_model.features import ImageExif, GeoAddress, ImageClassification
+from data_model.features import ImageExif, GeoAddress, ImageClassification, ManualText, ManualLocation
 
 T = t.TypeVar("T")
 E = t.TypeVar("E")
@@ -102,13 +103,22 @@ class ImageAddress(DataClassJsonMixin):
     full: t.Optional[str]
 
     @staticmethod
-    def from_updates(address: t.Optional[GeoAddress]) -> ImageAddress:
+    def from_updates(
+        address: t.Optional[GeoAddress],
+        manual_location: t.Optional[ManualLocation],
+    ) -> ImageAddress:
         country = None
         name = None
         full = None
         if address is not None:
             country = address.country
             name = address.name
+        if manual_location is not None:
+            if manual_location.address_name:
+                name = manual_location.address_name
+            if manual_location.address_country:
+                country = manual_location.address_country
+        if name is not None or country is not None:
             full = ", ".join(x for x in [name, country] if x)
         return ImageAddress(country, name, full)
 
@@ -136,6 +146,8 @@ class Image(DataClassJsonMixin):
         exif: t.Optional[ImageExif],
         address: t.Optional[GeoAddress],
         text_classification: t.Optional[ImageClassification],
+        manual_location: t.Optional[ManualLocation],
+        manual_text: t.Optional[ManualText],
         date_from_path: t.List[datetime],
         max_last_update: float,
     ) -> "Image":
@@ -153,9 +165,20 @@ class Image(DataClassJsonMixin):
                     if name not in tags:
                         tags[name] = 0.0
                     tags[name] += confidence * classification.confidence
+        if manual_text is not None:
+            max_tags = max(tags.values(), default=1.0)
+            for tag in manual_text.tags:
+                tags[tag] = max_tags
 
         classifications = ";".join(
-            [] if text_classification is None else text_classification.captions
+            sorted(
+                set(
+                    itertools.chain(
+                        ([] if text_classification is None else text_classification.captions),
+                        ([] if manual_text is None else manual_text.description),
+                    )
+                )
+            )
         ).lower()
 
         latitude = None
@@ -165,13 +188,16 @@ class Image(DataClassJsonMixin):
             latitude = exif.gps.latitude
             longitude = exif.gps.longitude
             altitude = exif.gps.altitude
+        if manual_location:
+            latitude = manual_location.latitude
+            longitude = manual_location.longitude
 
         return Image(
             md5,
             date,
             tags,
             classifications,
-            ImageAddress.from_updates(address),
+            ImageAddress.from_updates(address, manual_location),
             max_last_update,
             latitude,
             longitude,

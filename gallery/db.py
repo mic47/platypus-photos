@@ -6,7 +6,14 @@ from dataclasses_json import DataClassJsonMixin
 from tqdm import tqdm
 
 from annots.date import PathDateExtractor
-from data_model.features import ImageExif, GeoAddress, ImageClassification, WithMD5
+from data_model.features import (
+    ImageExif,
+    GeoAddress,
+    ImageClassification,
+    WithMD5,
+    ManualLocation,
+    ManualText,
+)
 from db import (
     FeaturesTable,
     GalleryIndexTable,
@@ -48,6 +55,8 @@ class Reindexer:
         self._exif = SQLiteCache(self._features_table, ImageExif)
         self._address = SQLiteCache(self._features_table, GeoAddress)
         self._text_classification = SQLiteCache(self._features_table, ImageClassification)
+        self._manual_location = SQLiteCache(self._features_table, ManualLocation)
+        self._manual_text = SQLiteCache(self._features_table, ManualText)
         self._gallery_index = GalleryIndexTable(self._g_con)
 
     def reconnect(self) -> None:
@@ -96,6 +105,8 @@ class Reindexer:
         exif = extract_data(self._exif.get(md5))
         addr = extract_data(self._address.get(md5))
         text_cls = extract_data(self._text_classification.get(md5))
+        manual_location = extract_data(self._manual_location.get(md5))
+        manual_text = extract_data(self._manual_text.get(md5))
         files = self._files_table.by_md5(md5)
         directories = set()
         max_dir_last_update = 0.0
@@ -110,6 +121,8 @@ class Reindexer:
             exif,
             addr,
             text_cls,
+            manual_location,
+            manual_text,
             [
                 x
                 for x in itertools.chain.from_iterable(
