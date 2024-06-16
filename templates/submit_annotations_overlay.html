@@ -1,71 +1,71 @@
 <div class="submit_overlay" id="submit_overlay">
 <h2>Going to annotate {{total}} photos </h2>
-<form action="javascript:alert('lol')" id='SubmitAnnotations'>
-  <h3>Location Info</h3>
-  <b>How to override location?</b>
-    <select name="override">
-      <option value="no_loc_no_man">Override images without location and manual annotation</option>
-      <option value="no_loc_yes_man">Override images without location, even with manual annotation</option>
-      <option value="yes_loc_no_man">Override images without manual annotation</option>
-      <option value="yes_loc_yes_man">Override all selected images</option>
-    </select>
-    <br/>
-  <b>Address:</b> {{address.full}}<br/>
-  <b>Name:</b> 
-    <input type="text" name="address_name" value="{{address.name}}">
-    <input type="hidden" name="address_name_original" value="{{address.name}}">
-    <br/>
-  <b>Country:</b>
-    <input type="text" name="address_country" value="{{address.country}}">
-    <input type="hidden" name="address_country_original" value="{{address.country}}">
-    <br/>
-  <b>Latitude:</b> {{req.latitude}}<br/>
-  <b>Longitude:</b> {{req.longitude}}<br/>
-  <h3>Annotation Info</h3>
-  <b>How to override text info?</b>
-    <select name="override">
-      <option value="extend_man">Extend manual annotations</option>
-      <option value="no_man">Override images wihout manual annotation</option>
-      <option value="yes_man">Override even manual annotations</option>
-    </select>
-    <br/>
-  <b>Extra tags:</b> 
-    <input type="text" name="extra_tags" value="">
-    </br/>
-  <b>Extra description:</b> 
-    <input type="text" name="extra_description" value="">
-    </br/>
-  <input type="checkbox" >Check this box<br/>
-  <input type="submit" value="Add annotations">
-  <input type="button" value="cancel" onclick="document.getElementById('submit_overlay').remove();">
-</form>
+<div class="annotation_scrollable_area">
+  <form action="javascript:alert('lol')" id='SubmitAnnotations'>
+    <h3>Location Info</h3>
+    <b>How to override location?</b>
+      <select name="override">
+        <option value="no_loc_no_man">Override images without location and manual annotation</option>
+        <option value="no_loc_yes_man">Override images without location, even with manual annotation</option>
+        <option value="yes_loc_no_man">Override images without manual annotation</option>
+        <option value="yes_loc_yes_man">Override all selected images</option>
+      </select>
+      <br/>
+    <b>Address:</b> {{address.full}}<br/>
+    <b>Name:</b> 
+      <input type="text" name="address_name" value="{{address.name}}">
+      <input type="hidden" name="address_name_original" value="{{address.name}}">
+      <br/>
+    <b>Country:</b>
+      <input type="text" name="address_country" value="{{address.country}}">
+      <input type="hidden" name="address_country_original" value="{{address.country}}">
+      <br/>
+    <b>Latitude:</b> {{req.latitude}}<br/>
+    <b>Longitude:</b> {{req.longitude}}<br/>
+    <h3>Annotation Info</h3>
+    <b>How to override text info?</b>
+      <select name="override">
+        <option value="extend_man">Extend manual annotations</option>
+        <option value="no_man">Override images wihout manual annotation</option>
+        <option value="yes_man">Override even manual annotations</option>
+      </select>
+      <br/>
+    <b>Extra tags:</b> 
+      <input type="text" name="extra_tags" value="">
+      </br/>
+    <b>Extra description:</b> 
+      <input type="text" name="extra_description" value="">
+      </br/>
+    <input type="checkbox" >Check this box<br/>
+    <input type="submit" value="Add annotations">
+    <input type="button" value="cancel" onclick="document.getElementById('submit_overlay').remove();">
+  </form>
 
-<h2>Summary of selection</h2>
-<h3>Stats</h3>
-{% include 'aggregate.html' with context %}
-<h3>Directories:</h3>
-<table>
-  <tr>
-    <th>Directory</th>
-    <th>#Images</th>
-    <th>% with location</th>
-    <th>% with time</th>
-  </tr>
-{% for d in directories %}
-  <tr>
-    <td>{{d.directory}}</td>
-    <td>{{d.total_images}}</td>
-    <td>{{ '%.1f'|format(d.has_location * 100.0 / d.total_images|float) }}%</td>
-    <td>{{ '%.1f'|format(d.has_timestamp * 100.0 / d.total_images|float) }}%</td>
-  </tr>
-{% endfor %}
-</table>
-<h3>Raw selection</h3>
-<pre>
-{{query_json}}
-</pre>
+  <h2>Summary of selection</h2>
+  <h3>Stats</h3>
+  {% include 'aggregate.html' with context %}
+  <h3>Directories:</h3>
+  <table>
+    <tr>
+      <th>Directory</th>
+      <th>#Images</th>
+      <th>% with location</th>
+      <th>% with time</th>
+    </tr>
+  {% for d in directories %}
+    <tr>
+      <td>{{d.directory}}</td>
+      <td>{{d.total_images}}</td>
+      <td>{{ '%.1f'|format(d.has_location * 100.0 / d.total_images|float) }}%</td>
+      <td>{{ '%.1f'|format(d.has_timestamp * 100.0 / d.total_images|float) }}%</td>
+    </tr>
+  {% endfor %}
+  </table>
+  <h3>Raw selection</h3>
+  <pre>
+  {{query_json}}
+  </pre>
 
-<div class="annotation_images">
   <h2>Sample of photos</h2>
 {% for image in images %}
   <div class="gallery_item">
