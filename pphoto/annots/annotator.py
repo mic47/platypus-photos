@@ -62,7 +62,7 @@ class Annotator:
             mt = self.manual_text.add(WithMD5(task.id_.md5, ManualText.current_version(), t_pay, None))
         return (ml, mt)
 
-    def cheap_features(self, path: PathWithMd5) -> t.Tuple[
+    def cheap_features(self, path: PathWithMd5, recompute_location: bool) -> t.Tuple[
         PathWithMd5,
         WithMD5[ImageExif],
         WithMD5[GeoAddress],
@@ -76,7 +76,10 @@ class Annotator:
             and manual_location.payload.p is not None
         ):
             geo = self.geolocator.address(
-                path, manual_location.payload.p.latitude, manual_location.payload.p.longitude, recompute=False
+                path,
+                manual_location.payload.p.latitude,
+                manual_location.payload.p.longitude,
+                recompute=recompute_location,
             )
         elif exif_item.p is not None and exif_item.p.gps is not None:
             geo = self.geolocator.address(

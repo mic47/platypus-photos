@@ -55,7 +55,7 @@ async def worker(
         try:
             if type_ == JobType.CHEAP_FEATURES:
                 assert isinstance(path, PathWithMd5)
-                context.jobs.cheap_features(path)
+                context.jobs.cheap_features(path, recompute_location=False)
             elif type_ == JobType.IMAGE_TO_TEXT:
                 assert isinstance(path, PathWithMd5)
                 await context.jobs.image_to_text(path)

@@ -127,7 +127,7 @@ div.gallery_item:hover {
 .search_result {
   position: relative;
   background-color: #00000033;
-  z-index: 1;
+  /* z-index: 1; */
 }
 
 .submit_overlay {
@@ -140,6 +140,7 @@ div.gallery_item:hover {
   width: 100%;
   height: 100%;
   background-color: #aaaaaaDD;
+  z-index: 2;
 }
 .submit_overlay table, th, td {
   text-align: left;

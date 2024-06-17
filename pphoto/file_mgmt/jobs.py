@@ -92,7 +92,9 @@ class Jobs:
                 os.remove(path)
             return None
         # Do cheap annotation
-        (_path, exif, geo, path_date) = self._annotator.cheap_features(path_with_md5)
+        (_path, exif, geo, path_date) = self._annotator.cheap_features(
+            path_with_md5, recompute_location=False
+        )
         date = (None if exif.p is None or exif.p.date is None else exif.p.date.datetime) or path_date
         # Move file
         # TODO: we need to extract date and location from the path
@@ -119,9 +121,11 @@ class Jobs:
         # Schedule expensive annotation
         return EnqueuePathAction(new_path, IMPORT_PRIORITY, [JobType.IMAGE_TO_TEXT])
 
-    def cheap_features(self, path: PathWithMd5) -> None:
+    def cheap_features(self, path: PathWithMd5, recompute_location: bool) -> None:
         # Annotate features
-        (path, exif, geo, path_date) = self._annotator.cheap_features(path)
+        (path, exif, geo, path_date) = self._annotator.cheap_features(
+            path, recompute_location=recompute_location
+        )
 
         # Figure out if file should be moved
         date = (None if exif.p is None or exif.p.date is None else exif.p.date.datetime) or path_date
@@ -147,9 +151,9 @@ class Jobs:
         self._files.set_lifecycle(new_path.path, ManagedLifecycle.SYNCED, None)
 
     def add_manual_annotation(self, task: RemoteTask[ManualAnnotationTask]) -> None:
-        self._annotator.manual_features(task)
+        (loc, _text) = self._annotator.manual_features(task)
         for file in self._files.by_md5(task.id_.md5):
-            self.cheap_features(PathWithMd5(file.file, task.id_.md5))
+            self.cheap_features(PathWithMd5(file.file, task.id_.md5), recompute_location=loc is not None)
         self._jobs.finish_task(task.id_)
 
     def fix_in_progress_moved_files_at_startup(self) -> None:

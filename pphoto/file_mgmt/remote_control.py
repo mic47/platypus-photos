@@ -31,7 +31,7 @@ Jobs = ImportCommand | RefreshJobs
 def serialize_rc_job(job: Jobs) -> str:
     dct = job.to_dict(encode_json=True)
     dct["__type__"] = type(job).__name__
-    return json.dumps(str, ensure_ascii=False)
+    return json.dumps(dct, ensure_ascii=False)
 
 
 def write_serialized_rc_job(path: str, job: Jobs) -> None:
