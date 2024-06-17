@@ -43,11 +43,8 @@ class Annotator:
         ml = None
         mt = None
         if task.payload.location is not None:
-            p = task.payload.location
-            # TODO: unify these two types
-            l_pay = ManualLocation(p.latitude, p.longitude, p.address_name, p.address_name)
             ml = self.manual_location.add(
-                WithMD5(task.id_.md5, ManualLocation.current_version(), l_pay, None)
+                WithMD5(task.id_.md5, ManualLocation.current_version(), task.payload.location, None)
             )
         if task.payload.text is not None:
             txt = task.payload.text

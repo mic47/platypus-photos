@@ -26,7 +26,7 @@ from pphoto.db.types_date import DateCluster
 from pphoto.db.connection import PhotosConnection, GalleryConnection, JobsConnection
 from pphoto.file_mgmt.remote_control import RefreshJobs, write_serialized_rc_job
 from pphoto.utils import assert_never, Lazy
-from pphoto.jobs.types import JobType, LocationAnnotation, TextAnnotation, ManualAnnotationTask
+from pphoto.jobs.types import JobType, ManualLocation, TextAnnotation, ManualAnnotationTask
 
 from pphoto.gallery.db import ImageSqlDB, Image as ImageRow
 from pphoto.gallery.image import make_image_address
@@ -163,7 +163,7 @@ def date_clusters_endpoint(params: DateClusterParams) -> t.List[DateCluster]:
     return clusters
 
 
-class LocationAnnotationOverride(enum.Enum):
+class ManualLocationOverride(enum.Enum):
     NO_LOCATION_NO_MANUAL = "NoLocNoMan"
     NO_LOCATION_YES_MANUAL = "NoLocYeMan"
     YES_LOCATION_NO_MANUAL = "YeLocNoMan"
@@ -179,8 +179,8 @@ class TextAnnotationOverride(enum.Enum):
 @dataclass
 class MassManualAnnotation(DataClassJsonMixin):
     query: SearchQuery
-    location: LocationAnnotation
-    location_override: LocationAnnotationOverride
+    location: ManualLocation
+    location_override: ManualLocationOverride
     text: TextAnnotation
     text_override: TextAnnotationOverride
 
@@ -190,16 +190,16 @@ def mass_manual_annotation_endpoint(params: MassManualAnnotation) -> int:
     db = DB.get()
     has_location = None
     has_manual_location = None
-    if params.location_override == LocationAnnotationOverride.NO_LOCATION_NO_MANUAL:
+    if params.location_override == ManualLocationOverride.NO_LOCATION_NO_MANUAL:
         has_location = False
         has_manual_location = False
-    elif params.location_override == LocationAnnotationOverride.NO_LOCATION_YES_MANUAL:
+    elif params.location_override == ManualLocationOverride.NO_LOCATION_YES_MANUAL:
         has_location = False
         has_manual_location = None
-    elif params.location_override == LocationAnnotationOverride.YES_LOCATION_NO_MANUAL:
+    elif params.location_override == ManualLocationOverride.YES_LOCATION_NO_MANUAL:
         has_location = None
         has_manual_location = False
-    elif params.location_override == LocationAnnotationOverride.YES_LOCATION_YES_MANUAL:
+    elif params.location_override == ManualLocationOverride.YES_LOCATION_YES_MANUAL:
         has_location = None
         has_manual_location = None
     else:

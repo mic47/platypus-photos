@@ -7,6 +7,8 @@ import typing as t
 
 from dataclasses_json import DataClassJsonMixin
 
+from pphoto.data_model.manual import ManualLocation
+
 
 class JobType(enum.Enum):
     MASS_MANUAL_ANNOTATION = "mass_manual_annotation"
@@ -58,14 +60,6 @@ class Task(t.Generic[T]):
 
 
 @dataclasses.dataclass
-class LocationAnnotation(DataClassJsonMixin):
-    latitude: float
-    longitude: float
-    address_name: t.Optional[str]
-    address_country: t.Optional[str]
-
-
-@dataclasses.dataclass
 class TextAnnotation(DataClassJsonMixin):
     description: t.Optional[str]
     tags: t.Optional[str]
@@ -73,6 +67,6 @@ class TextAnnotation(DataClassJsonMixin):
 
 @dataclasses.dataclass
 class ManualAnnotationTask(DataClassJsonMixin):
-    location: t.Optional[LocationAnnotation]
+    location: t.Optional[ManualLocation]
     text: t.Optional[TextAnnotation]
     text_extend: bool
