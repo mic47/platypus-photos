@@ -23,11 +23,11 @@ from pphoto.data_model.config import DBFilesConfig
 from pphoto.data_model.base import PathWithMd5
 from pphoto.db.types_location import LocationCluster, LocPoint
 from pphoto.db.types_date import DateCluster
-from pphoto.db.types_image import ImageAddress
 from pphoto.db.connection import PhotosConnection, GalleryConnection
 from pphoto.utils import assert_never, Lazy
 
 from pphoto.gallery.db import ImageSqlDB, Image as ImageRow
+from pphoto.gallery.image import make_image_address
 from pphoto.gallery.url import SearchQuery, GalleryPaging, SortParams, SortBy
 from pphoto.gallery.utils import maybe_datetime_to_date, maybe_datetime_to_timestamp
 
@@ -275,9 +275,7 @@ class AnnotationOverlayRequest(DataClassJsonMixin):
 
 @app.post("/internal/submit_annotations_overlay.html", response_class=HTMLResponse)
 def submit_annotation_overlay_form_endpoint(request: Request, req: AnnotationOverlayRequest) -> HTMLResponse:
-    address = ImageAddress.from_updates(
-        GEOLOCATOR.address(PathWithMd5("", ""), req.latitude, req.longitude).p, None
-    )
+    address = make_image_address(GEOLOCATOR.address(PathWithMd5("", ""), req.latitude, req.longitude).p, None)
     aggr = DB.get().get_aggregate_stats(req.query)
     top_tags = sorted(aggr.tag.items(), key=lambda x: -x[1])
     top_cls = sorted(aggr.classification.items(), key=lambda x: -x[1])
@@ -319,7 +317,7 @@ class LocationInfoRequest:
 
 @app.post("/internal/fetch_location_info.html", response_class=HTMLResponse)
 def fetch_location_info_endpoint(request: Request, location: LocationInfoRequest) -> HTMLResponse:
-    address = ImageAddress.from_updates(
+    address = make_image_address(
         GEOLOCATOR.address(PathWithMd5("", ""), location.latitude, location.longitude).p, None
     )
     return templates.TemplateResponse(

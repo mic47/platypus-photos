@@ -1,12 +1,12 @@
 import typing as t
 from pphoto.db.connection import PhotosConnection
-from pphoto.db.types import FeaturePayload, InternalError
+from pphoto.db.types import FeaturePayload
 
 
-class FeaturesFableWrongParams(InternalError):
+class FeaturesFableWrongParams(Exception):
     def __init__(self, message: str, payload: t.Optional[bytes], error: t.Optional[bytes]) -> None:
         super().__init__(
-            f"FeaturesTable wrong parameters, {message}: `payload is None`=`{payload is None}`, `error is None`=`{error is None}`"
+            f"Bug: FeaturesTable wrong parameters, {message}: `payload is None`=`{payload is None}`, `error is None`=`{error is None}`"
         )
 
 

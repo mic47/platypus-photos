@@ -19,9 +19,9 @@ from pphoto.db.connection import PhotosConnection, GalleryConnection
 from pphoto.db.files_table import FilesTable
 from pphoto.db.cache import SQLiteCache
 from pphoto.db.directories_table import DirectoriesTable
+from pphoto.gallery.image import make_image
 
 from pphoto.db.types import FeaturePayload
-from pphoto.db.types_image import Image
 
 
 Ser = t.TypeVar("Ser", bound=DataClassJsonMixin)
@@ -105,7 +105,7 @@ class Reindexer:
                 if path is not None:
                     directories.add(os.path.dirname(path))
 
-        omg = Image.from_updates(
+        omg = make_image(
             md5,
             exif,
             addr,

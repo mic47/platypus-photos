@@ -35,8 +35,3 @@ class NoCache(t.Generic[Ser], Cache[Ser]):
 
     def add(self, data: WithMD5[Ser]) -> WithMD5[Ser]:
         return data
-
-
-class InternalError(Exception):
-    def __init__(self, message: str) -> None:
-        super().__init__(f"Internal error, this si bug: {message}")
