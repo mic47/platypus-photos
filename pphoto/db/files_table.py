@@ -173,6 +173,15 @@ SELECT DISTINCT md5 FROM files WHERE dirty=1 AND managed <> {ManagedLifecycle.BE
             out.append(md5)
         return out
 
+    def dirty_md5s_total(self, limit: int = 1000) -> int:
+        res = self._con.execute(
+            f"""
+SELECT COUNT(DISTINCT md5) FROM files WHERE dirty=1 AND managed <> {ManagedLifecycle.BEING_MOVED_AROUND.value} AND managed <> {ManagedLifecycle.IMPORTED.value} LIMIT {limit}
+            """
+        ).fetchone()
+        assert res is not None
+        return int(res[0])
+
     def undirty(self, md5: str, max_last_update: float) -> None:
         self._con.execute(
             """

@@ -27,6 +27,7 @@ from pphoto.file_mgmt.remote_control import ImportCommand, parse_rc_job, Refresh
 from pphoto.gallery.reindexer import Reindexer
 from pphoto.utils import assert_never, Lazy
 from pphoto.utils.files import get_paths, expand_vars_in_path
+from pphoto.utils.progress_bar import ProgressBar
 
 
 class GlobalContext:
@@ -240,15 +241,13 @@ async def reindex_gallery(reindexer: Reindexer) -> None:
     await asyncio.sleep(0)
     sleep_time = 1
     max_sleep_time = 64
+    progress_bar = ProgressBar("Reindexing gallery", permanent=True)
     while True:
         try:
-            done = reindexer.load(show_progress=False)
+            done = reindexer.load(progress=progress_bar)
             if done <= 100:
                 sleep_time = min(sleep_time * 2, max_sleep_time)
-                if done > 0:
-                    print(f"Reindexed {done} images.", file=sys.stderr)
             else:
-                print(f"Reindexed {done} images.", file=sys.stderr)
                 sleep_time = 1
         # pylint: disable = broad-exception-caught
         except Exception as e:

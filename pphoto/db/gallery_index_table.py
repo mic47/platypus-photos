@@ -142,6 +142,16 @@ WHERE
         )
         self._con.commit()
 
+    def old_versions_md5_total(
+        self,
+    ) -> int:
+        res = self._con.execute(
+            "SELECT COUNT(1) FROM gallery_index WHERE version < ?",
+            (Image.current_version(),),
+        ).fetchone()
+        assert res is not None
+        return int(res[0])
+
     def old_versions_md5(
         self,
         limit: int = 1000,

@@ -82,6 +82,25 @@ CREATE INDEX IF NOT EXISTS features_idx_is_error ON features (is_error);
         )
         self._con.commit()
 
+    def _dirty_clause(
+        self,
+        types: t.List[str],
+    ) -> str:
+        if types:
+            q = ", ".join(f"'{qt}'" for qt in types)
+            return f"dirty > 0 AND type in ({q})"
+        return "dirty > 0"
+
+    def dirty_md5s_total(
+        self,
+        types: t.List[str],
+    ) -> int:
+        res = self._con.execute(
+            f"SELECT COUNT(distinct md5) FROM features WHERE {self._dirty_clause(types)}"
+        ).fetchone()
+        assert res is not None
+        return int(res[0])
+
     def dirty_md5s(
         self,
         types: t.List[str],
@@ -92,15 +111,9 @@ CREATE INDEX IF NOT EXISTS features_idx_is_error ON features (is_error);
             int,
         ]
     ]:
-        if types:
-            q = ", ".join(f"'{qt}'" for qt in types)
-            res = self._con.execute(
-                f"SELECT md5, MAX(last_update) FROM features WHERE dirty > 0 AND type in ({q}) GROUP BY md5 LIMIT {limit}"
-            )
-        else:
-            res = self._con.execute(
-                f"SELECT md5, MAX(last_update) FROM features WHERE dirty > 0 GROUP BY md5 LIMIT {limit}"
-            )
+        res = self._con.execute(
+            f"SELECT md5, MAX(last_update) FROM features WHERE {self._dirty_clause(types)} GROUP BY md5 LIMIT {limit}"
+        )
         while True:
             items = res.fetchmany()
             if not items:

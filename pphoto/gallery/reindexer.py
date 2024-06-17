@@ -3,7 +3,6 @@ import os
 import typing as t
 
 from dataclasses_json import DataClassJsonMixin
-from tqdm import tqdm
 
 from pphoto.annots.date import PathDateExtractor
 from pphoto.data_model.base import (
@@ -20,6 +19,7 @@ from pphoto.db.files_table import FilesTable
 from pphoto.db.cache import SQLiteCache
 from pphoto.db.directories_table import DirectoriesTable
 from pphoto.gallery.image import make_image
+from pphoto.utils.progress_bar import ProgressBar
 
 from pphoto.db.types import FeaturePayload
 
@@ -56,28 +56,31 @@ class Reindexer:
         self._p_con.check_unused()
         self._g_con.check_unused()
 
-    def load(self, show_progress: bool) -> int:
+    def load(self, progress: t.Optional[ProgressBar]) -> int:
         reindexed = 0
-        for md5, _last_update in tqdm(
-            set(
-                itertools.chain(
-                    self._features_table.dirty_md5s(
-                        [ImageExif.__name__, GeoAddress.__name__, ImageClassification.__name__]
-                    ),
-                    ((x, None) for x in self._files_table.dirty_md5s()),
-                )
-            ),
-            desc="reindexing",
-            disable=not show_progress,
+        # TODO: this is wrong?
+        feature_types = [ImageExif.__name__, GeoAddress.__name__, ImageClassification.__name__]
+        if progress is not None:
+            todo = (
+                self._files_table.dirty_md5s_total()
+                + self._features_table.dirty_md5s_total(feature_types)
+                + self._gallery_index.old_versions_md5_total()
+            )
+            progress.update_what_is_left(todo)
+        for md5, _last_update in set(
+            itertools.chain(
+                self._features_table.dirty_md5s(feature_types),
+                ((x, None) for x in self._files_table.dirty_md5s()),
+            )
         ):
             self._reindex(md5)
+            if progress is not None:
+                progress.update(1)
             reindexed += 1
-        for md5 in tqdm(
-            list(self._gallery_index.old_versions_md5()),
-            desc="reindexing old versions",
-            disable=not show_progress,
-        ):
+        for md5 in list(self._gallery_index.old_versions_md5()):
             self._reindex(md5)
+            if progress is not None:
+                progress.update(1)
             reindexed += 1
         return reindexed
 
