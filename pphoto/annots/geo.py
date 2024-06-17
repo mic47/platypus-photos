@@ -7,7 +7,7 @@ from geopy.geocoders import Nominatim
 from geopy.location import Location
 
 from pphoto.data_model.base import WithMD5, PathWithMd5
-from pphoto.data_model.features import GeoAddress
+from pphoto.data_model.geo import GeoAddress
 from pphoto.db.cache import Cache, NoCache
 
 

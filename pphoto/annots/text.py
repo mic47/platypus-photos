@@ -20,7 +20,7 @@ from pphoto.data_model.base import (
     PathWithMd5,
     Error,
 )
-from pphoto.data_model.features import (
+from pphoto.data_model.text import (
     ImageClassification,
     BoxClassification,
     Classification,

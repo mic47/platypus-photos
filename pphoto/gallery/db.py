@@ -9,13 +9,10 @@ from pphoto.annots.date import PathDateExtractor
 from pphoto.data_model.base import (
     WithMD5,
 )
-from pphoto.data_model.features import (
-    ImageExif,
-    GeoAddress,
-    ImageClassification,
-    ManualLocation,
-    ManualText,
-)
+from pphoto.data_model.exif import ImageExif
+from pphoto.data_model.geo import GeoAddress
+from pphoto.data_model.text import ImageClassification
+from pphoto.data_model.manual import ManualLocation, ManualText
 from pphoto.db import (
     FeaturesTable,
     GalleryIndexTable,

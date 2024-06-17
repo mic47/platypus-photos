@@ -8,7 +8,10 @@ import typing as t
 
 from dataclasses_json import DataClassJsonMixin
 
-from pphoto.data_model.features import ImageExif, GeoAddress, ImageClassification, ManualText, ManualLocation
+from pphoto.data_model.exif import ImageExif
+from pphoto.data_model.geo import GeoAddress
+from pphoto.data_model.text import ImageClassification
+from pphoto.data_model.manual import ManualText, ManualLocation
 
 T = t.TypeVar("T")
 E = t.TypeVar("E")

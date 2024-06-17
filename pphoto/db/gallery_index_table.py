@@ -18,7 +18,7 @@ from pphoto.gallery.utils import (
 # TODO: extract this type into query payload
 from pphoto.gallery.url import SearchQuery, GalleryPaging, SortParams, SortBy
 from pphoto.utils import assert_never
-from pphoto.data_model.features import ManualText, ManualLocation
+from pphoto.data_model.manual import ManualText, ManualLocation
 from pphoto.db.connection import GalleryConnection
 from pphoto.db.directories_table import DirectoriesTable
 from pphoto.db.types import (
