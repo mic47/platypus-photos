@@ -12,13 +12,14 @@ class JobType(enum.Enum):
     MASS_MANUAL_ANNOTATION = "mass_manual_annotation"
 
 
-@dataclasses.dataclass
+@dataclasses.dataclass(frozen=True)
 class TaskId:
     md5: str
     job_id: int
 
 
 T = t.TypeVar("T")
+R = t.TypeVar("R")
 
 
 @dataclasses.dataclass
@@ -42,7 +43,7 @@ class Job(t.Generic[T]):
 class Task(t.Generic[T]):
     id_: TaskId
     type_: JobType
-    payload_json: T
+    payload: T
     created: datetime.datetime
     finished_at: t.Optional[datetime.datetime]
 
@@ -51,6 +52,9 @@ class Task(t.Generic[T]):
         if self.finished_at is not None:
             self.finished_at = datetime.datetime(1, 1, 1)
         return self
+
+    def map(self, f: t.Callable[[T], R]) -> Task[R]:
+        return Task(self.id_, self.type_, f(self.payload), self.created, self.finished_at)
 
 
 @dataclasses.dataclass
@@ -68,6 +72,7 @@ class TextAnnotation(DataClassJsonMixin):
 
 
 @dataclasses.dataclass
+# TODO: naming, remove Mass
 class MassManualAnnotationTask(DataClassJsonMixin):
     location: t.Optional[LocationAnnotation]
     text: t.Optional[TextAnnotation]

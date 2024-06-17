@@ -4,6 +4,7 @@ import itertools
 import random
 import typing as t
 
+from pphoto.jobs.types import Task, MassManualAnnotationTask
 from pphoto.data_model.base import PathWithMd5
 from pphoto.file_mgmt.jobs import JobType, IMPORT_PRIORITY, DEFAULT_PRIORITY
 from pphoto.utils import assert_never, DefaultDict, CacheTTL
@@ -24,7 +25,12 @@ class QueueItem(t.Generic[T]):
         return (self.priority, self.rank) < (other.priority, other.rank)
 
 
-Queue = asyncio.PriorityQueue[QueueItem[t.Tuple[PathWithMd5, JobType]]]
+QueueValue = t.Union[
+    t.Tuple[PathWithMd5, t.Literal[JobType.CHEAP_FEATURES] | t.Literal[JobType.IMAGE_TO_TEXT]],
+    t.Tuple[Task[MassManualAnnotationTask], t.Literal[JobType.ADD_MANUAL_ANNOTATION]],
+]
+
+Queue = asyncio.PriorityQueue[QueueItem[QueueValue]]
 
 
 class Queues:
@@ -59,25 +65,25 @@ class Queues:
         ):
             p.update_total()
 
-    def enqueue_path(self, path_with_md5: PathWithMd5, priority: int, types: t.Iterable[JobType]) -> None:
-        for type_ in set(types):
+    def enqueue_path(self, values: t.Iterable[QueueValue], priority: int) -> None:
+        for value in values:
+            _payload, type_ = value
             self.get_progress_bar(type_, priority).add_to_total(1)
             if type_ == JobType.CHEAP_FEATURES:
-                self.cheap_features.put_nowait(
-                    QueueItem(priority, self._index, (path_with_md5, JobType.CHEAP_FEATURES))
-                )
+                self.cheap_features.put_nowait(QueueItem(priority, self._index, value))
                 self._index += 1
             elif type_ == JobType.IMAGE_TO_TEXT:
-                self.image_to_text.put_nowait(
-                    QueueItem(priority, random.random(), (path_with_md5, JobType.IMAGE_TO_TEXT))
-                )
+                self.image_to_text.put_nowait(QueueItem(priority, random.random(), value))
+            elif type_ == JobType.ADD_MANUAL_ANNOTATION:
+                self.cheap_features.put_nowait(QueueItem(priority, self._index, value))
+                self._index += 1
             else:
                 assert_never(type_)
 
     def enqueue_path_skipped_known(self, path: PathWithMd5, priority: int) -> None:
         if not self.known_paths.mutable_should_update(path):
             return
-        self.enqueue_path(path, priority, list(JobType))
+        self.enqueue_path([(path, JobType.CHEAP_FEATURES), (path, JobType.IMAGE_TO_TEXT)], priority)
 
     def mark_failed(self, path: PathWithMd5) -> None:
         self.known_paths.delete(path)

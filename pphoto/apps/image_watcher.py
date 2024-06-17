@@ -11,13 +11,16 @@ import aiohttp
 import asyncinotify
 import tqdm
 
+from pphoto.data_model.base import PathWithMd5
 from pphoto.data_model.config import Config, DBFilesConfig
 from pphoto.db.features_table import FeaturesTable
-from pphoto.db.connection import PhotosConnection, GalleryConnection
+from pphoto.db.connection import PhotosConnection, GalleryConnection, JobsConnection
 from pphoto.db.files_table import FilesTable
 from pphoto.db.queries import PhotosQueries
 from pphoto.annots.annotator import Annotator
 from pphoto.annots.date import PathDateExtractor
+from pphoto.jobs.types import TaskId, Task, MassManualAnnotationTask
+from pphoto.jobs.db import JobsTable
 from pphoto.file_mgmt.jobs import Jobs, JobType, IMPORT_PRIORITY, DEFAULT_PRIORITY, REALTIME_PRIORITY
 from pphoto.file_mgmt.queues import Queues, Queue
 from pphoto.file_mgmt.remote_control import ImportCommand
@@ -31,10 +34,12 @@ class GlobalContext:
         self,
         jobs: Jobs,
         files: FilesTable,
+        jobs_table: JobsTable,
         queues: Queues,
     ) -> None:
         self.queues = queues
         self.jobs = jobs
+        self.jobs_table = jobs_table
         self.files = files
 
 
@@ -49,22 +54,46 @@ async def worker(
         path, type_ = item.payload
         try:
             if type_ == JobType.CHEAP_FEATURES:
+                assert isinstance(path, PathWithMd5)
                 context.jobs.cheap_features(path)
             elif type_ == JobType.IMAGE_TO_TEXT:
+                assert isinstance(path, PathWithMd5)
                 await context.jobs.image_to_text(path)
+            elif type_ == JobType.ADD_MANUAL_ANNOTATION:
+                if isinstance(path, Task) and isinstance(path.payload, MassManualAnnotationTask):
+                    context.jobs.add_manual_annotation(path)
+                else:
+                    assert False, "Wrong type for ADD_MANUAL_ANNOTATION"
             else:
                 assert_never(type_)
         # pylint: disable = broad-exception-caught
         except Exception as e:
             traceback.print_exc()
             print("Error while processing path in ", name, path, e, file=sys.stderr)
-            context.queues.mark_failed(path)
+            if isinstance(path, PathWithMd5):
+                context.queues.mark_failed(path)
         finally:
             # Notify the queue that the "work item" has been processed.
             context.queues.get_progress_bar(type_, item.priority).update(1)
             queue.task_done()
             # So that we gave up place for other workers too
             await asyncio.sleep(0)
+
+
+async def manual_annotation_worker(
+    name: str, input_queue: asyncio.Queue[None], context: GlobalContext
+) -> None:
+    visited: t.Set[TaskId] = set()
+    while True:
+        await input_queue.get()
+        # TODO: error handling
+        unfinished_tasks = context.jobs_table.unfinished_tasks()
+        for task in unfinished_tasks:
+            if task.id_ in visited:
+                continue
+            # TODO: error handling
+            parsed_task = task.map(MassManualAnnotationTask.from_json)
+            context.queues.enqueue_path([(parsed_task, JobType.ADD_MANUAL_ANNOTATION)], REALTIME_PRIORITY)
 
 
 async def inotify_worker(name: str, dirs: t.List[str], context: GlobalContext) -> None:
@@ -146,7 +175,7 @@ async def managed_worker_and_import_worker(context: GlobalContext, config: Confi
                             if action is not None:
                                 enqueued = True
                                 context.queues.enqueue_path(
-                                    action.path_with_md5, action.priority, action.job_types
+                                    [(action.path_with_md5, t) for t in action.job_types], action.priority
                                 )
                         # pylint: disable = broad-exception-caught
                         except Exception as e:
@@ -207,6 +236,7 @@ async def main() -> None:
     config = Config.load(args.config)
     photos_connection = PhotosConnection(args.db)
     gallery_connection = GalleryConnection(files_config.gallery_db)
+    jobs_connection = JobsConnection(files_config.jobs_db)
     reindexer = Reindexer(PathDateExtractor(config.directory_matching), photos_connection, gallery_connection)
     features = FeaturesTable(photos_connection)
     files = FilesTable(photos_connection)
@@ -224,9 +254,11 @@ async def main() -> None:
 
     async with aiohttp.ClientSession() as session:
         annotator = Annotator(config.directory_matching, files_config, features, session, args.annotate_url)
-        jobs = Jobs(config.managed_folder, files, PhotosQueries(photos_connection), annotator)
+        # TODO: resolve this name clash for jobs
+        jobs_table = JobsTable(jobs_connection)
+        jobs = Jobs(config.managed_folder, files, jobs_table, PhotosQueries(photos_connection), annotator)
         queues = Queues()
-        context = GlobalContext(jobs, files, queues)
+        context = GlobalContext(jobs, files, jobs_table, queues)
 
         # Fix inconsistencies in the DB before we start.
         context.jobs.fix_in_progress_moved_files_at_startup()
@@ -234,7 +266,9 @@ async def main() -> None:
 
         unannotated = context.jobs.find_unannotated_files()
         for action in tqdm.tqdm(unannotated, desc="Enqueuing unannotated files"):
-            context.queues.enqueue_path(action.path_with_md5, action.priority, action.job_types)
+            context.queues.enqueue_path(
+                [(action.path_with_md5, t) for t in action.job_types], action.priority
+            )
         del unannotated
         context.queues.update_progress_bars()
 

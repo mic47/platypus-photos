@@ -12,6 +12,8 @@ from pphoto.annots.md5 import compute_md5
 from pphoto.annots.annotator import Annotator
 from pphoto.data_model.base import PathWithMd5
 from pphoto.data_model.geo import GeoAddress
+from pphoto.jobs.types import MassManualAnnotationTask, Task
+from pphoto.jobs.db import JobsTable
 from pphoto.db.files_table import FilesTable
 from pphoto.db.queries import PhotosQueries
 from pphoto.db.types_file import ManagedLifecycle
@@ -23,6 +25,7 @@ from pphoto.utils.files import supported_media, pathify
 class JobType(enum.Enum):
     CHEAP_FEATURES = 1
     IMAGE_TO_TEXT = 2
+    ADD_MANUAL_ANNOTATION = 3
 
 
 IMPORT_PRIORITY = 46
@@ -34,13 +37,21 @@ REALTIME_PRIORITY = 23
 class EnqueuePathAction:
     path_with_md5: PathWithMd5
     priority: int
-    job_types: t.List[JobType]
+    job_types: t.List[t.Literal[JobType.CHEAP_FEATURES] | t.Literal[JobType.IMAGE_TO_TEXT]]
 
 
 class Jobs:
-    def __init__(self, managed_folder: str, files: FilesTable, queries: PhotosQueries, annotator: Annotator):
+    def __init__(
+        self,
+        managed_folder: str,
+        files: FilesTable,
+        jobs: JobsTable,
+        queries: PhotosQueries,
+        annotator: Annotator,
+    ):
         self.photos_dir = managed_folder
         self._files = files
+        self._jobs = jobs
         self._queries = queries
         self._annotator = annotator
 
@@ -135,6 +146,12 @@ class Jobs:
         self._files.change_path(path.path, new_path.path)
         self._files.set_lifecycle(new_path.path, ManagedLifecycle.SYNCED, None)
 
+    def add_manual_annotation(self, task: Task[MassManualAnnotationTask]) -> None:
+        self._annotator.manual_features(task)
+        for file in self._files.by_md5(task.id_.md5):
+            self.cheap_features(PathWithMd5(file.file, task.id_.md5))
+        self._jobs.finish_task(task.id_)
+
     def fix_in_progress_moved_files_at_startup(self) -> None:
         for file_row in tqdm.tqdm(
             self._files.by_managed_lifecycle(ManagedLifecycle.BEING_MOVED_AROUND),
@@ -182,7 +199,7 @@ class Jobs:
         progress.update(1)
         output = []
         for path in cheap.union(image_to_text):
-            jobs = []
+            jobs: t.List[t.Literal[JobType.IMAGE_TO_TEXT] | t.Literal[JobType.CHEAP_FEATURES]] = []
             if path in cheap:
                 jobs.append(JobType.CHEAP_FEATURES)
             if path in image_to_text:
