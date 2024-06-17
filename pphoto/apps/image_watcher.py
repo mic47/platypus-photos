@@ -290,7 +290,9 @@ async def main() -> None:
     async with aiohttp.ClientSession() as session:
         annotator = Annotator(config.directory_matching, files_config, features, session, args.annotate_url)
         remote_jobs_table = RemoteJobsTable(jobs_connection)
-        jobs = Jobs(config.managed_folder, files, remote_jobs_table, PhotosQueries(photos_connection), annotator)
+        jobs = Jobs(
+            config.managed_folder, files, remote_jobs_table, PhotosQueries(photos_connection), annotator
+        )
         queues = Queues()
         context = GlobalContext(jobs, files, remote_jobs_table, queues)
 

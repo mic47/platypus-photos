@@ -30,7 +30,7 @@ class RemoteJob(t.Generic[T]):
     type_: RemoteJobType
     total: int
     finished_tasks: int
-    original_request: T
+    original_request: T  # noqa: F841
     created: datetime.datetime
     last_update: t.Optional[datetime.datetime]
 
