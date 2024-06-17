@@ -16,6 +16,7 @@ disable = '''
   missing-module-docstring,
   fixme,
 
+  duplicate-code,
   line-too-long,
   too-few-public-methods,
   too-many-instance-attributes,

@@ -5,6 +5,8 @@ from datetime import (
 import sqlite3
 import typing as t
 
+MaybeParameters = t.Optional[t.Sequence[t.Union[str, bytes, int, float, None]]]
+
 
 class _Connection:
     def __init__(self, path: str, timeout: int = 120, check_same_thread: bool = True) -> None:
@@ -37,7 +39,7 @@ class _Connection:
     def execute(
         self,
         sql: str,
-        parameters: t.Optional[t.Sequence[t.Union[str, bytes, int, float, None]]] = None,
+        parameters: MaybeParameters = None,
     ) -> sqlite3.Cursor:
         self._last_use = datetime.now()
         if self._connection is None:
@@ -77,10 +79,20 @@ class _Connection:
             self._connection = self._connect()
         return self._connection.commit()
 
+    def rollback(self) -> None:
+        self._last_use = datetime.now()
+        if self._connection is None:
+            self._connection = self._connect()
+        return self._connection.rollback()
+
 
 class PhotosConnection(_Connection):
     pass
 
 
 class GalleryConnection(_Connection):
+    pass
+
+
+class JobsConnection(_Connection):
     pass
