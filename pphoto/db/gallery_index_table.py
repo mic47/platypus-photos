@@ -21,14 +21,15 @@ from pphoto.utils import assert_never
 from pphoto.data_model.manual import ManualText, ManualLocation
 from pphoto.db.connection import GalleryConnection
 from pphoto.db.directories_table import DirectoriesTable
-from pphoto.db.types import (
+from pphoto.db.types_location import LocationCluster, LocPoint
+from pphoto.db.types_date import DateCluster
+from pphoto.db.types_directory import (
+    DirectoryStats,
+)
+from pphoto.db.types_image import (
     Image,
     ImageAddress,
     ImageAggregation,
-    LocationCluster,
-    LocPoint,
-    DateCluster,
-    DirectoryStats,
 )
 
 

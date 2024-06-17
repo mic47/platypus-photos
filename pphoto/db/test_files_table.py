@@ -3,7 +3,7 @@ import unittest
 
 from pphoto.db.connection import PhotosConnection
 from pphoto.db.files_table import FilesTable, FilesTableWrongLifecycleParams
-from pphoto.db.types import FileRow, ManagedLifecycle
+from pphoto.db.types_file import FileRow, ManagedLifecycle
 
 
 def connection() -> PhotosConnection:

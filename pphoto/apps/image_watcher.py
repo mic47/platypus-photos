@@ -21,7 +21,7 @@ from pphoto.annots.date import PathDateExtractor
 from pphoto.file_mgmt.jobs import Jobs, JobType, IMPORT_PRIORITY, DEFAULT_PRIORITY, REALTIME_PRIORITY
 from pphoto.file_mgmt.queues import Queues, Queue
 from pphoto.file_mgmt.remote_control import ImportCommand
-from pphoto.gallery.db import Reindexer
+from pphoto.gallery.reindexer import Reindexer
 from pphoto.utils import assert_never, Lazy
 from pphoto.utils.files import get_paths, expand_vars_in_path
 

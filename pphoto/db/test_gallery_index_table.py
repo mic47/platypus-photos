@@ -5,7 +5,8 @@ import unittest
 from pphoto.db.connection import GalleryConnection
 from pphoto.db.directories_table import DirectoriesTable
 from pphoto.db.gallery_index_table import GalleryIndexTable, WrongAggregateTypeReturned
-from pphoto.db.types import Image, ImageAddress, ImageAggregation, LocPoint, LocationCluster
+from pphoto.db.types_image import Image, ImageAddress, ImageAggregation
+from pphoto.db.types_location import LocPoint, LocationCluster
 from pphoto.gallery.url import SearchQuery, GalleryPaging, SortParams
 
 

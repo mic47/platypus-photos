@@ -1,13 +1,13 @@
 import typing as t
 
 from pphoto.db.connection import PhotosConnection
-from pphoto.db.types import FileRow, ManagedLifecycle, InternalError
+from pphoto.db.types_file import FileRow, ManagedLifecycle
 
 
-class FilesTableWrongLifecycleParams(InternalError):
+class FilesTableWrongLifecycleParams(Exception):
     def __init__(self, message: str, managed: ManagedLifecycle, tmp_path: t.Optional[str]) -> None:
         super().__init__(
-            f"Files table, wrong parameters, {message}: `managed`=`{managed}`, `tmp_path`=`{tmp_path}`"
+            f"Bug: Files table, wrong parameters, {message}: `managed`=`{managed}`, `tmp_path`=`{tmp_path}`"
         )
 
 
