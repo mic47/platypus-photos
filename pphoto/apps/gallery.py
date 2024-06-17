@@ -19,11 +19,12 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from pphoto.annots.geo import Geolocator
-from pphoto.data_model.config import DBFilesConfig
+from pphoto.data_model.config import DBFilesConfig, Config
 from pphoto.data_model.base import PathWithMd5
 from pphoto.db.types_location import LocationCluster, LocPoint
 from pphoto.db.types_date import DateCluster
 from pphoto.db.connection import PhotosConnection, GalleryConnection, JobsConnection
+from pphoto.file_mgmt.remote_control import RefreshJobs, write_serialized_rc_job
 from pphoto.utils import assert_never, Lazy
 from pphoto.jobs.types import JobType, LocationAnnotation, TextAnnotation, ManualAnnotationTask
 
@@ -41,6 +42,7 @@ app.mount("/js", StaticFiles(directory="js/"), name="static")
 app.mount("/css", StaticFiles(directory="css/"), name="static")
 templates = Jinja2Templates(directory="templates")
 
+CONFIG = Config.load("config.yaml")
 DB = Lazy(
     lambda: ImageSqlDB(
         PhotosConnection(DBFilesConfig().photos_db, check_same_thread=False),
@@ -235,13 +237,7 @@ def mass_manual_annotation_endpoint(params: MassManualAnnotation) -> int:
     job_id = db.jobs.submit_job(
         JobType.MASS_MANUAL_ANNOTATION, params.to_json(ensure_ascii=False).encode("utf-8"), tasks
     )
-
-    # TODO: Write this to DB table, and use fifo to trigger check for the job
-    # Job -> request, params, ... ID, progress
-    # Job: JobId -> request_json, num_items, timestamp
-    # JobItem: JobId, md5, jobs_json -- there should be only 1 worker on any specific item
-    # ID, md5 -> [Location(params), Text(params, extend)]
-    # Then image_watcher should run job -- create manual annotation and everything
+    write_serialized_rc_job(CONFIG.import_fifo, RefreshJobs(job_id))
     return job_id
 
 

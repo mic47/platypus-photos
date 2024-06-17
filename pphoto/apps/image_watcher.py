@@ -23,7 +23,7 @@ from pphoto.jobs.types import TaskId, Task, ManualAnnotationTask
 from pphoto.jobs.db import JobsTable
 from pphoto.file_mgmt.jobs import Jobs, JobType, IMPORT_PRIORITY, DEFAULT_PRIORITY, REALTIME_PRIORITY
 from pphoto.file_mgmt.queues import Queues, Queue
-from pphoto.file_mgmt.remote_control import ImportCommand
+from pphoto.file_mgmt.remote_control import ImportCommand, parse_rc_job, RefreshJobs
 from pphoto.gallery.reindexer import Reindexer
 from pphoto.utils import assert_never, Lazy
 from pphoto.utils.files import get_paths, expand_vars_in_path
@@ -81,11 +81,11 @@ async def worker(
 
 
 async def manual_annotation_worker(
-    name: str, input_queue: asyncio.Queue[None], context: GlobalContext
+    name: str, input_queue: asyncio.Queue[RefreshJobs], context: GlobalContext
 ) -> None:
     visited: t.Set[TaskId] = set()
     while True:
-        await input_queue.get()
+        refresh_job = await input_queue.get()
         try:
             unfinished_tasks = context.jobs_table.unfinished_tasks()
             for task in unfinished_tasks:
@@ -103,7 +103,7 @@ async def manual_annotation_worker(
         # pylint: disable = bare-except
         except:
             traceback.print_exc()
-            print("Error in manual annotation worker", name)
+            print("Error in manual annotation worker", name, refresh_job)
             continue
 
 
@@ -152,7 +152,9 @@ async def reingest_directories_worker(context: GlobalContext, config: Config) ->
         await asyncio.sleep(3600 * 8)
 
 
-async def managed_worker_and_import_worker(context: GlobalContext, config: Config) -> None:
+async def watch_import_path(
+    config: Config, import_queue: asyncio.Queue[ImportCommand], jobs_queue: asyncio.Queue[RefreshJobs]
+) -> None:
     try:
         if os.path.exists(config.import_fifo):
             if not stat.S_ISFIFO(os.stat(config.import_fifo).st_mode):
@@ -165,8 +167,6 @@ async def managed_worker_and_import_worker(context: GlobalContext, config: Confi
         traceback.print_exc()
         print("Unable to create fifo file", config.import_fifo, e, file=sys.stderr)
         sys.exit(1)
-    # TODO: check for new files in managed folders, and add them. Run it from time to time
-    progress_bar = Lazy(lambda: context.queues.get_progress_bar(JobType.CHEAP_FEATURES, IMPORT_PRIORITY))
     while True:
         async with aiofiles.open(config.import_fifo, "r") as import_fifo:
             async for line in import_fifo:
@@ -174,31 +174,13 @@ async def managed_worker_and_import_worker(context: GlobalContext, config: Confi
                 if not line:
                     continue
                 try:
-                    import_command = ImportCommand.from_json(line)
-                    paths = list(get_paths([], [import_command.import_path]))
-                    if paths:
-                        progress_bar.get().add_to_total(len(paths))
-                        progress_bar.get().update_total()
-                    enqueued = False
-                    for path in paths:
-                        try:
-                            action = context.jobs.import_file(path, import_command.mode)
-                            if action is not None:
-                                enqueued = True
-                                context.queues.enqueue_path(
-                                    [(action.path_with_md5, t) for t in action.job_types], action.priority
-                                )
-                        # pylint: disable = broad-exception-caught
-                        except Exception as e:
-                            traceback.print_exc()
-                            print("Error while importing path", path, e, file=sys.stderr)
-                            continue
-                        finally:
-                            progress_bar.get().update(1)
-                            # So that we gave up place for other workers too
-                            await asyncio.sleep(0)
-                    if enqueued and paths:
-                        context.queues.update_progress_bars()
+                    job = parse_rc_job(line)
+                    if isinstance(job, ImportCommand):
+                        import_queue.put_nowait(job)
+                    elif isinstance(job, RefreshJobs):
+                        jobs_queue.put_nowait(job)
+                    else:
+                        assert_never(job)
                 # pylint: disable = broad-exception-caught
                 except Exception as e:
                     traceback.print_exc()
@@ -207,6 +189,48 @@ async def managed_worker_and_import_worker(context: GlobalContext, config: Confi
                 finally:
                     # So that we gave up place for other workers too
                     await asyncio.sleep(0)
+            # So that we gave up place for other workers too
+            await asyncio.sleep(0)
+
+
+async def managed_worker_and_import_worker(
+    context: GlobalContext, queue: asyncio.Queue[ImportCommand]
+) -> None:
+    # TODO: check for new files in managed folders, and add them. Run it from time to time
+    progress_bar = Lazy(lambda: context.queues.get_progress_bar(JobType.CHEAP_FEATURES, IMPORT_PRIORITY))
+    while True:
+        import_command = await queue.get()
+        try:
+            paths = list(get_paths([], [import_command.import_path]))
+            if paths:
+                progress_bar.get().add_to_total(len(paths))
+                progress_bar.get().update_total()
+            enqueued = False
+            for path in paths:
+                try:
+                    action = context.jobs.import_file(path, import_command.mode)
+                    if action is not None:
+                        enqueued = True
+                        context.queues.enqueue_path(
+                            [(action.path_with_md5, t) for t in action.job_types], action.priority
+                        )
+                # pylint: disable = broad-exception-caught
+                except Exception as e:
+                    traceback.print_exc()
+                    print("Error while importing path", path, e, file=sys.stderr)
+                    continue
+                finally:
+                    progress_bar.get().update(1)
+                    # So that we gave up place for other workers too
+                    await asyncio.sleep(0)
+            if enqueued and paths:
+                context.queues.update_progress_bars()
+        # pylint: disable = broad-exception-caught
+        except Exception as e:
+            traceback.print_exc()
+            print("Error while pricessing import request", import_command, e, file=sys.stderr)
+            continue
+        finally:
             # So that we gave up place for other workers too
             await asyncio.sleep(0)
 
@@ -283,8 +307,14 @@ async def main() -> None:
         del unannotated
         context.queues.update_progress_bars()
 
+        import_queue: asyncio.Queue[ImportCommand] = asyncio.Queue()
+        refresh_queue: asyncio.Queue[RefreshJobs] = asyncio.Queue()
         # Starting async tasks
-        tasks.append(asyncio.create_task(managed_worker_and_import_worker(context, config)))
+        tasks.append(asyncio.create_task(watch_import_path(config, import_queue, refresh_queue)))
+        tasks.append(
+            asyncio.create_task(manual_annotation_worker("manual-annotation", refresh_queue, context))
+        )
+        tasks.append(asyncio.create_task(managed_worker_and_import_worker(context, import_queue)))
         tasks.append(asyncio.create_task(reingest_directories_worker(context, config)))
         for i in range(1):
             task = asyncio.create_task(worker(f"worker-cheap-{i}", context, queues.cheap_features))
