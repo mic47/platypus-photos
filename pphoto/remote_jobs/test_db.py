@@ -3,8 +3,8 @@ import typing as t
 import unittest
 
 from pphoto.db.connection import JobsConnection, MaybeParameters
-from pphoto.remote_jobs.db import JobsTable, ValidationError
-from pphoto.remote_jobs.types import Job, Task, JobType, TaskId
+from pphoto.remote_jobs.db import RemoteJobsTable, ValidationError
+from pphoto.remote_jobs.types import RemoteJobType, RemoteTask, RemoteJob, TaskId
 
 
 def connection() -> JobsConnection:
@@ -14,36 +14,42 @@ def connection() -> JobsConnection:
 class TestJobsTable(unittest.TestCase):
     def test_create_table(self) -> None:
         conn = connection()
-        JobsTable(conn)
-        JobsTable(conn)
+        RemoteJobsTable(conn)
+        RemoteJobsTable(conn)
 
     def test_submit_job(self) -> None:
-        table = JobsTable(connection())
-        job_a = table.submit_job(JobType.MASS_MANUAL_ANNOTATION, b"WAT", [("lol", b"foo"), ("goo", b"bar")])
+        table = RemoteJobsTable(connection())
+        job_a = table.submit_job(
+            RemoteJobType.MASS_MANUAL_ANNOTATION, b"WAT", [("lol", b"foo"), ("goo", b"bar")]
+        )
 
         with self.assertRaises(ValidationError, msg="Should fail to validate with duplicate md5s"):
-            table.submit_job(JobType.MASS_MANUAL_ANNOTATION, b"WAT", [("lol", b"foo"), ("lol", b"bar")])
+            table.submit_job(RemoteJobType.MASS_MANUAL_ANNOTATION, b"WAT", [("lol", b"foo"), ("lol", b"bar")])
 
-        job_b = table.submit_job(JobType.MASS_MANUAL_ANNOTATION, b"WAT", [("lol", b"foo"), ("goo", b"bar")])
+        job_b = table.submit_job(
+            RemoteJobType.MASS_MANUAL_ANNOTATION, b"WAT", [("lol", b"foo"), ("goo", b"bar")]
+        )
         self.assertNotEqual(job_a, job_b, "Same ID for different jobs")
 
     def test_finish_task(self) -> None:
-        table = JobsTable(connection())
-        job_id = table.submit_job(JobType.MASS_MANUAL_ANNOTATION, b"WAT", [("lol", b"foo"), ("goo", b"bar")])
+        table = RemoteJobsTable(connection())
+        job_id = table.submit_job(
+            RemoteJobType.MASS_MANUAL_ANNOTATION, b"WAT", [("lol", b"foo"), ("goo", b"bar")]
+        )
         unfinished = table.unfinished_tasks()
         self.assertListEqual(
             [t.test_sanitize() for t in unfinished],
             [
-                Task(
+                RemoteTask(
                     TaskId("lol", job_id),
-                    JobType.MASS_MANUAL_ANNOTATION,
+                    RemoteJobType.MASS_MANUAL_ANNOTATION,
                     b"foo",
                     datetime.datetime(1, 1, 1),
                     None,
                 ),
-                Task(
+                RemoteTask(
                     TaskId("goo", job_id),
-                    JobType.MASS_MANUAL_ANNOTATION,
+                    RemoteJobType.MASS_MANUAL_ANNOTATION,
                     b"bar",
                     datetime.datetime(1, 1, 1),
                     None,
@@ -54,9 +60,9 @@ class TestJobsTable(unittest.TestCase):
         job = table.get_job(job_id)
         self.assertEqual(
             job.test_sanitize() if job is not None else None,
-            Job(
+            RemoteJob(
                 job_id,
-                JobType.MASS_MANUAL_ANNOTATION,
+                RemoteJobType.MASS_MANUAL_ANNOTATION,
                 2,
                 0,
                 b"WAT",
@@ -68,9 +74,9 @@ class TestJobsTable(unittest.TestCase):
         task = table.get_task(TaskId("goo", job_id))
         self.assertEqual(
             task.test_sanitize() if task is not None else None,
-            Task(
+            RemoteTask(
                 TaskId("goo", job_id),
-                JobType.MASS_MANUAL_ANNOTATION,
+                RemoteJobType.MASS_MANUAL_ANNOTATION,
                 b"bar",
                 datetime.datetime(1, 1, 1),
                 None,
@@ -85,9 +91,9 @@ class TestJobsTable(unittest.TestCase):
             self.assertListEqual(
                 [t.test_sanitize() for t in unfinished],
                 [
-                    Task(
+                    RemoteTask(
                         TaskId("lol", job_id),
-                        JobType.MASS_MANUAL_ANNOTATION,
+                        RemoteJobType.MASS_MANUAL_ANNOTATION,
                         b"foo",
                         datetime.datetime(1, 1, 1),
                         None,
@@ -98,9 +104,9 @@ class TestJobsTable(unittest.TestCase):
             job = table.get_job(job_id)
             self.assertEqual(
                 job.test_sanitize() if job is not None else None,
-                Job(
+                RemoteJob(
                     job_id,
-                    JobType.MASS_MANUAL_ANNOTATION,
+                    RemoteJobType.MASS_MANUAL_ANNOTATION,
                     2,
                     1,
                     b"WAT",
@@ -112,9 +118,9 @@ class TestJobsTable(unittest.TestCase):
             task = table.get_task(TaskId("goo", job_id))
             self.assertEqual(
                 task.test_sanitize() if task is not None else None,
-                Task(
+                RemoteTask(
                     TaskId("goo", job_id),
-                    JobType.MASS_MANUAL_ANNOTATION,
+                    RemoteJobType.MASS_MANUAL_ANNOTATION,
                     b"bar",
                     datetime.datetime(1, 1, 1),
                     datetime.datetime(1, 1, 1),
@@ -125,9 +131,9 @@ class TestJobsTable(unittest.TestCase):
         task = table.get_task(TaskId("lol", job_id))
         self.assertEqual(
             task.test_sanitize() if task is not None else None,
-            Task(
+            RemoteTask(
                 TaskId("lol", job_id),
-                JobType.MASS_MANUAL_ANNOTATION,
+                RemoteJobType.MASS_MANUAL_ANNOTATION,
                 b"foo",
                 datetime.datetime(1, 1, 1),
                 None,
@@ -141,9 +147,9 @@ class TestJobsTable(unittest.TestCase):
         job = table.get_job(job_id)
         self.assertEqual(
             job.test_sanitize() if job is not None else None,
-            Job(
+            RemoteJob(
                 job_id,
-                JobType.MASS_MANUAL_ANNOTATION,
+                RemoteJobType.MASS_MANUAL_ANNOTATION,
                 2,
                 2,
                 b"WAT",
@@ -155,9 +161,9 @@ class TestJobsTable(unittest.TestCase):
         task = table.get_task(TaskId("goo", job_id))
         self.assertEqual(
             task.test_sanitize() if task is not None else None,
-            Task(
+            RemoteTask(
                 TaskId("goo", job_id),
-                JobType.MASS_MANUAL_ANNOTATION,
+                RemoteJobType.MASS_MANUAL_ANNOTATION,
                 b"bar",
                 datetime.datetime(1, 1, 1),
                 datetime.datetime(1, 1, 1),
@@ -166,8 +172,10 @@ class TestJobsTable(unittest.TestCase):
         )
 
     def test_fetching_non_existent_data(self) -> None:
-        table = JobsTable(connection())
-        job_id = table.submit_job(JobType.MASS_MANUAL_ANNOTATION, b"WAT", [("lol", b"foo"), ("goo", b"bar")])
+        table = RemoteJobsTable(connection())
+        job_id = table.submit_job(
+            RemoteJobType.MASS_MANUAL_ANNOTATION, b"WAT", [("lol", b"foo"), ("goo", b"bar")]
+        )
         self.assertIsNone(table.get_job(job_id + 1))
         self.assertIsNone(table.get_task(TaskId("lol", job_id + 1)))
         self.assertIsNone(table.get_task(TaskId("lol+", job_id + 1)))
@@ -188,9 +196,9 @@ class TestJobsTable(unittest.TestCase):
                 nonlocal was_rollback
                 was_rollback = True
 
-        table = JobsTable(MockConnection(":memory:"))
+        table = RemoteJobsTable(MockConnection(":memory:"))
         start_failing = True
         self.assertEqual(was_rollback, False, "Rollback should not be callsed")
         with self.assertRaises(NotImplementedError, msg="Should raise exception on error"):
-            table.submit_job(JobType.MASS_MANUAL_ANNOTATION, b"WAT", [("lol", b"foo"), ("goo", b"bar")])
+            table.submit_job(RemoteJobType.MASS_MANUAL_ANNOTATION, b"WAT", [("lol", b"foo"), ("goo", b"bar")])
         self.assertEqual(was_rollback, True, "Rollback should be called on exception during execution")

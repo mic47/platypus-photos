@@ -6,7 +6,7 @@ from pphoto.db.gallery_index_table import GalleryIndexTable
 from pphoto.db.connection import PhotosConnection, GalleryConnection, JobsConnection
 from pphoto.db.files_table import FilesTable
 from pphoto.db.directories_table import DirectoriesTable
-from pphoto.remote_jobs.db import JobsTable
+from pphoto.remote_jobs.db import RemoteJobsTable
 
 from pphoto.db.types_image import ImageAggregation, Image
 from pphoto.db.types_location import LocationCluster, LocPoint
@@ -28,7 +28,7 @@ class ImageSqlDB:
         self._connections = [photos_connection, gallery_connection, jobs_connection]
         self._files_table = FilesTable(photos_connection)
         self._gallery_index = GalleryIndexTable(gallery_connection)
-        self.jobs = JobsTable(jobs_connection)
+        self.jobs = RemoteJobsTable(jobs_connection)
         self._directories_table = DirectoriesTable(gallery_connection)
         self._hash_to_image: t.Dict[int, str] = {}
         self._md5_to_image: t.Dict[str, str] = {}

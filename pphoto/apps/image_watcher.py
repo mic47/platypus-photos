@@ -19,8 +19,8 @@ from pphoto.db.files_table import FilesTable
 from pphoto.db.queries import PhotosQueries
 from pphoto.annots.annotator import Annotator
 from pphoto.annots.date import PathDateExtractor
-from pphoto.remote_jobs.types import TaskId, Task, ManualAnnotationTask
-from pphoto.remote_jobs.db import JobsTable
+from pphoto.remote_jobs.types import TaskId, RemoteTask, ManualAnnotationTask
+from pphoto.remote_jobs.db import RemoteJobsTable
 from pphoto.file_mgmt.jobs import Jobs, JobType, IMPORT_PRIORITY, DEFAULT_PRIORITY, REALTIME_PRIORITY
 from pphoto.file_mgmt.queues import Queues, Queue
 from pphoto.file_mgmt.remote_control import ImportCommand, parse_rc_job, RefreshJobs
@@ -34,12 +34,12 @@ class GlobalContext:
         self,
         jobs: Jobs,
         files: FilesTable,
-        jobs_table: JobsTable,
+        remote_jobs: RemoteJobsTable,
         queues: Queues,
     ) -> None:
         self.queues = queues
         self.jobs = jobs
-        self.jobs_table = jobs_table
+        self.remote_jobs = remote_jobs
         self.files = files
 
 
@@ -60,7 +60,7 @@ async def worker(
                 assert isinstance(path, PathWithMd5)
                 await context.jobs.image_to_text(path)
             elif type_ == JobType.ADD_MANUAL_ANNOTATION:
-                if isinstance(path, Task) and isinstance(path.payload, ManualAnnotationTask):
+                if isinstance(path, RemoteTask) and isinstance(path.payload, ManualAnnotationTask):
                     context.jobs.add_manual_annotation(path)
                 else:
                     assert False, "Wrong type for ADD_MANUAL_ANNOTATION"
@@ -87,7 +87,7 @@ async def manual_annotation_worker(
     while True:
         refresh_job = await input_queue.get()
         try:
-            unfinished_tasks = context.jobs_table.unfinished_tasks()
+            unfinished_tasks = context.remote_jobs.unfinished_tasks()
             for task in unfinished_tasks:
                 if task.id_ in visited:
                     continue
@@ -289,11 +289,10 @@ async def main() -> None:
 
     async with aiohttp.ClientSession() as session:
         annotator = Annotator(config.directory_matching, files_config, features, session, args.annotate_url)
-        # TODO: resolve this name clash for jobs
-        jobs_table = JobsTable(jobs_connection)
-        jobs = Jobs(config.managed_folder, files, jobs_table, PhotosQueries(photos_connection), annotator)
+        remote_jobs_table = RemoteJobsTable(jobs_connection)
+        jobs = Jobs(config.managed_folder, files, remote_jobs_table, PhotosQueries(photos_connection), annotator)
         queues = Queues()
-        context = GlobalContext(jobs, files, jobs_table, queues)
+        context = GlobalContext(jobs, files, remote_jobs_table, queues)
 
         # Fix inconsistencies in the DB before we start.
         context.jobs.fix_in_progress_moved_files_at_startup()

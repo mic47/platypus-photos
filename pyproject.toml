@@ -47,7 +47,7 @@ exclude_exact = [
   "pphoto.db",
   "pphoto.file_mgmt",
   "pphoto.gallery",
-  "pphoto.jobs",
+  "pphoto.remote_jobs",
   # Following modules are supposed to be used everywhere
   "pphoto.data_model.base",
   "pphoto.utils",

@@ -4,10 +4,10 @@ import datetime
 import typing as t
 
 from pphoto.db.connection import JobsConnection
-from pphoto.remote_jobs.types import JobType, TaskId, Task, Job
+from pphoto.remote_jobs.types import RemoteJobType, RemoteTask, RemoteJob, TaskId
 
 
-class JobsTable:
+class RemoteJobsTable:
     def __init__(self, connection: JobsConnection) -> None:
         self._con = connection
         self._init_db()
@@ -17,7 +17,7 @@ class JobsTable:
     ) -> None:
         self._con.execute(
             """
-CREATE TABLE IF NOT EXISTS tasks (
+CREATE TABLE IF NOT EXISTS remote_tasks (
   md5 TEXT NOT NULL,
   job_id INTEGER NOT NULL,
   type TEXT NOT NULL,
@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS tasks (
         )
         self._con.execute(
             """
-CREATE TABLE IF NOT EXISTS jobs (
+CREATE TABLE IF NOT EXISTS remote_jobs (
   id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
   type TEXT NOT NULL,
   total INTEGER NOT NULL,
@@ -44,11 +44,11 @@ CREATE TABLE IF NOT EXISTS jobs (
         self._con.execute(
             """
 CREATE TRIGGER IF NOT EXISTS
-  tasks_on_finish
-AFTER UPDATE OF finished_at ON tasks
+  remote_tasks_on_finish
+AFTER UPDATE OF finished_at ON remote_tasks
 FOR EACH ROW WHEN OLD.finished_at IS NULL and NEW.finished_at IS NOT NULL
 BEGIN
-  UPDATE jobs SET finished_tasks = finished_tasks + 1, last_update = NEW.finished_at WHERE id = NEW.job_id;
+  UPDATE remote_jobs SET finished_tasks = finished_tasks + 1, last_update = NEW.finished_at WHERE id = NEW.job_id;
 END;
     """
         )
@@ -58,7 +58,7 @@ END;
         ]:
             self._con.execute(
                 f"""
-    CREATE INDEX IF NOT EXISTS tasks_idx_{suffix}_file ON tasks ({rows});
+    CREATE INDEX IF NOT EXISTS remote_tasks_idx_{suffix}_file ON remote_tasks ({rows});
             """
             )
         for suffix, rows in [
@@ -67,14 +67,14 @@ END;
         ]:
             self._con.execute(
                 f"""
-    CREATE INDEX IF NOT EXISTS jobs_idx_{suffix}_file ON jobs ({rows});
+    CREATE INDEX IF NOT EXISTS remote_jobs_idx_{suffix}_file ON remote_jobs ({rows});
             """
             )
 
-    def _add(self, type_: JobType, request: bytes, total: int) -> int:
+    def _add(self, type_: RemoteJobType, request: bytes, total: int) -> int:
         ret = self._con.execute(
             """
-INSERT INTO jobs (type, total, finished_tasks, original_request_json, created)
+INSERT INTO remote_jobs (type, total, finished_tasks, original_request_json, created)
 VALUES (?, ?, 0, ?, strftime('%s'))
 RETURNING id;
             """,
@@ -83,16 +83,18 @@ RETURNING id;
         assert ret is not None, "Inserting new job should always return ID"
         return t.cast(int, ret[0])
 
-    def _submit_jobs_no_commit(self, type_: JobType, job_id: int, tasks: t.List[t.Tuple[str, bytes]]) -> None:
+    def _submit_jobs_no_commit(
+        self, type_: RemoteJobType, job_id: int, tasks: t.List[t.Tuple[str, bytes]]
+    ) -> None:
         self._con.executemany(
             """
-INSERT INTO tasks (md5, job_id, type, payload_json, created)
+INSERT INTO remote_tasks (md5, job_id, type, payload_json, created)
 VALUES (?, ?, ?, ?, strftime('%s'))
             """,
             [(md5, job_id, type_.value, payload_json) for md5, payload_json in tasks],
         )
 
-    def submit_job(self, type_: JobType, request: bytes, tasks: t.List[t.Tuple[str, bytes]]) -> int:
+    def submit_job(self, type_: RemoteJobType, request: bytes, tasks: t.List[t.Tuple[str, bytes]]) -> int:
         if len(tasks) != len(set(j for j, _ in tasks)):
             raise ValidationError("Validation error: duplicit md5 for job")
         try:
@@ -104,16 +106,16 @@ VALUES (?, ?, ?, ?, strftime('%s'))
             self._con.rollback()
             raise
 
-    def unfinished_tasks(self) -> t.List[Task[bytes]]:
+    def unfinished_tasks(self) -> t.List[RemoteTask[bytes]]:
         ret = self._con.execute(
             """
-SELECT md5, job_id, type, payload_json, created FROM tasks WHERE finished_at is NULL
+SELECT md5, job_id, type, payload_json, created FROM remote_tasks WHERE finished_at is NULL
            """
         ).fetchall()
         return [
-            Task(
+            RemoteTask(
                 TaskId(md5, job_id),
-                JobType(type_),
+                RemoteJobType(type_),
                 payload_json,
                 datetime.datetime.fromtimestamp(created),
                 None,
@@ -121,7 +123,7 @@ SELECT md5, job_id, type, payload_json, created FROM tasks WHERE finished_at is 
             for (md5, job_id, type_, payload_json, created) in ret
         ]
 
-    def get_job(self, job_id: int) -> t.Optional[Job[bytes]]:
+    def get_job(self, job_id: int) -> t.Optional[RemoteJob[bytes]]:
         ret = self._con.execute(
             """
 SELECT
@@ -132,7 +134,7 @@ SELECT
   original_request_json,
   created,
   last_update
-FROM jobs
+FROM remote_jobs
 WHERE id = ?
             """,
             (job_id,),
@@ -140,9 +142,9 @@ WHERE id = ?
         if ret is None:
             return None
         (id_, type_, total, finished_tasks, original_request_json, created, last_update) = ret
-        return Job(
+        return RemoteJob(
             id_,
-            JobType(type_),
+            RemoteJobType(type_),
             total,
             finished_tasks,
             original_request_json,
@@ -150,7 +152,7 @@ WHERE id = ?
             None if last_update is None else datetime.datetime.fromtimestamp(last_update),
         )
 
-    def get_task(self, task_id: TaskId) -> t.Optional[Task[bytes]]:
+    def get_task(self, task_id: TaskId) -> t.Optional[RemoteTask[bytes]]:
         ret = self._con.execute(
             """
 SELECT
@@ -160,7 +162,7 @@ SELECT
   payload_json,
   created,
   finished_at
-FROM tasks
+FROM remote_tasks
 WHERE md5 = ? AND job_id = ?
             """,
             (task_id.md5, task_id.job_id),
@@ -168,9 +170,9 @@ WHERE md5 = ? AND job_id = ?
         if ret is None:
             return None
         (md5, job_id, type_, payload_json, created, finished_at) = ret
-        return Task(
+        return RemoteTask(
             TaskId(md5, job_id),
-            JobType(type_),
+            RemoteJobType(type_),
             payload_json,
             datetime.datetime.fromtimestamp(created),
             None if finished_at is None else datetime.datetime.fromtimestamp(finished_at),
@@ -179,7 +181,7 @@ WHERE md5 = ? AND job_id = ?
     def finish_task(self, id_: TaskId) -> None:
         self._con.execute(
             """
-UPDATE tasks SET finished_at = strftime('%s') WHERE job_id = ? AND md5 = ?
+UPDATE remote_tasks SET finished_at = strftime('%s') WHERE job_id = ? AND md5 = ?
             """,
             (id_.job_id, id_.md5),
         )

@@ -10,7 +10,7 @@ from dataclasses_json import DataClassJsonMixin
 from pphoto.data_model.manual import ManualLocation
 
 
-class JobType(enum.Enum):
+class RemoteJobType(enum.Enum):
     MASS_MANUAL_ANNOTATION = "mass_manual_annotation"
 
 
@@ -25,16 +25,16 @@ R = t.TypeVar("R")
 
 
 @dataclasses.dataclass
-class Job(t.Generic[T]):
+class RemoteJob(t.Generic[T]):
     id_: int
-    type_: JobType
+    type_: RemoteJobType
     total: int
     finished_tasks: int
     original_request: T
     created: datetime.datetime
     last_update: t.Optional[datetime.datetime]
 
-    def test_sanitize(self) -> Job[T]:
+    def test_sanitize(self) -> RemoteJob[T]:
         self.created = datetime.datetime(1, 1, 1)
         if self.last_update is not None:
             self.last_update = datetime.datetime(1, 1, 1)
@@ -42,21 +42,21 @@ class Job(t.Generic[T]):
 
 
 @dataclasses.dataclass
-class Task(t.Generic[T]):
+class RemoteTask(t.Generic[T]):
     id_: TaskId
-    type_: JobType
+    type_: RemoteJobType
     payload: T
     created: datetime.datetime
     finished_at: t.Optional[datetime.datetime]
 
-    def test_sanitize(self) -> Task[T]:
+    def test_sanitize(self) -> RemoteTask[T]:
         self.created = datetime.datetime(1, 1, 1)
         if self.finished_at is not None:
             self.finished_at = datetime.datetime(1, 1, 1)
         return self
 
-    def map(self, f: t.Callable[[T], R]) -> Task[R]:
-        return Task(self.id_, self.type_, f(self.payload), self.created, self.finished_at)
+    def map(self, f: t.Callable[[T], R]) -> RemoteTask[R]:
+        return RemoteTask(self.id_, self.type_, f(self.payload), self.created, self.finished_at)
 
 
 @dataclasses.dataclass

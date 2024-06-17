@@ -26,7 +26,7 @@ from pphoto.db.types_date import DateCluster
 from pphoto.db.connection import PhotosConnection, GalleryConnection, JobsConnection
 from pphoto.file_mgmt.remote_control import RefreshJobs, write_serialized_rc_job
 from pphoto.utils import assert_never, Lazy
-from pphoto.remote_jobs.types import JobType, ManualLocation, TextAnnotation, ManualAnnotationTask
+from pphoto.remote_jobs.types import RemoteJobType, ManualLocation, TextAnnotation, ManualAnnotationTask
 
 from pphoto.gallery.db import ImageSqlDB, Image as ImageRow
 from pphoto.gallery.image import make_image_address
@@ -235,7 +235,7 @@ def mass_manual_annotation_endpoint(params: MassManualAnnotation) -> int:
             )
         )
     job_id = db.jobs.submit_job(
-        JobType.MASS_MANUAL_ANNOTATION, params.to_json(ensure_ascii=False).encode("utf-8"), tasks
+        RemoteJobType.MASS_MANUAL_ANNOTATION, params.to_json(ensure_ascii=False).encode("utf-8"), tasks
     )
     write_serialized_rc_job(CONFIG.import_fifo, RefreshJobs(job_id))
     return job_id
