@@ -25,7 +25,6 @@ class ImageSqlDB:
         gallery_connection: GalleryConnection,
         jobs_connection: JobsConnection,
     ) -> None:
-        # TODO: this should be a feature with loader
         self._connections = [photos_connection, gallery_connection, jobs_connection]
         self._files_table = FilesTable(photos_connection)
         self._gallery_index = GalleryIndexTable(gallery_connection)
