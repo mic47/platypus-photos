@@ -19,7 +19,7 @@ from pphoto.db.files_table import FilesTable
 from pphoto.db.queries import PhotosQueries
 from pphoto.annots.annotator import Annotator
 from pphoto.annots.date import PathDateExtractor
-from pphoto.jobs.types import TaskId, Task, MassManualAnnotationTask
+from pphoto.jobs.types import TaskId, Task, ManualAnnotationTask
 from pphoto.jobs.db import JobsTable
 from pphoto.file_mgmt.jobs import Jobs, JobType, IMPORT_PRIORITY, DEFAULT_PRIORITY, REALTIME_PRIORITY
 from pphoto.file_mgmt.queues import Queues, Queue
@@ -60,7 +60,7 @@ async def worker(
                 assert isinstance(path, PathWithMd5)
                 await context.jobs.image_to_text(path)
             elif type_ == JobType.ADD_MANUAL_ANNOTATION:
-                if isinstance(path, Task) and isinstance(path.payload, MassManualAnnotationTask):
+                if isinstance(path, Task) and isinstance(path.payload, ManualAnnotationTask):
                     context.jobs.add_manual_annotation(path)
                 else:
                     assert False, "Wrong type for ADD_MANUAL_ANNOTATION"
@@ -92,7 +92,7 @@ async def manual_annotation_worker(
             if task.id_ in visited:
                 continue
             # TODO: error handling
-            parsed_task = task.map(MassManualAnnotationTask.from_json)
+            parsed_task = task.map(ManualAnnotationTask.from_json)
             context.queues.enqueue_path([(parsed_task, JobType.ADD_MANUAL_ANNOTATION)], REALTIME_PRIORITY)
 
 

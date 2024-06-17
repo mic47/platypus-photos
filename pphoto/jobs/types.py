@@ -72,8 +72,7 @@ class TextAnnotation(DataClassJsonMixin):
 
 
 @dataclasses.dataclass
-# TODO: naming, remove Mass
-class MassManualAnnotationTask(DataClassJsonMixin):
+class ManualAnnotationTask(DataClassJsonMixin):
     location: t.Optional[LocationAnnotation]
     text: t.Optional[TextAnnotation]
     text_extend: bool

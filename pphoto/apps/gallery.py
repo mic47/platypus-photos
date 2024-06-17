@@ -25,7 +25,7 @@ from pphoto.db.types_location import LocationCluster, LocPoint
 from pphoto.db.types_date import DateCluster
 from pphoto.db.connection import PhotosConnection, GalleryConnection, JobsConnection
 from pphoto.utils import assert_never, Lazy
-from pphoto.jobs.types import JobType, LocationAnnotation, TextAnnotation, MassManualAnnotationTask
+from pphoto.jobs.types import JobType, LocationAnnotation, TextAnnotation, ManualAnnotationTask
 
 from pphoto.gallery.db import ImageSqlDB, Image as ImageRow
 from pphoto.gallery.image import make_image_address
@@ -223,7 +223,7 @@ def mass_manual_annotation_endpoint(params: MassManualAnnotation) -> int:
         tasks.append(
             (
                 md5,
-                MassManualAnnotationTask(
+                ManualAnnotationTask(
                     params.location if md5 in location_md5s else None,
                     params.text if md5 in text_md5s else None,
                     extend,

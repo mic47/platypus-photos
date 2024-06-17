@@ -10,7 +10,7 @@ from pphoto.annots.text import Models, ImageClassification
 from pphoto.data_model.config import DirectoryMatchingConfig, DBFilesConfig
 from pphoto.data_model.base import WithMD5, PathWithMd5, Error, HasCurrentVersion
 from pphoto.data_model.manual import ManualLocation, ManualText
-from pphoto.jobs.types import Task, MassManualAnnotationTask
+from pphoto.jobs.types import Task, ManualAnnotationTask
 from pphoto.db.cache import SQLiteCache
 from pphoto.db.features_table import FeaturesTable
 
@@ -38,7 +38,7 @@ class Annotator:
         self.image_to_text_types: t.List[t.Type[HasCurrentVersion]] = [ImageClassification]
 
     def manual_features(
-        self, task: Task[MassManualAnnotationTask]
+        self, task: Task[ManualAnnotationTask]
     ) -> t.Tuple[t.Optional[WithMD5[ManualLocation]], t.Optional[WithMD5[ManualText]]]:
         ml = None
         mt = None

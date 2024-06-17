@@ -12,7 +12,7 @@ from pphoto.annots.md5 import compute_md5
 from pphoto.annots.annotator import Annotator
 from pphoto.data_model.base import PathWithMd5
 from pphoto.data_model.geo import GeoAddress
-from pphoto.jobs.types import MassManualAnnotationTask, Task
+from pphoto.jobs.types import ManualAnnotationTask, Task
 from pphoto.jobs.db import JobsTable
 from pphoto.db.files_table import FilesTable
 from pphoto.db.queries import PhotosQueries
@@ -146,7 +146,7 @@ class Jobs:
         self._files.change_path(path.path, new_path.path)
         self._files.set_lifecycle(new_path.path, ManagedLifecycle.SYNCED, None)
 
-    def add_manual_annotation(self, task: Task[MassManualAnnotationTask]) -> None:
+    def add_manual_annotation(self, task: Task[ManualAnnotationTask]) -> None:
         self._annotator.manual_features(task)
         for file in self._files.by_md5(task.id_.md5):
             self.cheap_features(PathWithMd5(file.file, task.id_.md5))
