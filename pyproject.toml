@@ -28,3 +28,27 @@ disable = '''
 
 ignore_decorators = ["@app.*"]
 ignore_names = ["LOAD_TRUNCATED_IMAGES"]
+
+[tool.pydeps]
+
+max_bacon = 2
+cluster = true
+rmprefix = "pphoto."
+exclude = [
+  "*.test_*",
+]
+exclude_exact = [
+  "pphoto",
+  "pphoto.annots",
+  "pphoto.apps",
+  "pphoto.data_model",
+  "pphoto.db",
+  "pphoto.file_mgmt",
+  "pphoto.gallery",
+  # Following modules are supposed to be used everywhere
+  "pphoto.data_model.base",
+  "pphoto.utils",
+  "pphoto.utils.files",
+  "pphoto.db.connection",
+  "pphoto.data_model.config",
+]
