@@ -3,26 +3,10 @@ import typing as t
 
 from pphoto.data_model.base import HasCurrentVersion, WithMD5, Error
 from pphoto.db.features_table import FeaturesTable
-from pphoto.db.types import FeaturePayload
+from pphoto.db.types import FeaturePayload, Cache
 
 
 Ser = t.TypeVar("Ser", bound=HasCurrentVersion)
-
-
-class Cache(t.Generic[Ser]):
-    def get(self, key: str) -> t.Optional[FeaturePayload[WithMD5[Ser], None]]:
-        raise NotImplementedError
-
-    def add(self, data: WithMD5[Ser]) -> WithMD5[Ser]:
-        raise NotImplementedError
-
-
-class NoCache(t.Generic[Ser], Cache[Ser]):
-    def get(self, key: str) -> t.Optional[FeaturePayload[WithMD5[Ser], None]]:
-        pass
-
-    def add(self, data: WithMD5[Ser]) -> WithMD5[Ser]:
-        return data
 
 
 class JsonlWriter:

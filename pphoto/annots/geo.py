@@ -8,7 +8,7 @@ from geopy.location import Location
 
 from pphoto.data_model.base import WithMD5, PathWithMd5
 from pphoto.data_model.geo import GeoAddress
-from pphoto.db.cache import Cache, NoCache
+from pphoto.db.types import Cache, NoCache
 
 
 RATE_LIMIT_SECONDS = 1

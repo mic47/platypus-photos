@@ -12,7 +12,7 @@ from pphoto.annots.text import (
     ImageClassificationWithMD5,
     image_endpoint as image_endpoint_impl,
 )
-from pphoto.db.cache import NoCache
+from pphoto.db.types import NoCache
 from pphoto.utils import Lazy
 
 MODELS = Models(NoCache(), None)

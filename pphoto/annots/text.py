@@ -26,7 +26,7 @@ from pphoto.data_model.text import (
     Classification,
     Box,
 )
-from pphoto.db.cache import Cache, NoCache
+from pphoto.db.types import Cache, NoCache
 from pphoto.utils import Lazy
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
