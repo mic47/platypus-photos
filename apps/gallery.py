@@ -158,6 +158,87 @@ def date_clusters_endpoint(params: DateClusterParams) -> t.List[DateCluster]:
     return clusters
 
 
+class LocationAnnotationOverride(enum.Enum):
+    NO_LOCATION_NO_MANUAL = "NoLocNoMan"
+    NO_LOCATION_YES_MANUAL = "NoLocYeMan"
+    YES_LOCATION_NO_MANUAL = "YeLocNoMan"
+    YES_LOCATION_YES_MANUAL = "YeLocYeMan"
+
+
+@dataclass
+class LocationAnnotation:
+    latitude: float
+    longitude: float
+    address_name: t.Optional[str]
+    address_country: t.Optional[str]
+    override: LocationAnnotationOverride
+
+
+class TextAnnotationOverride(enum.Enum):
+    EXTEND_MANUAL = "ExMan"
+    NO_MANUAL = "NoMan"
+    YES_MANUAL = "YeMan"
+
+
+@dataclass
+class TextAnnotation:
+    description: t.Optional[str]
+    tags: t.Optional[str]
+    override: TextAnnotationOverride
+
+
+@dataclass
+class MassManualAnnotation:
+    query: SearchQuery
+    location: LocationAnnotation
+    text: TextAnnotation
+
+
+@app.post("/api/mass_manual_annotation")
+def mass_manual_annotation_endpoint(params: MassManualAnnotation) -> t.Any:
+    has_location = None
+    has_manual_location = None
+    if params.location.override == LocationAnnotationOverride.NO_LOCATION_NO_MANUAL:
+        has_location = False
+        has_manual_location = False
+    elif params.location.override == LocationAnnotationOverride.NO_LOCATION_YES_MANUAL:
+        has_location = False
+        has_manual_location = None
+    elif params.location.override == LocationAnnotationOverride.YES_LOCATION_NO_MANUAL:
+        has_location = None
+        has_manual_location = False
+    elif params.location.override == LocationAnnotationOverride.YES_LOCATION_YES_MANUAL:
+        has_location = None
+        has_manual_location = None
+    else:
+        assert_never(params.location.override)
+    location_md5s = set(
+        DB.get().get_matching_md5(
+            params.query, has_location=has_location, has_manual_location=has_manual_location
+        )
+    )
+    has_manual_text = None
+    extend = False
+    if params.text.override == TextAnnotationOverride.EXTEND_MANUAL:
+        has_manual_text = None
+        extend = True
+    elif params.text.override == TextAnnotationOverride.YES_MANUAL:
+        has_manual_text = None
+    elif params.text.override == TextAnnotationOverride.NO_MANUAL:
+        has_manual_text = False
+    else:
+        assert_never(params.text.override)
+    text_md5s = set(DB.get().get_matching_md5(params.query, has_manual_text=has_manual_text))
+
+    # Write this to DB table, and use fifo to trigger check for the job
+    # Job -> request, params, ... ID, progress
+    # Job: JobId -> request_json, num_items, timestamp
+    # JobItem: JobId, md5, jobs_json -- there should be only 1 worker on any specific item
+    # ID, md5 -> [Location(params), Text(params, extend)]
+    # Then image_watcher should run job -- create manual annotation and everything
+    return (extend, location_md5s, text_md5s)
+
+
 GEOLOCATOR = Geolocator()
 
 

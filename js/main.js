@@ -465,6 +465,7 @@ function submit_annotations(div_id, form_id, return_id) {
     };
     const checkbox_value = formData.get("sanity_check");
     const request = {
+        query,
         location: location_request,
         text: text_request,
     };

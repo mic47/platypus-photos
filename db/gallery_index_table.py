@@ -18,6 +18,7 @@ from gallery.utils import (
 # TODO: extract this type into query payload
 from gallery.url import SearchQuery, GalleryPaging, SortParams, SortBy
 from utils import assert_never
+from data_model.features import ManualText, ManualLocation
 from db.connection import GalleryConnection
 from db.directories_table import DirectoriesTable
 from db.types import (
@@ -222,6 +223,33 @@ WHERE
             query,
             variables,
         )
+
+    def get_matching_md5(
+        self,
+        url: SearchQuery,
+        has_location: t.Optional[bool] = None,
+        has_manual_location: t.Optional[bool] = None,
+        has_manual_text: t.Optional[bool] = None,
+    ) -> t.List[str]:
+        extra_clauses: t.List[t.Tuple[str, t.List[str | int | float | None]]] = []
+        if has_location is not None:
+            if has_location:
+                extra_clauses.append(("latitude IS NOT NULL", []))
+            else:
+                extra_clauses.append(("latitude IS NULL", []))
+        if has_manual_location is not None:
+            if has_manual_location:
+                extra_clauses.append((f"manual_features LIKE '%,{ManualLocation.__name__},%'", []))
+            else:
+                extra_clauses.append((f"manual_features NOT LIKE '%,{ManualLocation.__name__},%'", []))
+        if has_manual_text is not None:
+            if has_manual_text:
+                extra_clauses.append((f"manual_features LIKE '%,{ManualText.__name__},%'", []))
+            else:
+                extra_clauses.append((f"manual_features NOT LIKE '%,{ManualText.__name__},%'", []))
+
+        (query, params) = self._matching_query("md5", url, extra_clauses)
+        return [x for (x,) in self._con.execute(query, params).fetchall()]
 
     def get_date_clusters(self, url: SearchQuery, buckets: int) -> t.List[DateCluster]:
         minmax_select = self._matching_query("timestamp", url)

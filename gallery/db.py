@@ -190,6 +190,15 @@ class ImageSqlDB:
     def get_matching_directories(self, url: SearchQuery) -> t.List[DirectoryStats]:
         return self._gallery_index.get_matching_directories(url)
 
+    def get_matching_md5(
+        self,
+        url: SearchQuery,
+        has_location: t.Optional[bool] = None,
+        has_manual_location: t.Optional[bool] = None,
+        has_manual_text: t.Optional[bool] = None,
+    ) -> t.List[str]:
+        return self._gallery_index.get_matching_md5(url, has_location, has_manual_location, has_manual_text)
+
     def get_image_clusters(
         self,
         url: SearchQuery,

@@ -7,10 +7,10 @@
     <input type="hidden" value='{{query_json_base64|safe}}' name="query_json_base64">
     <b>How to override location?</b>
       <select name="location_override">
-        <option value="no_loc_no_man">Override images without location and manual annotation</option>
-        <option value="no_loc_yes_man">Override images without location, even with manual annotation</option>
-        <option value="yes_loc_no_man">Override images without manual annotation</option>
-        <option value="yes_loc_yes_man">Override all selected images</option>
+        <option value="NoLocNoMan">Override images without location and manual annotation</option>
+        <option value="NoLocYeMan">Override images without location, even with manual annotation</option>
+        <option value="YeLocNoMan">Override images without manual annotation</option>
+        <option value="YeLocYeMan">Override all selected images</option>
       </select>
       <br/>
     <b>Address:</b> {{address.full}}<br/>
@@ -29,9 +29,9 @@
     <h3>Annotation Info</h3>
     <b>How to override text info?</b>
       <select name="text_override">
-        <option value="extend_man">Extend manual annotations</option>
-        <option value="no_man">Override images wihout manual annotation</option>
-        <option value="yes_man">Override even manual annotations</option>
+        <option value="ExMan">Extend manual annotations</option>
+        <option value="NoMan">Override images wihout manual annotation</option>
+        <option value="YeMan">Override even manual annotations</option>
       </select>
       <br/>
     <b>Extra tags:</b> 
