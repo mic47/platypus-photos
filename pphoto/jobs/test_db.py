@@ -3,7 +3,8 @@ import typing as t
 import unittest
 
 from pphoto.db.connection import JobsConnection, MaybeParameters
-from pphoto.db.job_tables import JobsTable, Job, Task, JobType, ValidationError, TaskId
+from pphoto.jobs.db import JobsTable, ValidationError
+from pphoto.jobs.types import Job, Task, JobType, TaskId
 
 
 def connection() -> JobsConnection:

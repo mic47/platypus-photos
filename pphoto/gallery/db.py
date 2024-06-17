@@ -3,9 +3,10 @@ import typing as t
 from dataclasses_json import DataClassJsonMixin
 
 from pphoto.db.gallery_index_table import GalleryIndexTable
-from pphoto.db.connection import PhotosConnection, GalleryConnection
+from pphoto.db.connection import PhotosConnection, GalleryConnection, JobsConnection
 from pphoto.db.files_table import FilesTable
 from pphoto.db.directories_table import DirectoriesTable
+from pphoto.jobs.db import JobsTable
 
 from pphoto.db.types_image import ImageAggregation, Image
 from pphoto.db.types_location import LocationCluster, LocPoint
@@ -18,23 +19,28 @@ Ser = t.TypeVar("Ser", bound=DataClassJsonMixin)
 
 
 class ImageSqlDB:
-    def __init__(self, photos_connection: PhotosConnection, gallery_connection: GalleryConnection) -> None:
+    def __init__(
+        self,
+        photos_connection: PhotosConnection,
+        gallery_connection: GalleryConnection,
+        jobs_connection: JobsConnection,
+    ) -> None:
         # TODO: this should be a feature with loader
-        self._p_con = photos_connection
-        self._g_con = gallery_connection
-        self._files_table = FilesTable(self._p_con)
-        self._gallery_index = GalleryIndexTable(self._g_con)
-        self._directories_table = DirectoriesTable(self._g_con)
+        self._connections = [photos_connection, gallery_connection, jobs_connection]
+        self._files_table = FilesTable(photos_connection)
+        self._gallery_index = GalleryIndexTable(gallery_connection)
+        self.jobs = JobsTable(jobs_connection)
+        self._directories_table = DirectoriesTable(gallery_connection)
         self._hash_to_image: t.Dict[int, str] = {}
         self._md5_to_image: t.Dict[str, str] = {}
 
     def reconnect(self) -> None:
-        self._p_con.reconnect()
-        self._g_con.reconnect()
+        for con in self._connections:
+            con.reconnect()
 
     def check_unused(self) -> None:
-        self._p_con.check_unused()
-        self._g_con.check_unused()
+        for con in self._connections:
+            con.check_unused()
 
     def files(self, md5: str) -> t.List[FileRow]:
         return self._files_table.by_md5(md5)

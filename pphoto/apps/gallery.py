@@ -23,8 +23,9 @@ from pphoto.data_model.config import DBFilesConfig
 from pphoto.data_model.base import PathWithMd5
 from pphoto.db.types_location import LocationCluster, LocPoint
 from pphoto.db.types_date import DateCluster
-from pphoto.db.connection import PhotosConnection, GalleryConnection
+from pphoto.db.connection import PhotosConnection, GalleryConnection, JobsConnection
 from pphoto.utils import assert_never, Lazy
+from pphoto.jobs.types import JobType, LocationAnnotation, TextAnnotation, MassManualAnnotationTask
 
 from pphoto.gallery.db import ImageSqlDB, Image as ImageRow
 from pphoto.gallery.image import make_image_address
@@ -35,7 +36,6 @@ ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 
 app = FastAPI()
-# TODO: serve these differenty
 app.mount("/static", StaticFiles(directory="static/"), name="static")
 app.mount("/js", StaticFiles(directory="js/"), name="static")
 app.mount("/css", StaticFiles(directory="css/"), name="static")
@@ -45,6 +45,7 @@ DB = Lazy(
     lambda: ImageSqlDB(
         PhotosConnection(DBFilesConfig().photos_db, check_same_thread=False),
         GalleryConnection(DBFilesConfig().gallery_db, check_same_thread=False),
+        JobsConnection(DBFilesConfig().jobs_db, check_same_thread=False),
     )
 )
 
@@ -167,15 +168,6 @@ class LocationAnnotationOverride(enum.Enum):
     YES_LOCATION_YES_MANUAL = "YeLocYeMan"
 
 
-@dataclass
-class LocationAnnotation:
-    latitude: float
-    longitude: float
-    address_name: t.Optional[str]
-    address_country: t.Optional[str]
-    override: LocationAnnotationOverride
-
-
 class TextAnnotationOverride(enum.Enum):
     EXTEND_MANUAL = "ExMan"
     NO_MANUAL = "NoMan"
@@ -183,62 +175,74 @@ class TextAnnotationOverride(enum.Enum):
 
 
 @dataclass
-class TextAnnotation:
-    description: t.Optional[str]
-    tags: t.Optional[str]
-    override: TextAnnotationOverride
-
-
-@dataclass
-class MassManualAnnotation:
+class MassManualAnnotation(DataClassJsonMixin):
     query: SearchQuery
     location: LocationAnnotation
+    location_override: LocationAnnotationOverride
     text: TextAnnotation
+    text_override: TextAnnotationOverride
 
 
 @app.post("/api/mass_manual_annotation")
-def mass_manual_annotation_endpoint(params: MassManualAnnotation) -> t.Any:
+def mass_manual_annotation_endpoint(params: MassManualAnnotation) -> int:
+    db = DB.get()
     has_location = None
     has_manual_location = None
-    if params.location.override == LocationAnnotationOverride.NO_LOCATION_NO_MANUAL:
+    if params.location_override == LocationAnnotationOverride.NO_LOCATION_NO_MANUAL:
         has_location = False
         has_manual_location = False
-    elif params.location.override == LocationAnnotationOverride.NO_LOCATION_YES_MANUAL:
+    elif params.location_override == LocationAnnotationOverride.NO_LOCATION_YES_MANUAL:
         has_location = False
         has_manual_location = None
-    elif params.location.override == LocationAnnotationOverride.YES_LOCATION_NO_MANUAL:
+    elif params.location_override == LocationAnnotationOverride.YES_LOCATION_NO_MANUAL:
         has_location = None
         has_manual_location = False
-    elif params.location.override == LocationAnnotationOverride.YES_LOCATION_YES_MANUAL:
+    elif params.location_override == LocationAnnotationOverride.YES_LOCATION_YES_MANUAL:
         has_location = None
         has_manual_location = None
     else:
-        assert_never(params.location.override)
+        assert_never(params.location_override)
     location_md5s = set(
-        DB.get().get_matching_md5(
-            params.query, has_location=has_location, has_manual_location=has_manual_location
-        )
+        db.get_matching_md5(params.query, has_location=has_location, has_manual_location=has_manual_location)
     )
     has_manual_text = None
     extend = False
-    if params.text.override == TextAnnotationOverride.EXTEND_MANUAL:
+    if params.text_override == TextAnnotationOverride.EXTEND_MANUAL:
         has_manual_text = None
         extend = True
-    elif params.text.override == TextAnnotationOverride.YES_MANUAL:
+    elif params.text_override == TextAnnotationOverride.YES_MANUAL:
         has_manual_text = None
-    elif params.text.override == TextAnnotationOverride.NO_MANUAL:
+    elif params.text_override == TextAnnotationOverride.NO_MANUAL:
         has_manual_text = False
     else:
-        assert_never(params.text.override)
-    text_md5s = set(DB.get().get_matching_md5(params.query, has_manual_text=has_manual_text))
+        assert_never(params.text_override)
+    text_md5s = set(db.get_matching_md5(params.query, has_manual_text=has_manual_text))
 
-    # Write this to DB table, and use fifo to trigger check for the job
+    tasks = []
+    for md5 in location_md5s.union(text_md5s):
+        tasks.append(
+            (
+                md5,
+                MassManualAnnotationTask(
+                    params.location if md5 in location_md5s else None,
+                    params.text if md5 in text_md5s else None,
+                    extend,
+                )
+                .to_json(ensure_ascii=False)
+                .encode("utf-8"),
+            )
+        )
+    job_id = db.jobs.submit_job(
+        JobType.MASS_MANUAL_ANNOTATION, params.to_json(ensure_ascii=False).encode("utf-8"), tasks
+    )
+
+    # TODO: Write this to DB table, and use fifo to trigger check for the job
     # Job -> request, params, ... ID, progress
     # Job: JobId -> request_json, num_items, timestamp
     # JobItem: JobId, md5, jobs_json -- there should be only 1 worker on any specific item
     # ID, md5 -> [Location(params), Text(params, extend)]
     # Then image_watcher should run job -- create manual annotation and everything
-    return (extend, location_md5s, text_md5s)
+    return job_id
 
 
 GEOLOCATOR = Geolocator()

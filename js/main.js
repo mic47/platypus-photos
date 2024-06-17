@@ -453,7 +453,6 @@ function submit_annotations(div_id, form_id, return_id) {
         longitude,
         address_name,
         address_country,
-        override: location_override,
     };
     const extra_tags = null_if_empty(formData.get("extra_tags"));
     const extra_description = null_if_empty(formData.get("extra_description"));
@@ -461,13 +460,14 @@ function submit_annotations(div_id, form_id, return_id) {
     const text_request = {
         tags: extra_tags,
         description: extra_description,
-        override: text_override,
     };
     const checkbox_value = formData.get("sanity_check");
     const request = {
         query,
         location: location_request,
+        location_override,
         text: text_request,
+        text_override,
     };
     if (checkbox_value !== "on") {
         alert("You have to check 'Check this box' box to prevent accidental submissions");
