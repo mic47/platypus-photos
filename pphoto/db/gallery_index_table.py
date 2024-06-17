@@ -75,6 +75,11 @@ CREATE TABLE IF NOT EXISTS gallery_index (
 ALTER TABLE gallery_index ADD COLUMN manual_features TEXT NOT NULL DEFAULT ""
         """
         )
+        self._con.execute_add_column(
+            """
+ALTER TABLE gallery_index ADD COLUMN being_annotated INTEGER NOT NULL DEFAULT 0
+        """
+        )
         for columns in [
             ["md5"],
             ["feature_last_update"],
@@ -101,7 +106,7 @@ ALTER TABLE gallery_index ADD COLUMN manual_features TEXT NOT NULL DEFAULT ""
         tags = sorted(list((omg.tags or {}).items()))
         self._con.execute(
             """
-INSERT INTO gallery_index VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+INSERT INTO gallery_index VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)
 ON CONFLICT(md5) DO UPDATE SET
   feature_last_update=excluded.feature_last_update,
   timestamp=excluded.timestamp,
@@ -115,7 +120,8 @@ ON CONFLICT(md5) DO UPDATE SET
   longitude=excluded.longitude,
   altitude=excluded.altitude,
   version=excluded.version,
-  manual_features=excluded.manual_features
+  manual_features=excluded.manual_features,
+  being_annotated=excluded.being_annotated
 WHERE
   excluded.version > gallery_index.version
   OR (
@@ -165,6 +171,13 @@ WHERE
             if not items:
                 return
             yield from (item for (item,) in items)
+
+    def mark_annotated(self, md5s: t.List[str]) -> None:
+        self._con.executemany(
+            "UPDATE gallery_index SET being_annotated = 1 WHERE md5 = ?",
+            [(x,) for x in md5s],
+        )
+        self._con.commit()
 
     def _matching_query(
         self,
@@ -605,14 +618,15 @@ SELECT "alt", 'min', MIN(altitude) FROM matched_images WHERE altitude IS NOT NUL
         return output, has_extra_data
 
     def get_matching_directories(self, url: SearchQuery) -> t.List[DirectoryStats]:
-        (match_query, match_params) = self._matching_query("md5, address_full, timestamp", url)
+        (match_query, match_params) = self._matching_query("md5, address_full, timestamp, being_annotated", url)
         ret = self._con.execute(
             f"""
 SELECT
   directory,
   COUNT(directories.md5) as total,
   SUM(gallery.address_full IS NOT NULL) AS has_location,
-  SUM(timestamp IS NOT NULL) AS has_timestamp
+  SUM(timestamp IS NOT NULL) AS has_timestamp,
+  SUM(being_annotated) AS being_annotated
 FROM directories JOIN ({match_query}) AS gallery
 ON directories.md5 = gallery.md5
 WHERE gallery.md5 IS NOT NULL
@@ -621,8 +635,8 @@ GROUP BY directory
             match_params,
         ).fetchall()
         return [
-            DirectoryStats(directory, total, has_location, has_timestamp)
-            for (directory, total, has_location, has_timestamp) in ret
+            DirectoryStats(directory, total, has_location, has_timestamp, being_annotated)
+            for (directory, total, has_location, has_timestamp, being_annotated) in ret
         ]
 
 

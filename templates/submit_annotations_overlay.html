@@ -55,6 +55,7 @@
       <th>#Images</th>
       <th>% with location</th>
       <th>% with time</th>
+      <th>% being annotated</th>
     </tr>
   {% for d in directories %}
     <tr>
@@ -62,6 +63,7 @@
       <td>{{d.total_images}}</td>
       <td>{{ '%.1f'|format(d.has_location * 100.0 / d.total_images|float) }}%</td>
       <td>{{ '%.1f'|format(d.has_timestamp * 100.0 / d.total_images|float) }}%</td>
+      <td>{{ '%.1f'|format(d.being_annotated * 100.0 / d.total_images|float) }}%</td>
     </tr>
   {% endfor %}
   </table>

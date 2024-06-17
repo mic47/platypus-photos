@@ -47,6 +47,13 @@ class Reindexer:
         self._manual_location = SQLiteCache(self._features_table, ManualLocation)
         self._manual_text = SQLiteCache(self._features_table, ManualText)
         self._gallery_index = GalleryIndexTable(self._g_con)
+        self._feature_types = [
+            ImageExif.__name__,
+            GeoAddress.__name__,
+            ImageClassification.__name__,
+            ManualText.__name__,
+            ManualLocation.__name__,
+        ]
 
     def reconnect(self) -> None:
         self._p_con.reconnect()
@@ -59,23 +66,16 @@ class Reindexer:
     def load(self, progress: t.Optional[ProgressBar]) -> int:
         reindexed = 0
         # TODO: this is wrong?
-        feature_types = [
-            ImageExif.__name__,
-            GeoAddress.__name__,
-            ImageClassification.__name__,
-            ManualText.__name__,
-            ManualLocation.__name__,
-        ]
         if progress is not None:
             todo = (
                 self._files_table.dirty_md5s_total()
-                + self._features_table.dirty_md5s_total(feature_types)
+                + self._features_table.dirty_md5s_total(self._feature_types)
                 + self._gallery_index.old_versions_md5_total()
             )
             progress.update_what_is_left(todo)
         for md5, _last_update in set(
             itertools.chain(
-                self._features_table.dirty_md5s(feature_types),
+                self._features_table.dirty_md5s(self._feature_types),
                 ((x, None) for x in self._files_table.dirty_md5s()),
             )
         ):
@@ -143,6 +143,4 @@ class Reindexer:
         self._directories_table.multi_add([(d, md5) for d in directories])
         self._files_table.undirty(md5, max_dir_last_update)
         self._gallery_index.add(omg)
-        self._features_table.undirty(
-            md5, [ImageExif.__name__, GeoAddress.__name__, ImageClassification.__name__], max_last_update
-        )
+        self._features_table.undirty(md5, self._feature_types, max_last_update)

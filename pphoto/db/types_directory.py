@@ -7,3 +7,4 @@ class DirectoryStats:
     total_images: int
     has_location: int
     has_timestamp: int
+    being_annotated: int

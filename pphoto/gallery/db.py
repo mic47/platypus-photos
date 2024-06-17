@@ -94,3 +94,6 @@ class ImageSqlDB:
         gallery_paging: GalleryPaging,
     ) -> t.Tuple[t.List[Image], bool]:
         return self._gallery_index.get_matching_images(query, sort_params, gallery_paging)
+
+    def mark_annotated(self, md5s: t.List[str]) -> None:
+        self._gallery_index.mark_annotated(md5s)
