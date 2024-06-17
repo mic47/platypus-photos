@@ -12,7 +12,10 @@ import asyncinotify
 import tqdm
 
 from pphoto.data_model.config import Config, DBFilesConfig
-from pphoto.db import FeaturesTable, PhotosConnection, GalleryConnection, FilesTable, PhotosQueries
+from pphoto.db.features_table import FeaturesTable
+from pphoto.db.connection import PhotosConnection, GalleryConnection
+from pphoto.db.files_table import FilesTable
+from pphoto.db.queries import PhotosQueries
 from pphoto.annots.annotator import Annotator
 from pphoto.annots.date import PathDateExtractor
 from pphoto.file_mgmt.jobs import Jobs, JobType, IMPORT_PRIORITY, DEFAULT_PRIORITY, REALTIME_PRIORITY

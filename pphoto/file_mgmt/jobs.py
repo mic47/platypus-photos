@@ -12,7 +12,8 @@ from pphoto.annots.md5 import compute_md5
 from pphoto.annots.annotator import Annotator
 from pphoto.data_model.base import PathWithMd5
 from pphoto.data_model.geo import GeoAddress
-from pphoto.db import FilesTable, PhotosQueries
+from pphoto.db.files_table import FilesTable
+from pphoto.db.queries import PhotosQueries
 from pphoto.db.types import ManagedLifecycle
 from pphoto.file_mgmt.remote_control import ImportMode
 from pphoto.utils import assert_never

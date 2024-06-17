@@ -13,15 +13,13 @@ from pphoto.data_model.exif import ImageExif
 from pphoto.data_model.geo import GeoAddress
 from pphoto.data_model.text import ImageClassification
 from pphoto.data_model.manual import ManualLocation, ManualText
-from pphoto.db import (
-    FeaturesTable,
-    GalleryIndexTable,
-    PhotosConnection,
-    GalleryConnection,
-    FilesTable,
-    SQLiteCache,
-    DirectoriesTable,
-)
+from pphoto.db.features_table import FeaturesTable
+from pphoto.db.gallery_index_table import GalleryIndexTable
+from pphoto.db.connection import PhotosConnection, GalleryConnection
+from pphoto.db.files_table import FilesTable
+from pphoto.db.cache import SQLiteCache
+from pphoto.db.directories_table import DirectoriesTable
+
 from pphoto.db.types import (
     ImageAggregation,
     Image,
