@@ -1,6 +1,6 @@
 <div class="submit_overlay" id="submit_overlay">
 <h2>Going to annotate {{total}} photos </h2>
-<div class="submit_overlay_result"></div>
+<div class="submit_overlay_result" id="submit_overlay_result"></div>
 <div class="annotation_scrollable_area">
   <form action="javascript:submit_annotations('submit_overlay','SubmitAnnotations','submit_overlay_result')" id='SubmitAnnotations'>
     <h3>Location Info</h3>
@@ -40,7 +40,7 @@
     <b>Extra description:</b> 
       <input type="text" name="extra_description" value="">
       </br/>
-    <input type="checkbox" name="sanity_check">Check this box<br/>
+    <input type="checkbox" class="uncheck" name="sanity_check">Check this box<br/>
     <input type="submit" value="Add annotations">
     <input type="button" value="cancel" onclick="document.getElementById('submit_overlay').remove();">
   </form>

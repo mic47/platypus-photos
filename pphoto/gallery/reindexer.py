@@ -59,7 +59,13 @@ class Reindexer:
     def load(self, progress: t.Optional[ProgressBar]) -> int:
         reindexed = 0
         # TODO: this is wrong?
-        feature_types = [ImageExif.__name__, GeoAddress.__name__, ImageClassification.__name__]
+        feature_types = [
+            ImageExif.__name__,
+            GeoAddress.__name__,
+            ImageClassification.__name__,
+            ManualText.__name__,
+            ManualLocation.__name__,
+        ]
         if progress is not None:
             todo = (
                 self._files_table.dirty_md5s_total()

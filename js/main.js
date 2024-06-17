@@ -424,28 +424,66 @@ function parse_float_or_null(str) {
     return value;
 }
 
+function error_box(div_id, value) {
+    console.log(div_id, value);
+    const e = document.getElementById(div_id);
+    console.log(e);
+    if (e === null || e === undefined) {
+        alert(value);
+        return;
+    }
+    const element = document.createElement("div");
+    element.classList.add("error");
+    const pre = document.createElement("pre");
+    try {
+        pre.innerHTML = JSON.stringify(value, null, 2);
+    } catch {
+        pre.innerHTML = value;
+    }
+    element.appendChild(pre);
+    e.innerHTML = "";
+    e.appendChild(element);
+}
+
 function submit_annotations(div_id, form_id, return_id) {
     const formData = new FormData(document.getElementById(form_id));
+    const checkbox_value = formData.get("sanity_check");
+    [
+        ...document.getElementById(form_id).getElementsByClassName("uncheck"),
+    ].forEach((element) => {
+        // Prevent from accidentally submitting again
+        element.checked = false;
+    });
     const query = JSON.parse(window.atob(formData.get("query_json_base64")));
     const latitude = parse_float_or_null(formData.get("latitude"));
     if (latitude === null) {
-        alert("Invalid request, latitude", formData);
-        return;
+        return error_box(return_id, {
+            error: "Invalid request, latitude",
+            formData,
+        });
     }
     const longitude = parse_float_or_null(formData.get("longitude"));
     if (longitude === null) {
-        alert("Invalid request, latitude", formData);
-        return;
+        return error_box(return_id, {
+            error: "Invalid request, longitude",
+            formData,
+        });
     }
     const location_override = formData.get("location_override");
     let address_name = null_if_empty(formData.get("address_name"));
     const address_name_original = formData.get("address_name_original");
-    if (address_name === null || address_name.trim() === address_name_original) {
+    if (
+        address_name === null ||
+        address_name.trim() === address_name_original
+    ) {
         address_name = null;
     }
     let address_country = null_if_empty(formData.get("address_country"));
     const address_country_original = formData.get("address_country_original");
-    if (address_country === null || address_country.trim() === address_country_original) {
+    if (
+        address_country === null ||
+        address_country.trim() === address_country_original
+    ) {
         address_country = null;
     }
     const location_request = {
@@ -461,7 +499,6 @@ function submit_annotations(div_id, form_id, return_id) {
         tags: extra_tags,
         description: extra_description,
     };
-    const checkbox_value = formData.get("sanity_check");
     const request = {
         query,
         location: location_request,
@@ -470,23 +507,31 @@ function submit_annotations(div_id, form_id, return_id) {
         text_override,
     };
     if (checkbox_value !== "on") {
-        alert("You have to check 'Check this box' box to prevent accidental submissions");
-        return;
+        return error_box(return_id, {
+            error: "You have to check 'Check this box' box to prevent accidental submissions",
+        });
     }
     console.log(request);
-    return fetch("api/mass_manual_annotation", {
-        method: "POST",
-        body: JSON.stringify(request),
-        headers: {
-            "Content-type": "application/json; charset=UTF-8",
-        },
-    })
-        .then((response) => response.json())
-        .then((response) => {
-            alert(JSON.stringify(response));
+    return (
+        fetch("api/mass_manual_annotation", {
+            method: "POST",
+            body: JSON.stringify(request),
+            headers: {
+                "Content-type": "application/json; charset=UTF-8",
+            },
         })
-        // TODO: put error into stuff
-        .catch(err => alert(err))
+            .then((response) => response.json())
+            .then((response) => {
+                document.getElementById(div_id).remove();
+            })
+            // TODO: put error into stuff
+            .catch((err) => {
+                return error_box(return_id, {
+                    msg: "There was error while processing on the server.",
+                    error: err,
+                });
+            })
+    );
 }
 
 function location_preview(loc, show_content_fn) {
