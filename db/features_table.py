@@ -157,7 +157,12 @@ ON CONFLICT(type, md5) DO UPDATE SET
   dirty=excluded.dirty,
   payload=excluded.payload,
   is_error=excluded.is_error
-WHERE excluded.version > features.version""",
+WHERE
+  excluded.version > features.version
+  OR (
+    excluded.version == features.version
+    AND excluded.payload != features.payload
+  )""",
             (type_, md5, version, payload or error, 1 if payload is None else 0),
         )
         self._con.commit()
