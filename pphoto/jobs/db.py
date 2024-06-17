@@ -104,7 +104,7 @@ VALUES (?, ?, ?, ?, strftime('%s'))
             self._con.rollback()
             raise
 
-    def unfinished_tasks(self) -> t.List[Task]:
+    def unfinished_tasks(self) -> t.List[Task[bytes]]:
         ret = self._con.execute(
             """
 SELECT md5, job_id, type, payload_json, created FROM tasks WHERE finished_at is NULL
@@ -121,7 +121,7 @@ SELECT md5, job_id, type, payload_json, created FROM tasks WHERE finished_at is 
             for (md5, job_id, type_, payload_json, created) in ret
         ]
 
-    def get_job(self, job_id: int) -> t.Optional[Job]:
+    def get_job(self, job_id: int) -> t.Optional[Job[bytes]]:
         ret = self._con.execute(
             """
 SELECT
@@ -150,7 +150,7 @@ WHERE id = ?
             None if last_update is None else datetime.datetime.fromtimestamp(last_update),
         )
 
-    def get_task(self, task_id: TaskId) -> t.Optional[Task]:
+    def get_task(self, task_id: TaskId) -> t.Optional[Task[bytes]]:
         ret = self._con.execute(
             """
 SELECT

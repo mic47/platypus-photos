@@ -18,17 +18,20 @@ class TaskId:
     job_id: int
 
 
+T = t.TypeVar("T")
+
+
 @dataclasses.dataclass
-class Job:
+class Job(t.Generic[T]):
     id_: int
     type_: JobType
     total: int
     finished_tasks: int
-    original_request_json: bytes
+    original_request: T
     created: datetime.datetime
     last_update: t.Optional[datetime.datetime]
 
-    def test_sanitize(self) -> Job:
+    def test_sanitize(self) -> Job[T]:
         self.created = datetime.datetime(1, 1, 1)
         if self.last_update is not None:
             self.last_update = datetime.datetime(1, 1, 1)
@@ -36,14 +39,14 @@ class Job:
 
 
 @dataclasses.dataclass
-class Task:
+class Task(t.Generic[T]):
     id_: TaskId
     type_: JobType
-    payload_json: bytes
+    payload_json: T
     created: datetime.datetime
     finished_at: t.Optional[datetime.datetime]
 
-    def test_sanitize(self) -> Task:
+    def test_sanitize(self) -> Task[T]:
         self.created = datetime.datetime(1, 1, 1)
         if self.finished_at is not None:
             self.finished_at = datetime.datetime(1, 1, 1)
