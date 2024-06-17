@@ -20,7 +20,7 @@ from fastapi.templating import Jinja2Templates
 
 from pphoto.annots.geo import Geolocator
 from pphoto.data_model.config import DBFilesConfig
-from pphoto.data_model.features import PathWithMd5
+from pphoto.data_model.base import PathWithMd5
 from pphoto.db.types import LocationCluster, LocPoint, DateCluster, ImageAddress
 from pphoto.db import PhotosConnection, GalleryConnection
 from pphoto.utils import assert_never, Lazy

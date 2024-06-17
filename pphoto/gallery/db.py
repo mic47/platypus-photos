@@ -6,11 +6,13 @@ from dataclasses_json import DataClassJsonMixin
 from tqdm import tqdm
 
 from pphoto.annots.date import PathDateExtractor
+from pphoto.data_model.base import (
+    WithMD5,
+)
 from pphoto.data_model.features import (
     ImageExif,
     GeoAddress,
     ImageClassification,
-    WithMD5,
     ManualLocation,
     ManualText,
 )

@@ -4,7 +4,7 @@ import itertools
 import random
 import typing as t
 
-from pphoto.data_model.features import PathWithMd5
+from pphoto.data_model.base import PathWithMd5
 from pphoto.file_mgmt.jobs import JobType, IMPORT_PRIORITY, DEFAULT_PRIORITY
 from pphoto.utils import assert_never, DefaultDict, CacheTTL
 from pphoto.utils.progress_bar import ProgressBar

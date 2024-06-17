@@ -10,7 +10,8 @@ import tqdm
 
 from pphoto.annots.md5 import compute_md5
 from pphoto.annots.annotator import Annotator
-from pphoto.data_model.features import PathWithMd5, GeoAddress
+from pphoto.data_model.base import PathWithMd5
+from pphoto.data_model.features import GeoAddress
 from pphoto.db import FilesTable, PhotosQueries
 from pphoto.db.types import ManagedLifecycle
 from pphoto.file_mgmt.remote_control import ImportMode

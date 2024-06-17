@@ -5,7 +5,8 @@ import typing as t
 
 import exif
 
-from pphoto.data_model.features import ImageExif, Date, Camera, GPSCoord, WithMD5, PathWithMd5, Error
+from pphoto.data_model.base import WithMD5, PathWithMd5, Error
+from pphoto.data_model.features import ImageExif, Date, Camera, GPSCoord
 from pphoto.db.cache import Cache
 from pphoto.utils.files import SupportedMedia, supported_media
 

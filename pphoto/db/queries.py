@@ -1,6 +1,6 @@
 import typing as t
 
-from pphoto.data_model.features import HasCurrentVersion, PathWithMd5
+from pphoto.data_model.base import HasCurrentVersion, PathWithMd5
 from pphoto.db.connection import PhotosConnection
 
 

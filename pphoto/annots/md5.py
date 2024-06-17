@@ -1,6 +1,6 @@
 import hashlib
 
-from pphoto.data_model.features import PathWithMd5
+from pphoto.data_model.base import PathWithMd5
 
 
 def compute_md5(path: str) -> PathWithMd5:

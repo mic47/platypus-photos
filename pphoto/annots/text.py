@@ -15,14 +15,16 @@ from dataclasses_json import DataClassJsonMixin
 from PIL import Image, ImageFile
 
 
+from pphoto.data_model.base import (
+    WithMD5,
+    PathWithMd5,
+    Error,
+)
 from pphoto.data_model.features import (
     ImageClassification,
     BoxClassification,
     Classification,
     Box,
-    WithMD5,
-    PathWithMd5,
-    Error,
 )
 from pphoto.db.cache import Cache, NoCache
 from pphoto.utils import Lazy

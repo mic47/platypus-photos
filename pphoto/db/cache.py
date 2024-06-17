@@ -1,7 +1,7 @@
 import sys
 import typing as t
 
-from pphoto.data_model.features import HasCurrentVersion, WithMD5, Error
+from pphoto.data_model.base import HasCurrentVersion, WithMD5, Error
 from pphoto.db.features_table import FeaturesTable
 from pphoto.db.types import FeaturePayload
 

@@ -8,7 +8,8 @@ from pphoto.annots.exif import Exif, ImageExif
 from pphoto.annots.geo import Geolocator, GeoAddress
 from pphoto.annots.text import Models, ImageClassification
 from pphoto.data_model.config import DirectoryMatchingConfig, DBFilesConfig
-from pphoto.data_model.features import WithMD5, PathWithMd5, Error, HasCurrentVersion, ManualLocation
+from pphoto.data_model.base import WithMD5, PathWithMd5, Error, HasCurrentVersion
+from pphoto.data_model.features import ManualLocation
 from pphoto.db.cache import SQLiteCache
 from pphoto.db import FeaturesTable
 
