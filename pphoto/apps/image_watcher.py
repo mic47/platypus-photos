@@ -86,14 +86,25 @@ async def manual_annotation_worker(
     visited: t.Set[TaskId] = set()
     while True:
         await input_queue.get()
-        # TODO: error handling
-        unfinished_tasks = context.jobs_table.unfinished_tasks()
-        for task in unfinished_tasks:
-            if task.id_ in visited:
-                continue
-            # TODO: error handling
-            parsed_task = task.map(ManualAnnotationTask.from_json)
-            context.queues.enqueue_path([(parsed_task, JobType.ADD_MANUAL_ANNOTATION)], REALTIME_PRIORITY)
+        try:
+            unfinished_tasks = context.jobs_table.unfinished_tasks()
+            for task in unfinished_tasks:
+                if task.id_ in visited:
+                    continue
+                try:
+                    parsed_task = task.map(ManualAnnotationTask.from_json)
+                # pylint: disable = bare-except
+                except:
+                    traceback.print_exc()
+                    print("Error while parsing manual task", name, task)
+                    continue
+
+                context.queues.enqueue_path([(parsed_task, JobType.ADD_MANUAL_ANNOTATION)], REALTIME_PRIORITY)
+        # pylint: disable = bare-except
+        except:
+            traceback.print_exc()
+            print("Error in manual annotation worker", name)
+            continue
 
 
 async def inotify_worker(name: str, dirs: t.List[str], context: GlobalContext) -> None:
