@@ -82,6 +82,9 @@ class Reindexer:
             if progress is not None:
                 progress.update(1)
             reindexed += 1
+
+        if progress is not None:
+            progress.refresh()
         return reindexed
 
     def _reindex(self, md5: str) -> None:

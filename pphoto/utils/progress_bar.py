@@ -40,7 +40,12 @@ class ProgressBar:
             self.update_total()
         return self
 
+    def refresh(self) -> ProgressBar:
+        self._tqdm.refresh()
+        return self
+
     def update_total(self) -> ProgressBar:
         self._tqdm.reset(total=self._total)
         self._tqdm.update(self._progress)
+        self._tqdm.refresh()
         return self
