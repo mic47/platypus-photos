@@ -19,8 +19,8 @@ from pphoto.db.files_table import FilesTable
 from pphoto.db.queries import PhotosQueries
 from pphoto.annots.annotator import Annotator
 from pphoto.annots.date import PathDateExtractor
-from pphoto.jobs.types import TaskId, Task, ManualAnnotationTask
-from pphoto.jobs.db import JobsTable
+from pphoto.remote_jobs.types import TaskId, Task, ManualAnnotationTask
+from pphoto.remote_jobs.db import JobsTable
 from pphoto.file_mgmt.jobs import Jobs, JobType, IMPORT_PRIORITY, DEFAULT_PRIORITY, REALTIME_PRIORITY
 from pphoto.file_mgmt.queues import Queues, Queue
 from pphoto.file_mgmt.remote_control import ImportCommand, parse_rc_job, RefreshJobs

@@ -6,7 +6,7 @@ from pphoto.db.gallery_index_table import GalleryIndexTable
 from pphoto.db.connection import PhotosConnection, GalleryConnection, JobsConnection
 from pphoto.db.files_table import FilesTable
 from pphoto.db.directories_table import DirectoriesTable
-from pphoto.jobs.db import JobsTable
+from pphoto.remote_jobs.db import JobsTable
 
 from pphoto.db.types_image import ImageAggregation, Image
 from pphoto.db.types_location import LocationCluster, LocPoint

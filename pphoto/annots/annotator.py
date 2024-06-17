@@ -10,7 +10,7 @@ from pphoto.annots.text import Models, ImageClassification
 from pphoto.data_model.config import DirectoryMatchingConfig, DBFilesConfig
 from pphoto.data_model.base import WithMD5, PathWithMd5, Error, HasCurrentVersion
 from pphoto.data_model.manual import ManualLocation, ManualText
-from pphoto.jobs.types import Task, ManualAnnotationTask
+from pphoto.remote_jobs.types import Task, ManualAnnotationTask
 from pphoto.db.cache import SQLiteCache
 from pphoto.db.features_table import FeaturesTable
 

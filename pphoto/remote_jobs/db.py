@@ -4,7 +4,7 @@ import datetime
 import typing as t
 
 from pphoto.db.connection import JobsConnection
-from pphoto.jobs.types import JobType, TaskId, Task, Job
+from pphoto.remote_jobs.types import JobType, TaskId, Task, Job
 
 
 class JobsTable:

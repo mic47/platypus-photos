@@ -4,7 +4,7 @@ import itertools
 import random
 import typing as t
 
-from pphoto.jobs.types import Task, ManualAnnotationTask
+from pphoto.remote_jobs.types import Task, ManualAnnotationTask
 from pphoto.data_model.base import PathWithMd5
 from pphoto.file_mgmt.jobs import JobType, IMPORT_PRIORITY, DEFAULT_PRIORITY
 from pphoto.utils import assert_never, DefaultDict, CacheTTL

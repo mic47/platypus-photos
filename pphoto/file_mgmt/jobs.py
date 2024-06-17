@@ -12,8 +12,8 @@ from pphoto.annots.md5 import compute_md5
 from pphoto.annots.annotator import Annotator
 from pphoto.data_model.base import PathWithMd5
 from pphoto.data_model.geo import GeoAddress
-from pphoto.jobs.types import ManualAnnotationTask, Task
-from pphoto.jobs.db import JobsTable
+from pphoto.remote_jobs.types import ManualAnnotationTask, Task
+from pphoto.remote_jobs.db import JobsTable
 from pphoto.db.files_table import FilesTable
 from pphoto.db.queries import PhotosQueries
 from pphoto.db.types_file import ManagedLifecycle
