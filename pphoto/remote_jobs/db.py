@@ -48,7 +48,7 @@ CREATE TRIGGER IF NOT EXISTS
 AFTER UPDATE OF finished_at ON remote_tasks
 FOR EACH ROW WHEN OLD.finished_at IS NULL and NEW.finished_at IS NOT NULL
 BEGIN
-  UPDATE remote_jobs SET finished_tasks = finished_tasks + 1, last_update = NEW.finished_at WHERE id = NEW.job_id;
+  UPDATE remote_jobs SET finished_tasks = finished_tasks + 1, last_update = NEW.finished_at WHERE id = OLD.job_id;
 END;
     """
         )
