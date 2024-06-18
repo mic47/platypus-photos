@@ -449,13 +449,13 @@ def input_request(request: Request, url: SearchQuery) -> HTMLResponse:
                 "tsfrom_pretty": (
                     datetime.fromtimestamp(url.tsfrom).strftime("%a %Y-%m-%d %H:%M:%S")
                     if url.tsfrom is not None
-                    else ""
+                    else "_" * 23
                 ),
                 "tsto": url.tsto or "",
                 "tsto_pretty": (
                     datetime.fromtimestamp(url.tsto).strftime("%a %Y-%m-%d %H:%M:%S")
                     if url.tsto is not None
-                    else ""
+                    else "_" * 23
                 ),
             },
         },

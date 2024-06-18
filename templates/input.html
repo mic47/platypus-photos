@@ -13,39 +13,41 @@
   <label for="fdir">Directory:</label><input type="text" id="fdir" name="directory" value="{{input.directory}}"><br>
   <label for="boundary">Boundary:</label>
   <span class="location" id="fbnd"></span><br/>
-  <input type="button" value="reset" onclick='reset_param("tsfrom")'>
   <label for="tsfrom">Timestamp from:</label>
   <input type="text" id="ftsfrom" name="tsfrom" value="{{input.tsfrom}}" hidden=true >
   <span class="date">{{input.tsfrom_pretty}}</span>
-  <input type="button" value="-1y" onclick='add_to_float_param("tsfrom", -365.25*24*60*60)'>
-  <input type="button" value="-1m" onclick='add_to_float_param("tsfrom", -30*24*60*60)'>
-  <input type="button" value="-1w" onclick='add_to_float_param("tsfrom", -7*24*60*60)'>
-  <input type="button" value="-1d" onclick='add_to_float_param("tsfrom", -24*60*60)'>
-  <input type="button" value="-1h" onclick='add_to_float_param("tsfrom", -60*60)'>
-  <input type="button" value="-5m" onclick='add_to_float_param("tsfrom", -5*60)'>
-  <input type="button" value="+5m" onclick='add_to_float_param("tsfrom", 5*60)'>
-  <input type="button" value="+1h" onclick='add_to_float_param("tsfrom", 60*60)'>
-  <input type="button" value="+1d" onclick='add_to_float_param("tsfrom", 24*60*60)'>
-  <input type="button" value="+1w" onclick='add_to_float_param("tsfrom", 7*24*60*60)'>
-  <input type="button" value="+1m" onclick='add_to_float_param("tsfrom", 30*24*60*60)'>
-  <input type="button" value="+1y" onclick='add_to_float_param("tsfrom", 365.25*24*60*60)'>
+  <input type="button" value="-1y" onclick='add_to_float_param("tsfrom", "tsto", -365.25*24*60*60)'>
+  <input type="button" value="-1m" onclick='add_to_float_param("tsfrom", "tsto", -30*24*60*60)'>
+  <input type="button" value="-1w" onclick='add_to_float_param("tsfrom", "tsto", -7*24*60*60)'>
+  <input type="button" value="-1d" onclick='add_to_float_param("tsfrom", "tsto", -24*60*60)'>
+  <input type="button" value="-1h" onclick='add_to_float_param("tsfrom", "tsto", -60*60)'>
+  <input type="button" value="-5m" onclick='add_to_float_param("tsfrom", "tsto", -5*60)'>
+  <input type="button" value="+5m" onclick='add_to_float_param("tsfrom", "tsto", 5*60)'>
+  <input type="button" value="+1h" onclick='add_to_float_param("tsfrom", "tsto", 60*60)'>
+  <input type="button" value="+1d" onclick='add_to_float_param("tsfrom", "tsto", 24*60*60)'>
+  <input type="button" value="+1w" onclick='add_to_float_param("tsfrom", "tsto", 7*24*60*60)'>
+  <input type="button" value="+1m" onclick='add_to_float_param("tsfrom", "tsto", 30*24*60*60)'>
+  <input type="button" value="+1y" onclick='add_to_float_param("tsfrom", "tsto", 365.25*24*60*60)'>
+  <input type="button" value="reset" onclick='reset_param("tsfrom")'>
+  <input type="button" value="➡️ to (fwd in time)" onclick='shift_float_params("tsfrom", "tsto")'>
   <br>
-  <input type="button" value="reset" onclick='reset_param("tsto")'>
   <label for="tsto">Timestamp to:&nbsp;&nbsp;</label>
   <input type="text" id="ftsto" name="tsto" value="{{input.tsto}}" hidden=true>
   <span class="date">{{input.tsto_pretty}}</span>
-  <input type="button" value="-1y" onclick='add_to_float_param("tsto", -365.25*24*60*60)'>
-  <input type="button" value="-1m" onclick='add_to_float_param("tsto", -300*24*60*60)'>
-  <input type="button" value="-1w" onclick='add_to_float_param("tsto", -7*24*60*60)'>
-  <input type="button" value="-1d" onclick='add_to_float_param("tsto", -24*60*60)'>
-  <input type="button" value="-1h" onclick='add_to_float_param("tsto", -60*60)'>
-  <input type="button" value="-5m" onclick='add_to_float_param("tsto", -5*60)'>
-  <input type="button" value="+5m" onclick='add_to_float_param("tsto", 5*60)'>
-  <input type="button" value="+1h" onclick='add_to_float_param("tsto", 60*60)'>
-  <input type="button" value="+1d" onclick='add_to_float_param("tsto", 24*60*60)'>
-  <input type="button" value="+1w" onclick='add_to_float_param("tsto", 7*24*60*60)'>
-  <input type="button" value="+1m" onclick='add_to_float_param("tsto", 30*24*60*60)'>
-  <input type="button" value="+1y" onclick='add_to_float_param("tsto", 365.25*24*60*60)'>
+  <input type="button" value="-1y" onclick='add_to_float_param("tsto", "tsfrom", -365.25*24*60*60)'>
+  <input type="button" value="-1m" onclick='add_to_float_param("tsto", "tsfrom", -300*24*60*60)'>
+  <input type="button" value="-1w" onclick='add_to_float_param("tsto", "tsfrom", -7*24*60*60)'>
+  <input type="button" value="-1d" onclick='add_to_float_param("tsto", "tsfrom", -24*60*60)'>
+  <input type="button" value="-1h" onclick='add_to_float_param("tsto", "tsfrom", -60*60)'>
+  <input type="button" value="-5m" onclick='add_to_float_param("tsto", "tsfrom", -5*60)'>
+  <input type="button" value="+5m" onclick='add_to_float_param("tsto", "tsfrom", 5*60)'>
+  <input type="button" value="+1h" onclick='add_to_float_param("tsto", "tsfrom", 60*60)'>
+  <input type="button" value="+1d" onclick='add_to_float_param("tsto", "tsfrom", 24*60*60)'>
+  <input type="button" value="+1w" onclick='add_to_float_param("tsto", "tsfrom", 7*24*60*60)'>
+  <input type="button" value="+1m" onclick='add_to_float_param("tsto", "tsfrom", 30*24*60*60)'>
+  <input type="button" value="+1y" onclick='add_to_float_param("tsto", "tsfrom", 365.25*24*60*60)'>
+  <input type="button" value="reset" onclick='reset_param("tsto")'>
+  <input type="button" value="⬅️ from (bwd in time)" onclick='shift_float_params("tsto", "tsfrom")'>
   <br>
   <input type="submit" value="Search">
   <input type="button" value="Reset All" onclick='reset_param("__ALL__")'>

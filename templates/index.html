@@ -80,13 +80,31 @@ function next_page() {
     const update = {"page": page + 1};
     ___state.update_paging(update);
 }
-function add_to_float_param(param, new_value) {
-    const value = parseFloat(___state.get_url()[param]);
+function add_to_float_param(param, other, new_value) {
+    const query = ___state.get_url()
+    let value = parseFloat(query[param]) || parseFloat(query[other]);
     if (value != value) {
         return;
     }
     const update = {};
     update[param] = value + new_value;
+    ___state.update_url(update);
+}
+function shift_float_params(param_to_start, second_param) {
+    const query = ___state.get_url();
+    const start_value = parseFloat(query[param_to_start]);
+    const end_value = parseFloat(query[second_param]);
+    if (end_value != end_value) {
+        // This does not make sense, second param is empty
+        return;
+    }
+    const update = {};
+    update[param_to_start] = end_value;
+    if (start_value != start_value) {
+        update[second_param] = undefined;
+    } else {
+        update[second_param] = end_value + end_value - start_value;
+    }
     ___state.update_url(update);
 }
 function annotation_overlay(latitude, longitude) {
