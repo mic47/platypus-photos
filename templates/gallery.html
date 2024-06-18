@@ -25,10 +25,10 @@
     {% if image.timeicon %}
         <a href="#" onclick='update_url({"tsfrom":{{image.timestamp}}-0.01})'>⬅️ from</a>
         {{image.timeicon}}
-        {% if image.being_annotated %}<br/>🏗️{% endif %}
+        {% if image.being_annotated %}🏗️{% endif %}
         <a href="#" onclick='update_url({"tsto":{{image.timestamp}}+0.01})'>to ➡️</a>
     {% else %}
-        {% if image.being_annotated %}<br/>🏗️{% endif %}
+        {% if image.being_annotated %}🏗️{% endif %}
     {% endif %}
     <div class="gallery_container" onclick="overlay(this, {{ loop.index0 }})">
     <img loading="lazy" src="/img?hsh={{image.hsh}}&size={% if loop.index0 == oi %}original{%else%}preview{%endif%}" class="gallery_image"/>
