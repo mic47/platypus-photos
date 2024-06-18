@@ -28,7 +28,7 @@ disable = '''
 [tool.vulture]
 
 ignore_decorators = ["@app.*"]
-ignore_names = ["LOAD_TRUNCATED_IMAGES"]
+ignore_names = ["LOAD_TRUNCATED_IMAGES", "ASC"]
 
 [tool.pydeps]
 
