@@ -283,7 +283,7 @@ WHERE
             """,
             minmax_select[1],
         ).fetchone()
-        if minmax is None:
+        if minmax is None or minmax[0] is None or minmax[1] is None:
             return []
         diff = float(minmax[1]) - float(minmax[0])
         bucket_size = max(1.0, (1.0 + diff) / buckets)
@@ -618,7 +618,9 @@ SELECT "alt", 'min', MIN(altitude) FROM matched_images WHERE altitude IS NOT NUL
         return output, has_extra_data
 
     def get_matching_directories(self, url: SearchQuery) -> t.List[DirectoryStats]:
-        (match_query, match_params) = self._matching_query("md5, address_full, timestamp, being_annotated", url)
+        (match_query, match_params) = self._matching_query(
+            "md5, address_full, timestamp, being_annotated", url
+        )
         ret = self._con.execute(
             f"""
 SELECT
