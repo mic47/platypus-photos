@@ -673,7 +673,15 @@ class Dates {
                                     this._clickTimeStart[1] / 1000.0,
                                     dataX / 1000.0,
                                 ];
-                                x.sort();
+                                x.sort((x, y) => {
+                                    if (x < y) {
+                                        return -1;
+                                    } else if (x > y) {
+                                        return 1;
+                                    } else {
+                                        return 0;
+                                    }
+                                });
                                 const [f, t] = x;
                                 update_url({ tsfrom: f, tsto: t });
                             }
