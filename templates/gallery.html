@@ -23,10 +23,18 @@
         {% endif %}
     </div>
     {% if image.timeicon %}
+        {% if ascending %}
+        <a href="#" onclick='update_url({"tsto":{{image.timestamp}}+0.01})'>⬅️ to</a>
+        {% else %}
         <a href="#" onclick='update_url({"tsfrom":{{image.timestamp}}-0.01})'>⬅️ from</a>
+        {% endif %}
         {{image.timeicon}}
         {% if image.being_annotated %}🏗️{% endif %}
+        {% if ascending %}
+        <a href="#" onclick='update_url({"tsfrom":{{image.timestamp}}-0.01})'>from ➡️</a>
+        {% else %}
         <a href="#" onclick='update_url({"tsto":{{image.timestamp}}+0.01})'>to ➡️</a>
+        {% endif %}
     {% else %}
         {% if image.being_annotated %}🏗️{% endif %}
     {% endif %}

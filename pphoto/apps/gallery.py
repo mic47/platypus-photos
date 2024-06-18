@@ -30,7 +30,7 @@ from pphoto.remote_jobs.types import RemoteJobType, ManualLocation, TextAnnotati
 
 from pphoto.gallery.db import ImageSqlDB, Image as ImageRow
 from pphoto.gallery.image import make_image_address
-from pphoto.gallery.url import SearchQuery, GalleryPaging, SortParams, SortBy
+from pphoto.gallery.url import SearchQuery, GalleryPaging, SortParams, SortBy, SortOrder
 from pphoto.gallery.utils import (
     maybe_datetime_to_date,
     maybe_datetime_to_timestamp,
@@ -427,6 +427,7 @@ async def gallery_div(request: Request, params: GalleryRequest, oi: t.Optional[i
             "oi": oi,
             "images": images,
             "has_next_page": has_next_page,
+            "ascending": params.sort.order == SortOrder.ASC,
             "input": {
                 "page": params.paging.page,
             },
