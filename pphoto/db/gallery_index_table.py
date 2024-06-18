@@ -619,7 +619,9 @@ SELECT
   COUNT(directories.md5) as total,
   SUM(gallery.address_full IS NOT NULL) AS has_location,
   SUM(timestamp IS NOT NULL) AS has_timestamp,
-  SUM(being_annotated) AS being_annotated
+  SUM(being_annotated) AS being_annotated,
+  MIN(timestamp) AS since,
+  MAX(timestamp) as until
 FROM directories JOIN ({match_query}) AS gallery
 ON directories.md5 = gallery.md5
 WHERE gallery.md5 IS NOT NULL
@@ -628,8 +630,8 @@ GROUP BY directory
             match_params,
         ).fetchall()
         return [
-            DirectoryStats(directory, total, has_location, has_timestamp, being_annotated)
-            for (directory, total, has_location, has_timestamp, being_annotated) in ret
+            DirectoryStats(directory, total, has_location, has_timestamp, being_annotated, since, until)
+            for (directory, total, has_location, has_timestamp, being_annotated, since, until) in ret
         ]
 
 

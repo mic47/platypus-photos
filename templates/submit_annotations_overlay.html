@@ -51,11 +51,13 @@
   <h3>Directories:</h3>
   <table>
     <tr>
-      <th>Directory</th>
-      <th>#Images</th>
-      <th>% with location</th>
-      <th>% with time</th>
-      <th>% being annotated</th>
+      <th>Directory 📂</th>
+      <th>#Images 🖼️</th>
+      <th>% with location 🗺️</th>
+      <th>% with time 🕝</th>
+      <th>% being annotated 🏗️</th>
+      <th>Since</th>
+      <th>Until</th>
     </tr>
   {% for d in directories %}
     <tr>
@@ -64,6 +66,8 @@
       <td>{{ '%.1f'|format(d.has_location * 100.0 / d.total_images|float) }}%</td>
       <td>{{ '%.1f'|format(d.has_timestamp * 100.0 / d.total_images|float) }}%</td>
       <td>{{ '%.1f'|format(d.being_annotated * 100.0 / d.total_images|float) }}%</td>
+      <td>{% if d.since %}{{ d.since | timestamp_to_pretty_datetime }}{% endif %}</td>
+      <td>{% if d.until %}{{ d.until | timestamp_to_pretty_datetime }}{% endif %}</td>
     </tr>
   {% endfor %}
   </table>

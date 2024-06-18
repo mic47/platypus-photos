@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+import typing as t
 
 
 @dataclass
@@ -8,3 +9,5 @@ class DirectoryStats:
     has_location: int
     has_timestamp: int
     being_annotated: int
+    since: t.Optional[float]
+    until: t.Optional[float]

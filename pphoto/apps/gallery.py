@@ -17,6 +17,7 @@ from fastapi import FastAPI, Request, Response
 from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from jinja2.filters import FILTERS
 
 from pphoto.annots.geo import Geolocator
 from pphoto.data_model.config import DBFilesConfig, Config
@@ -47,6 +48,16 @@ app.mount("/static", StaticFiles(directory="static/"), name="static")
 app.mount("/js", StaticFiles(directory="js/"), name="static")
 app.mount("/css", StaticFiles(directory="css/"), name="static")
 templates = Jinja2Templates(directory="templates")
+
+
+def timestamp_to_pretty_datetime(value: float) -> str:
+    """
+    custom max calculation logic
+    """
+    return datetime.fromtimestamp(value).strftime("%Y-%m-%d %H:%M:%S")
+
+
+templates.env.filters["timestamp_to_pretty_datetime"] = timestamp_to_pretty_datetime
 
 CONFIG = Config.load("config.yaml")
 DB = Lazy(
@@ -354,7 +365,7 @@ def directories_endpoint(request: Request, url: SearchQuery) -> HTMLResponse:
         request=request,
         name="directories.html",
         context={
-            "dirs": sorted(dirs, key=lambda x: [x[1].total_images, x[0]], reverse=True),
+            "dirs": sorted(dirs, key=lambda x: [x[1].since or 0, x[1].total_images, x[0]], reverse=True),
         },
     )
 
