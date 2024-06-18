@@ -37,6 +37,7 @@ from pphoto.gallery.utils import (
     maybe_datetime_to_day_start,
     maybe_datetime_to_next_day_start,
 )
+from pphoto.gallery.unicode import maybe_datetime_to_clock
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
@@ -390,7 +391,8 @@ def image_template_params(omg: ImageRow) -> t.Dict[str, t.Any]:
         "date": maybe_datetime_to_date(omg.date),
         "date_timestamp_start": maybe_datetime_to_day_start(omg.date),
         "date_timestamp_end": maybe_datetime_to_next_day_start(omg.date),
-        "timestamp": maybe_datetime_to_timestamp(omg.date) or 0.0,
+        "timeicon": maybe_datetime_to_clock(omg.date),
+        "timestamp": maybe_datetime_to_timestamp(omg.date),
         "raw_data": [
             {"k": k, "v": json.dumps(v, ensure_ascii=True)} for k, v in omg.to_dict(encode_json=True).items()
         ],

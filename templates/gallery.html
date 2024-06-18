@@ -22,6 +22,11 @@
         <a href="#i{{ loop.index0}}" onclick="overlay_next(this, {{ loop.index0 }})">next</a>
         {% endif %}
     </div>
+    {% if image.timeicon %}
+        <a href="#" onclick='update_url({"tsfrom":{{image.timestamp}}-0.01})'>⬅️ from</a>
+        {{image.timeicon}}
+        <a href="#" onclick='update_url({"tsto":{{image.timestamp}}+0.01})'>to ➡️</a>
+    {% endif %}
     <div class="gallery_container" onclick="overlay(this, {{ loop.index0 }})">
     <img loading="lazy" src="/img?hsh={{image.hsh}}&size={% if loop.index0 == oi %}original{%else%}preview{%endif%}" class="gallery_image"/>
     </div>
