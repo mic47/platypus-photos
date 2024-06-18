@@ -1,22 +1,22 @@
 Found {{ total }} matches. <br>
 Top tags: 
 {% for tag in top.tag %}
-{% if show_links %}<a onclick='update_url_add_tag("{{tag[0]|safe}}")' href="#">{{tag[0]}} ({{tag[1]}})</a>
+{% if top.show_links %}<a onclick='update_url_add_tag("{{tag[0]|safe}}")' href="#">{{tag[0]}} ({{tag[1]}})</a>
 {% else %}
 {{tag[0]}} ({{tag[1]}})
 {% endif %}
 {% endfor %} <br/>
 Top texts: 
 {% for t in top.cls %}
-{% if show_links %}<a onclick='update_url({"cls": "{{t[0]|safe}}"}' href="#">{{t[0]}} ({{t[1]}})</a>
+{% if top.show_links %}<a onclick='update_url({"cls": "{{t[0]|safe}}"}' href="#">{{t[0]}} ({{t[1]}})</a>
 {% else %}
 {{t[0]}} ({{t[1]}})
 {% endif %}
 {% endfor %} <br/>
 Top locs: 
 {% for t in top.addr %}
-{% if show_links %}<a onclick='update_url({"addr": "{{t[0]|safe}}"}' href="#">{{t[0]}} ({{t[1]}})</a>
+{% if top.show_links %}<a onclick='update_url({"addr": "{{t[0]|safe}}"}' href="#">{{t[0] | append_flag }} W ({{t[1]}})</a>
 {% else %}
-{{t[0]}} ({{t[1]}})
+{{t[0] | append_flag}} ({{t[1]}})
 {% endif %}
 {% endfor %} <br/>

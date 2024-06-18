@@ -88,7 +88,7 @@
     <span class="tag">{{tag[1]}}{{tag[0]}}</span>
     {% endfor %}
     {% for address in image.addrs %}
-    <span class="location">{{ address }}</span>
+    <span class="location">{{ address | append_flag }}</span>
     {% endfor %}
     {% if image.date %}
     <span class="date">{{image.date}}</span>

@@ -37,7 +37,7 @@ from pphoto.gallery.utils import (
     maybe_datetime_to_day_start,
     maybe_datetime_to_next_day_start,
 )
-from pphoto.gallery.unicode import maybe_datetime_to_clock
+from pphoto.gallery.unicode import maybe_datetime_to_clock, append_flag, replace_with_flag
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
@@ -57,6 +57,8 @@ def timestamp_to_pretty_datetime(value: float) -> str:
 
 
 templates.env.filters["timestamp_to_pretty_datetime"] = timestamp_to_pretty_datetime
+templates.env.filters["append_flag"] = append_flag
+templates.env.filters["replace_with_flag"] = replace_with_flag
 
 CONFIG = Config.load("config.yaml")
 DB = Lazy(
