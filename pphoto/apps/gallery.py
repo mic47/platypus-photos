@@ -449,8 +449,6 @@ def input_request(request: Request, url: SearchQuery) -> HTMLResponse:
                 "tag": url.tag,
                 "cls": url.cls,
                 "addr": url.addr,
-                "datefrom": maybe_datetime_to_date(url.datefrom) or "",
-                "dateto": maybe_datetime_to_date(url.dateto) or "",
                 "directory": url.directory,
                 "tsfrom": url.tsfrom or "",
                 "tsfrom_pretty": (
@@ -478,8 +476,6 @@ async def index_page(
     addr: str = "",
     page: int = 0,
     paging: int = 100,
-    datefrom: str = "",
-    dateto: str = "",
     tsfrom: t.Optional[float] = None,
     tsto: t.Optional[float] = None,
     directory: str = "",
@@ -490,8 +486,6 @@ async def index_page(
         tag,
         cls,
         addr,
-        datetime.strptime(datefrom, "%Y-%m-%d") if datefrom else None,
-        datetime.strptime(dateto, "%Y-%m-%d") if dateto else None,
         directory,
         tsfrom,
         tsto,
@@ -501,8 +495,6 @@ async def index_page(
     del addr
     del page
     del paging
-    del datefrom
-    del dateto
     del directory
     del tsfrom
     del tsto

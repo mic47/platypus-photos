@@ -209,52 +209,6 @@ class TestGalleryIndexTable(unittest.TestCase):
             key=lambda x: x.md5,
         )
         self.assertListEqual(ret, [i3, i4])
-        ret = sorted(
-            table.get_matching_images(
-                SearchQuery(datefrom=datetime(2022, 1, 1)), SortParams(), GalleryPaging()
-            )[0],
-            key=lambda x: x.md5,
-        )
-        self.assertListEqual(ret, [i1, i2, i3])
-        ret = sorted(
-            table.get_matching_images(
-                SearchQuery(datefrom=datetime(2024, 1, 1)), SortParams(), GalleryPaging()
-            )[0],
-            key=lambda x: x.md5,
-        )
-        self.assertListEqual(ret, [i2, i3])
-        ret = sorted(
-            table.get_matching_images(
-                SearchQuery(dateto=datetime(2024, 1, 1)), SortParams(), GalleryPaging()
-            )[0],
-            key=lambda x: x.md5,
-        )
-        self.assertListEqual(ret, [i1])
-        ret = sorted(
-            table.get_matching_images(
-                SearchQuery(dateto=datetime(2024, 1, 2)), SortParams(), GalleryPaging()
-            )[0],
-            key=lambda x: x.md5,
-        )
-        self.assertListEqual(ret, [i1, i2, i3])
-        ret = sorted(
-            table.get_matching_images(
-                SearchQuery(datefrom=datetime(2024, 1, 1), dateto=datetime(2024, 1, 2)),
-                SortParams(),
-                GalleryPaging(),
-            )[0],
-            key=lambda x: x.md5,
-        )
-        self.assertListEqual(ret, [i2, i3])
-        ret = sorted(
-            table.get_matching_images(
-                SearchQuery(datefrom=datetime(2023, 1, 1), dateto=datetime(2024, 1, 2)),
-                SortParams(),
-                GalleryPaging(),
-            )[0],
-            key=lambda x: x.md5,
-        )
-        self.assertListEqual(ret, [i1, i2, i3])
         ret = table.get_matching_images(SearchQuery(directory="/foo/bar"), SortParams(), GalleryPaging())[0]
         self.assertListEqual(ret, [])
         directories.add("/foo/bar", "M1")

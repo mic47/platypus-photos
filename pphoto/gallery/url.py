@@ -1,6 +1,5 @@
 import typing as t
 from dataclasses import dataclass
-from datetime import datetime
 import enum
 
 from dataclasses_json import DataClassJsonMixin
@@ -32,8 +31,6 @@ class SearchQuery(DataClassJsonMixin):
     tag: str = ""
     cls: str = ""
     addr: str = ""
-    datefrom: t.Optional[datetime] = None
-    dateto: t.Optional[datetime] = None
     directory: str = ""
     tsfrom: t.Optional[float] = None
     tsto: t.Optional[float] = None

@@ -5,10 +5,7 @@ import copy
 import itertools
 import typing as t
 import math
-from datetime import (
-    datetime,
-    timedelta,
-)
+from datetime import datetime
 
 # TODO move to proper place
 from pphoto.gallery.utils import (
@@ -214,14 +211,6 @@ WHERE
             for tag in url.tag.split(","):
                 clauses.append("tags like ?")
                 variables.append(f"%{tag}%")
-        if url.datefrom:
-            clauses.append("timestamp >= ?")
-            variables.append(maybe_datetime_to_timestamp(url.datefrom))
-        if url.dateto:
-            clauses.append("timestamp <= ?")
-            variables.append(
-                maybe_datetime_to_timestamp(None if url.dateto is None else url.dateto + timedelta(days=1))
-            )
         if url.directory:
             clauses.append("md5 in (SELECT md5 FROM directories WHERE directory like ?)")
             variables.append(f"{url.directory}%")
