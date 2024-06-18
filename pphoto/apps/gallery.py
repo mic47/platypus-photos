@@ -17,7 +17,6 @@ from fastapi import FastAPI, Request, Response
 from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from jinja2.filters import FILTERS
 
 from pphoto.annots.geo import Geolocator
 from pphoto.data_model.config import DBFilesConfig, Config
