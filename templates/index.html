@@ -32,8 +32,8 @@ function reset_param(key) {
   delete state[key];
   ___state.replace_url(state);
 }
-function update_form() {
-  const formData = new FormData(document.getElementById('input'));
+function update_form(div_id) {
+  const formData = new FormData(document.getElementById(div_id));
   const values = ___state.get_url();
   for (const [key, value] of formData) {
     if (value) {
@@ -121,11 +121,13 @@ function init_fun() {
     const bounds = {% if bounds %}[[{{bounds.lat[0]}}, {{bounds.lon[0]}}],[{{bounds.lat[1]}}, {{bounds.lon[1]}}]]{% else %}null{% endif %};
     const url_parameters_fields = {{ url_parameters_fields | safe }};
     const paging_fields = {{ paging_fields | safe }};
+    const sort_fields = {{ sort_fields | safe }};
 
     // Initialize all components
-    ___state = new AppState({})
+    ___state = new AppState({}, {}, {})
     const url_sync = new UrlSync(url_parameters_fields);
     const paging_sync = new UrlSync(paging_fields);
+    const sort_sync = new UrlSync(sort_fields);
     const input_form = new InputForm("InputForm");
     const gallery = new Gallery("GalleryImages", prev_page, next_page);
     ___map = new PhotoMap("map", bounds, () => ___state.get_url(), location_preview);
@@ -136,7 +138,7 @@ function init_fun() {
     ___state.register_url_hook((url_params) => {
         input_form.fetch(url_params);
         url_sync.update(url_params);
-        gallery.fetch(url_params, ___state.get_paging());
+        gallery.fetch(url_params, ___state.get_paging(), ___state.get_sort());
         aggregate_info.fetch(url_params);
 
         dates.fetch(url_params);
@@ -147,13 +149,18 @@ function init_fun() {
     });
     ___state.register_paging_hook((paging) => {
         paging_sync.update(paging);
-        gallery.fetch(___state.get_url(), paging);
+        gallery.fetch(___state.get_url(), paging, ___state.get_sort());
+    });
+    ___state.register_sort_hook((sort) => {
+        sort_sync.update(sort);
+        gallery.fetch(___state.get_url(), ___state.get_paging(), sort);
     });
 
     // Set initial url, redraw everything
     // TODO: check that this does not trigger too many refreshes
     ___state.replace_paging(paging_sync.get_url());
     ___state.replace_url(url_sync.get_url());
+    ___state.replace_sort(sort_sync.get_url());
     ___map_search.fetch(null);
 }
 </script>
@@ -161,6 +168,17 @@ function init_fun() {
 <body onload="init_fun()">
 
 <div id="InputForm"></div>
+Sort by
+<select onchange='___state.update_sort({sort_by: this.value})'>
+  <option value="TIMESTAMP">time</option>
+  <option value="RANDOM">Random</option>
+</select>
+in
+<select onchange='___state.update_sort({order: this.value})'>
+  <option value="DESC">descending</option>
+  <option value="ASC">ascending</option>
+</select>
+order.
 <div id="AggregateInfo"></div>
 <div id="MapSearch"></div>
 <div id="map"></div>

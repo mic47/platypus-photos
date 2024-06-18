@@ -1,10 +1,13 @@
 class AppState {
-    constructor(url_params, paging) {
+    constructor(url_params, paging, sort) {
         this._url_params = url_params;
         this._url_params_hooks = [];
 
         this._paging = paging;
         this._paging_hooks = [];
+
+        this._sort = sort
+        this._sort_hooks = [];
     }
 
     register_paging_hook(hook) {
@@ -23,10 +26,25 @@ class AppState {
         this.update_paging(new_paging);
     }
 
+    register_sort_hook(hook) {
+        this._sort_hooks.push(hook);
+    }
+    get_sort() {
+        return this._sort;
+    }
+    update_sort(new_parts) {
+        this._sort = { ...this._sort, ...new_parts };
+        const sort = this._sort;
+        this._sort_hooks.forEach((x) => x(sort));
+    }
+    replace_sort(new_sort) {
+        this._sort = {};
+        this.update_sort(new_sort);
+    }
+
     get_url() {
         return { ...this._url_params };
     }
-
     update_url(new_parts) {
         // TODO: do this only on change
         this._url_params = { ...this._url_params, ...new_parts };
@@ -575,14 +593,14 @@ class Gallery {
         this._prev_page = prev_page;
     }
 
-    fetch(url_data, paging) {
+    fetch(url_data, paging, sort) {
         var url = `/internal/gallery.html?oi=${this._oi}`;
         if (this._oi === undefined || this._oi === null) {
             url = `/internal/gallery.html`;
         }
         fetch(url, {
             method: "POST",
-            body: JSON.stringify({ query: url_data, paging }),
+            body: JSON.stringify({ query: url_data, paging, sort }),
             headers: {
                 "Content-type": "application/json; charset=UTF-8",
             },

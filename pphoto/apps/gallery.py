@@ -375,6 +375,7 @@ def directories_endpoint(request: Request, url: SearchQuery) -> HTMLResponse:
 class GalleryRequest:
     query: SearchQuery
     paging: GalleryPaging
+    sort: SortParams
 
 
 def image_template_params(omg: ImageRow) -> t.Dict[str, t.Any]:
@@ -415,7 +416,7 @@ def image_template_params(omg: ImageRow) -> t.Dict[str, t.Any]:
 @app.post("/internal/gallery.html", response_class=HTMLResponse)
 async def gallery_div(request: Request, params: GalleryRequest, oi: t.Optional[int] = None) -> HTMLResponse:
     images = []
-    omgs, has_next_page = DB.get().get_matching_images(params.query, SortParams(), params.paging)
+    omgs, has_next_page = DB.get().get_matching_images(params.query, params.sort, params.paging)
     for omg in omgs:
         images.append(image_template_params(omg))
 
@@ -489,14 +490,11 @@ async def index_page(
     tag: str = "",
     cls: str = "",
     addr: str = "",
-    page: int = 0,
-    paging: int = 100,
     tsfrom: t.Optional[float] = None,
     tsto: t.Optional[float] = None,
     directory: str = "",
     oi: t.Optional[int] = None,
 ) -> HTMLResponse:
-    gallery_paging = GalleryPaging(page, paging)
     url = SearchQuery(
         tag,
         cls,
@@ -508,14 +506,10 @@ async def index_page(
     del tag
     del cls
     del addr
-    del page
-    del paging
     del directory
     del tsfrom
     del tsto
     aggr = DB.get().get_aggregate_stats(url)
-    if gallery_paging.page * gallery_paging.paging >= aggr.total:
-        gallery_paging.page = aggr.total // gallery_paging.paging
     bounds = None
     if aggr.latitude is not None and aggr.longitude is not None:
         bounds = {
@@ -531,6 +525,7 @@ async def index_page(
             "bounds": bounds,
             "url_parameters_fields": json.dumps([x.name for x in fields(SearchQuery)]),
             "paging_fields": json.dumps([x.name for x in fields(GalleryPaging)]),
+            "sort_fields": json.dumps([x.name for x in fields(SortParams)]),
         },
     )
 

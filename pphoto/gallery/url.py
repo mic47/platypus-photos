@@ -12,6 +12,7 @@ class SortBy(enum.Enum):
 
 class SortOrder(enum.Enum):
     DESC = "DESC"
+    ASC = "ASC"
 
 
 @dataclass
