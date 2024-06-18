@@ -34,7 +34,7 @@
     <span class="location"><a onclick='update_url({"addr": "{{address|safe}}"})' href="#">{{ address }}</a></span>
     {% endfor %}
     {% if image.date %}
-    <span class="date"><a onclick='update_url({"datefrom": "{{image.date}}", "dateto": "{{image.date}}"})' href="#">{{image.date}}</a></span>
+    <span class="date"><a onclick='update_url({"tsfrom": "{{image.date_timestamp_start}}", "tsto": "{{image.date_timestamp_end}}"})' href="#">{{image.date}}</a></span>
     {% endif %}
     {% for path in image.paths %}
     <span class="dir"><a onclick='update_dir("{{path.dir|safe}}")' href="#">{{path.dir}}</a></span>
