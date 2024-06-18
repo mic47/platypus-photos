@@ -15,7 +15,7 @@ Top texts:
 {% endfor %} <br/>
 Top locs: 
 {% for t in top.addr %}
-{% if top.show_links %}<a onclick='update_url({"addr": "{{t[0]|safe}}"}' href="#">{{t[0] | append_flag }} W ({{t[1]}})</a>
+{% if top.show_links %}<a onclick='update_url({"addr": "{{t[0]|safe}}"}' href="#">{{t[0] | append_flag }} ({{t[1]}})</a>
 {% else %}
 {{t[0] | append_flag}} ({{t[1]}})
 {% endif %}
