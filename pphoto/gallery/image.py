@@ -99,5 +99,6 @@ def make_image(
         longitude,
         altitude,
         manual_features,
+        False,
         Image.current_version(),
     )

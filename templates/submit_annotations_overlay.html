@@ -75,6 +75,7 @@
   <h2>Sample of photos</h2>
 {% for image in images %}
   <div class="gallery_item">
+    {% if image.being_annotated %}🏗️{% endif %}
     <div class="gallery_container">
       <img loading="lazy" src="/img?hsh={{image.hsh}}&size=preview" class="gallery_image"/>
     </div>

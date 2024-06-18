@@ -37,6 +37,7 @@ class Image(DataClassJsonMixin):
     longitude: t.Optional[float]
     altitude: t.Optional[float]
     manual_features: t.List[str]
+    being_annotated: bool
     version: int
 
     @staticmethod

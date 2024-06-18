@@ -393,6 +393,7 @@ def image_template_params(omg: ImageRow) -> t.Dict[str, t.Any]:
         "date_timestamp_end": maybe_datetime_to_next_day_start(omg.date),
         "timeicon": maybe_datetime_to_clock(omg.date),
         "timestamp": maybe_datetime_to_timestamp(omg.date),
+        "being_annotated": omg.being_annotated,
         "raw_data": [
             {"k": k, "v": json.dumps(v, ensure_ascii=True)} for k, v in omg.to_dict(encode_json=True).items()
         ],

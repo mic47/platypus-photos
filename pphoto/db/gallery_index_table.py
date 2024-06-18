@@ -537,7 +537,7 @@ SELECT "alt", 'min', MIN(altitude) FROM matched_images WHERE altitude IS NOT NUL
             query,
             variables,
         ) = self._matching_query(
-            "md5, timestamp, tags, tags_probs, classifications, address_country, address_name, address_full, feature_last_update, latitude, longitude, altitude, version, manual_features",
+            "md5, timestamp, tags, tags_probs, classifications, address_country, address_name, address_full, feature_last_update, latitude, longitude, altitude, version, manual_features, being_annotated",
             url,
         )
         sort_by = None
@@ -572,6 +572,7 @@ SELECT "alt", 'min', MIN(altitude) FROM matched_images WHERE altitude IS NOT NUL
             altitude,
             version,
             manual_features,
+            being_annotated,
         ) in items[: gallery_paging.paging]:
             output.append(
                 Image(
@@ -601,6 +602,7 @@ SELECT "alt", 'min', MIN(altitude) FROM matched_images WHERE altitude IS NOT NUL
                     longitude,
                     altitude,
                     [] if manual_features is None else [x for x in manual_features.split(",") if x],
+                    bool(being_annotated),
                     version,
                 )
             )
