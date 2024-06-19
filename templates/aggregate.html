@@ -20,3 +20,7 @@ Top locs:
 {{t[0] | append_flag}} ({{t[1]}})
 {% endif %}
 {% endfor %} <br/>
+Go to page: {% for page in range(num_pages) %}
+<a href="#" onclick="set_page({{page}})">{{page}}</a>
+{% endfor %}
+<br/>

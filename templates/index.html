@@ -69,6 +69,9 @@ function update_url_add_tag(tag) {
     ___state.update_url({"tag": `${old_tag},${tag}`});
   }
 }
+function set_page(page) {
+    ___state.update_paging({page});
+}
 function prev_page() {
     const page = parseInt(___state.get_paging()["page"]) || 0;
     if (page > 0) {
@@ -143,7 +146,7 @@ function init_fun() {
         input_form.fetch(url_params);
         url_sync.update(url_params);
         gallery.fetch(url_params, ___state.get_paging(), ___state.get_sort());
-        aggregate_info.fetch(url_params);
+        aggregate_info.fetch(url_params, ___state.get_paging());
 
         dates.fetch(url_params);
 
@@ -183,12 +186,12 @@ in
   <option value="ASC">ascending</option>
 </select>
 order.
-<div id="AggregateInfo"></div>
 <div id="MapSearch"></div>
 <div id="map"></div>
 <div id="SubmitDataOverlay"></div>
 <div class="date_chart"><canvas id="DateChart"></canvas></div>
 <div class="directories" id="Directories"></div>
+<div id="AggregateInfo"></div>
 <div id="GalleryImages"></div>
 </body>
 </html>

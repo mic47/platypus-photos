@@ -1,6 +1,7 @@
 import asyncio
 import base64
 import json
+import math
 import typing as t
 import os
 import sys
@@ -465,9 +466,16 @@ async def gallery_div(request: Request, params: GalleryRequest, oi: t.Optional[i
     )
 
 
+@dataclass
+class AggregateQuery:
+    query: SearchQuery
+    paging: GalleryPaging
+
+
 @app.post("/internal/aggregate.html", response_class=HTMLResponse)
-def aggregate_endpoint(request: Request, url: SearchQuery) -> HTMLResponse:
-    aggr = DB.get().get_aggregate_stats(url)
+def aggregate_endpoint(request: Request, param: AggregateQuery) -> HTMLResponse:
+    paging = param.paging.paging
+    aggr = DB.get().get_aggregate_stats(param.query)
     top_tags = sorted(aggr.tag.items(), key=lambda x: -x[1])
     top_cls = sorted(aggr.classification.items(), key=lambda x: -x[1])
     top_addr = sorted(aggr.address.items(), key=lambda x: -x[1])
@@ -476,6 +484,7 @@ def aggregate_endpoint(request: Request, url: SearchQuery) -> HTMLResponse:
         name="aggregate.html",
         context={
             "total": aggr.total,
+            "num_pages": math.ceil(aggr.total / paging),
             "top": {
                 "tag": top_tags[:15],
                 "cls": top_cls[:5],

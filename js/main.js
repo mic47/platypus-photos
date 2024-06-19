@@ -362,11 +362,11 @@ class AggregateInfo {
         this._div_id = div_id;
     }
 
-    fetch(url_data) {
+    fetch(url_data, paging) {
         const url = `/internal/aggregate.html`;
         fetch(url, {
             method: "POST",
-            body: JSON.stringify(url_data),
+            body: JSON.stringify({query: url_data, paging}),
             headers: {
                 "Content-type": "application/json; charset=UTF-8",
             },
@@ -543,6 +543,7 @@ function submit_annotations(div_id, form_id, return_id, advance_in_time) {
                 if (advance_in_time !== undefined && advance_in_time !== null) {
                     // TODO: resolve these imports
                     shift_float_params("tsfrom", "tsto", advance_in_time);
+                    set_page(0);
                 }
                 document.getElementById(div_id).remove();
             })
