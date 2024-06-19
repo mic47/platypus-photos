@@ -48,3 +48,5 @@
   <input type="submit" value="Search">
   <input type="button" value="Reset All" onclick='reset_param("__ALL__")'>
 </form>
+<input type="checkbox" {% if input.skip_with_location %}checked{% endif %} onchange='update_url({skip_with_location: this.checked})'> Skip photos with location 🗺️.<br/>
+<input type="checkbox" {% if input.skip_being_annotated%}checked{% endif %} onchange='update_url({skip_being_annotated: this.checked})' > Skip photos being annoted 🏗️.<br/>

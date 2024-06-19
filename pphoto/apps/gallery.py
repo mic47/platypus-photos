@@ -496,6 +496,8 @@ def input_request(request: Request, url: SearchQuery) -> HTMLResponse:
                 "tag": url.tag,
                 "cls": url.cls,
                 "addr": url.addr,
+                "skip_with_location": url.skip_with_location,
+                "skip_being_annotated": url.skip_being_annotated,
                 "directory": url.directory,
                 "tsfrom": url.tsfrom or "",
                 "tsfrom_pretty": (
@@ -525,6 +527,8 @@ async def index_page(
     tsto: t.Optional[float] = None,
     directory: str = "",
     oi: t.Optional[int] = None,
+    skip_with_location: bool = False,
+    skip_being_annotated: bool = False,
 ) -> HTMLResponse:
     url = SearchQuery(
         tag,
@@ -533,6 +537,8 @@ async def index_page(
         directory,
         tsfrom,
         tsto,
+        skip_with_location,
+        skip_being_annotated,
     )
     del tag
     del cls

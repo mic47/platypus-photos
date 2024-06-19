@@ -35,8 +35,8 @@ function reset_param(key) {
 function update_form(div_id) {
   const formData = new FormData(document.getElementById(div_id));
   const values = ___state.get_url();
-  for (const [key, value] of formData) {
-    if (value) {
+  for (let [key, value] of formData) {
+    if (value !== null && value !== undefined && value !== "") {
         values[key] = value;
     } else {
         delete values[key]

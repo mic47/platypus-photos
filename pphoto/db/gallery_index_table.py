@@ -220,6 +220,10 @@ WHERE
         if url.tsto:
             clauses.append("timestamp <= ?")
             variables.append(url.tsto)
+        if url.skip_with_location:
+            clauses.append("address_full IS NULL")
+        if url.skip_being_annotated:
+            clauses.append("being_annotated = 0")
         for txt, vrs in extra_clauses or []:
             clauses.append(f"({txt})")
             variables.extend(vrs)
@@ -247,9 +251,9 @@ WHERE
         extra_clauses: t.List[t.Tuple[str, t.List[str | int | float | None]]] = []
         if has_location is not None:
             if has_location:
-                extra_clauses.append(("latitude IS NOT NULL", []))
+                extra_clauses.append(("address_full IS NOT NULL", []))
             else:
-                extra_clauses.append(("latitude IS NULL", []))
+                extra_clauses.append(("address_full IS NULL", []))
         if has_manual_location is not None:
             if has_manual_location:
                 extra_clauses.append((f"manual_features LIKE '%,{ManualLocation.__name__},%'", []))

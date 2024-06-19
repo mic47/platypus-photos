@@ -35,3 +35,5 @@ class SearchQuery(DataClassJsonMixin):
     directory: str = ""
     tsfrom: t.Optional[float] = None
     tsto: t.Optional[float] = None
+    skip_with_location: bool = False
+    skip_being_annotated: bool = False
