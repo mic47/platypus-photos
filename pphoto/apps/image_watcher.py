@@ -101,6 +101,7 @@ async def manual_annotation_worker(
                     continue
 
                 context.queues.enqueue_path([(parsed_task, JobType.ADD_MANUAL_ANNOTATION)], REALTIME_PRIORITY)
+                visited.add(task.id_)
         # pylint: disable = bare-except
         except:
             traceback.print_exc()
