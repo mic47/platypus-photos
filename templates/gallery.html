@@ -38,6 +38,10 @@
     {% else %}
         {% if image.being_annotated %}🏗️{% endif %}
     {% endif %}
+    {% if image.diff_date%}
+        {% if image.timeicon %}<br/>{% endif %}
+        ⏱️{{image.diff_date}}
+    {% endif %}
     <div class="gallery_container" onclick="overlay(this, {{ loop.index0 }})">
     <img loading="lazy" src="/img?hsh={{image.hsh}}&size={% if loop.index0 == oi %}original{%else%}preview{%endif%}" class="gallery_image"/>
     </div>

@@ -378,7 +378,7 @@ class GalleryRequest:
     sort: SortParams
 
 
-def image_template_params(omg: ImageRow) -> t.Dict[str, t.Any]:
+def image_template_params(omg: ImageRow, prev_date: t.Optional[datetime] = None) -> t.Dict[str, t.Any]:
 
     max_tag = min(1, max((omg.tags or {}).values(), default=1.0))
     loc = None
@@ -392,6 +392,7 @@ def image_template_params(omg: ImageRow) -> t.Dict[str, t.Any]:
         }
         for file in DB.get().files(omg.md5)
     ]
+    diff_date = _format_diff_date(omg.date, prev_date)
     return {
         "hsh": omg.md5,
         "paths": paths,
@@ -406,6 +407,7 @@ def image_template_params(omg: ImageRow) -> t.Dict[str, t.Any]:
         "date_timestamp_end": maybe_datetime_to_next_day_start(omg.date),
         "timeicon": maybe_datetime_to_clock(omg.date),
         "timestamp": maybe_datetime_to_timestamp(omg.date),
+        "diff_date": diff_date,
         "being_annotated": omg.being_annotated,
         "raw_data": [
             {"k": k, "v": json.dumps(v, ensure_ascii=True)} for k, v in omg.to_dict(encode_json=True).items()
@@ -413,12 +415,40 @@ def image_template_params(omg: ImageRow) -> t.Dict[str, t.Any]:
     }
 
 
+# pylint: disable = too-many-return-statements
+def _format_diff_date(d1: t.Optional[datetime], d2: t.Optional[datetime]) -> t.Optional[str]:
+    if d1 is None or d2 is None:
+        return None
+    seconds = abs(int((d1 - d2).total_seconds()))
+    if seconds < 60:
+        return None
+    minutes = seconds // 60
+    if minutes < 100:
+        return f"{minutes}m"
+    hours = seconds // 3600
+    if hours < 48:
+        return f"{hours}h"
+    days = seconds // 86400
+    if days < 14:
+        return f"{days}d"
+    weeks = seconds // (86400 * 7)
+    if weeks < 6:
+        return f"{weeks}w"
+    months = seconds // (86400 * 30)
+    if months < 19:
+        return f"{months}mon"
+    years = seconds // (86400 * 365.25)
+    return f"{years}y"
+
+
 @app.post("/internal/gallery.html", response_class=HTMLResponse)
 async def gallery_div(request: Request, params: GalleryRequest, oi: t.Optional[int] = None) -> HTMLResponse:
     images = []
     omgs, has_next_page = DB.get().get_matching_images(params.query, params.sort, params.paging)
+    prev_date = None
     for omg in omgs:
-        images.append(image_template_params(omg))
+        images.append(image_template_params(omg, prev_date))
+        prev_date = omg.date
 
     return templates.TemplateResponse(
         request=request,
