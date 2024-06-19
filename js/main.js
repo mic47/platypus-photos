@@ -659,6 +659,7 @@ class Dates {
                 scales: {
                     y: {
                         beginAtZero: true,
+                        type: 'logarithmic',
                     },
                     x: {
                         type: "time",
