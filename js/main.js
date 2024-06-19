@@ -463,7 +463,7 @@ function error_box(div_id, value) {
     e.appendChild(element);
 }
 
-function submit_annotations(div_id, form_id, return_id) {
+function submit_annotations(div_id, form_id, return_id, advance_in_time) {
     const formData = new FormData(document.getElementById(form_id));
     const checkbox_value = formData.get("sanity_check");
     [
@@ -540,6 +540,10 @@ function submit_annotations(div_id, form_id, return_id) {
         })
             .then((response) => response.json())
             .then((response) => {
+                if (advance_in_time !== undefined && advance_in_time !== null) {
+                    // TODO: resolve these imports
+                    shift_float_params("tsfrom", "tsto", advance_in_time);
+                }
                 document.getElementById(div_id).remove();
             })
             // TODO: put error into stuff

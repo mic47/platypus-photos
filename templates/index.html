@@ -90,7 +90,7 @@ function add_to_float_param(param, other, new_value) {
     update[param] = value + new_value;
     ___state.update_url(update);
 }
-function shift_float_params(param_to_start, second_param) {
+function shift_float_params(param_to_start, second_param, shift_by=null) {
     const query = ___state.get_url();
     const start_value = parseFloat(query[param_to_start]);
     const end_value = parseFloat(query[second_param]);
@@ -100,10 +100,14 @@ function shift_float_params(param_to_start, second_param) {
     }
     const update = {};
     update[param_to_start] = end_value;
-    if (start_value != start_value) {
-        update[second_param] = undefined;
+    if (shift_by !== undefined && shift_by !== null) {
+        update[second_param] = end_value + shift_by;
     } else {
-        update[second_param] = end_value + end_value - start_value;
+        if (start_value != start_value) {
+            update[second_param] = undefined;
+        } else {
+            update[second_param] = end_value + end_value - start_value;
+        }
     }
     ___state.update_url(update);
 }
