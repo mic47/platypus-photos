@@ -22,7 +22,11 @@ Top locs:
 {% endfor %} <br/>
 {% if num_pages %}
 Go to page: {% for page in range(num_pages) %}
-<a href="#" onclick="set_page({{page}})">{{page}}</a>
+    {% if page < 10 or page >= num_pages - 10%}
+    <a href="#" onclick="set_page({{page}})">{{page}}</a>
+    {% elif page == 10 %}
+    ...
+    {% endif %}
 {% endfor %}
 <br/>
 {% endif %}
