@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import asyncio
 import base64
 import json
@@ -8,7 +10,7 @@ import sys
 import time
 import enum
 import traceback
-from datetime import datetime
+from datetime import datetime, timedelta
 from dataclasses import dataclass, fields
 
 from dataclasses_json import DataClassJsonMixin
@@ -60,6 +62,7 @@ def timestamp_to_pretty_datetime(value: float) -> str:
 templates.env.filters["timestamp_to_pretty_datetime"] = timestamp_to_pretty_datetime
 templates.env.filters["append_flag"] = append_flag
 templates.env.filters["replace_with_flag"] = replace_with_flag
+templates.env.filters["dataclass_to_json_pretty"] = lambda x: x.to_json(indent=2, ensure_ascii=False)
 
 CONFIG = Config.load("config.yaml")
 DB = Lazy(
@@ -271,7 +274,6 @@ class MapSearchRequest:
 
 @app.post("/internal/map_search.html", response_class=HTMLResponse)
 def map_search_endpoint(request: Request, req: MapSearchRequest) -> HTMLResponse:
-    print("ms", req)
     error = ""
     try:
         result = GEOLOCATOR.search(req.query, limit=10) if req.query is not None else []
@@ -283,6 +285,74 @@ def map_search_endpoint(request: Request, req: MapSearchRequest) -> HTMLResponse
         request=request,
         name="map_search.html",
         context={"req": req, "result": result, "error": error},
+    )
+
+
+@dataclass
+class JobProgressState(DataClassJsonMixin):
+    ts: float
+    t_total: int
+    t_finished: int
+    j_total: int
+    j_finished: int
+    j_waiting: int
+
+    def diff(self, earlier: JobProgressState) -> JobProgressState:
+        return JobProgressState(
+            self.ts - earlier.ts,
+            self.t_total - earlier.t_total,
+            self.t_finished - earlier.t_finished,
+            self.j_total - earlier.j_total,
+            self.j_finished - earlier.j_finished,
+            self.j_waiting - earlier.j_waiting,
+        )
+
+    def progressed(self, earlier: JobProgressState) -> bool:
+        return (
+            self.t_total != earlier.t_total
+            or self.t_finished != earlier.t_finished
+            or self.j_total != earlier.j_total
+            or self.j_finished != earlier.j_finished
+            or self.j_waiting != earlier.j_waiting
+        )
+
+
+@dataclass
+class JobProgressRequest:
+    update_state_fn: str
+    state: t.Optional[JobProgressState] = None
+
+
+@app.post("/internal/job_progress.html", response_class=HTMLResponse)
+def job_progress_endpoint(request: Request, req: JobProgressRequest) -> HTMLResponse:
+    jobs = DB.get().jobs.get_jobs(skip_finished=False)
+    state = JobProgressState(datetime.now().timestamp(), 0, 0, 0, 0, 0)
+    for job in jobs:
+        state.t_total += job.total
+        state.t_finished += job.finished_tasks
+        state.j_total += 1
+        state.j_finished += int(job.total == job.finished_tasks)
+        state.j_waiting += int(job.finished_tasks == 0)
+    if req.state is not None and state.progressed(req.state):
+        diff = state.diff(req.state)
+        if state.t_total == state.t_finished or diff.ts < 1 or diff.t_finished == 0:
+            eta = None
+        else:
+            eta = str(timedelta(seconds=int((state.t_total - state.t_finished) * diff.t_finished / diff.ts)))
+    else:
+        diff = None
+        eta = None
+
+    return templates.TemplateResponse(
+        request=request,
+        name="job_progress.html",
+        context={
+            "state": state,
+            "state_base64": base64.b64encode(state.to_json().encode("utf-8")).decode("utf-8"),
+            "diff": diff,
+            "update_state_fn": req.update_state_fn,
+            "eta": eta,
+        },
     )
 
 

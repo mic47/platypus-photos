@@ -3,7 +3,7 @@ from __future__ import annotations
 import datetime
 import typing as t
 
-from pphoto.db.connection import JobsConnection
+from pphoto.db.connection import JobsConnection, Parameter
 from pphoto.remote_jobs.types import RemoteJobType, RemoteTask, RemoteJob, TaskId
 
 
@@ -151,6 +151,50 @@ WHERE id = ?
             datetime.datetime.fromtimestamp(created),
             None if last_update is None else datetime.datetime.fromtimestamp(last_update),
         )
+
+    def get_jobs(
+        self, *, skip_finished: bool = True, since: t.Optional[datetime.datetime] = None
+    ) -> t.List[RemoteJob[bytes]]:
+        where = []
+        params: t.List[Parameter] = []
+        if skip_finished:
+            where.append("finished_tasks < total")
+        if since is not None:
+            where.append("created > ?")
+            params.append(since.timestamp())
+        if where:
+            where_str = "WHERE " + " AND ".join(where)
+        else:
+            where_str = ""
+        ret = self._con.execute(
+            f"""
+SELECT
+  id,
+  type,
+  total,
+  finished_tasks,
+  original_request_json,
+  created,
+  last_update
+FROM remote_jobs
+{where_str}
+            """,
+            params if params else None,
+        ).fetchall()
+        output = []
+        for id_, type_, total, finished_tasks, original_request_json, created, last_update in ret:
+            output.append(
+                RemoteJob(
+                    id_,
+                    RemoteJobType(type_),
+                    total,
+                    finished_tasks,
+                    original_request_json,
+                    datetime.datetime.fromtimestamp(created),
+                    None if last_update is None else datetime.datetime.fromtimestamp(last_update),
+                )
+            )
+        return output
 
     def get_task(self, task_id: TaskId) -> t.Optional[RemoteTask[bytes]]:
         ret = self._con.execute(

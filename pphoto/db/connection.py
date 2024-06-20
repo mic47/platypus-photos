@@ -5,7 +5,8 @@ from datetime import (
 import sqlite3
 import typing as t
 
-MaybeParameters = t.Optional[t.Sequence[t.Union[str, bytes, int, float, None]]]
+Parameter = t.Union[str, bytes, int, float, None]
+MaybeParameters = t.Optional[t.Sequence[Parameter]]
 
 
 class _Connection:

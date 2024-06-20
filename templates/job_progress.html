@@ -1,0 +1,25 @@
+<table>
+  <tr>
+    <td></td>
+    <td>🏗️</td>
+    <td>🚏</td>
+    <td>{% if eta %}eta {{eta}}{% endif%}✅</td>
+    <td>🌍</td>
+  </tr>
+  <tr>
+    <td>🖼️</td>
+    <td>{{state.t_total - state.t_finished}}</td>
+    <td></td>
+    <td>{{state.t_finished}}{% if diff %} +{{(diff.t_finished / diff.ts*60)|round(1)}}/m{% endif %}</td>
+    <td>{{state.t_total}}</td>
+  </tr>
+  <tr>
+    <td>📦</td>
+    <td>{{state.j_total - state.j_finished - state.j_waiting}}</td>
+    <td>{{state.j_waiting}}</td>
+    <td>{{state.j_finished}}</td>
+    <td>{{state.j_total}}</td>
+
+  </tr>
+</table>
+<img src onerror='{{update_state_fn}}("{{state_base64|safe}}")'/>

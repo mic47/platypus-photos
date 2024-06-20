@@ -400,6 +400,27 @@ class GenericFetch {
             });
     }
 }
+function now_s() {
+    return Date.now() / 1000.0
+}
+class JobProgress extends GenericFetch {
+    constructor(div_id, update_state_fn) {
+        super(div_id, "/internal/job_progress.html");
+        this._states = []
+        this._update_state_fn = update_state_fn;
+    }
+    fetch() {
+        return this.fetch_impl({ update_state_fn: this._update_state_fn, state: this._states[0]});
+    }
+    add_state(state) {
+        this._states.push(state);
+        this._states = this._states.filter((x) => state.ts - x.ts < 300.0);
+    }
+    add_state_base64(base64) {
+        const state = JSON.parse(window.atob(base64));
+        this.add_state(state);
+    }
+}
 
 class MapSearch extends GenericFetch {
     constructor(div_id) {

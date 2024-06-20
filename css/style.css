@@ -159,3 +159,17 @@ div.gallery_item:hover {
   padding: 0.5em;
   margin-bottom: 0.5em;
 }
+
+.JobProgress {
+    position: absolute;
+    top: 1em;
+    right: 2em;
+}
+.JobProgress th{
+  text-align: center;
+  border: 1px solid;
+}
+.JobProgress table, td {
+  text-align: right;
+  border: 1px solid;
+}
