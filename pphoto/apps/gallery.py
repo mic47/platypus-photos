@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import base64
+import copy
 import json
 import math
 import typing as t
@@ -160,7 +161,7 @@ class LocClusterParams:
 @app.post("/api/location_clusters")
 def location_clusters_endpoint(params: LocClusterParams) -> t.List[LocationCluster]:
     clusters = DB.get().get_image_clusters(
-        params.url,
+        SearchQuery(),  # Temporary, as it's easier while annotating. TODO: figure how to control this
         params.tl,
         params.br,
         params.res.latitude,
