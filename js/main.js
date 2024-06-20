@@ -177,24 +177,6 @@ function overlay_next(element, index) {
     changeState(index + 1);
 }
 
-function update_boundary(nw, se) {
-    var input = document.getElementById("fbnd");
-    if (input === null || input === undefined) {
-        return;
-    }
-    const fac = 1000000;
-    input.innerHTML = JSON.stringify({
-        tl: {
-            latitude: Math.round(nw.lat * fac) / fac,
-            longitude: Math.round(nw.lng * fac) / fac,
-        },
-        br: {
-            latitude: Math.round(se.lat * fac) / fac,
-            longitude: Math.round(se.lng * fac) / fac,
-        },
-    });
-}
-
 class PhotoMap {
     constructor(div_id, bounds, get_url, context_menu_callback) {
         this.map = L.map(div_id).setView([51.505, -0.09], 13);
@@ -246,7 +228,6 @@ class PhotoMap {
         var bounds = this.map.getBounds();
         var nw = bounds.getNorthWest();
         var se = bounds.getSouthEast();
-        update_boundary(nw, se);
         var sz = this.map.getSize();
         var cluster_pixel_size = 10;
         var timestamp = new Date().getTime();

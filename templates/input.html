@@ -1,15 +1,13 @@
 <form id="input" action="javascript:update_form('input')">
   <input type="button" value="reset" onclick='reset_param("tag")'>
-  <label for="ftag">Tag:</label><input type="text" id="ftag" name="tag" value="{{input.tag}}"><br>
+  <label for="ftag">🏷️:</label><input type="text" id="ftag" name="tag" value="{{input.tag}}"> (tags)<br>
   <input type="button" value="reset" onclick='reset_param("cls")'>
-  <label for="fcls">Text:</label><input type="text" id="fcls" name="cls" value="{{input.cls}}"><br>
+  <label for="fcls">📝:</label><input type="text" id="fcls" name="cls" value="{{input.cls}}"> (text)<br>
   <input type="button" value="reset" onclick='reset_param("addr")'>
-  <label for="faddr">Address:</label><input type="text" id="faddr" name="addr" value="{{input.addr}}"><br>
+  <label for="faddr">📭:</label><input type="text" id="faddr" name="addr" value="{{input.addr}}"> (address)<br>
   <input type="button" value="reset" onclick='reset_param("directory")'>
-  <label for="fdir">Directory:</label><input type="text" id="fdir" name="directory" value="{{input.directory}}"><br>
-  <label for="boundary">Boundary:</label>
-  <span class="location" id="fbnd"></span><br/>
-  <label for="tsfrom">Timestamp from:</label>
+  <label for="fdir">📁:</label><input type="text" id="fdir" name="directory" value="{{input.directory}}"> (folder)<br>
+  <label for="tsfrom">Time from:</label>
   <input type="text" id="ftsfrom" name="tsfrom" value="{{input.tsfrom}}" hidden=true >
   <span class="date">{{input.tsfrom_pretty}}</span>
   <input type="button" value="-1y" onclick='add_to_float_param("tsfrom", "tsto", -365.25*24*60*60)'>
@@ -27,7 +25,7 @@
   <input type="button" value="reset" onclick='reset_param("tsfrom")'>
   <input type="button" value="➡️ to (fwd in time)" onclick='shift_float_params("tsfrom", "tsto")'>
   <br>
-  <label for="tsto">Timestamp to:&nbsp;&nbsp;</label>
+  <label for="tsto">Time to:&nbsp;&nbsp;</label>
   <input type="text" id="ftsto" name="tsto" value="{{input.tsto}}" hidden=true>
   <span class="date">{{input.tsto_pretty}}</span>
   <input type="button" value="-1y" onclick='add_to_float_param("tsto", "tsfrom", -365.25*24*60*60)'>
