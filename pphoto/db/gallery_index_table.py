@@ -286,18 +286,12 @@ WHERE
             url.tsfrom -= diff / 2
         if url.tsto:
             url.tsto += diff / 2
-        print(diff)
-        print(original_url)
-        print(url)
         final_subselect_query = self._matching_query("timestamp, md5", url)
         final_params = tuple(
             itertools.chain(
                 [original_url.tsfrom or minmax[0], original_url.tsto or minmax[1]], final_subselect_query[1]
             )
         )
-        print(final_subselect_query[0])
-        print(final_subselect_query[1])
-        print(final_params)
         final = self._con.execute(
             f"""
 SELECT

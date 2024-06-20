@@ -25,7 +25,7 @@ R = t.TypeVar("R")
 
 
 @dataclasses.dataclass
-class RemoteJob(t.Generic[T]):
+class RemoteJob(t.Generic[T], DataClassJsonMixin):
     id_: int
     type_: RemoteJobType
     total: int

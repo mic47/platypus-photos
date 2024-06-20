@@ -123,6 +123,10 @@ var job_progress = null;
 function update_job_progress(state_base64) {
     job_progress.add_state_base64(state_base64);
 }
+var job_list = null;
+function show_job_list() {
+    job_list.show_or_close();
+}
 
 function init_fun() {
     if (___state !== null) {
@@ -175,15 +179,17 @@ function init_fun() {
     ___state.replace_sort(sort_sync.get_url());
     ___map_search.fetch(null);
 
-    job_progress = new JobProgress("JobProgress", "update_job_progress");
+    job_progress = new JobProgress("JobProgress", "update_job_progress", "show_job_list");
     job_progress.fetch();
     setInterval(() => {job_progress.fetch()}, 10000);
+    job_list = new JobList("JobList");
 }
 </script>
 </head>
 <body onload="init_fun()">
 
 <div id="JobProgress" class="JobProgress"></div>
+<div id="JobList" class="JobList">test</div>
 <div id="InputForm"></div>
 Sort by
 <select onchange='___state.update_sort({sort_by: this.value})'>

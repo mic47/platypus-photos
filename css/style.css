@@ -165,6 +165,15 @@ div.gallery_item:hover {
     top: 1em;
     right: 2em;
 }
+.JobList {
+    position: absolute;
+    top: 7em;
+    right: 2em;
+    background-color: #F3F3F3;
+    border-radius: 1em;
+    padding: 0.5em;
+    z-index: 2;
+}
 .JobProgress th{
   text-align: center;
   border: 1px solid;
@@ -172,4 +181,21 @@ div.gallery_item:hover {
 .JobProgress table, td {
   text-align: right;
   border: 1px solid;
+}
+.left_algn {
+    text-align: left;
+}
+.hover_show {
+    display: none;
+}
+.hovered {
+    position: static;
+}
+.hovered:hover .hover_show {
+    display: block;
+    position: fixed;
+    left: 1em;
+    top: 1em;
+    background-color: #D3D3D3;
+    border-radius: 1em;
 }

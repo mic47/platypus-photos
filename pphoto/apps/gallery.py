@@ -40,7 +40,7 @@ from pphoto.gallery.utils import (
     maybe_datetime_to_day_start,
     maybe_datetime_to_next_day_start,
 )
-from pphoto.gallery.unicode import maybe_datetime_to_clock, append_flag, replace_with_flag
+from pphoto.gallery.unicode import maybe_datetime_to_clock, append_flag, replace_with_flag, flag
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
@@ -320,6 +320,7 @@ class JobProgressState(DataClassJsonMixin):
 @dataclass
 class JobProgressRequest:
     update_state_fn: str
+    job_list_fn: str
     state: t.Optional[JobProgressState] = None
 
 
@@ -351,8 +352,78 @@ def job_progress_endpoint(request: Request, req: JobProgressRequest) -> HTMLResp
             "state_base64": base64.b64encode(state.to_json().encode("utf-8")).decode("utf-8"),
             "diff": diff,
             "update_state_fn": req.update_state_fn,
+            "job_list_fn": req.job_list_fn,
             "eta": eta,
         },
+    )
+
+
+@dataclass
+class JobListRequest:
+    pass
+
+
+@app.post("/internal/job_list.html", response_class=HTMLResponse)
+def job_list_endpoint(request: Request, _req: JobListRequest) -> HTMLResponse:
+    jobs = []
+    for job in sorted(DB.get().jobs.get_jobs(skip_finished=False), key=lambda x: x.created, reverse=True):
+        total = f"{job.finished_tasks}/{job.total}"
+        if job.total == job.finished_tasks:
+            icon = "✅"
+            total = str(job.total)
+        elif job.finished_tasks == 0:
+            icon = "🚏"
+        else:
+            icon = "🏗️"
+        type_ = ["🗺️"]
+        replacements = []
+        query = ""
+        if job.type_ == RemoteJobType.MASS_MANUAL_ANNOTATION:
+            try:
+                og_req = MassManualAnnotation.from_json(job.original_request)
+                if og_req.text.description:
+                    type_.append("📝")
+                    replacements.append(f"📝{og_req.text.description}")
+                if og_req.text.tags:
+                    type_.append("🏷️")
+                    replacements.append(f"🏷️{og_req.text.tags}")
+                if og_req.location.address_name:
+                    type_.append("📛")
+                    replacements.append(f"📛{og_req.location.address_name}")
+                if og_req.location.address_country:
+                    type_.append(flag(og_req.location.address_country) or "🎌")
+                    replacements.append(
+                        flag(og_req.location.address_country) or og_req.location.address_country
+                    )
+                query = og_req.to_json(ensure_ascii=False, indent=2)
+
+            # pylint: disable = broad-exception-caught
+            except Exception as e:
+                replacements.append(str(e))
+        else:
+            assert_never(job.type_)
+        repls = ", ".join(replacements)
+        job_dict = job.to_dict(encode_json=True)
+        if "original_request" in job_dict:
+            job_dict.pop("original_request")
+        jobs.append(
+            {
+                "icon": icon,
+                "total": total,
+                "id_": job.id_,
+                "type_": "".join(type_),
+                "repls": repls,
+                "time": (job.last_update or job.created).timestamp(),
+                "latitude": og_req.location.latitude,
+                "longitude": og_req.location.longitude,
+                "query_json": query,
+                "job_json": json.dumps(job_dict, ensure_ascii=False, indent=2),
+            }
+        )
+    return templates.TemplateResponse(
+        request=request,
+        name="job_list.html",
+        context={"jobs": jobs},
     )
 
 

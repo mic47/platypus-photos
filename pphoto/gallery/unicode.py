@@ -278,14 +278,18 @@ _FLAGS = {
 
 
 def append_flag(country: str) -> str:
-    flag = _FLAGS.get(country.lower())
-    if flag is not None:
-        return f"{country}{flag}"
+    flag_ = _FLAGS.get(country.lower())
+    if flag_ is not None:
+        return f"{country}{flag_}"
     return country
 
 
 def replace_with_flag(country: str) -> str:
     return _FLAGS.get(country.lower(), country)
+
+
+def flag(country: str) -> t.Optional[str]:
+    return _FLAGS.get(country.lower())
 
 
 def maybe_datetime_to_clock(value: t.Optional[dt.datetime]) -> t.Optional[str]:

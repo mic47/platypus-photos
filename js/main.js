@@ -6,7 +6,7 @@ class AppState {
         this._paging = paging;
         this._paging_hooks = [];
 
-        this._sort = sort
+        this._sort = sort;
         this._sort_hooks = [];
     }
 
@@ -366,7 +366,7 @@ class AggregateInfo {
         const url = `/internal/aggregate.html`;
         fetch(url, {
             method: "POST",
-            body: JSON.stringify({query: url_data, paging}),
+            body: JSON.stringify({ query: url_data, paging }),
             headers: {
                 "Content-type": "application/json; charset=UTF-8",
             },
@@ -401,16 +401,21 @@ class GenericFetch {
     }
 }
 function now_s() {
-    return Date.now() / 1000.0
+    return Date.now() / 1000.0;
 }
 class JobProgress extends GenericFetch {
-    constructor(div_id, update_state_fn) {
+    constructor(div_id, update_state_fn, job_list_fn) {
         super(div_id, "/internal/job_progress.html");
-        this._states = []
+        this._states = [];
         this._update_state_fn = update_state_fn;
+        this._job_list_fn = job_list_fn;
     }
     fetch() {
-        return this.fetch_impl({ update_state_fn: this._update_state_fn, state: this._states[0]});
+        return this.fetch_impl({
+            job_list_fn: this._job_list_fn,
+            update_state_fn: this._update_state_fn,
+            state: this._states[0],
+        });
     }
     add_state(state) {
         this._states.push(state);
@@ -419,6 +424,27 @@ class JobProgress extends GenericFetch {
     add_state_base64(base64) {
         const state = JSON.parse(window.atob(base64));
         this.add_state(state);
+    }
+}
+class JobList extends GenericFetch {
+    constructor(div_id) {
+        super(div_id, "/internal/job_list.html");
+        self._div_id = div_id;
+        this._shown = false;
+    }
+    fetch() {
+        return this.fetch_impl({}).then(() => {
+            this._shown = true;
+        });
+    }
+    show_or_close() {
+        console.log(this._shown)
+        if (this._shown) {
+            this._shown = false;
+            document.getElementById(this._div_id).innerHTML = "";
+        } else {
+            this.fetch();
+        }
     }
 }
 
@@ -681,7 +707,7 @@ class Dates {
                 scales: {
                     y: {
                         beginAtZero: true,
-                        type: 'logarithmic',
+                        type: "logarithmic",
                     },
                     x: {
                         type: "time",
