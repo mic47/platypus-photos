@@ -418,7 +418,6 @@ class JobList extends GenericFetch {
         });
     }
     show_or_close() {
-        console.log(this._shown)
         if (this._shown) {
             this._shown = false;
             document.getElementById(this._div_id).innerHTML = "";
@@ -770,5 +769,39 @@ class Dates {
                 this._chart.data.datasets[1].data = overfetched;
                 this._chart.update();
             });
+    }
+}
+
+function switch_tab_visibility(button) {
+    const is_active = button.classList.contains("active");
+    set_tab_visibility(!is_active, button);
+}
+function set_tab_visibility(is_active, button) {
+    const id = button.id;
+    const target_class = id.replace("TabSource", "TabTarget");
+    const targets = document.getElementsByClassName(target_class);
+    if (is_active) {
+        button.classList.add("active");
+        for (var i = 0; i < targets.length ; i++) {
+            targets[i].classList.remove("disabled");
+        }
+    } else {
+        button.classList.remove("active");
+        for (var i = 0; i < targets.length ; i++) {
+            targets[i].classList.add("disabled");
+        }
+    }
+}
+
+function init_tab_visibility(div_id) {
+    const element = document.getElementById(div_id);
+    const buttons = element.getElementsByTagName('button');
+    for (var i = 0; i < buttons.length; i++) {
+        const button = buttons[i];
+        if (!button.classList.contains("tablinks")) {
+            continue;
+        }
+        const is_active = button.classList.contains("active");
+        set_tab_visibility(is_active, button);
     }
 }

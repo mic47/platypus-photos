@@ -183,31 +183,46 @@ function init_fun() {
     job_progress.fetch();
     setInterval(() => {job_progress.fetch()}, 10000);
     job_list = new JobList("JobList");
+    init_tab_visibility("RootTabs");
 }
+
 </script>
 </head>
 <body onload="init_fun()">
 
-<div id="JobProgress" class="JobProgress"></div>
-<div id="JobList" class="JobList"></div>
-<div id="InputForm"></div>
-Sort by
-<select onchange='___state.update_sort({sort_by: this.value})'>
-  <option value="TIMESTAMP">time 🕰️</option>
-  <option value="RANDOM">Random 🎲</option>
-</select>
-in
-<select onchange='___state.update_sort({order: this.value})'>
-  <option value="DESC">descending 🤿</option>
-  <option value="ASC">ascending 🧗</option>
-</select>
-order.
+<div class="tab" id="RootTabs">
+  <button class="tablinks active" onclick="switch_tab_visibility(this)" id="TabSourceSelectors">Selectors</button>
+  <button class="tablinks" onclick="switch_tab_visibility(this)" id="TabSourceDates">Dates Chart</button>
+  <button class="tablinks" onclick="switch_tab_visibility(this)" id="TabSourceDirectories">Directories</button>
+  <button class="tablinks active" onclick="switch_tab_visibility(this)" id="TabSourceMap">Map</button>
+  <button class="tablinks active" onclick="switch_tab_visibility(this)" id="TabSourceGallery">Gallery</button>
+  <button class="tablinks active" onclick="switch_tab_visibility(this)" id="TabSourceJobProgress">Job Progress</button>
+</div>
+
+<div id="JobProgress" class="JobProgress TabTargetJobProgress"></div>
+<div id="JobList" class="JobList TabTargetJobProgress"></div>
+<div class="TabTargetSelectors">
+  <div id="InputForm"></div>
+  Sort by
+  <select onchange='___state.update_sort({sort_by: this.value})'>
+    <option value="TIMESTAMP">time 🕰️</option>
+    <option value="RANDOM">Random 🎲</option>
+  </select>
+  in
+  <select onchange='___state.update_sort({order: this.value})'>
+    <option value="DESC">descending 🤿</option>
+    <option value="ASC">ascending 🧗</option>
+  </select>
+  order.<br/>
+</div>
+<a href="#GalleryImageSection" class="TabTargetGallery">Go to images</a>
 <div id="SubmitDataOverlay"></div>
-<div class="date_chart"><canvas id="DateChart"></canvas></div>
-<div class="directories" id="Directories"></div>
-<div id="MapSearch"></div>
-<div id="map"></div>
-<div id="AggregateInfo"></div>
-<div id="GalleryImages"></div>
+<div class="date_chart TabTargetDates"><canvas id="DateChart"></canvas></div>
+<div class="directories TabTargetDirectories" id="Directories"></div>
+<div id="MapSearch" class="TabTargetMap"></div>
+<div id="map" class="TabTargetMap"></div>
+<section id="GalleryImageSection"></section>
+<div id="AggregateInfo" class="TabTargetGallery"></div>
+<div id="GalleryImages" class="TabTargetGallery"></div>
 </body>
 </html>

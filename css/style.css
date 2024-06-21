@@ -163,6 +163,9 @@ div.gallery_item:hover {
     position: absolute;
     top: 1em;
     right: 2em;
+    border-radius: 0.74em;
+    background-color: #F3F3F3;
+    padding: 0.3em;
 }
 .JobList {
     position: absolute;
@@ -197,4 +200,37 @@ div.gallery_item:hover {
     top: 1em;
     background-color: #D3D3D3;
     border-radius: 1em;
+    transition: 0.1s;
+}
+
+.tab {
+  overflow: hidden;
+  background-color: #F3F3F3;
+  padding: 0.5em;
+  border-radius: 0.3em;
+}
+
+.tab button {
+  background-color: #fdd;
+  border-radius: 0.3em;
+  margin-left: 0.3em;
+  margin-right: 0.3em;
+  float: left;
+  cursor: pointer;
+  padding: 0.2em;
+  transition: 0.3s;
+}
+
+.tab button:hover {
+  background-color: #df0;
+}
+
+.tab button.active {
+  background-color: #dfd;
+}
+.tab button:hover.active {
+  background-color: #fcc;
+}
+.disabled {
+    display: none;
 }
