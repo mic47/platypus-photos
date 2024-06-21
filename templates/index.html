@@ -70,7 +70,7 @@ function add_marker_to_local_storage(latitude, longitude, text) {
 function load_markers_initially() {
     get_markers_from_local_storage().forEach((m) => {
         console.log(m);
-        map_add_point(m.latitude, m.longitude, m.text);
+        map_add_point_only(m.latitude, m.longitude, m.text);
     });
 }
 function map_add_point_only(latitude, longitude, text) {
