@@ -222,14 +222,14 @@ div.gallery_item:hover {
 }
 
 .tab button:hover {
-  background-color: #df0;
+  background-color: #bfb;
 }
 
 .tab button.active {
   background-color: #dfd;
 }
 .tab button:hover.active {
-  background-color: #fcc;
+  background-color: #fbb;
 }
 .disabled {
     display: none;
