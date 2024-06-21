@@ -772,76 +772,71 @@ class Dates {
     }
 }
 
-function switch_tab_visibility(button, state) {
-    const is_active = button.classList.contains("active");
-    set_tab_visibility(!is_active, button, state);
-}
-function set_tab_visibility(is_active, button, state) {
-    const id = button.id;
-    const target_class = id.replace("TabSource", "TabTarget");
-    const sync_id = id.replace("TabSource", "Tab");
-    const targets = document.getElementsByClassName(target_class);
-    const url = state.sync.get_url();
-    if (state.defaults[sync_id] === is_active) {
-        delete url[sync_id]
-    } else {
-        url[sync_id] = is_active;
+class TabSwitch {
+    constructor(div_id) {
+        this._defaults = {};
+        const element = document.getElementById(div_id);
+        const buttons = element.getElementsByTagName("button");
+        const ids = [];
+        for (var i = 0; i < buttons.length; i++) {
+            const button = buttons[i];
+            if (!button.classList.contains("tablinks")) {
+                continue;
+            }
+            if (button.id === undefined || button.id === null) {
+                console.log("Error, this button should have id", button);
+            }
+            const sync_id = button.id.replace("TabSource", "Tab");
+            ids.push(sync_id);
+            const is_active_default = button.classList.contains("active");
+            this._defaults[sync_id] = is_active_default;
+        }
+        this._sync = new UrlSync(ids);
+        const url_params = this._sync.get_url();
+        for (var i = 0; i < buttons.length; i++) {
+            const button = buttons[i];
+            if (!button.classList.contains("tablinks")) {
+                continue;
+            }
+            if (button.id === undefined || button.id === null) {
+                console.log("Error, this button should have id", button);
+            }
+            const sync_id = button.id.replace("TabSource", "Tab");
+            const is_active_from_url = url_params[sync_id];
+            this.set_tab_visibility(
+                is_active_from_url === undefined || is_active_from_url === null
+                    ? this._defaults[sync_id]
+                    : is_active_from_url === "true",
+                button
+            );
+        }
     }
-    console.log(state.defaults);
-    console.log(url);
-    state.sync.update(url);
-    if (is_active) {
-        button.classList.add("active");
-        for (var i = 0; i < targets.length; i++) {
-            targets[i].classList.remove("disabled");
+    set_tab_visibility(is_active, button) {
+        const id = button.id;
+        const target_class = id.replace("TabSource", "TabTarget");
+        const sync_id = id.replace("TabSource", "Tab");
+        const targets = document.getElementsByClassName(target_class);
+        const url = this._sync.get_url();
+        if (this._defaults[sync_id] === is_active) {
+            delete url[sync_id];
+        } else {
+            url[sync_id] = is_active;
         }
-    } else {
-        button.classList.remove("active");
-        for (var i = 0; i < targets.length; i++) {
-            targets[i].classList.add("disabled");
+        this._sync.update(url);
+        if (is_active) {
+            button.classList.add("active");
+            for (var i = 0; i < targets.length; i++) {
+                targets[i].classList.remove("disabled");
+            }
+        } else {
+            button.classList.remove("active");
+            for (var i = 0; i < targets.length; i++) {
+                targets[i].classList.add("disabled");
+            }
         }
     }
-}
-
-function initial_tab_state() {
-    return {sync: null, defaults: {}}
-}
-
-function init_tab_visibility(div_id, state) {
-    const element = document.getElementById(div_id);
-    const buttons = element.getElementsByTagName("button");
-    const ids = [];
-    for (var i = 0; i < buttons.length; i++) {
-        const button = buttons[i];
-        if (!button.classList.contains("tablinks")) {
-            continue;
-        }
-        if (button.id === undefined || button.id === null) {
-            console.log("Error, this button should have id", button);
-        }
-        const sync_id = button.id.replace("TabSource", "Tab");
-        ids.push(sync_id);
-        const is_active_default = button.classList.contains("active");
-        state.defaults[sync_id] = is_active_default;
-    }
-    state.sync = new UrlSync(ids);
-    const url_params = state.sync.get_url();
-    for (var i = 0; i < buttons.length; i++) {
-        const button = buttons[i];
-        if (!button.classList.contains("tablinks")) {
-            continue;
-        }
-        if (button.id === undefined || button.id === null) {
-            console.log("Error, this button should have id", button);
-        }
-        const sync_id = button.id.replace("TabSource", "Tab");
-        const is_active_from_url = url_params[sync_id];
-        set_tab_visibility(
-            is_active_from_url === undefined || is_active_from_url === null
-                ? state.defaults[sync_id]
-                : is_active_from_url === "true",
-            button,
-            state
-        );
+    switch_tab_visibility(button) {
+        const is_active = button.classList.contains("active");
+        this.set_tab_visibility(!is_active, button);
     }
 }
