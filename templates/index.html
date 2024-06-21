@@ -49,6 +49,21 @@ ___map = null;
 function map_zoom(latitude, longitude) {
    ___map.map.setView([latitude, longitude], 13);
 }
+function map_add_point(latitude, longitude, text) {
+    const marker = L.marker([latitude, longitude], {
+        "alt": "Ad-hoc marker: " + text,
+        "title": "Ad-hoc marker: " + text,
+        "opacity": 0.7,
+    }).addTo(___map.map);
+    marker.bindPopup([
+        text,
+        '<input type="button" value="Use this location for selected photos" ',
+        `onclick="annotation_overlay(${latitude}, ${longitude})">`,
+    ]);
+}
+function map_close_popup() {
+    ___map.map.closePopup();
+}
 function fetch_map_search() {
   const formData = new FormData(document.getElementById('MapSearchId'));
   const values = {}

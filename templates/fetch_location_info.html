@@ -7,4 +7,9 @@
   type="button"
   value="Use this location for selected photos"
   onclick="annotation_overlay({{req.latitude}}, {{req.longitude}})"
+><br/>
+<input
+  type="button"
+  value="Add temporary marker"
+  onclick='map_add_point({{req.latitude}}, {{req.longitude}}, "{{address.full}}");map_close_popup();'
 >

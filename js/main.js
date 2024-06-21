@@ -300,6 +300,8 @@ class PhotoMap {
                             ")<br/><img src='/img?hsh=",
                             cluster.example_path_md5,
                             "&size=preview' class='popup'>",
+                            '<input type="button" value="Use this location for selected photos" ',
+                            `onclick="annotation_overlay(${cluster.position.latitude}, ${cluster.position.longitude})">`,
                         ].join("")
                     );
                     new_markers[cluster.example_path_md5] = marker;
@@ -555,7 +557,6 @@ function submit_annotations(div_id, form_id, return_id, advance_in_time) {
             error: "You have to check 'Check this box' box to prevent accidental submissions",
         });
     }
-    console.log(request);
     return (
         fetch("api/mass_manual_annotation", {
             method: "POST",
