@@ -273,7 +273,6 @@ class PhotoMap {
                     bounds = this.map.getBounds();
                     var nw = bounds.getNorthWest();
                     var se = bounds.getSouthEast();
-                    update_boundary(nw, se);
                 }
                 this.last_update_timestamp = timestamp;
                 var new_markers = {};
