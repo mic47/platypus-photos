@@ -49,7 +49,31 @@ ___map = null;
 function map_zoom(latitude, longitude) {
    ___map.map.setView([latitude, longitude], 13);
 }
-function map_add_point(latitude, longitude, text) {
+function get_markers_from_local_storage() {
+    let current = window.localStorage.getItem("markers");
+    if (current === undefined || current === null) {
+        current = "[]"
+    }
+    let parsed = [];
+    try {
+        parsed = JSON.parse(current);
+    } catch (error) {
+        console.log("Error when getting data from local storage", error)
+    }
+    return parsed
+}
+function add_marker_to_local_storage(latitude, longitude, text) {
+    const markers = get_markers_from_local_storage();
+    markers.push({latitude, longitude, text});
+    window.localStorage.setItem("markers", JSON.stringify(markers));
+}
+function load_markers_initially() {
+    get_markers_from_local_storage().forEach((m) => {
+        console.log(m);
+        map_add_point(m.latitude, m.longitude, m.text);
+    });
+}
+function map_add_point_only(latitude, longitude, text) {
     const marker = L.marker([latitude, longitude], {
         "alt": "Ad-hoc marker: " + text,
         "title": "Ad-hoc marker: " + text,
@@ -59,7 +83,11 @@ function map_add_point(latitude, longitude, text) {
         text,
         '<input type="button" value="Use this location for selected photos" ',
         `onclick="annotation_overlay(${latitude}, ${longitude})">`,
-    ]);
+    ].join(""));
+}
+function map_add_point(latitude, longitude, text) {
+    map_add_point_only(latitude, longitude, text);
+    add_marker_to_local_storage(latitude, longitude, text);
 }
 function map_close_popup() {
     ___map.map.closePopup();
@@ -200,6 +228,8 @@ function init_fun() {
     setInterval(() => {job_progress.fetch()}, 10000);
     job_list = new JobList("JobList");
     ___root_tabs_sync = new TabSwitch("RootTabs");
+
+    load_markers_initially();
 }
 
 </script>
