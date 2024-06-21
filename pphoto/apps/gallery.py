@@ -340,7 +340,7 @@ def job_progress_endpoint(request: Request, req: JobProgressRequest) -> HTMLResp
         if state.t_total == state.t_finished or diff.ts < 1 or diff.t_finished == 0:
             eta = None
         else:
-            eta = str(timedelta(seconds=int((state.t_total - state.t_finished) * diff.t_finished / diff.ts)))
+            eta = str(timedelta(seconds=int((state.t_total - state.t_finished) * diff.ts / diff.t_finished)))
     else:
         diff = None
         eta = None
