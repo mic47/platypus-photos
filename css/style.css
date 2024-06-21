@@ -54,7 +54,7 @@ div.gallery_item:hover {
   top: 0;
   width: 100%;
   height: 100%;
-  background: #ffffffDD;
+  background: #DDDDDDFF;
 }
 
 .tag a {
@@ -116,7 +116,6 @@ div.gallery_item:hover {
 
 .overflow {
   overflow:auto;
-  background-color: white;
 }
 .raw {
   background-color: #FF000033;

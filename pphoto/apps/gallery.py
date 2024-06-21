@@ -37,6 +37,7 @@ from pphoto.gallery.image import make_image_address
 from pphoto.gallery.url import SearchQuery, GalleryPaging, SortParams, SortBy, SortOrder
 from pphoto.gallery.utils import (
     maybe_datetime_to_date,
+    maybe_datetime_to_time,
     maybe_datetime_to_timestamp,
     maybe_datetime_to_day_start,
     maybe_datetime_to_next_day_start,
@@ -546,6 +547,7 @@ def image_template_params(omg: ImageRow, prev_date: t.Optional[datetime] = None)
         ],
         "addrs": [a for a in [omg.address.name, omg.address.country] if a],
         "date": maybe_datetime_to_date(omg.date),
+        "time": maybe_datetime_to_time(omg.date),
         "date_timestamp_start": maybe_datetime_to_day_start(omg.date),
         "date_timestamp_end": maybe_datetime_to_next_day_start(omg.date),
         "timeicon": maybe_datetime_to_clock(omg.date),

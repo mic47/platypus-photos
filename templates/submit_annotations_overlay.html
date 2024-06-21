@@ -83,18 +83,18 @@
   <div class="gallery_item">
     {% if image.being_annotated %}🏗️{% endif %}
     <div class="gallery_container">
-      <img loading="lazy" src="/img?hsh={{image.hsh}}&size=preview" class="gallery_image"/>
+    <img loading="lazy" src="/img?hsh={{image.hsh}}&size=preview" class="gallery_image" alt="{{image.classifications}}" title="{{image.classifications}}"/>
     </div>
-    {{ image.classifications}} <br/>
-    {% for tag in image.tags %}
-    <span class="tag">{{tag[1]}}{{tag[0]}}</span>
-    {% endfor %}
     {% for address in image.addrs %}
     <span class="location">{{ address | append_flag }}</span>
     {% endfor %}
     {% if image.date %}
     <span class="date">{{image.date}}</span>
     {% endif %}
+    {{ image.classifications}} <br/>
+    {% for tag in image.tags %}
+    <span class="tag">{{tag[1]}}{{tag[0]}}</span>
+    {% endfor %}
     {% for path in image.paths %}
     <span class="dir">{{path.dir}}</span>
     <div class="gallery_item_fs overflow">

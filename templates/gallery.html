@@ -43,27 +43,33 @@
         ⏱️{{image.diff_date}}
     {% endif %}
     <div class="gallery_container" onclick="overlay(this, {{ loop.index0 }})">
-    <img loading="lazy" src="/img?hsh={{image.hsh}}&size={% if loop.index0 == oi %}original{%else%}preview{%endif%}" class="gallery_image"/>
+        <img loading="lazy" src="/img?hsh={{image.hsh}}&size={% if loop.index0 == oi %}original{%else%}preview{%endif%}" class="gallery_image" alt="{{image.classifications}}" title="{{image.classifications}}"/>
     </div>
-    {{ image.classifications}} <br/>
-    {% for tag in image.tags %}
-    <span class="tag"><a onclick='update_url_add_tag("{{tag[0]|safe}}")' href="#">{{tag[1]}}{{tag[0]}}</a></span>
-    {% endfor %}
-
-    {% for address in image.addrs %}
-    <span class="location"><a onclick='update_url({"addr": "{{address|safe}}"})' href="#">{{ address | append_flag }}</a></span>
-    {% endfor %}
-    {% if image.date %}
-    <span class="date"><a onclick='update_url({"tsfrom": "{{image.date_timestamp_start}}", "tsto": "{{image.date_timestamp_end}}"})' href="#">{{image.date}}</a></span>
-    {% endif %}
-    {% for path in image.paths %}
-    <span class="dir"><a onclick='update_dir("{{path.dir|safe}}")' href="#">{{path.dir}}</a></span>
-    <div class="gallery_item_fs overflow">
-    {% for raw in image.raw_data %}
-      <span class="raw">{{ raw.k }}: {{raw.v}}</span>
-    {% endfor %}
+    <div class="overflow">
+      {% if image.date %}
+        <span class="date"><a onclick='update_url({"tsfrom": "{{image.date_timestamp_start}}", "tsto": "{{image.date_timestamp_end}}"})' href="#">{{image.date}}</a></span>
+      {% endif %}
+      {% if image.time%}
+        <span class="date">{{image.time}}</span>
+      {% endif %}
+      {% for address in image.addrs %}
+        <span class="location"><a onclick='update_url({"addr": "{{address|safe}}"})' href="#">{{ address | append_flag }}</a></span>
+      {% endfor %}
+      {% for tag in image.tags %}
+        {%if not tag[1] %}<span class="tag"><a onclick='update_url_add_tag("{{tag[0]|safe}}")' href="#">{{tag[1]}}{{tag[0]}}</a></span>{% endif %}
+      {% endfor %}
+      <div class="gallery_item_fs overflow">
+        {% for tag in image.tags %}
+          {%if tag[1] %}<span class="tag"><a onclick='update_url_add_tag("{{tag[0]|safe}}")' href="#">{{tag[1]}}{{tag[0]}}</a></span>{% endif %}
+        {% endfor %}
+        {% for path in image.paths %}
+          <span class="dir"><a onclick='update_dir("{{path.dir|safe}}")' href="#">{{path.dir}}</a></span>
+        {% endfor %}
+        {% for raw in image.raw_data %}
+          <span class="raw">{{ raw.k }}: {{raw.v}}</span>
+        {% endfor %}
+      </div>
     </div>
-    {% endfor %}
   </div>
 {% endfor %}
 </div>
