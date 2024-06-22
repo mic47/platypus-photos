@@ -52,14 +52,18 @@ function map_zoom(latitude, longitude) {
 function map_bounds() {
     ___map.update_bounds(___state.get_url());
 }
+___global_markers = {};
 function get_markers_from_local_storage() {
     let current = window.localStorage.getItem("markers");
     if (current === undefined || current === null) {
-        current = "[]"
+            current = '{}'
     }
-    let parsed = [];
+    let parsed = {};
     try {
         parsed = JSON.parse(current);
+        if (Array.isArray(parsed)) {
+            parsed = Object.fromEntries(parsed.map((e, i) => [i.toString(), e]));
+        }
     } catch (error) {
         console.log("Error when getting data from local storage", error)
     }
@@ -67,15 +71,28 @@ function get_markers_from_local_storage() {
 }
 function add_marker_to_local_storage(latitude, longitude, text) {
     const markers = get_markers_from_local_storage();
-    markers.push({latitude, longitude, text});
+    const id = Math.random().toString().replace("0.","");
+    markers[id] = {latitude, longitude, text};
     window.localStorage.setItem("markers", JSON.stringify(markers));
+    return id;
+}
+function delete_marker(id) {
+    const markers = get_markers_from_local_storage();
+    markers[id] = null;
+    window.localStorage.setItem("markers", JSON.stringify(markers));
+    const marker = ___global_markers[id];
+    if (marker !== undefined && marker !== null) {
+        marker.remove();
+    }
 }
 function load_markers_initially() {
-    get_markers_from_local_storage().forEach((m) => {
-        map_add_point_only(m.latitude, m.longitude, m.text);
+    Object.entries(get_markers_from_local_storage()).forEach(([id, m]) => {
+        if (m !== undefined && m !== null) {
+            map_add_point_only(id, m.latitude, m.longitude, m.text);
+        }
     });
 }
-function map_add_point_only(latitude, longitude, text) {
+function map_add_point_only(id, latitude, longitude, text) {
     const marker = L.marker([latitude, longitude], {
         "alt": "Ad-hoc marker: " + text,
         "title": "Ad-hoc marker: " + text,
@@ -83,13 +100,18 @@ function map_add_point_only(latitude, longitude, text) {
     }).addTo(___map.map);
     marker.bindPopup([
         text,
+        "<br/>",
         '<input type="button" value="Use this location for selected photos" ',
         `onclick="annotation_overlay(${latitude}, ${longitude})">`,
+        "<br/>",
+        '<input type="button" value="Delete this marker" ',
+        `onclick="delete_marker('${id}')">`,
     ].join(""));
+    ___global_markers[id] = marker;
 }
 function map_add_point(latitude, longitude, text) {
-    map_add_point_only(latitude, longitude, text);
-    add_marker_to_local_storage(latitude, longitude, text);
+    const id = add_marker_to_local_storage(latitude, longitude, text);
+    map_add_point_only(id, latitude, longitude, text);
 }
 function map_close_popup() {
     ___map.map.closePopup();
