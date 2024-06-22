@@ -177,8 +177,7 @@ def location_clusters_endpoint(params: LocClusterParams) -> t.List[LocationClust
                 point = LocPoint(og_req.location.latitude, og_req.location.longitude)
                 clusters.append(
                     LocationCluster(
-                        # TODO: add example md5
-                        "missing",
+                        job.example_path_md5 or "missing",
                         og_req.text.description,
                         job.total,
                         og_req.location.address_name,

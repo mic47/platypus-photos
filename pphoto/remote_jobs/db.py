@@ -52,6 +52,11 @@ BEGIN
 END;
     """
         )
+        self._con.execute_add_column(
+            """
+ALTER TABLE remote_jobs ADD COLUMN example_path_md5 TEXT;
+            """
+        )
         for suffix, rows in [
             ("md5_job_id", "md5, job_id"),
             ("job_id", "job_id"),
@@ -64,6 +69,7 @@ END;
         for suffix, rows in [
             ("id", "id"),
             ("type", "type"),
+            ("last_update", "last_update"),
         ]:
             self._con.execute(
                 f"""
@@ -71,14 +77,16 @@ END;
             """
             )
 
-    def _add(self, type_: RemoteJobType, request: bytes, total: int) -> int:
+    def _add(
+        self, type_: RemoteJobType, request: bytes, total: int, example_path_md5: t.Optional[str]
+    ) -> int:
         ret = self._con.execute(
             """
-INSERT INTO remote_jobs (type, total, finished_tasks, original_request_json, created)
-VALUES (?, ?, 0, ?, strftime('%s'))
+INSERT INTO remote_jobs (type, total, finished_tasks, original_request_json, example_path_md5, created)
+VALUES (?, ?, 0, ?, ?, strftime('%s'))
 RETURNING id;
             """,
-            (type_.value, total, request),
+            (type_.value, total, request, example_path_md5),
         ).fetchone()
         assert ret is not None, "Inserting new job should always return ID"
         return t.cast(int, ret[0])
@@ -98,7 +106,7 @@ VALUES (?, ?, ?, ?, strftime('%s'))
         if len(tasks) != len(set(j for j, _ in tasks)):
             raise ValidationError("Validation error: duplicit md5 for job")
         try:
-            job_id = self._add(type_, request, len(tasks))
+            job_id = self._add(type_, request, len(tasks), None if not tasks else tasks[0][0])
             self._submit_jobs_no_commit(type_, job_id, tasks)
             self._con.commit()
             return job_id
@@ -133,7 +141,8 @@ SELECT
   finished_tasks,
   original_request_json,
   created,
-  last_update
+  last_update,
+  example_path_md5
 FROM remote_jobs
 WHERE id = ?
             """,
@@ -141,7 +150,9 @@ WHERE id = ?
         ).fetchone()
         if ret is None:
             return None
-        (id_, type_, total, finished_tasks, original_request_json, created, last_update) = ret
+        (id_, type_, total, finished_tasks, original_request_json, created, last_update, example_path_md5) = (
+            ret
+        )
         return RemoteJob(
             id_,
             RemoteJobType(type_),
@@ -150,6 +161,7 @@ WHERE id = ?
             original_request_json,
             datetime.datetime.fromtimestamp(created),
             None if last_update is None else datetime.datetime.fromtimestamp(last_update),
+            example_path_md5,
         )
 
     def get_jobs(
@@ -175,14 +187,24 @@ SELECT
   finished_tasks,
   original_request_json,
   created,
-  last_update
+  last_update,
+  example_path_md5
 FROM remote_jobs
 {where_str}
             """,
             params if params else None,
         ).fetchall()
         output = []
-        for id_, type_, total, finished_tasks, original_request_json, created, last_update in ret:
+        for (
+            id_,
+            type_,
+            total,
+            finished_tasks,
+            original_request_json,
+            created,
+            last_update,
+            example_path_md5,
+        ) in ret:
             output.append(
                 RemoteJob(
                     id_,
@@ -192,6 +214,7 @@ FROM remote_jobs
                     original_request_json,
                     datetime.datetime.fromtimestamp(created),
                     None if last_update is None else datetime.datetime.fromtimestamp(last_update),
+                    example_path_md5,
                 )
             )
         return output

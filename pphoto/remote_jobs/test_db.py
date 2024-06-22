@@ -68,6 +68,7 @@ class TestJobsTable(unittest.TestCase):
                 b"WAT",
                 datetime.datetime(1, 1, 1),
                 None,
+                "lol",
             ),
             "Job should have 0 finished tasks",
         )
@@ -112,6 +113,7 @@ class TestJobsTable(unittest.TestCase):
                     b"WAT",
                     datetime.datetime(1, 1, 1),
                     datetime.datetime(1, 1, 1),
+                    "lol",
                 ),
                 "Job should have finished 1 task",
             )
@@ -155,6 +157,7 @@ class TestJobsTable(unittest.TestCase):
                 b"WAT",
                 datetime.datetime(1, 1, 1),
                 datetime.datetime(1, 1, 1),
+                "lol",
             ),
             "Job should have finished 2 task",
         )

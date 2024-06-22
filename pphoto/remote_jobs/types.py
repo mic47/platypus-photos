@@ -33,6 +33,7 @@ class RemoteJob(t.Generic[T], DataClassJsonMixin):
     original_request: T  # noqa: F841
     created: datetime.datetime
     last_update: t.Optional[datetime.datetime]
+    example_path_md5: t.Optional[str]
 
     def test_sanitize(self) -> RemoteJob[T]:
         self.created = datetime.datetime(1, 1, 1)
