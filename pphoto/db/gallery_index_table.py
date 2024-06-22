@@ -36,6 +36,22 @@ class WrongAggregateTypeReturned(Exception):
         self.type = type_
 
 
+_DATE_BUCKET_SIZES_SECONDS = [
+    1,
+    60,
+    15 * 60,
+    60 * 60,
+    2 * 60 * 60,
+    6 * 60 * 60,
+    24 * 60 * 60,
+    7 * 24 * 60 * 60,
+    30 * 24 * 60 * 60,
+    90 * 24 * 60 * 60,
+    180 * 24 * 60 * 60,
+    365.25 * 24 * 60 * 60,
+]
+
+
 class GalleryIndexTable:
     def __init__(
         self,
@@ -279,7 +295,10 @@ WHERE
         if minmax is None or minmax[0] is None or minmax[1] is None:
             return []
         diff = float(minmax[1]) - float(minmax[0])
-        bucket_size = max(1.0, (1.0 + diff) / buckets)
+        bucket_size_base = max(1.0, (1.0 + diff) / buckets)
+        bucket_size = next(
+            (x for x in _DATE_BUCKET_SIZES_SECONDS if x >= bucket_size_base), _DATE_BUCKET_SIZES_SECONDS[-1]
+        )
         original_url = url
         url = copy.copy(url)
         if url.tsfrom:
