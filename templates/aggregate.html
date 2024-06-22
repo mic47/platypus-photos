@@ -8,23 +8,23 @@ Top tags:
 {% endfor %} <br/>
 Top texts: 
 {% for t in top.cls %}
-{% if top.show_links %}<a onclick='update_url({"cls": "{{t[0]|safe}}"}' href="#">{{t[0]}} ({{t[1]}})</a>
+{% if top.show_links %}<a onclick='update_url({"cls": "{{t[0]|safe}}"})' href="#">{{t[0]}} ({{t[1]}})</a>
 {% else %}
 {{t[0]}} ({{t[1]}})
 {% endif %}
 {% endfor %} <br/>
 Top locs: 
 {% for t in top.addr %}
-{% if top.show_links %}<a onclick='update_url({"addr": "{{t[0]|safe}}"}' href="#">{{t[0] | append_flag }} ({{t[1]}})</a>
+{% if top.show_links %}<a onclick='update_url({"addr": "{{t[0]|safe}}"})' href="#">{{t[0] | append_flag }} ({{t[1]}})</a>
 {% else %}
 {{t[0] | append_flag}} ({{t[1]}})
 {% endif %}
 {% endfor %} <br/>
 Cameras:
 {% for t in top.cameras %}
-{% if top.show_links %}<a href="#">{{t[0]}} ({{t[1]}})</a>
+{% if top.show_links and t[0] not in ["unknown", "other", "distinct"] %}<a onclick='update_url({"camera": "{{t[0]|safe}}"})' href="#">{{t[0]}} ({{t[1]}})</a>
 {% else %}
-{{t[0] | append_flag}} ({{t[1]}})
+{{t[0]}} ({{t[1]}})
 {% endif %}
 {% endfor %} <br/>
 {% if num_pages %}

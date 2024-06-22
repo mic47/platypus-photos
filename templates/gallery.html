@@ -58,7 +58,7 @@
       {% for tag in image.tags %}
         {%if not tag[1] %}<span class="tag"><a onclick='update_url_add_tag("{{tag[0]|safe}}")' href="#">{{tag[1]}}{{tag[0]}}</a></span>{% endif %}
       {% endfor %}
-      {% if image.camera %}<span class="camera">{{image.camera}}</span>{% endif %}
+      {% if image.camera %}<span class="camera"><a onclick='update_url({"camera": "{{image.camera|safe}}"})' href="#">{{image.camera}}</a></span>{% endif %}
       <div class="gallery_item_fs overflow">
         {% if image.software %}<span class="camera">{{image.software}}</span>{% endif %}
         {% for tag in image.tags %}

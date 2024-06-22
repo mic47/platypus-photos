@@ -489,9 +489,15 @@ def submit_annotation_overlay_form_endpoint(request: Request, req: AnnotationOve
                 "tag": top_tags[:15],
                 "cls": top_cls[:5],
                 "addr": top_addr[:15],
-                "cameras": top_cameras[:5]
-                + [("other", sum([x for _, x in top_cameras[5:]], 0))]
-                + [("distinct", len(set(x for x, _ in top_cameras[5:])))],
+                "cameras": [
+                    (k, v)
+                    for k, v in (
+                        top_cameras[:5]
+                        + [("other", sum([x for _, x in top_cameras[5:]], 0))]
+                        + [("distinct", len(set(x for x, _ in top_cameras[5:])))]
+                    )
+                    if v
+                ],
                 "show_links": False,
             },
             "address": address,
@@ -672,9 +678,15 @@ def aggregate_endpoint(request: Request, param: AggregateQuery) -> HTMLResponse:
                 "tag": top_tags[:15],
                 "cls": top_cls[:5],
                 "addr": top_addr[:15],
-                "cameras": top_cameras[:5]
-                + [("other", sum([x for _, x in top_cameras[5:]], 0))]
-                + [("distinct", len(set(x for x, _ in top_cameras[5:])))],
+                "cameras": [
+                    (k, v)
+                    for k, v in (
+                        top_cameras[:5]
+                        + [("other", sum([x for _, x in top_cameras[5:]], 0))]
+                        + [("distinct", len(set(x for x, _ in top_cameras[5:])))]
+                    )
+                    if v
+                ],
                 "show_links": True,
             },
         },
