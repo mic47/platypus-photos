@@ -451,12 +451,15 @@ class JobProgress extends GenericFetch {
         this._states = [];
         this._update_state_fn = update_state_fn;
         this._job_list_fn = job_list_fn;
+        this.switchable = new Switchable();
     }
     fetch() {
-        return this.fetch_impl({
-            job_list_fn: this._job_list_fn,
-            update_state_fn: this._update_state_fn,
-            state: this._states[0],
+        this.switchable.call_or_store("fetch", () => {
+            return this.fetch_impl({
+                job_list_fn: this._job_list_fn,
+                update_state_fn: this._update_state_fn,
+                state: this._states[0],
+            });
         });
     }
     add_state(state) {

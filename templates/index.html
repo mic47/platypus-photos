@@ -230,6 +230,7 @@ function init_fun() {
     job_list = new JobList("JobList");
     new TabSwitch("RootTabs", {
         "TabDirectories": directories.switchable,
+        "TabJobProgress": job_progress.switchable,
     });
 
     load_markers_initially();
