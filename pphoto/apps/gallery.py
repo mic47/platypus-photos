@@ -475,6 +475,7 @@ def submit_annotation_overlay_form_endpoint(request: Request, req: AnnotationOve
     top_tags = sorted(aggr.tag.items(), key=lambda x: -x[1])
     top_cls = sorted(aggr.classification.items(), key=lambda x: -x[1])
     top_addr = sorted(aggr.address.items(), key=lambda x: -x[1])
+    top_cameras = sorted(((k or "unknown", v) for k, v in aggr.cameras.items()), key=lambda x: -x[1])
 
     directories = sorted(DB.get().get_matching_directories(req.query), key=lambda x: x.directory)
     omgs, _ = DB.get().get_matching_images(req.query, SortParams(sort_by=SortBy.RANDOM), GalleryPaging())
@@ -488,6 +489,9 @@ def submit_annotation_overlay_form_endpoint(request: Request, req: AnnotationOve
                 "tag": top_tags[:15],
                 "cls": top_cls[:5],
                 "addr": top_addr[:15],
+                "cameras": top_cameras[:5]
+                + [("other", sum([x for _, x in top_cameras[5:]], 0))]
+                + [("distinct", len(set(x for x, _ in top_cameras[5:])))],
                 "show_links": False,
             },
             "address": address,
@@ -586,6 +590,8 @@ def image_template_params(omg: ImageRow, prev_date: t.Optional[datetime] = None)
         "timestamp": maybe_datetime_to_timestamp(omg.date),
         "diff_date": diff_date,
         "being_annotated": omg.being_annotated,
+        "camera": omg.camera,
+        "software": omg.software,
         "raw_data": [
             {"k": k, "v": json.dumps(v, ensure_ascii=True)} for k, v in omg.to_dict(encode_json=True).items()
         ],
@@ -655,6 +661,7 @@ def aggregate_endpoint(request: Request, param: AggregateQuery) -> HTMLResponse:
     top_tags = sorted(aggr.tag.items(), key=lambda x: -x[1])
     top_cls = sorted(aggr.classification.items(), key=lambda x: -x[1])
     top_addr = sorted(aggr.address.items(), key=lambda x: -x[1])
+    top_cameras = sorted(((k or "unknown", v) for k, v in aggr.cameras.items()), key=lambda x: -x[1])
     return templates.TemplateResponse(
         request=request,
         name="aggregate.html",
@@ -665,6 +672,9 @@ def aggregate_endpoint(request: Request, param: AggregateQuery) -> HTMLResponse:
                 "tag": top_tags[:15],
                 "cls": top_cls[:5],
                 "addr": top_addr[:15],
+                "cameras": top_cameras[:5]
+                + [("other", sum([x for _, x in top_cameras[5:]], 0))]
+                + [("distinct", len(set(x for x, _ in top_cameras[5:])))],
                 "show_links": True,
             },
         },
@@ -684,6 +694,7 @@ def input_request(request: Request, url: SearchQuery) -> HTMLResponse:
                 "skip_with_location": url.skip_with_location,
                 "skip_being_annotated": url.skip_being_annotated,
                 "directory": url.directory,
+                "camera": url.camera,
                 "tsfrom": url.tsfrom or "",
                 "tsfrom_pretty": (
                     datetime.fromtimestamp(url.tsfrom).strftime("%a %Y-%m-%d %H:%M:%S")
@@ -708,6 +719,7 @@ async def index_page(
     tag: str = "",
     cls: str = "",
     addr: str = "",
+    camera: str = "",
     tsfrom: t.Optional[float] = None,
     tsto: t.Optional[float] = None,
     directory: str = "",
@@ -720,6 +732,7 @@ async def index_page(
         cls,
         addr,
         directory,
+        camera,
         tsfrom,
         tsto,
         skip_with_location,

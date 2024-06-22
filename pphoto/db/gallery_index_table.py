@@ -115,6 +115,7 @@ ALTER TABLE gallery_index ADD COLUMN software TEXT
             ["altitude"],
             ["manual_features"],
             ["version"],
+            ["camera"],
         ]:
             name = f"gallery_index_idx_{'_'.join(columns)}"
             cols_str = ", ".join(columns)
@@ -244,6 +245,9 @@ WHERE
         if url.directory:
             clauses.append("md5 in (SELECT md5 FROM directories WHERE directory like ?)")
             variables.append(f"{url.directory}%")
+        if url.camera:
+            clauses.append("camera like ?")
+            variables.append(f"%{url.camera}%")
         if url.tsfrom:
             clauses.append("timestamp >= ?")
             variables.append(url.tsfrom)
@@ -499,7 +503,7 @@ FROM
             select,
             variables,
         ) = self._matching_query(
-            "tags, classifications, address_name, address_country, latitude, longitude, altitude",
+            "tags, classifications, address_name, address_country, camera",
             url,
         )
         query = f"""
@@ -513,11 +517,14 @@ UNION ALL
 SELECT "addrn", address_name, COUNT(1) FROM matched_images WHERE address_name IS NOT NULL GROUP BY address_name
 UNION ALL
 SELECT "addrc", address_country, COUNT(1) FROM matched_images WHERE address_country IS NOT NULL GROUP BY address_country
+UNION ALL
+SELECT "cam", camera, COUNT(1) FROM matched_images GROUP BY camera
 {_extra_query_for_tests}
         """
         tag_cnt: t.Counter[str] = Counter()
         classifications_cnt: t.Counter[str] = Counter()
         address_cnt: t.Counter[str] = Counter()
+        cameras_cnt: t.Counter[t.Optional[str]] = Counter()
         total = 0
         res = self._con.execute(
             query,
@@ -531,6 +538,7 @@ SELECT "addrc", address_country, COUNT(1) FROM matched_images WHERE address_coun
                     address_cnt,
                     tag_cnt,
                     classifications_cnt,
+                    cameras_cnt,
                 )
             for (
                 type_,
@@ -549,6 +557,8 @@ SELECT "addrc", address_country, COUNT(1) FROM matched_images WHERE address_coun
                         continue
                     for c in value.split(":"):
                         tag_cnt[c] += count
+                elif type_ == "cam":
+                    cameras_cnt[value] += count
                 elif type_ in [
                     "addrn",
                     "addrc",

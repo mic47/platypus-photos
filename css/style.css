@@ -67,6 +67,16 @@ div.gallery_item:hover {
   padding: 0.1em;
   margin: 0.2em;
 }
+.camera a {
+  color: black;
+  text-decoration: none;
+}
+.camera {
+  background-color: #BB00BB33;
+  border-radius: 1em;
+  padding: 0.1em;
+  margin: 0.2em;
+}
 .location {
   background-color: #BB000033;
   border-radius: 1em;

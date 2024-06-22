@@ -25,6 +25,7 @@ def _image(
     lat: t.Optional[float] = 49.0,
     lon: t.Optional[float] = 12.0,
     alt: t.Optional[float] = 13.0,
+    camera: t.Optional[str] = "olympus e-510",
 ) -> Image:
     if tags is None:
         tags = {"foo": 0.3, "bar": 1.457}
@@ -44,8 +45,8 @@ def _image(
         alt,
         ["ManualLocation"],
         False,
-        "olympus",
-        "e-510",
+        camera,
+        "Microsoft Word",
         version,
     )
 
@@ -98,20 +99,21 @@ class TestGalleryIndexTable(unittest.TestCase):
 
     def test_get_aggregate_stats(self) -> None:
         table = GalleryIndexTable(connection())
-        table.add(_image("M1", alt=127.47, caption=None, tags={}, lon=32.0))
+        table.add(_image("M1", alt=127.47, caption=None, tags={}, lon=32.0, camera=None))
         table.add(_image("M2", tags={"lol": 10.0}, caption="This is ridiculous"))
         table.add(_image("M3", address="Jaskd, Foudlekf", lat=12.0, lon=-18.0, alt=None))
-        table.add(_image("M4", lon=34.0))
+        table.add(_image("M4", lon=34.0, camera="obscura"))
         stats = table.get_aggregate_stats(SearchQuery())
         expected = ImageAggregation(
             4,
             {"Bristol": 3, "Portlandia": 3, "Foudlekf": 1, "Jaskd": 1},
             {"bar": 2, "foo": 2, "lol": 1},
             {"There is something fishy here": 2, "This is ridiculous": 1},
+            {"olympus e-510": 2, "obscura": 1, None: 1},
         )
         self.assertEqual(stats, expected)
         stats = table.get_aggregate_stats(SearchQuery(tag="missing"))
-        self.assertEqual(stats, ImageAggregation(0, {}, {}, {}))
+        self.assertEqual(stats, ImageAggregation(0, {}, {}, {}, {}))
 
     def test_get_location_bounds(self) -> None:
         table = GalleryIndexTable(connection())

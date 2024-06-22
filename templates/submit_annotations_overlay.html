@@ -95,9 +95,11 @@
     {% for tag in image.tags %}
     <span class="tag">{{tag[1]}}{{tag[0]}}</span>
     {% endfor %}
+    {% if image.camera %}<span class="camera">{{image.camera}}</span>{% endif %}
     {% for path in image.paths %}
     <span class="dir">{{path.dir}}</span>
     <div class="gallery_item_fs overflow">
+    {% if image.software %}<span class="camera">{{image.software}}</span>{% endif %}
     {% for raw in image.raw_data %}
       <span class="raw">{{ raw.k }}: {{raw.v}}</span>
     {% endfor %}
