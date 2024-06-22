@@ -22,6 +22,7 @@ class Geolocator:
         self.last_api = time.time() - 10
         self._version = GeoAddress.current_version()
         self._search_cache: t.Dict[t.Tuple[str, int], t.List[Location]] = {}
+        self._address_cache: t.Dict[t.Tuple[float, float], GeoAddress] = {}
 
     def address(
         self, inp: PathWithMd5, lat: float, lon: float, recompute: bool = False
@@ -58,6 +59,10 @@ class Geolocator:
             time.sleep(RATE_LIMIT_SECONDS - from_last_call)
 
     def address_impl(self, inp: PathWithMd5, lat: float, lon: float) -> WithMD5[GeoAddress]:
+        cache_key = (lat, lon)
+        cached = self._address_cache.get(cache_key)
+        if cached is not None:
+            return WithMD5(inp.md5, self._version, cached, None)
         self._rate_limit()
         retries_left = RETRIES
         query = f"{lat}, {lon}"
@@ -97,4 +102,6 @@ class Geolocator:
                 or None  # In case of empty string
             )
             country = raw_add.get("country")
-        return WithMD5(inp.md5, self._version, GeoAddress(ret.address, country, name, raw_data, query), None)
+        geo_address = GeoAddress(ret.address, country, name, raw_data, query)
+        self._address_cache[cache_key] = geo_address
+        return WithMD5(inp.md5, self._version, geo_address, None)
