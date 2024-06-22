@@ -18,7 +18,7 @@ from pphoto.utils import assert_never
 from pphoto.data_model.manual import ManualText, ManualLocation
 from pphoto.db.connection import GalleryConnection
 from pphoto.db.directories_table import DirectoriesTable
-from pphoto.db.types_location import LocationCluster, LocPoint
+from pphoto.db.types_location import LocationCluster, LocPoint, LocationBounds
 from pphoto.db.types_date import DateCluster
 from pphoto.db.types_directory import (
     DirectoryStats,
@@ -425,6 +425,37 @@ GROUP BY
             )
         return out
 
+    def get_location_bounds(self, url: SearchQuery) -> t.Optional[LocationBounds]:
+        (
+            select,
+            variables,
+        ) = self._matching_query(
+            "tags, classifications, address_name, address_country, latitude, longitude, altitude",
+            url,
+        )
+        query = f"""
+WITH matched_images as ({select})
+SELECT
+  MAX(latitude) as max_latitude,
+  MIN(longitude) as min_longitude,
+  MIN(latitude) as min_latitude,
+  MAX(longitude) as max_longitude
+FROM
+  matched_images
+        """
+        res = self._con.execute(
+            query,
+            variables,
+        ).fetchone()
+        if res is None:
+            return None
+        if any(x is None for x in res):
+            return None
+        return LocationBounds(
+            LocPoint(res[0], res[1]),
+            LocPoint(res[2], res[3]),
+        )
+
     def get_aggregate_stats(
         self,
         url: SearchQuery,
@@ -449,18 +480,6 @@ UNION ALL
 SELECT "addrn", address_name, COUNT(1) FROM matched_images WHERE address_name IS NOT NULL GROUP BY address_name
 UNION ALL
 SELECT "addrc", address_country, COUNT(1) FROM matched_images WHERE address_country IS NOT NULL GROUP BY address_country
-UNION ALL
-SELECT "lat", 'max', MAX(latitude) FROM matched_images WHERE latitude IS NOT NULL
-UNION ALL
-SELECT "lat", 'min', MIN(latitude) FROM matched_images WHERE latitude IS NOT NULL
-UNION ALL
-SELECT "lon", 'max', MAX(longitude) FROM matched_images WHERE longitude IS NOT NULL
-UNION ALL
-SELECT "lon", 'min', MIN(longitude) FROM matched_images WHERE longitude IS NOT NULL
-UNION ALL
-SELECT "alt", 'max', MAX(altitude) FROM matched_images WHERE altitude IS NOT NULL
-UNION ALL
-SELECT "alt", 'min', MIN(altitude) FROM matched_images WHERE altitude IS NOT NULL
 {_extra_query_for_tests}
         """
         tag_cnt: t.Counter[str] = Counter()
@@ -471,7 +490,6 @@ SELECT "alt", 'min', MIN(altitude) FROM matched_images WHERE altitude IS NOT NUL
             query,
             variables,
         )
-        position: t.Dict[str, t.Tuple[float, float]] = {}
         while True:
             items = res.fetchmany()
             if not items:
@@ -480,9 +498,6 @@ SELECT "alt", 'min', MIN(altitude) FROM matched_images WHERE altitude IS NOT NUL
                     address_cnt,
                     tag_cnt,
                     classifications_cnt,
-                    position.get("lat"),
-                    position.get("lon"),
-                    position.get("alt"),
                 )
             for (
                 type_,
@@ -506,20 +521,6 @@ SELECT "alt", 'min', MIN(altitude) FROM matched_images WHERE altitude IS NOT NUL
                     "addrc",
                 ]:
                     address_cnt[value] += count
-                elif type_ in [
-                    "lat",
-                    "lon",
-                    "alt",
-                ]:
-                    if count is None:
-                        continue
-                    x = position.get(type_, (count, count))
-                    if value == "min":
-                        position[type_] = (count, x[1])
-                    elif value == "max":
-                        position[type_] = (x[0], count)
-                    else:
-                        raise WrongAggregateTypeReturned(f"{type_}:{value}")
                 else:
                     raise WrongAggregateTypeReturned(type_)
 

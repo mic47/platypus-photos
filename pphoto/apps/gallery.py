@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import base64
+import copy
 import json
 import math
 import typing as t
@@ -24,7 +25,7 @@ from fastapi.templating import Jinja2Templates
 from pphoto.annots.geo import Geolocator
 from pphoto.data_model.config import DBFilesConfig, Config
 from pphoto.data_model.base import PathWithMd5
-from pphoto.db.types_location import LocationCluster, LocPoint
+from pphoto.db.types_location import LocationCluster, LocPoint, LocationBounds
 from pphoto.db.types_date import DateCluster
 from pphoto.db.connection import PhotosConnection, GalleryConnection, JobsConnection
 from pphoto.file_mgmt.remote_control import RefreshJobs, write_serialized_rc_job
@@ -169,6 +170,11 @@ def location_clusters_endpoint(params: LocClusterParams) -> t.List[LocationClust
         params.of,
     )
     return clusters
+
+
+@app.post("/api/bounds")
+def location_bounds_endpoint(params: SearchQuery) -> t.Optional[LocationBounds]:
+    return DB.get().get_location_bounds(params)
 
 
 @dataclass
@@ -698,13 +704,10 @@ async def index_page(
     del directory
     del tsfrom
     del tsto
-    aggr = DB.get().get_aggregate_stats(url)
-    bounds = None
-    if aggr.latitude is not None and aggr.longitude is not None:
-        bounds = {
-            "lat": aggr.latitude,
-            "lon": aggr.longitude,
-        }
+    bounds_url = copy.copy(url)
+    bounds_url.skip_with_location = False
+    bounds_url.skip_being_annotated = False
+    bounds = DB.get().get_location_bounds(bounds_url)
 
     return templates.TemplateResponse(
         request=request,

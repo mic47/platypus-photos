@@ -1,5 +1,6 @@
 <form id="MapSearchId" action="javascript:fetch_map_search()">
 <input type="text" name="query" value="{% if req.query %}{{req.query}}{% endif %}">
+<button onclick="map_bounds()">Zoom to selection</button>
 </form>
 {% if result %}
 <div class="search_result">

@@ -4,8 +4,6 @@ import typing as t
 
 from dataclasses_json import DataClassJsonMixin
 
-LocRange = t.Tuple[float, float]
-
 
 @dataclass
 class ImageAggregation:
@@ -13,9 +11,6 @@ class ImageAggregation:
     address: t.Dict[str, int]
     tag: t.Dict[str, int]
     classification: t.Dict[str, int]
-    latitude: t.Optional[LocRange]
-    longitude: t.Optional[LocRange]
-    altitude: t.Optional[LocRange]
 
 
 @dataclass

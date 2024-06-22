@@ -6,7 +6,7 @@ from pphoto.db.connection import GalleryConnection
 from pphoto.db.directories_table import DirectoriesTable
 from pphoto.db.gallery_index_table import GalleryIndexTable, WrongAggregateTypeReturned
 from pphoto.db.types_image import Image, ImageAddress, ImageAggregation
-from pphoto.db.types_location import LocPoint, LocationCluster
+from pphoto.db.types_location import LocPoint, LocationCluster, LocationBounds
 from pphoto.gallery.url import SearchQuery, GalleryPaging, SortParams
 
 
@@ -106,13 +106,25 @@ class TestGalleryIndexTable(unittest.TestCase):
             {"Bristol": 3, "Portlandia": 3, "Foudlekf": 1, "Jaskd": 1},
             {"bar": 2, "foo": 2, "lol": 1},
             {"There is something fishy here": 2, "This is ridiculous": 1},
-            (12.0, 49.0),
-            (-18.0, 34.0),
-            (13.0, 127.47),
         )
         self.assertEqual(stats, expected)
         stats = table.get_aggregate_stats(SearchQuery(tag="missing"))
-        self.assertEqual(stats, ImageAggregation(0, {}, {}, {}, None, None, None))
+        self.assertEqual(stats, ImageAggregation(0, {}, {}, {}))
+
+    def test_get_location_bounds(self) -> None:
+        table = GalleryIndexTable(connection())
+        table.add(_image("M1", alt=127.47, caption=None, tags={}, lon=32.0))
+        table.add(_image("M2", tags={"lol": 10.0}, caption="This is ridiculous"))
+        table.add(_image("M3", address="Jaskd, Foudlekf", lat=12.0, lon=-18.0, alt=None))
+        table.add(_image("M4", lon=34.0))
+        stats = table.get_location_bounds(SearchQuery())
+        expected = LocationBounds(
+            LocPoint(49.0, -18),
+            LocPoint(12.0, 34.0),
+        )
+        self.assertEqual(stats, expected)
+        stats = table.get_location_bounds(SearchQuery(tag="missing"))
+        self.assertEqual(stats, None)
 
     def test_get_image_clusters(self) -> None:
         table = GalleryIndexTable(connection())

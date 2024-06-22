@@ -180,11 +180,15 @@ function overlay_next(element, index) {
 class PhotoMap {
     constructor(div_id, bounds, get_url, context_menu_callback) {
         this.map = L.map(div_id).setView([51.505, -0.09], 13);
+        L.control.scale({ imperial: false }).addTo(this.map);
         this.markers = {};
         this.last_update_timestamp = 0;
         this._context_menu_callback = context_menu_callback;
         const that = this;
         const update_markers = (e) => {
+            if (e.flyTo) {
+                return;
+            }
             that.update_markers(get_url(), false);
         };
         const context_menu = (e) => {
@@ -220,6 +224,32 @@ class PhotoMap {
                 .setContent(content)
                 .openOn(this.map);
         });
+    }
+
+    update_bounds(location_url_json) {
+        const query = {
+            ...location_url_json,
+            skip_with_location: false,
+            skip_being_annotated: false,
+        };
+        return fetch("/api/bounds", {
+            method: "POST",
+            body: JSON.stringify(query),
+            headers: {
+                "Content-type": "application/json; charset=UTF-8",
+            },
+        })
+            .then((response) => response.json())
+            .then((bounds) => {
+                if (bounds === undefined || bounds === null) {
+                    return;
+                }
+                const latlngs = [
+                    [bounds.nw.latitude, bounds.nw.longitude],
+                    [bounds.se.latitude, bounds.se.longitude],
+                ];
+                this.map.flyToBounds(latlngs, { duration: 1 });
+            });
     }
 
     update_markers(location_url_json, change_view = false) {
@@ -262,17 +292,8 @@ class PhotoMap {
                 if (timestamp < this.last_update_timestamp) {
                     return;
                 }
-                if (change_view && clusters.length > 0) {
-                    const lats = clusters.map((x) => x.position.latitude);
-                    const longs = clusters.map((x) => x.position.longitude);
-                    var bounds = [
-                        [Math.max(...lats), Math.max(...longs)],
-                        [Math.min(...lats), Math.min(...longs)],
-                    ];
-                    this.map.fitBounds(bounds);
-                    bounds = this.map.getBounds();
-                    var nw = bounds.getNorthWest();
-                    var se = bounds.getSouthEast();
+                if (change_view) {
+                    this.update_bounds(location_url_json);
                 }
                 this.last_update_timestamp = timestamp;
                 var new_markers = {};
