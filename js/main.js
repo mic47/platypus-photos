@@ -681,8 +681,9 @@ class Gallery {
 }
 
 class Dates {
-    constructor(div_id, update_url) {
+    constructor(div_id, update_url, tooltip_div) {
         this._clickTimeStart = null;
+        this._tooltip_div = tooltip_div;
         const ctx = document.getElementById(div_id);
         this._chart = new Chart(ctx, {
             type: "line",
@@ -715,6 +716,36 @@ class Dates {
                         time: {
                             displayFormats: {
                                 quarter: "MMM YYYY",
+                            },
+                        },
+                    },
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            afterFooter: function (context) {
+                                const cluster = context[0].raw.cluster;
+                                const duration = pretty_print_duration(
+                                    cluster.bucket_max - cluster.bucket_min
+                                );
+                                const start = pprange(
+                                    cluster.min_timestamp,
+                                    cluster.max_timestamp
+                                );
+                                const image_md5 = cluster.example_path_md5;
+                                const innerHtml2 = `
+<div class="date_tooltip">
+Selected time aggregation:<br/>
+${start}<br/>
+${cluster.total} images, ${duration} bucket<br/>
+<button onclick="update_url({tsfrom: ${cluster.min_timestamp - 0.01}, tsto: ${cluster.max_timestamp + 0.01}})">➡️ from &amp; to ⬅️ </button>
+<button onclick="update_url({tsfrom: ${cluster.min_timestamp - 0.01}})">➡️ from</button>
+<button onclick="update_url({tsto: ${cluster.max_timestamp + 0.01}})">to ⬅️ </button><br/>
+<img loading="lazy" src="/img?hsh=${image_md5}&size=preview" class="gallery_image" />
+</div>
+        `;
+                                document.getElementById(tooltip_div).innerHTML =
+                                    innerHtml2;
                             },
                         },
                     },
@@ -765,7 +796,11 @@ class Dates {
     }
 
     fetch(location_url_json) {
-        fetch("/api/date_clusters", {
+        const tool = document.getElementById(this._tooltip_div);
+        if (tool !== null && tool !== undefined) {
+            tool.innerHTML="";
+        }
+        return fetch("/api/date_clusters", {
             method: "POST",
             body: JSON.stringify({
                 url: location_url_json,
@@ -777,17 +812,20 @@ class Dates {
         })
             .then((response) => response.json())
             .then((clusters) => {
+                function to_datapoint(c) {
+                    return {
+                        x: c.avg_timestamp * 1000,
+                        y: c.total,
+                        cluster: c,
+                    };
+                }
                 const dates = clusters
                     .filter((c) => c.overfetched == false)
-                    .map((c) => {
-                        return { x: c.avg_timestamp * 1000, y: c.total };
-                    });
+                    .map(to_datapoint);
                 this._chart.data.datasets[0].data = dates;
                 const overfetched = clusters
                     .filter((c) => c.overfetched == true)
-                    .map((c) => {
-                        return { x: c.avg_timestamp * 1000, y: c.total };
-                    });
+                    .map(to_datapoint);
                 this._chart.data.datasets[1].data = overfetched;
                 this._chart.update();
             });
@@ -861,4 +899,50 @@ class TabSwitch {
         const is_active = button.classList.contains("active");
         this.set_tab_visibility(!is_active, button);
     }
+}
+
+const _PRETTY_DURATIONS = [
+    [365 * 86400, "y"],
+    [30 * 86400, " mon"],
+    [7 * 86400, "w"],
+    [86400, "d"],
+    [3600, "h"],
+    [60, " min"],
+    [1, "s"],
+];
+
+function pretty_print_duration(duration) {
+    var dur = duration;
+    let out = [];
+    _PRETTY_DURATIONS.forEach(([seconds, tick]) => {
+        const num = Math.trunc(dur / seconds);
+        if (num === 0) {
+            return;
+        }
+        dur = dur % seconds;
+        out.push(`${num}${tick}`);
+    });
+    return out.join(" ");
+}
+function pprange(ts1, ts2) {
+    const d1 = new Date();
+    d1.setTime(ts1 * 1000);
+    const d2 = new Date();
+    d2.setTime(ts2 * 1000);
+    const s1 = d1.toLocaleString();
+    let out = [];
+    const ss1 = s1.split(" ");
+    d2.toLocaleString()
+        .split(" ")
+        .forEach((part, index) => {
+            if (part !== ss1[index]) {
+                out.push(part);
+            }
+        });
+    if (out.length === 0) {
+        out = [s1];
+    } else {
+        out = [s1, "until", ...out];
+    }
+    return out.join(" ");
 }

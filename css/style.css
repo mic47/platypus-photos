@@ -234,3 +234,17 @@ div.gallery_item:hover {
 .disabled {
     display: none;
 }
+.date_tooltip {
+  background-color: #ddd;
+  padding: 0.3em;
+  opacity: 1;
+  border-radius: 0.3em;
+}
+
+.row {
+  display: flex;
+}
+
+.column {
+  flex: 50%;
+}

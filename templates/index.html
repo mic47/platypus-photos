@@ -194,7 +194,7 @@ function init_fun() {
     const gallery = new Gallery("GalleryImages", prev_page, next_page);
     ___map = new PhotoMap("map", bounds, () => ___state.get_url(), location_preview);
     ___map_search = new MapSearch("MapSearch");
-    const dates = new Dates("DateChart", (x) => {___state.update_url(x);});
+    const dates = new Dates("DateChart", (x) => {___state.update_url(x);}, "DateSelection");
     const directories = new Directories("Directories");
     const aggregate_info = new AggregateInfo("AggregateInfo");
     ___state.register_url_hook((url_params) => {
@@ -265,7 +265,14 @@ function init_fun() {
 </div>
 <a href="#GalleryImageSection" class="TabTargetGallery">Go to images</a>
 <div id="SubmitDataOverlay"></div>
-<div class="date_chart TabTargetDates"><canvas id="DateChart"></canvas></div>
+<div class="row">
+  <div class="column">
+    <div class="date_chart TabTargetDates"><canvas id="DateChart"></canvas></div>
+  </div>
+  <div class="column">
+    <div id="DateSelection" class="TabTargetDates"></div>
+  </div>
+</div>
 <div class="directories TabTargetDirectories" id="Directories"></div>
 <div id="MapSearch" class="TabTargetMap"></div>
 <div id="map" class="TabTargetMap"></div>
