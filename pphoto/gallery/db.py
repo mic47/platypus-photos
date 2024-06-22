@@ -59,9 +59,6 @@ class ImageSqlDB:
     def get_aggregate_stats(self, url: "SearchQuery") -> ImageAggregation:
         return self._gallery_index.get_aggregate_stats(url)
 
-    def get_location_bounds(self, url: "SearchQuery") -> t.Optional[LocationBounds]:
-        return self._gallery_index.get_location_bounds(url)
-
     def get_date_clusters(self, url: SearchQuery, buckets: int) -> t.List[DateCluster]:
         return self._gallery_index.get_date_clusters(url, buckets)
 
@@ -76,6 +73,9 @@ class ImageSqlDB:
         has_manual_text: t.Optional[bool] = None,
     ) -> t.List[str]:
         return self._gallery_index.get_matching_md5(url, has_location, has_manual_location, has_manual_text)
+
+    def get_location_bounds(self, url: "SearchQuery") -> t.Optional[LocationBounds]:
+        return self._gallery_index.get_location_bounds(url)
 
     def get_image_clusters(
         self,

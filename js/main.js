@@ -543,7 +543,7 @@ function submit_annotations(div_id, form_id, return_id, advance_in_time) {
         address_name === null ||
         address_name.trim() === address_name_original
     ) {
-        address_name = null;
+        address_name = address_name_original;
     }
     let address_country = null_if_empty(formData.get("address_country"));
     const address_country_original = formData.get("address_country_original");
@@ -551,7 +551,7 @@ function submit_annotations(div_id, form_id, return_id, advance_in_time) {
         address_country === null ||
         address_country.trim() === address_country_original
     ) {
-        address_country = null;
+        address_country = address_country_original;
     }
     const location_request = {
         latitude,

@@ -169,12 +169,51 @@ def location_clusters_endpoint(params: LocClusterParams) -> t.List[LocationClust
         params.res.longitude,
         params.of,
     )
+    jobs = DB.get().jobs.get_jobs(skip_finished=False, since=datetime.now() - timedelta(days=1))
+    for job in jobs:
+        if job.type_ == RemoteJobType.MASS_MANUAL_ANNOTATION:
+            try:
+                og_req = MassManualAnnotation.from_json(job.original_request)
+                point = LocPoint(og_req.location.latitude, og_req.location.longitude)
+                clusters.append(
+                    LocationCluster(
+                        # TODO: add example md5
+                        "missing",
+                        og_req.text.description,
+                        job.total,
+                        og_req.location.address_name,
+                        og_req.location.address_country,
+                        point,
+                        point,
+                        point,
+                    )
+                )
+            # pylint: disable = broad-exception-caught
+            except Exception:
+                continue
+        else:
+            assert_never(job.type_)
     return clusters
 
 
 @app.post("/api/bounds")
 def location_bounds_endpoint(params: SearchQuery) -> t.Optional[LocationBounds]:
-    return DB.get().get_location_bounds(params)
+    bounds = DB.get().get_location_bounds(params)
+    if bounds is None:
+        return None
+    jobs = DB.get().jobs.get_jobs(skip_finished=False, since=datetime.now() - timedelta(days=1))
+    for job in jobs:
+        if job.type_ == RemoteJobType.MASS_MANUAL_ANNOTATION:
+            try:
+                og_req = MassManualAnnotation.from_json(job.original_request)
+                point = LocPoint(og_req.location.latitude, og_req.location.longitude)
+                bounds.update(point)
+            # pylint: disable = broad-exception-caught
+            except Exception:
+                continue
+        else:
+            assert_never(job.type_)
+    return bounds
 
 
 @dataclass

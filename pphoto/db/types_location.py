@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
 import typing as t
 
@@ -14,6 +16,13 @@ class LocPoint(DataClassJsonMixin):
 class LocationBounds(DataClassJsonMixin):
     nw: LocPoint  # noqa: F841
     se: LocPoint  # noqa: F841
+
+    def update(self, point: LocPoint) -> LocationBounds:
+        self.nw.latitude = max(self.nw.latitude, point.latitude)
+        self.nw.longitude = min(self.nw.longitude, point.longitude)
+        self.se.latitude = min(self.se.latitude, point.latitude)
+        self.se.longitude = max(self.se.longitude, point.longitude)
+        return self
 
 
 @dataclass
