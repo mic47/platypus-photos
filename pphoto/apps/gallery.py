@@ -200,18 +200,6 @@ def location_bounds_endpoint(params: SearchQuery) -> t.Optional[LocationBounds]:
     bounds = DB.get().get_location_bounds(params)
     if bounds is None:
         return None
-    jobs = DB.get().jobs.get_jobs(skip_finished=False, since=datetime.now() - timedelta(days=1))
-    for job in jobs:
-        if job.type_ == RemoteJobType.MASS_MANUAL_ANNOTATION:
-            try:
-                og_req = MassManualAnnotation.from_json(job.original_request)
-                point = LocPoint(og_req.location.latitude, og_req.location.longitude)
-                bounds.update(point)
-            # pylint: disable = broad-exception-caught
-            except Exception:
-                continue
-        else:
-            assert_never(job.type_)
     return bounds
 
 
