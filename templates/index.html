@@ -80,9 +80,13 @@ function delete_marker(id) {
     const markers = get_markers_from_local_storage();
     markers[id] = null;
     window.localStorage.setItem("markers", JSON.stringify(markers));
+    delete_marker_only(id);
+}
+function delete_marker_only(id) {
     const marker = ___global_markers[id];
     if (marker !== undefined && marker !== null) {
         marker.remove();
+        delete ___global_markers[id];
     }
 }
 function load_markers_initially() {
@@ -90,6 +94,40 @@ function load_markers_initially() {
         if (m !== undefined && m !== null) {
             map_add_point_only(id, m.latitude, m.longitude, m.text);
         }
+    });
+    window.addEventListener("storage", (e) => {
+        if (e.key !== "markers") {
+            return;
+        }
+        const oldValue = JSON.parse(e.oldValue);
+        const newValue = JSON.parse(e.newValue);
+        const actions = [];
+        Object.entries(newValue).forEach(([id, value]) => {
+            const old = oldValue[id];
+            if (old === undefined || old === null) {
+                if (value !== undefined && value !== null) {
+                    // Something was added
+                    actions.push([id, value]);
+                }
+            } else if (value === undefined || value === null) {
+                // Old is something, this is empty
+                actions.push([id, null]);
+            }
+        });
+        if (actions.length === 0) {
+            // Nothing to do
+            return;
+        }
+        const markers = get_markers_from_local_storage();
+        actions.forEach(([id, value]) => {
+            markers[id] = value;
+            if (value === undefined || value === null) {
+                delete_marker_only(id);
+            } else {
+                map_add_point_only(id, value.latitude, value.longitude, value.text);
+            }
+        });
+        window.localStorage.setItem("markers", JSON.stringify(markers));
     });
 }
 function map_add_point_only(id, latitude, longitude, text) {
