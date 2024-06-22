@@ -724,6 +724,7 @@ class Gallery {
 
 class Dates {
     constructor(div_id, update_url, tooltip_div) {
+        this.switchable = new Switchable();
         this._clickTimeStart = null;
         this._tooltip_div = tooltip_div;
         const ctx = document.getElementById(div_id);
@@ -838,39 +839,41 @@ ${cluster.total} images, ${duration} bucket<br/>
     }
 
     fetch(location_url_json) {
-        const tool = document.getElementById(this._tooltip_div);
-        if (tool !== null && tool !== undefined) {
-            tool.innerHTML = "";
-        }
-        return fetch("/api/date_clusters", {
-            method: "POST",
-            body: JSON.stringify({
-                url: location_url_json,
-                buckets: 100,
-            }),
-            headers: {
-                "Content-type": "application/json; charset=UTF-8",
-            },
-        })
-            .then((response) => response.json())
-            .then((clusters) => {
-                function to_datapoint(c) {
-                    return {
-                        x: c.avg_timestamp * 1000,
-                        y: c.total,
-                        cluster: c,
-                    };
-                }
-                const dates = clusters
-                    .filter((c) => c.overfetched == false)
-                    .map(to_datapoint);
-                this._chart.data.datasets[0].data = dates;
-                const overfetched = clusters
-                    .filter((c) => c.overfetched == true)
-                    .map(to_datapoint);
-                this._chart.data.datasets[1].data = overfetched;
-                this._chart.update();
-            });
+        return this.switchable.call_or_store("fetch", () => {
+            const tool = document.getElementById(this._tooltip_div);
+            if (tool !== null && tool !== undefined) {
+                tool.innerHTML = "";
+            }
+            return fetch("/api/date_clusters", {
+                method: "POST",
+                body: JSON.stringify({
+                    url: location_url_json,
+                    buckets: 100,
+                }),
+                headers: {
+                    "Content-type": "application/json; charset=UTF-8",
+                },
+            })
+                .then((response) => response.json())
+                .then((clusters) => {
+                    function to_datapoint(c) {
+                        return {
+                            x: c.avg_timestamp * 1000,
+                            y: c.total,
+                            cluster: c,
+                        };
+                    }
+                    const dates = clusters
+                        .filter((c) => c.overfetched == false)
+                        .map(to_datapoint);
+                    this._chart.data.datasets[0].data = dates;
+                    const overfetched = clusters
+                        .filter((c) => c.overfetched == true)
+                        .map(to_datapoint);
+                    this._chart.data.datasets[1].data = overfetched;
+                    this._chart.update();
+                });
+        });
     }
 }
 
