@@ -33,8 +33,10 @@ class Image(DataClassJsonMixin):
     altitude: t.Optional[float]
     manual_features: t.List[str]
     being_annotated: bool
+    camera: t.Optional[str]
+    software: t.Optional[str]
     version: int
 
     @staticmethod
     def current_version() -> int:
-        return 2
+        return 3

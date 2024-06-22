@@ -44,6 +44,8 @@ def _image(
         alt,
         ["ManualLocation"],
         False,
+        "olympus",
+        "e-510",
         version,
     )
 

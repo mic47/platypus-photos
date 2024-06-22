@@ -93,6 +93,16 @@ ALTER TABLE gallery_index ADD COLUMN manual_features TEXT NOT NULL DEFAULT ""
 ALTER TABLE gallery_index ADD COLUMN being_annotated INTEGER NOT NULL DEFAULT 0
         """
         )
+        self._con.execute_add_column(
+            """
+ALTER TABLE gallery_index ADD COLUMN camera TEXT
+        """
+        )
+        self._con.execute_add_column(
+            """
+ALTER TABLE gallery_index ADD COLUMN software TEXT
+        """
+        )
         for columns in [
             ["md5"],
             ["feature_last_update"],
@@ -119,7 +129,7 @@ ALTER TABLE gallery_index ADD COLUMN being_annotated INTEGER NOT NULL DEFAULT 0
         tags = sorted(list((omg.tags or {}).items()))
         self._con.execute(
             """
-INSERT INTO gallery_index VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)
+INSERT INTO gallery_index VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)
 ON CONFLICT(md5) DO UPDATE SET
   feature_last_update=excluded.feature_last_update,
   timestamp=excluded.timestamp,
@@ -134,7 +144,9 @@ ON CONFLICT(md5) DO UPDATE SET
   altitude=excluded.altitude,
   version=excluded.version,
   manual_features=excluded.manual_features,
-  being_annotated=excluded.being_annotated
+  being_annotated=excluded.being_annotated,
+  camera=excluded.camera,
+  software=excluded.software
 WHERE
   excluded.version > gallery_index.version
   OR (
@@ -157,6 +169,8 @@ WHERE
                 omg.altitude,
                 omg.version,
                 f',{",".join(omg.manual_features)},',
+                omg.camera,
+                omg.software,
             ),
         )
         self._con.commit()
@@ -555,7 +569,7 @@ SELECT "addrc", address_country, COUNT(1) FROM matched_images WHERE address_coun
             query,
             variables,
         ) = self._matching_query(
-            "md5, timestamp, tags, tags_probs, classifications, address_country, address_name, address_full, feature_last_update, latitude, longitude, altitude, version, manual_features, being_annotated",
+            "md5, timestamp, tags, tags_probs, classifications, address_country, address_name, address_full, feature_last_update, latitude, longitude, altitude, version, manual_features, being_annotated, camera, software",
             url,
         )
         sort_by = None
@@ -591,6 +605,8 @@ SELECT "addrc", address_country, COUNT(1) FROM matched_images WHERE address_coun
             version,
             manual_features,
             being_annotated,
+            camera,
+            software,
         ) in items[: gallery_paging.paging]:
             output.append(
                 Image(
@@ -621,6 +637,8 @@ SELECT "addrc", address_country, COUNT(1) FROM matched_images WHERE address_coun
                     altitude,
                     [] if manual_features is None else [x for x in manual_features.split(",") if x],
                     bool(being_annotated),
+                    camera,
+                    software,
                     version,
                 )
             )

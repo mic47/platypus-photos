@@ -45,6 +45,16 @@ def make_image(
     if exif is not None and exif.date is not None:
         date = exif.date.datetime
     date = date or (date_from_path[0] if date_from_path else None)
+    camera = None
+    software = None
+    if exif is not None:
+        make = exif.camera.make.lower().strip()
+        for x in ["olympus", "nikon"]:
+            if make.startswith(x):
+                make = x
+        model = " ".join(x for x in exif.camera.model.lower().split() if x not in make).strip()
+        camera = f"{make} {model}".strip() or None
+        software = exif.camera.software.lower().strip() or None
 
     tags: t.Dict[str, float] = {}
     if text_classification is not None:
@@ -100,5 +110,7 @@ def make_image(
         altitude,
         manual_features,
         False,
+        camera,
+        software,
         Image.current_version(),
     )
