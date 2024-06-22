@@ -180,6 +180,7 @@ function overlay_next(element, index) {
 class PhotoMap {
     constructor(div_id, bounds, get_url, context_menu_callback) {
         this.map = L.map(div_id).setView([51.505, -0.09], 13);
+        this._last_update_markers = {};
         L.control.scale({ imperial: false }).addTo(this.map);
         this.markers = {};
         this.last_update_timestamp = 0;
@@ -261,28 +262,41 @@ class PhotoMap {
         var sz = this.map.getSize();
         var cluster_pixel_size = 10;
         var timestamp = new Date().getTime();
+        const query = JSON.stringify({
+            tl: {
+                latitude: nw.lat,
+                longitude: nw.lng,
+            },
+            br: {
+                latitude: se.lat,
+                longitude: se.lng,
+            },
+            res: {
+                latitude: sz.y / cluster_pixel_size,
+                longitude: sz.x / cluster_pixel_size,
+            },
+            of: 0.5,
+            url: Object.fromEntries(
+                Object.entries(location_url_json).filter(
+                    (x) => x[0] !== "page" && x[0] !== "paging"
+                )
+            ),
+        });
+        if (
+            this._last_update_markers.timestamp + 10000 > timestamp &&
+            this._last_update_markers.query === query &&
+            this._last_update_markers.change_view === change_view
+        ) {
+            console.log("skipping");
+            return;
+        }
+        this._last_update_markers.query = query;
+        this._last_update_markers.change_view = change_view;
+        this._last_update_markers.timestamp = timestamp;
+
         fetch("/api/location_clusters", {
             method: "POST",
-            body: JSON.stringify({
-                tl: {
-                    latitude: nw.lat,
-                    longitude: nw.lng,
-                },
-                br: {
-                    latitude: se.lat,
-                    longitude: se.lng,
-                },
-                res: {
-                    latitude: sz.y / cluster_pixel_size,
-                    longitude: sz.x / cluster_pixel_size,
-                },
-                of: 0.5,
-                url: Object.fromEntries(
-                    Object.entries(location_url_json).filter(
-                        (x) => x[0] !== "page" && x[0] !== "paging"
-                    )
-                ),
-            }),
+            body: query,
             headers: {
                 "Content-type": "application/json; charset=UTF-8",
             },
