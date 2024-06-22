@@ -832,8 +832,25 @@ ${cluster.total} images, ${duration} bucket<br/>
     }
 }
 
+class Switchable {
+    constructor() {
+        this._on = true;
+        this._callback = undefined;
+    }
+    disable() {
+        this._on = false;
+    }
+    enable() {
+        this._on = true;
+    }
+    call(func, params) {
+        if (this._on) {
+        }
+    }
+}
+
 class TabSwitch {
-    constructor(div_id, callbacks) {
+    constructor(div_id) {
         this._defaults = {};
         const element = document.getElementById(div_id);
         const buttons = element.getElementsByTagName("button");
