@@ -162,7 +162,7 @@ class LocClusterParams:
 @app.post("/api/location_clusters")
 def location_clusters_endpoint(params: LocClusterParams) -> t.List[LocationCluster]:
     clusters = DB.get().get_image_clusters(
-        SearchQuery(),  # Temporary, as it's easier while annotating. TODO: figure how to control this
+        params.url,
         params.tl,
         params.br,
         params.res.latitude,

@@ -178,8 +178,15 @@ function overlay_next(element, index) {
 }
 
 class PhotoMap {
-    constructor(div_id, bounds, get_url, context_menu_callback) {
+    constructor(
+        div_id,
+        should_use_query_div,
+        bounds,
+        get_url,
+        context_menu_callback
+    ) {
         this.map = L.map(div_id).setView([51.505, -0.09], 13);
+        this._should_use_query_div = should_use_query_div;
         this._last_update_markers = {};
         L.control.scale({ imperial: false }).addTo(this.map);
         this.markers = {};
@@ -297,6 +304,9 @@ class PhotoMap {
 
     update_markers(location_url_json, change_view = false) {
         // TODO: wrapped maps: shift from 0 + wrap around
+        const should_use_query =
+            document.getElementById(this._should_use_query_div)?.checked ||
+            false;
 
         var bounds = this.map.getBounds();
         var nw = bounds.getNorthWest();
@@ -321,9 +331,9 @@ class PhotoMap {
             },
             of: 0.5,
             url: Object.fromEntries(
-                Object.entries(location_url_json).filter(
-                    (x) => x[0] !== "page" && x[0] !== "paging"
-                )
+                Object.entries({
+                    ...(should_use_query ? location_url_json : {}),
+                }).filter((x) => x[0] !== "page" && x[0] !== "paging")
             ),
         };
         if (

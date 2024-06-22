@@ -52,6 +52,9 @@ function map_zoom(latitude, longitude) {
 function map_bounds() {
     ___map.update_bounds(___state.get_url());
 }
+function map_refetch() {
+    ___map.update_markers(___state.get_url(), false);
+}
 ___global_markers = {};
 function get_markers_from_local_storage() {
     let current = window.localStorage.getItem("markers");
@@ -251,7 +254,7 @@ function init_fun() {
     const sort_sync = new UrlSync(sort_fields);
     const input_form = new InputForm("InputForm");
     const gallery = new Gallery("GalleryImages", prev_page, next_page);
-    ___map = new PhotoMap("map", bounds, () => ___state.get_url(), location_preview);
+    ___map = new PhotoMap("map", "MapUseQuery", bounds, () => ___state.get_url(), location_preview);
     ___map_search = new MapSearch("MapSearch");
     const dates = new Dates("DateChart", (x) => {___state.update_url(x);}, "DateSelection");
     const directories = new Directories("Directories");
