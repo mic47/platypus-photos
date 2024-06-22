@@ -833,7 +833,7 @@ ${cluster.total} images, ${duration} bucket<br/>
 }
 
 class TabSwitch {
-    constructor(div_id) {
+    constructor(div_id, callbacks) {
         this._defaults = {};
         const element = document.getElementById(div_id);
         const buttons = element.getElementsByTagName("button");
@@ -853,6 +853,7 @@ class TabSwitch {
         }
         this._sync = new UrlSync(ids);
         const url_params = this._sync.get_url();
+        const that = this;
         for (var i = 0; i < buttons.length; i++) {
             const button = buttons[i];
             if (!button.classList.contains("tablinks")) {
@@ -863,6 +864,9 @@ class TabSwitch {
             }
             const sync_id = button.id.replace("TabSource", "Tab");
             const is_active_from_url = url_params[sync_id];
+            button.addEventListener("click", function() {
+                that.switch_tab_visibility(button)
+            });
             this.set_tab_visibility(
                 is_active_from_url === undefined || is_active_from_url === null
                     ? this._defaults[sync_id]

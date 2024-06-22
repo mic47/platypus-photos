@@ -173,7 +173,6 @@ function show_job_list() {
     job_list.show_or_close();
 }
 
-var ___root_tabs_sync = null;
 function init_fun() {
     if (___state !== null) {
       throw new Error('State is already initialized!');
@@ -229,7 +228,7 @@ function init_fun() {
     job_progress.fetch();
     setInterval(() => {job_progress.fetch()}, 10000);
     job_list = new JobList("JobList");
-    ___root_tabs_sync = new TabSwitch("RootTabs");
+    new TabSwitch("RootTabs");
 
     load_markers_initially();
 }
@@ -239,12 +238,12 @@ function init_fun() {
 <body onload="init_fun()">
 
 <div class="tab" id="RootTabs">
-  <button class="tablinks active" onclick="___root_tabs_sync.switch_tab_visibility(this)" id="TabSourceQuery">Query</button>
-  <button class="tablinks" onclick="___root_tabs_sync.switch_tab_visibility(this)" id="TabSourceDates">Dates Chart</button>
-  <button class="tablinks" onclick="___root_tabs_sync.switch_tab_visibility(this)" id="TabSourceDirectories">Directories</button>
-  <button class="tablinks active" onclick="___root_tabs_sync.switch_tab_visibility(this)" id="TabSourceMap">Map</button>
-  <button class="tablinks active" onclick="___root_tabs_sync.switch_tab_visibility(this)" id="TabSourceGallery">Gallery</button>
-  <button class="tablinks active" onclick="___root_tabs_sync.switch_tab_visibility(this)" id="TabSourceJobProgress">Job Progress</button>
+  <button class="tablinks active" id="TabSourceQuery">Query</button>
+  <button class="tablinks" id="TabSourceDates">Dates Chart</button>
+  <button class="tablinks" id="TabSourceDirectories">Directories</button>
+  <button class="tablinks active" id="TabSourceMap">Map</button>
+  <button class="tablinks active" id="TabSourceGallery">Gallery</button>
+  <button class="tablinks active" id="TabSourceJobProgress">Job Progress</button>
 </div>
 
 <div id="JobProgress" class="JobProgress TabTargetJobProgress"></div>
