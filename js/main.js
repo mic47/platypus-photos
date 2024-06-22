@@ -338,12 +338,51 @@ class PhotoMap {
     }
 }
 
+class Switchable {
+    constructor() {
+        this._enabled = true;
+        this._callbacks = {};
+    }
+    disable() {
+        if (this._enabled === false) {
+            false;
+        }
+        this._enabled = false;
+        this._callbacks = {};
+    }
+    enable() {
+        if (this._enabled === true) {
+            return;
+        }
+        this._enabled = true;
+        Object.values(this._callbacks).forEach((callback) => {
+            if (callback !== undefined && callback !== null) {
+                callback();
+            }
+        });
+        this._callbacks = {};
+    }
+    call_or_store(name, callback) {
+        if (this._enabled) {
+            return callback();
+        }
+        this._callbacks[name] = callback;
+    }
+}
+
 class Directories {
     constructor(div_id) {
         this._div_id = div_id;
+        this.switchable = new Switchable();
     }
 
     fetch(url_data) {
+        return this.switchable.call_or_store("fetch", () =>
+            this.fetch_impl(url_data)
+        );
+    }
+
+    fetch_impl(url_data) {
         const url = `/internal/directories.html`;
         fetch(url, {
             method: "POST",
@@ -798,7 +837,7 @@ ${cluster.total} images, ${duration} bucket<br/>
     fetch(location_url_json) {
         const tool = document.getElementById(this._tooltip_div);
         if (tool !== null && tool !== undefined) {
-            tool.innerHTML="";
+            tool.innerHTML = "";
         }
         return fetch("/api/date_clusters", {
             method: "POST",
@@ -832,26 +871,10 @@ ${cluster.total} images, ${duration} bucket<br/>
     }
 }
 
-class Switchable {
-    constructor() {
-        this._on = true;
-        this._callback = undefined;
-    }
-    disable() {
-        this._on = false;
-    }
-    enable() {
-        this._on = true;
-    }
-    call(func, params) {
-        if (this._on) {
-        }
-    }
-}
-
 class TabSwitch {
-    constructor(div_id) {
+    constructor(div_id, callbacks) {
         this._defaults = {};
+        this._callbacks = callbacks;
         const element = document.getElementById(div_id);
         const buttons = element.getElementsByTagName("button");
         const ids = [];
@@ -881,8 +904,8 @@ class TabSwitch {
             }
             const sync_id = button.id.replace("TabSource", "Tab");
             const is_active_from_url = url_params[sync_id];
-            button.addEventListener("click", function() {
-                that.switch_tab_visibility(button)
+            button.addEventListener("click", function () {
+                that.switch_tab_visibility(button);
             });
             this.set_tab_visibility(
                 is_active_from_url === undefined || is_active_from_url === null
@@ -904,15 +927,22 @@ class TabSwitch {
             url[sync_id] = is_active;
         }
         this._sync.update(url);
+        const callback = this._callbacks[sync_id];
         if (is_active) {
             button.classList.add("active");
             for (var i = 0; i < targets.length; i++) {
                 targets[i].classList.remove("disabled");
             }
+            if (callback !== undefined && callback !== null) {
+                callback.enable();
+            }
         } else {
             button.classList.remove("active");
             for (var i = 0; i < targets.length; i++) {
                 targets[i].classList.add("disabled");
+            }
+            if (callback !== undefined && callback !== null) {
+                callback.disable();
             }
         }
     }
