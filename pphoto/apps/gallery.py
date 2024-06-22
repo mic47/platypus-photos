@@ -463,6 +463,7 @@ def job_list_endpoint(request: Request, _req: JobListRequest) -> HTMLResponse:
                 "longitude": og_req.location.longitude,
                 "query_json": query,
                 "job_json": json.dumps(job_dict, ensure_ascii=False, indent=2),
+                "example_path_md5": job.example_path_md5,
             }
         )
     return templates.TemplateResponse(
