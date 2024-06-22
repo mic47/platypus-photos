@@ -253,6 +253,48 @@ class PhotoMap {
             });
     }
 
+    _similar(last_bounds, new_bounds, tolerance) {
+        if (last_bounds === undefined || last_bounds === null) {
+            return false;
+        }
+        const lat_tolerance =
+            Math.abs(last_bounds.tl.latitude - last_bounds.br.latitude) *
+            tolerance;
+        const lon_tolerance =
+            Math.abs(last_bounds.tl.longitude - last_bounds.br.longitude) *
+            tolerance;
+        return (
+            Math.abs(last_bounds.tl.latitude - new_bounds.tl.latitude) <
+                lat_tolerance &&
+            Math.abs(last_bounds.tl.longitude - new_bounds.tl.longitude) <
+                lat_tolerance &&
+            Math.abs(last_bounds.br.latitude - new_bounds.br.latitude) <
+                lat_tolerance &&
+            Math.abs(last_bounds.br.longitude - new_bounds.br.longitude) <
+                lat_tolerance
+        );
+    }
+    _should_skip(timestamp, bounds_query, non_bounds, change_view) {
+        const non_bounds_str = JSON.stringify(non_bounds);
+        if (
+            this._last_update_markers.timestamp + 10000 > timestamp &&
+            this._last_update_markers.non_bounds === non_bounds_str &&
+            this._similar(
+                this._last_update_markers.bounds,
+                bounds_query,
+                0.1
+            ) &&
+            this._last_update_markers.change_view === change_view
+        ) {
+            return true;
+        }
+        this._last_update_markers.non_bounds = non_bounds_str;
+        this._last_update_markers.bounds = bounds_query;
+        this._last_update_markers.change_view = change_view;
+        this._last_update_markers.timestamp = timestamp;
+        return false;
+    }
+
     update_markers(location_url_json, change_view = false) {
         // TODO: wrapped maps: shift from 0 + wrap around
 
@@ -262,7 +304,7 @@ class PhotoMap {
         var sz = this.map.getSize();
         var cluster_pixel_size = 10;
         var timestamp = new Date().getTime();
-        const query = JSON.stringify({
+        const bounds_query = {
             tl: {
                 latitude: nw.lat,
                 longitude: nw.lng,
@@ -271,6 +313,8 @@ class PhotoMap {
                 latitude: se.lat,
                 longitude: se.lng,
             },
+        };
+        const non_bounds = {
             res: {
                 latitude: sz.y / cluster_pixel_size,
                 longitude: sz.x / cluster_pixel_size,
@@ -281,22 +325,19 @@ class PhotoMap {
                     (x) => x[0] !== "page" && x[0] !== "paging"
                 )
             ),
-        });
+        };
         if (
-            this._last_update_markers.timestamp + 10000 > timestamp &&
-            this._last_update_markers.query === query &&
-            this._last_update_markers.change_view === change_view
+            this._should_skip(timestamp, bounds_query, non_bounds, change_view)
         ) {
-            console.log("skipping");
             return;
         }
-        this._last_update_markers.query = query;
-        this._last_update_markers.change_view = change_view;
-        this._last_update_markers.timestamp = timestamp;
-
+        const query_final = {
+            ...bounds_query,
+            ...non_bounds,
+        };
         fetch("/api/location_clusters", {
             method: "POST",
-            body: query,
+            body: JSON.stringify(query_final),
             headers: {
                 "Content-type": "application/json; charset=UTF-8",
             },
