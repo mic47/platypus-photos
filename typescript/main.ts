@@ -1,10 +1,10 @@
-type SearchQueryParams = { [key1: string]: string };
-type PagingParams = { [key2: string]: string };
-type SortParams = { [key3: string]: string };
+export type SearchQueryParams = { [key1: string]: string };
+export type PagingParams = { [key2: string]: string };
+export type SortParams = { [key3: string]: string };
 
 type AppStateHook<T> = (data: T) => void;
 
-class AppState {
+export class AppState {
     private url_params_hooks: Array<AppStateHook<SearchQueryParams>>;
     private paging_hooks: Array<AppStateHook<PagingParams>>;
     private sort_hooks: Array<AppStateHook<SortParams>>;
@@ -69,7 +69,7 @@ class AppState {
     }
 }
 
-class UrlSync {
+export class UrlSync {
     constructor(private registered_fields: string[]) {}
     get_url(): { [key: string]: string } {
         var url = new URL(window.location.href);
@@ -146,7 +146,7 @@ function this_is_overlay_element(element: HTMLElement) {
         replace_image_size_inside(prev as HTMLElement, "original", "preview");
     }
 }
-function overlay(element: HTMLElement, index: string) {
+export function overlay(element: HTMLElement, index: string) {
     const parent = element.parentElement;
     if (parent === null) {
         throw new Error(`Element does not have parent ${element}`);
@@ -155,7 +155,7 @@ function overlay(element: HTMLElement, index: string) {
     parent.classList.add("overlay");
     changeState(index);
 }
-function overlay_close(element: HTMLElement) {
+export function overlay_close(element: HTMLElement) {
     var root = element.parentElement?.parentElement;
     if (root === undefined || root === null) {
         throw new Error(`Element does not have grand-parent ${element}`);
@@ -174,7 +174,7 @@ function overlay_close(element: HTMLElement) {
     root.classList.remove("overlay");
     changeState(null);
 }
-function overlay_prev(element: HTMLElement, index: number) {
+export function overlay_prev(element: HTMLElement, index: number) {
     const grandpa = element.parentElement?.parentElement;
     const target = grandpa?.previousElementSibling;
     if (
@@ -192,7 +192,7 @@ function overlay_prev(element: HTMLElement, index: number) {
     grandpa.classList.remove("overlay");
     changeState(index - 1);
 }
-function overlay_next(element: HTMLElement, index: number) {
+export function overlay_next(element: HTMLElement, index: number) {
     const grandpa = element.parentElement?.parentElement;
     const target = grandpa?.nextElementSibling;
     if (
@@ -233,9 +233,9 @@ type LastUpdateMarkersCacheParam = {
 };
 
 type LeafMap = object;
-type LeafMarker = object;
+export type LeafMarker = object;
 
-class PhotoMap {
+export class PhotoMap {
     public map: LeafMap;
     private last_update_markers: LastUpdateMarkersCacheParam | null = null;
     private last_update_timestamp: number = 0;
@@ -470,7 +470,7 @@ class PhotoMap {
     }
 }
 
-class Switchable {
+export class Switchable {
     private enabled: boolean;
     private callbacks: { [key: string]: () => void };
     constructor() {
@@ -504,7 +504,7 @@ class Switchable {
     }
 }
 
-class Directories {
+export class Directories {
     public switchable: Switchable;
     constructor(private div_id: string) {
         this.switchable = new Switchable();
@@ -536,7 +536,7 @@ class Directories {
     }
 }
 
-class AggregateInfo {
+export class AggregateInfo {
     constructor(private div_id: string) {}
 
     fetch(url_data: SearchQueryParams, paging: PagingParams) {
@@ -559,7 +559,7 @@ class AggregateInfo {
     }
 }
 
-class GenericFetch<T> {
+export class GenericFetch<T> {
     constructor(
         protected readonly div_id: string,
         private endpoint: string
@@ -586,7 +586,7 @@ class GenericFetch<T> {
 function now_s() {
     return Date.now() / 1000.0;
 }
-class JobProgress<S extends { ts: number }> extends GenericFetch<{
+export class JobProgress<S extends { ts: number }> extends GenericFetch<{
     job_list_fn: string;
     update_state_fn: string;
     state: S;
@@ -620,7 +620,7 @@ class JobProgress<S extends { ts: number }> extends GenericFetch<{
         this.add_state(state);
     }
 }
-class JobList extends GenericFetch<{}> {
+export class JobList extends GenericFetch<{}> {
     private shown: boolean;
     constructor(div_id: string) {
         super(div_id, "/internal/job_list.html");
@@ -645,7 +645,7 @@ class JobList extends GenericFetch<{}> {
     }
 }
 
-class MapSearch extends GenericFetch<{ query: string | null }> {
+export class MapSearch extends GenericFetch<{ query: string | null }> {
     constructor(div_id: string) {
         super(div_id, "/internal/map_search.html");
     }
@@ -654,7 +654,7 @@ class MapSearch extends GenericFetch<{ query: string | null }> {
     }
 }
 
-class AddressInfo extends GenericFetch<{
+export class AddressInfo extends GenericFetch<{
     latitude: number;
     longitude: number;
 }> {
@@ -666,7 +666,7 @@ class AddressInfo extends GenericFetch<{
     }
 }
 
-class AnnotationOverlay extends GenericFetch<{
+export class AnnotationOverlay extends GenericFetch<{
     latitude: number;
     longitude: number;
     query: SearchQueryParams;
@@ -722,7 +722,7 @@ function error_box(div_id: string, value: any) {
     e.appendChild(element);
 }
 
-function submit_annotations(
+export function submit_annotations(
     div_id: string,
     form_id: string,
     return_id: string,
@@ -836,7 +836,7 @@ type LeafPosition = {
     lat: number;
     lng: number;
 };
-function location_preview(
+export function location_preview(
     loc: LeafPosition,
     show_content_fn: (content: string) => any
 ) {
@@ -851,7 +851,7 @@ function location_preview(
     });
 }
 
-class InputForm {
+export class InputForm {
     constructor(private div_id: string) {
         this.div_id = div_id;
     }
@@ -876,7 +876,7 @@ class InputForm {
     }
 }
 
-class Gallery {
+export class Gallery {
     constructor(
         private div_id: string,
         private prev_page: () => void,
@@ -917,7 +917,7 @@ class Gallery {
     }
 }
 
-class Dates {
+export class Dates {
     public switchable: Switchable;
     private clickTimeStart: null | [number, number];
     private chart: Chart;
@@ -1096,7 +1096,7 @@ type DateClusterResponseItem = {
     overfetched: boolean;
 };
 
-class TabSwitch {
+export class TabSwitch {
     private defaults: { [key: string]: boolean };
     private sync: UrlSync;
     constructor(

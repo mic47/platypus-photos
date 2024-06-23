@@ -1,3 +1,29 @@
+import {
+    AppState,
+    AnnotationOverlay,
+    JobList,
+    JobProgress,
+    Gallery,
+    Dates,
+    Directories,
+    AggregateInfo,
+    location_preview,
+    InputForm,
+    LeafMarker,
+    MapSearch,
+    overlay,
+    overlay_close,
+    overlay_next,
+    overlay_prev,
+    PagingParams,
+    PhotoMap,
+    SearchQueryParams,
+    SortParams,
+    submit_annotations,
+    TabSwitch,
+    UrlSync,
+} from "./main";
+
 var ___state: AppState = null;
 function update_dir(data: string) {
     ___state.update_url({ directory: data });
@@ -249,7 +275,7 @@ function annotation_overlay(latitude: number, longitude: number) {
     overlay.fetch(latitude, longitude, ___state.get_url());
 }
 
-var job_progress: JobProgress = null;
+var job_progress: JobProgress<any> = null;
 function update_job_progress(state_base64: string) {
     job_progress.add_state_base64(state_base64);
 }
@@ -378,5 +404,9 @@ const app: any = {
     delete_marker,
     submit_annotations,
     update_sort,
+    overlay,
+    overlay_close,
+    overlay_next,
+    overlay_prev,
 };
-(window as any).APP = app
+(window as any).APP = app;
