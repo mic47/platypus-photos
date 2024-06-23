@@ -32,6 +32,8 @@ class LocationCluster:
     size: int
     address_name: t.Optional[str]
     address_country: t.Optional[str]
+    tsfrom: t.Optional[float]
+    tsto: t.Optional[float]
     top_left: LocPoint
     bottom_right: LocPoint
     position: LocPoint

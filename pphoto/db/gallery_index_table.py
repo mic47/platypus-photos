@@ -399,7 +399,7 @@ FROM (
         select_items, variables = self._matching_query(
             f"""
             address_name, address_country, latitude, longitude,
-            md5, classifications,
+            md5, classifications, timestamp,
             round(latitude/{lat_scale})*{lat_scale} as cluster_lat,
             round(longitude/{lon_scale})*{lon_scale} as cluster_lon
         """,
@@ -423,6 +423,8 @@ SELECT
   avg(latitude), avg(longitude),
   count(1),
   min(md5),
+  min(timestamp),
+  max(timestamp),
   max(classifications)
 FROM (
   {select_items}
@@ -446,6 +448,8 @@ GROUP BY
             avg_longitude,
             total,
             example_file_md5,
+            min_timestamp,
+            max_timestamp,
             example_classification,
         ) in res:
             out.append(
@@ -455,6 +459,8 @@ GROUP BY
                     total,
                     address_name,
                     address_country,
+                    min_timestamp,
+                    max_timestamp,
                     LocPoint(max_latitude, max_longitude),
                     LocPoint(min_latitude, min_longitude),
                     LocPoint(avg_latitude, avg_longitude),

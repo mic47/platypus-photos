@@ -180,6 +180,8 @@ def location_clusters_endpoint(params: LocClusterParams) -> t.List[LocationClust
                         job.total,
                         og_req.location.address_name,
                         og_req.location.address_country,
+                        og_req.query.tsfrom,
+                        og_req.query.tsto,
                         point,
                         point,
                         point,
