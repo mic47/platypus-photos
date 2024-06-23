@@ -8,6 +8,7 @@ cipy:
 	vulture .
 
 cits:
+	yarn prettier
 	yarn typecheck
 	yarn lint
 
