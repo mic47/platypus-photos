@@ -6,8 +6,8 @@
     "lint": "eslint 'typescript/**/*.ts'",
     "coverage": "npm run jest -- --coverage",
     "typecheck": "tsc --noEmit",
-    "dev-watch": "yarn parcel watch typescript/index.html --no-cache --dist-dir \"static/\" --public-url \"http://localhost:8000/static\" --detailed-report",
-    "prod-build": "yarn parcel build typescript/index.html --no-cache --dist-dir \"static/\" --public-url \"http://localhost:8000/static\" --detailed-report --no-optimize --no-scope-hoist",
+    "dev-watch": "yarn parcel watch typescript/index.html --no-cache --dist-dir \"static/\" --public-url \"/static\" --detailed-report",
+    "prod-build": "yarn parcel build typescript/index.html --no-cache --dist-dir \"static/\" --public-url \"/static\" --detailed-report --no-optimize --no-scope-hoist",
     "__last-one__": "Just to have trailing comma"
   },
   "prettier": {
