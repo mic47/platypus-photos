@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import asyncio
 import base64
-import copy
 import json
 import math
 import typing as t
@@ -726,16 +725,14 @@ def input_request(request: Request, url: SearchQuery) -> HTMLResponse:
 
 @dataclass
 class UrlFieldPartitioning:
-    search_query: t.List[str]
-    paging: t.List[str]
-    sort: t.List[str]
+    search_query: t.List[str]  # noqa: F841
+    paging: t.List[str]  # noqa: F841
+    sort: t.List[str]  # noqa: F841
 
 
 # TODO: this could be simply generated and included
 @app.get("/api/url_field_partitioning")
-async def url_field_partitioning(
-    request: Request,
-) -> UrlFieldPartitioning:
+async def url_field_partitioning() -> UrlFieldPartitioning:
     return UrlFieldPartitioning(
         search_query=[x.name for x in fields(SearchQuery)],
         paging=[x.name for x in fields(GalleryPaging)],
