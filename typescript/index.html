@@ -17,7 +17,7 @@ Gallery
 <script src="../typescript/main.ts"></script>
 <script src="../typescript/app.ts"></script>
 </head>
-<body onload='init_fun()'>
+<body onload='window.APP.init_fun()'>
 
 <div class="tab" id="RootTabs">
   <button class="tablinks active" id="TabSourceQuery">Query</button>
@@ -33,12 +33,12 @@ Gallery
 <div class="TabTargetQuery">
   <div id="InputForm"></div>
   Sort by
-  <select onchange='___state.update_sort({sort_by: this.value})'>
+  <select onchange='window.APP.update_sort({sort_by: this.value})'>
     <option value="TIMESTAMP">time 🕰️</option>
     <option value="RANDOM">Random 🎲</option>
   </select>
   in
-  <select onchange='___state.update_sort({order: this.value})'>
+  <select onchange='window.APP.update_sort({order: this.value})'>
     <option value="DESC">descending 🤿</option>
     <option value="ASC">ascending 🧗</option>
   </select>

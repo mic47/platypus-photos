@@ -24,7 +24,7 @@ Stats: {{job.job_json}}
 </pre>
       </div></td>
       <td>{{job.repls}}</td>
-      <td><a href="#" onclick='show_job_list();map_zoom({{job.latitude}}, {{job.longitude}});'>{{job.latitude|round(5)}} {{job.longitude|round(5)}}</a></td>
+      <td><a href="#" onclick='window.APP.show_job_list();window.APP.map_zoom({{job.latitude}}, {{job.longitude}});'>{{job.latitude|round(5)}} {{job.longitude|round(5)}}</a></td>
   </tr>
 {% endfor %}
 </table>

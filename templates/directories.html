@@ -1,6 +1,6 @@
 {% for d in dirs %}&gt; 
 {% if d[1].since %}{{ d[1].since | timestamp_to_pretty_datetime }} - {{ d[1].until | timestamp_to_pretty_datetime }}{% endif %}
-{% for part in d[0] %}<span class="pdir"><a onclick="update_dir('{{ part[1] }}')" href="#">{{ part[0] }}/</a></span>{% endfor %}: {{ d[1].total_images }} 🖼️,
+{% for part in d[0] %}<span class="pdir"><a onclick="window.APP.update_dir('{{ part[1] }}')" href="#">{{ part[0] }}/</a></span>{% endfor %}: {{ d[1].total_images }} 🖼️,
 {{ '%.1f'|format(d[1].has_location * 100.0 / d[1].total_images|float) }}% 🗺️,
 {{ '%.1f'|format(d[1].has_timestamp * 100.0 / d[1].total_images|float) }}% 🕝,
 {{ '%.1f'|format(d[1].being_annotated * 100.0 / d[1].total_images|float) }}% 🏗️ 

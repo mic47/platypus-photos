@@ -11,29 +11,29 @@
     <span id="i{{loop.index0}}"></span>
     <div class="gallery_item_fs">
         {% if loop.index0 == 0 %}
-        {% if input.page > 0 %}<a onclick="prev_page()" href="#}">prev</a>{% else %} prev {% endif %}
+        {% if input.page > 0 %}<a onclick="window.APP.prev_page()" href="#}">prev</a>{% else %} prev {% endif %}
         {% else %}
         <a href="#i{{ loop.index0}}" onclick="overlay_prev(this, {{ loop.index0 }})">prev</a>
         {% endif %}
         <a href="#i{{ loop.index0}}" onclick="overlay_close(this)">close</a>
         {% if loop.index == images|length %}
-        {% if has_next_page %}<a onclick="next_page()" href="#">next</a>{% else %} next {% endif %}
+        {% if has_next_page %}<a onclick="window.APP.next_page()" href="#">next</a>{% else %} next {% endif %}
         {% else %}
         <a href="#i{{ loop.index0}}" onclick="overlay_next(this, {{ loop.index0 }})">next</a>
         {% endif %}
     </div>
     {% if image.timeicon %}
         {% if ascending %}
-        <a href="#" onclick='update_url({"tsto":{{image.timestamp}}+0.01})'>⬅️ to</a>
+        <a href="#" onclick='window.APP.update_url({"tsto":{{image.timestamp}}+0.01})'>⬅️ to</a>
         {% else %}
-        <a href="#" onclick='update_url({"tsfrom":{{image.timestamp}}-0.01})'>⬅️ from</a>
+        <a href="#" onclick='window.APP.update_url({"tsfrom":{{image.timestamp}}-0.01})'>⬅️ from</a>
         {% endif %}
         {{image.timeicon}}
         {% if image.being_annotated %}🏗️{% endif %}
         {% if ascending %}
-        <a href="#" onclick='update_url({"tsfrom":{{image.timestamp}}-0.01})'>from ➡️</a>
+        <a href="#" onclick='window.APP.update_url({"tsfrom":{{image.timestamp}}-0.01})'>from ➡️</a>
         {% else %}
-        <a href="#" onclick='update_url({"tsto":{{image.timestamp}}+0.01})'>to ➡️</a>
+        <a href="#" onclick='window.APP.update_url({"tsto":{{image.timestamp}}+0.01})'>to ➡️</a>
         {% endif %}
     {% else %}
         {% if image.being_annotated %}🏗️{% endif %}
@@ -47,25 +47,25 @@
     </div>
     <div class="overflow">
       {% if image.date %}
-        <span class="date"><a onclick='update_url({"tsfrom": "{{image.date_timestamp_start}}", "tsto": "{{image.date_timestamp_end}}"})' href="#">{{image.date}}</a></span>
+        <span class="date"><a onclick='window.APP.update_url({"tsfrom": "{{image.date_timestamp_start}}", "tsto": "{{image.date_timestamp_end}}"})' href="#">{{image.date}}</a></span>
       {% endif %}
       {% if image.time%}
         <span class="date">{{image.time}}</span>
       {% endif %}
       {% for address in image.addrs %}
-        <span class="location"><a onclick='update_url({"addr": "{{address|safe}}"})' href="#">{{ address | append_flag }}</a></span>
+        <span class="location"><a onclick='window.APP.update_url({"addr": "{{address|safe}}"})' href="#">{{ address | append_flag }}</a></span>
       {% endfor %}
       {% for tag in image.tags %}
-        {%if not tag[1] %}<span class="tag"><a onclick='update_url_add_tag("{{tag[0]|safe}}")' href="#">{{tag[1]}}{{tag[0]}}</a></span>{% endif %}
+        {%if not tag[1] %}<span class="tag"><a onclick='window.APP.update_url_add_tag("{{tag[0]|safe}}")' href="#">{{tag[1]}}{{tag[0]}}</a></span>{% endif %}
       {% endfor %}
-      {% if image.camera %}<span class="camera"><a onclick='update_url({"camera": "{{image.camera|safe}}"})' href="#">{{image.camera}}</a></span>{% endif %}
+      {% if image.camera %}<span class="camera"><a onclick='window.APP.update_url({"camera": "{{image.camera|safe}}"})' href="#">{{image.camera}}</a></span>{% endif %}
       <div class="gallery_item_fs overflow">
         {% if image.software %}<span class="camera">{{image.software}}</span>{% endif %}
         {% for tag in image.tags %}
-          {%if tag[1] %}<span class="tag"><a onclick='update_url_add_tag("{{tag[0]|safe}}")' href="#">{{tag[1]}}{{tag[0]}}</a></span>{% endif %}
+          {%if tag[1] %}<span class="tag"><a onclick='window.APP.update_url_add_tag("{{tag[0]|safe}}")' href="#">{{tag[1]}}{{tag[0]}}</a></span>{% endif %}
         {% endfor %}
         {% for path in image.paths %}
-          <span class="dir"><a onclick='update_dir("{{path.dir|safe}}")' href="#">{{path.dir}}</a></span>
+          <span class="dir"><a onclick='window.APP.update_dir("{{path.dir|safe}}")' href="#">{{path.dir}}</a></span>
         {% endfor %}
         {% for raw in image.raw_data %}
           <span class="raw">{{ raw.k }}: {{raw.v}}</span>

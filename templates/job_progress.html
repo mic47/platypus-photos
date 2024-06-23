@@ -1,7 +1,7 @@
 <table>
   <tr>
     <td>
-      <img src onerror='{{update_state_fn}}("{{state_base64|safe}}")'/>
+      <img src onerror='window.APP.{{update_state_fn}}("{{state_base64|safe}}")'/>
     </td>
     <td>🏗️</td>
     <td>🚏</td>
@@ -16,7 +16,7 @@
     <td>{{state.t_total}}</td>
   </tr>
   <tr>
-    <td onclick='{{job_list_fn}}()'>📦</td>
+    <td onclick='window.APP.{{job_list_fn}}()'>📦</td>
     <td>{{state.j_total - state.j_finished - state.j_waiting}}</td>
     <td>{{state.j_waiting}}</td>
     <td>{{state.j_finished}}</td>

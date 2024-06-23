@@ -454,7 +454,7 @@ class PhotoMap {
                             cluster.example_path_md5,
                             "&size=preview' class='popup'>",
                             '<input type="button" value="Use this location for selected photos" ',
-                            `onclick="annotation_overlay(${cluster.position.latitude}, ${cluster.position.longitude})">`,
+                            `onclick="window.APP.annotation_overlay(${cluster.position.latitude}, ${cluster.position.longitude})">`,
                         ].join("")
                     );
                     new_markers[cluster.example_path_md5] = marker;
@@ -990,9 +990,9 @@ class Dates {
 Selected time aggregation:<br/>
 ${start}<br/>
 ${cluster.total} images, ${duration} bucket<br/>
-<button onclick="update_url({tsfrom: ${cluster.min_timestamp - 0.01}, tsto: ${cluster.max_timestamp + 0.01}})">➡️ from &amp; to ⬅️ </button>
-<button onclick="update_url({tsfrom: ${cluster.min_timestamp - 0.01}})">➡️ from</button>
-<button onclick="update_url({tsto: ${cluster.max_timestamp + 0.01}})">to ⬅️ </button><br/>
+<button onclick="window.APP.update_url({tsfrom: ${cluster.min_timestamp - 0.01}, tsto: ${cluster.max_timestamp + 0.01}})">➡️ from &amp; to ⬅️ </button>
+<button onclick="window.APP.update_url({tsfrom: ${cluster.min_timestamp - 0.01}})">➡️ from</button>
+<button onclick="window.APP.update_url({tsto: ${cluster.max_timestamp + 0.01}})">to ⬅️ </button><br/>
 <img loading="lazy" src="/img?hsh=${image_md5}&size=preview" class="gallery_image" />
 </div>
         `;

@@ -2,7 +2,7 @@
 <h2>Going to annotate {{total}} photos </h2>
 <div class="submit_overlay_result" id="submit_overlay_result"></div>
 <div class="annotation_scrollable_area">
-  <form action="javascript:submit_annotations('submit_overlay','SubmitAnnotations','submit_overlay_result', null)" id='SubmitAnnotations'>
+  <form action="javascript:window.APP.submit_annotations('submit_overlay','SubmitAnnotations','submit_overlay_result', null)" id='SubmitAnnotations'>
     <h3>Location Info</h3>
     <input type="hidden" value='{{query_json_base64|safe}}' name="query_json_base64">
     <b>How to override location?</b>
@@ -42,8 +42,8 @@
       </br/>
     <input type="checkbox" class="uncheck" name="sanity_check">Check this box<br/>
     <input type="submit" value="Add">
-    <input type="submit" value="Add, fwd in time, end +1d" formaction="javascript:submit_annotations('submit_overlay','SubmitAnnotations','submit_overlay_result', 24*60*60)">
-    <input type="submit" value="Add, fwd in time, end +1w" formaction="javascript:submit_annotations('submit_overlay','SubmitAnnotations','submit_overlay_result', 7*24*60*60)">
+    <input type="submit" value="Add, fwd in time, end +1d" formaction="javascript:window.APP.submit_annotations('submit_overlay','SubmitAnnotations','submit_overlay_result', 24*60*60)">
+    <input type="submit" value="Add, fwd in time, end +1w" formaction="javascript:window.APP.submit_annotations('submit_overlay','SubmitAnnotations','submit_overlay_result', 7*24*60*60)">
     <input type="button" value="cancel" onclick="document.getElementById('submit_overlay').remove();">
   </form>
 

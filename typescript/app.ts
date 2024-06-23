@@ -152,10 +152,10 @@ function map_add_point_only(
             text,
             "<br/>",
             '<input type="button" value="Use this location for selected photos" ',
-            `onclick="annotation_overlay(${latitude}, ${longitude})">`,
+            `onclick="window.APP.annotation_overlay(${latitude}, ${longitude})">`,
             "<br/>",
             '<input type="button" value="Delete this marker" ',
-            `onclick="delete_marker('${id}')">`,
+            `onclick="window.APP.delete_marker('${id}')">`,
         ].join("")
     );
     ___global_markers[id] = marker;
@@ -350,3 +350,33 @@ function init_fun() {
             load_markers_initially();
         });
 }
+function update_sort(params: SortParams) {
+    ___state.update_sort(params);
+}
+
+const app: any = {
+    init_fun,
+    update_dir,
+    update_url,
+    reset_param,
+    update_form,
+    map_zoom,
+    map_bounds,
+    map_refetch,
+    map_add_point,
+    map_close_popup,
+    fetch_map_search,
+    update_url_add_tag,
+    set_page,
+    prev_page,
+    next_page,
+    add_to_float_param,
+    shift_float_params,
+    annotation_overlay,
+    update_job_progress,
+    show_job_list,
+    delete_marker,
+    submit_annotations,
+    update_sort,
+};
+(window as any).APP = app
