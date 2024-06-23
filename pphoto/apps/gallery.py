@@ -11,7 +11,7 @@ import time
 import enum
 import traceback
 from datetime import datetime, timedelta
-from dataclasses import dataclass, fields
+from dataclasses import dataclass
 
 from dataclasses_json import DataClassJsonMixin
 from PIL import Image, ImageFile
@@ -719,23 +719,6 @@ def input_request(request: Request, url: SearchQuery) -> HTMLResponse:
                 ),
             },
         },
-    )
-
-
-@dataclass
-class UrlFieldPartitioning:
-    search_query: t.List[str]  # noqa: F841
-    paging: t.List[str]  # noqa: F841
-    sort: t.List[str]  # noqa: F841
-
-
-# TODO: this could be simply generated and included
-@app.get("/api/url_field_partitioning")
-async def url_field_partitioning() -> UrlFieldPartitioning:
-    return UrlFieldPartitioning(
-        search_query=[x.name for x in fields(SearchQuery)],
-        paging=[x.name for x in fields(GalleryPaging)],
-        sort=[x.name for x in fields(SortParams)],
     )
 
 
