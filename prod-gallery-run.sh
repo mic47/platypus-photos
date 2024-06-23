@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -x
+
 git pull
 yarn
 yarn prod-build
