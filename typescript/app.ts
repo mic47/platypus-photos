@@ -1,35 +1,39 @@
-var ___state = null;
-function update_dir(data) {
-  ___state.update_url({"directory": data});
+var ___state: AppState = null;
+function update_dir(data: string) {
+    ___state.update_url({ directory: data });
 }
-function update_url(data) {
-  ___state.update_url(data);
+function update_url(data: SearchQueryParams) {
+    ___state.update_url(data);
 }
-function reset_param(key) {
-  if (key === "__ALL__") {
-    ___state.replace_url({});
-    return;
-  }
-  const state = ___state.get_url();
-  delete state[key];
-  ___state.replace_url(state);
-}
-function update_form(div_id) {
-  const formData = new FormData(document.getElementById(div_id));
-  const values = ___state.get_url();
-  for (let [key, value] of formData) {
-    if (value !== null && value !== undefined && value !== "") {
-        values[key] = value;
-    } else {
-        delete values[key]
+function reset_param(key: string) {
+    if (key === "__ALL__") {
+        ___state.replace_url({});
+        return;
     }
-  }
-  ___state.replace_url(values);
+    const state = ___state.get_url();
+    delete state[key];
+    ___state.replace_url(state);
 }
-___map_search = null;
-___map = null;
-function map_zoom(latitude, longitude) {
-    ___map.map.flyTo([latitude, longitude], 13, {duration: 1});
+function update_form(div_id: string) {
+    const formData = new FormData(
+        document.getElementById(div_id) as HTMLFormElement
+    );
+    const values = ___state.get_url();
+    for (let [key, value] of formData) {
+        if (value !== null && value !== undefined && value !== "") {
+            if (typeof value === "string") {
+                values[key] = value;
+            }
+        } else {
+            delete values[key];
+        }
+    }
+    ___state.replace_url(values);
+}
+var ___map_search: MapSearch = null;
+var ___map: PhotoMap = null;
+function map_zoom(latitude: number, longitude: number) {
+    ___map.map.flyTo([latitude, longitude], 13, { duration: 1 });
 }
 function map_bounds() {
     ___map.update_bounds(___state.get_url());
@@ -37,37 +41,49 @@ function map_bounds() {
 function map_refetch() {
     ___map.update_markers(___state.get_url(), false);
 }
-___global_markers = {};
-function get_markers_from_local_storage() {
+var ___global_markers: { [id: string]: LeafMarker } = {};
+type Marker = {
+    latitude: number;
+    longitude: number;
+    text: string;
+};
+type LocalStorageMarkers = { [id: string]: Marker | null };
+function get_markers_from_local_storage(): LocalStorageMarkers {
     let current = window.localStorage.getItem("markers");
     if (current === undefined || current === null) {
-            current = '{}'
+        current = "{}";
     }
     let parsed = {};
     try {
         parsed = JSON.parse(current);
         if (Array.isArray(parsed)) {
-            parsed = Object.fromEntries(parsed.map((e, i) => [i.toString(), e]));
+            parsed = Object.fromEntries(
+                parsed.map((e, i) => [i.toString(), e])
+            );
         }
     } catch (error) {
-        console.log("Error when getting data from local storage", error)
+        console.log("Error when getting data from local storage", error);
     }
-    return parsed
+    return parsed;
 }
-function add_marker_to_local_storage(latitude, longitude, text) {
+function add_marker_to_local_storage(
+    latitude: number,
+    longitude: number,
+    text: string
+) {
     const markers = get_markers_from_local_storage();
-    const id = Math.random().toString().replace("0.","");
-    markers[id] = {latitude, longitude, text};
+    const id = Math.random().toString().replace("0.", "");
+    markers[id] = { latitude, longitude, text };
     window.localStorage.setItem("markers", JSON.stringify(markers));
     return id;
 }
-function delete_marker(id) {
+function delete_marker(id: string) {
     const markers = get_markers_from_local_storage();
     markers[id] = null;
     window.localStorage.setItem("markers", JSON.stringify(markers));
     delete_marker_only(id);
 }
-function delete_marker_only(id) {
+function delete_marker_only(id: string) {
     const marker = ___global_markers[id];
     if (marker !== undefined && marker !== null) {
         marker.remove();
@@ -84,9 +100,9 @@ function load_markers_initially() {
         if (e.key !== "markers") {
             return;
         }
-        const oldValue = JSON.parse(e.oldValue);
-        const newValue = JSON.parse(e.newValue);
-        const actions = [];
+        const oldValue: LocalStorageMarkers = JSON.parse(e.oldValue || "{}");
+        const newValue: LocalStorageMarkers = JSON.parse(e.newValue || "{}");
+        const actions: Array<[string, null | Marker]> = [];
         Object.entries(newValue).forEach(([id, value]) => {
             const old = oldValue[id];
             if (old === undefined || old === null) {
@@ -109,30 +125,42 @@ function load_markers_initially() {
             if (value === undefined || value === null) {
                 delete_marker_only(id);
             } else {
-                map_add_point_only(id, value.latitude, value.longitude, value.text);
+                map_add_point_only(
+                    id,
+                    value.latitude,
+                    value.longitude,
+                    value.text
+                );
             }
         });
         window.localStorage.setItem("markers", JSON.stringify(markers));
     });
 }
-function map_add_point_only(id, latitude, longitude, text) {
+function map_add_point_only(
+    id: string,
+    latitude: number,
+    longitude: number,
+    text: string
+) {
     const marker = L.marker([latitude, longitude], {
-        "alt": "Ad-hoc marker: " + text,
-        "title": "Ad-hoc marker: " + text,
-        "opacity": 0.7,
+        alt: "Ad-hoc marker: " + text,
+        title: "Ad-hoc marker: " + text,
+        opacity: 0.7,
     }).addTo(___map.map);
-    marker.bindPopup([
-        text,
-        "<br/>",
-        '<input type="button" value="Use this location for selected photos" ',
-        `onclick="annotation_overlay(${latitude}, ${longitude})">`,
-        "<br/>",
-        '<input type="button" value="Delete this marker" ',
-        `onclick="delete_marker('${id}')">`,
-    ].join(""));
+    marker.bindPopup(
+        [
+            text,
+            "<br/>",
+            '<input type="button" value="Use this location for selected photos" ',
+            `onclick="annotation_overlay(${latitude}, ${longitude})">`,
+            "<br/>",
+            '<input type="button" value="Delete this marker" ',
+            `onclick="delete_marker('${id}')">`,
+        ].join("")
+    );
     ___global_markers[id] = marker;
 }
-function map_add_point(latitude, longitude, text) {
+function map_add_point(latitude: number, longitude: number, text: string) {
     const id = add_marker_to_local_storage(latitude, longitude, text);
     map_add_point_only(id, latitude, longitude, text);
 }
@@ -140,50 +168,58 @@ function map_close_popup() {
     ___map.map.closePopup();
 }
 function fetch_map_search() {
-  const formData = new FormData(document.getElementById('MapSearchId'));
-  const values = {}
-  for (const [key, value] of formData) {
-    if (value) {
-        values[key] = value;
+    const formData = new FormData(
+        document.getElementById("MapSearchId") as HTMLFormElement
+    );
+    const values: { [key: string]: string } = {};
+    for (const [key, value] of formData) {
+        if (value) {
+            if (typeof value === "string") {
+                values[key] = value;
+            }
+        }
     }
-  }
-  if (___map_search !== null) {
-    ___map_search.fetch(values["query"] || null);
-  }
+    if (___map_search !== null) {
+        ___map_search.fetch(values["query"] || null);
+    }
 }
-function update_url_add_tag(tag) {
-  const old_tag = ___state.get_url()["tag"];
-  if (old_tag === undefined || old_tag === null) {
-    ___state.update_url({"tag": tag});
-  } else {
-    ___state.update_url({"tag": `${old_tag},${tag}`});
-  }
+function update_url_add_tag(tag: string) {
+    const old_tag = ___state.get_url()["tag"];
+    if (old_tag === undefined || old_tag === null) {
+        ___state.update_url({ tag: tag });
+    } else {
+        ___state.update_url({ tag: `${old_tag},${tag}` });
+    }
 }
-function set_page(page) {
-    ___state.update_paging({page});
+function set_page(page: number) {
+    ___state.update_paging({ page: page.toString() });
 }
 function prev_page() {
     const page = parseInt(___state.get_paging()["page"]) || 0;
     if (page > 0) {
-        ___state.update_paging({"page": page - 1});
+        ___state.update_paging({ page: (page - 1).toString() });
     }
 }
 function next_page() {
     const page = parseInt(___state.get_paging()["page"]) || 0;
-    const update = {"page": page + 1};
+    const update = { page: (page + 1).toString() };
     ___state.update_paging(update);
 }
-function add_to_float_param(param, other, new_value) {
-    const query = ___state.get_url()
+function add_to_float_param(param: string, other: string, new_value: number) {
+    const query = ___state.get_url();
     let value = parseFloat(query[param]) || parseFloat(query[other]);
     if (value != value) {
         return;
     }
-    const update = {};
-    update[param] = value + new_value;
+    const update: { [key: string]: string } = {};
+    update[param] = (value + new_value).toString();
     ___state.update_url(update);
 }
-function shift_float_params(param_to_start, second_param, shift_by=null) {
+function shift_float_params(
+    param_to_start: string,
+    second_param: string,
+    shift_by: number | null = null
+) {
     const query = ___state.get_url();
     const start_value = parseFloat(query[param_to_start]);
     const end_value = parseFloat(query[second_param]);
@@ -191,36 +227,40 @@ function shift_float_params(param_to_start, second_param, shift_by=null) {
         // This does not make sense, second param is empty
         return;
     }
-    const update = {};
-    update[param_to_start] = end_value;
+    const update: { [key: string]: string } = {};
+    update[param_to_start] = end_value.toString();
     if (shift_by !== undefined && shift_by !== null) {
-        update[second_param] = end_value + shift_by;
+        update[second_param] = (end_value + shift_by).toString();
     } else {
         if (start_value != start_value) {
-            update[second_param] = undefined;
+            delete update[second_param];
         } else {
-            update[second_param] = end_value + end_value - start_value;
+            update[second_param] = (
+                end_value +
+                end_value -
+                start_value
+            ).toString();
         }
     }
     ___state.update_url(update);
 }
-function annotation_overlay(latitude, longitude) {
+function annotation_overlay(latitude: number, longitude: number) {
     const overlay = new AnnotationOverlay("SubmitDataOverlay");
     overlay.fetch(latitude, longitude, ___state.get_url());
 }
 
-var job_progress = null;
-function update_job_progress(state_base64) {
+var job_progress: JobProgress = null;
+function update_job_progress(state_base64: string) {
     job_progress.add_state_base64(state_base64);
 }
-var job_list = null;
+var job_list: JobList = null;
 function show_job_list() {
     job_list.show_or_close();
 }
 
 function init_fun() {
     if (___state !== null) {
-      throw new Error('State is already initialized!');
+        throw new Error("State is already initialized!");
     }
 
     // Set parameters
@@ -232,27 +272,41 @@ function init_fun() {
     })
         .then((response) => response.json())
         .then((response) => {
-
             const url_parameters_fields = response.search_query;
             const paging_fields = response.paging;
             const sort_fields = response.sort;
 
             // Initialize all components
-            ___state = new AppState({}, {}, {})
+            ___state = new AppState({}, {}, {});
             const url_sync = new UrlSync(url_parameters_fields);
             const paging_sync = new UrlSync(paging_fields);
             const sort_sync = new UrlSync(sort_fields);
             const input_form = new InputForm("InputForm");
             const gallery = new Gallery("GalleryImages", prev_page, next_page);
-            ___map = new PhotoMap("map", "MapUseQuery", () => ___state.get_url(), location_preview);
+            ___map = new PhotoMap(
+                "map",
+                "MapUseQuery",
+                () => ___state.get_url(),
+                location_preview
+            );
             ___map_search = new MapSearch("MapSearch");
-            const dates = new Dates("DateChart", (x) => {___state.update_url(x);}, "DateSelection");
+            const dates = new Dates(
+                "DateChart",
+                (x) => {
+                    ___state.update_url(x);
+                },
+                "DateSelection"
+            );
             const directories = new Directories("Directories");
             const aggregate_info = new AggregateInfo("AggregateInfo");
             ___state.register_url_hook((url_params) => {
                 input_form.fetch(url_params);
                 url_sync.update(url_params);
-                gallery.fetch(url_params, ___state.get_paging(), ___state.get_sort());
+                gallery.fetch(
+                    url_params,
+                    ___state.get_paging(),
+                    ___state.get_sort()
+                );
                 aggregate_info.fetch(url_params, ___state.get_paging());
 
                 dates.fetch(url_params);
@@ -277,14 +331,20 @@ function init_fun() {
             ___state.replace_sort(sort_sync.get_url());
             ___map_search.fetch(null);
 
-            job_progress = new JobProgress("JobProgress", "update_job_progress", "show_job_list");
+            job_progress = new JobProgress(
+                "JobProgress",
+                "update_job_progress",
+                "show_job_list"
+            );
             job_progress.fetch();
-            setInterval(() => {job_progress.fetch()}, 10000);
+            setInterval(() => {
+                job_progress.fetch();
+            }, 10000);
             job_list = new JobList("JobList");
             new TabSwitch("RootTabs", {
-                "TabDirectories": directories.switchable,
-                "TabJobProgress": job_progress.switchable,
-                "TabDates": dates.switchable,
+                TabDirectories: directories.switchable,
+                TabJobProgress: job_progress.switchable,
+                TabDates: dates.switchable,
             });
 
             load_markers_initially();

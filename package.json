@@ -9,6 +9,13 @@
     "prod-build": "yarn parcel build typescript/index.html --no-cache --dist-dir \"static/\" --public-url \"http://localhost:8000/static\" --detailed-report --no-optimize",
     "__last-one__": "Just to have trailing comma"
   },
+  "prettier": {
+    "tabWidth": 4
+  },
+  "browserslist": [
+    "last 2 Chrome versions",
+    "last 2 Firefox versions"
+  ],
   "devDependencies": {
     "eslint": "^9.5.0",
     "parcel": "^2.12.0",

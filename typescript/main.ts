@@ -1,81 +1,87 @@
+type SearchQueryParams = { [key1: string]: string };
+type PagingParams = { [key2: string]: string };
+type SortParams = { [key3: string]: string };
+
+type AppStateHook<T> = (data: T) => void;
+
 class AppState {
-    constructor(url_params, paging, sort) {
-        this._url_params = url_params;
-        this._url_params_hooks = [];
-
-        this._paging = paging;
-        this._paging_hooks = [];
-
-        this._sort = sort;
-        this._sort_hooks = [];
+    private url_params_hooks: Array<AppStateHook<SearchQueryParams>>;
+    private paging_hooks: Array<AppStateHook<PagingParams>>;
+    private sort_hooks: Array<AppStateHook<SortParams>>;
+    constructor(
+        private url_params: SearchQueryParams,
+        private paging: PagingParams,
+        private sort: SortParams
+    ) {
+        this.url_params_hooks = [];
+        this.paging_hooks = [];
+        this.sort_hooks = [];
     }
 
-    register_paging_hook(hook) {
-        this._paging_hooks.push(hook);
+    register_paging_hook(hook: AppStateHook<SearchQueryParams>) {
+        this.paging_hooks.push(hook);
     }
-    get_paging() {
-        return this._paging;
+    get_paging(): PagingParams {
+        return this.paging;
     }
-    update_paging(new_parts) {
-        this._paging = { ...this._paging, ...new_parts };
-        const paging = this._paging;
-        this._paging_hooks.forEach((x) => x(paging));
+    update_paging(new_parts: PagingParams) {
+        this.paging = { ...this.paging, ...new_parts };
+        const paging = this.paging;
+        this.paging_hooks.forEach((x) => x(paging));
     }
-    replace_paging(new_paging) {
-        this._paging = {};
+    replace_paging(new_paging: PagingParams) {
+        this.paging = {};
         this.update_paging(new_paging);
     }
 
-    register_sort_hook(hook) {
-        this._sort_hooks.push(hook);
+    register_sort_hook(hook: AppStateHook<SortParams>) {
+        this.sort_hooks.push(hook);
     }
-    get_sort() {
-        return this._sort;
+    get_sort(): SortParams {
+        return this.sort;
     }
-    update_sort(new_parts) {
-        this._sort = { ...this._sort, ...new_parts };
-        const sort = this._sort;
-        this._sort_hooks.forEach((x) => x(sort));
+    update_sort(new_parts: SortParams) {
+        this.sort = { ...this.sort, ...new_parts };
+        const sort = this.sort;
+        this.sort_hooks.forEach((x) => x(sort));
     }
-    replace_sort(new_sort) {
-        this._sort = {};
+    replace_sort(new_sort: SortParams) {
+        this.sort = {};
         this.update_sort(new_sort);
     }
 
-    get_url() {
-        return { ...this._url_params };
+    get_url(): SearchQueryParams {
+        return { ...this.url_params };
     }
-    update_url(new_parts) {
+    update_url(new_parts: SearchQueryParams) {
         // TODO: do this only on change
-        this._url_params = { ...this._url_params, ...new_parts };
-        const url = this._url_params;
-        this._url_params_hooks.forEach((x) => x(url));
+        this.url_params = { ...this.url_params, ...new_parts };
+        const url = this.url_params;
+        this.url_params_hooks.forEach((x) => x(url));
     }
-    replace_url(new_url) {
+    replace_url(new_url: SearchQueryParams) {
         // TODO: do this only on change
-        this._url_params = {};
+        this.url_params = {};
         this.update_url(new_url);
     }
-    register_url_hook(hook) {
-        this._url_params_hooks.push(hook);
+    register_url_hook(hook: AppStateHook<SearchQueryParams>) {
+        this.url_params_hooks.push(hook);
     }
 }
 
 class UrlSync {
-    constructor(registered_fields) {
-        this._registered_fields = registered_fields;
-    }
-    get_url() {
+    constructor(private registered_fields: string[]) {}
+    get_url(): { [key: string]: string } {
         var url = new URL(window.location.href);
         return Object.fromEntries(
-            this._registered_fields
+            this.registered_fields
                 .map((field) => [field, url.searchParams.get(field)])
                 .filter((x) => x[1] !== undefined && x[1] !== null && x[1])
         );
     }
-    update(new_url) {
+    update(new_url: { [key: string]: string }) {
         var url = new URL(window.location.href);
-        this._registered_fields.forEach((field) => {
+        this.registered_fields.forEach((field) => {
             const new_value = new_url[field];
             if (new_value === null || new_value === undefined) {
                 url.searchParams.delete(field);
@@ -89,22 +95,23 @@ class UrlSync {
     }
 }
 
-function changeState(index) {
+function changeState(index: string | number | null) {
     var url = new URL(window.location.href);
-    old_parameter = url.searchParams.get("oi");
-    if (old_parameter !== index) {
-        return;
-    }
+    const old_parameter = url.searchParams.get("oi");
     if (index == null) {
         url.searchParams.delete("oi");
     } else {
-        url.searchParams.set("oi", index);
+        url.searchParams.set("oi", index.toString());
     }
     if (window.history.replaceState) {
         window.history.replaceState(window.history.state, "", url.href);
     }
 }
-function replace_image_size_inside(element, source, replacement) {
+function replace_image_size_inside(
+    element: null | HTMLElement,
+    source: string,
+    replacement: string
+) {
     if (element == null) {
         return;
     }
@@ -120,77 +127,128 @@ function replace_image_size_inside(element, source, replacement) {
         }
     }
 }
-function this_is_overlay_element(element) {
+function this_is_overlay_element(element: HTMLElement) {
     replace_image_size_inside(element, "preview", "original");
     var next = element.nextElementSibling;
     if (next != null) {
-        replace_image_size_inside(next, "preview", "original");
+        replace_image_size_inside(next as HTMLElement, "preview", "original");
         next = next.nextElementSibling;
     }
     var prev = element.previousElementSibling;
     if (prev != null) {
-        replace_image_size_inside(prev, "preview", "original");
+        replace_image_size_inside(prev as HTMLElement, "preview", "original");
         prev = prev.previousElementSibling;
     }
     if (next != null) {
-        replace_image_size_inside(next, "original", "preview");
+        replace_image_size_inside(next as HTMLElement, "original", "preview");
     }
     if (prev != null) {
-        replace_image_size_inside(prev, "original", "preview");
+        replace_image_size_inside(prev as HTMLElement, "original", "preview");
     }
 }
-function overlay(element, index) {
-    this_is_overlay_element(element.parentElement);
-    element.parentElement.classList.add("overlay");
+function overlay(element: HTMLElement, index: string) {
+    const parent = element.parentElement;
+    if (parent === null) {
+        throw new Error(`Element does not have parent ${element}`);
+    }
+    this_is_overlay_element(parent);
+    parent.classList.add("overlay");
     changeState(index);
 }
-function overlay_close(element) {
-    var root = element.parentElement.parentElement;
+function overlay_close(element: HTMLElement) {
+    var root = element.parentElement?.parentElement;
+    if (root === undefined || root === null) {
+        throw new Error(`Element does not have grand-parent ${element}`);
+    }
     replace_image_size_inside(root, "original", "preview");
     replace_image_size_inside(
-        root.previousElementSibling,
+        root.previousElementSibling as HTMLElement | null,
         "original",
         "preview"
     );
-    replace_image_size_inside(root.nextElementSibling, "original", "preview");
+    replace_image_size_inside(
+        root.nextElementSibling as HTMLElement | null,
+        "original",
+        "preview"
+    );
     root.classList.remove("overlay");
     changeState(null);
 }
-function overlay_prev(element, index) {
-    this_is_overlay_element(
-        element.parentElement.parentElement.previousElementSibling
-    );
-    element.parentElement.parentElement.previousElementSibling.classList.add(
-        "overlay"
-    );
-    element.parentElement.parentElement.classList.remove("overlay");
+function overlay_prev(element: HTMLElement, index: number) {
+    const grandpa = element.parentElement?.parentElement;
+    const target = grandpa?.previousElementSibling;
+    if (
+        target === undefined ||
+        target === null ||
+        grandpa === undefined ||
+        grandpa === null
+    ) {
+        throw new Error(
+            `Element does not have grand-parent's previous sibling ${element}`
+        );
+    }
+    this_is_overlay_element(target as HTMLElement);
+    target.classList.add("overlay");
+    grandpa.classList.remove("overlay");
     changeState(index - 1);
 }
-function overlay_next(element, index) {
-    this_is_overlay_element(
-        element.parentElement.parentElement.nextElementSibling
-    );
-    element.parentElement.parentElement.nextElementSibling.classList.add(
-        "overlay"
-    );
-    element.parentElement.parentElement.classList.remove("overlay");
+function overlay_next(element: HTMLElement, index: number) {
+    const grandpa = element.parentElement?.parentElement;
+    const target = grandpa?.nextElementSibling;
+    if (
+        target === undefined ||
+        target === null ||
+        grandpa === undefined ||
+        grandpa === null
+    ) {
+        throw new Error(
+            `Element does not have grand-parent's next sibling ${element}`
+        );
+    }
+    this_is_overlay_element(target as HTMLElement);
+    target.classList.add("overlay");
+    grandpa.classList.remove("overlay");
     changeState(index + 1);
 }
 
+type Position = {
+    latitude: number;
+    longitude: number;
+};
+// TODO: rename to nw, se
+type Bounds = {
+    tl: Position;
+    br: Position;
+};
+
+type LastUpdateMarkersCacheParam = {
+    timestamp: number;
+    non_bounds: {
+        res: Position;
+        of: number;
+        url: SearchQueryParams;
+    };
+    bounds: Bounds;
+    change_view: boolean;
+};
+
+type LeafMap = object;
+type LeafMarker = object;
+
 class PhotoMap {
+    public map: LeafMap;
+    private last_update_markers: LastUpdateMarkersCacheParam | null = null;
+    private last_update_timestamp: number = 0;
+    private markers: { [id: string]: LeafMarker };
     constructor(
-        div_id,
-        should_use_query_div,
-        get_url,
-        context_menu_callback
+        div_id: string,
+        private should_use_query_div: string,
+        get_url: () => SearchQueryParams,
+        private context_menu_callback: any // TODO:  add types when map is fully types
     ) {
         this.map = L.map(div_id).fitWorld();
-        this._should_use_query_div = should_use_query_div;
-        this._last_update_markers = {};
         L.control.scale({ imperial: false }).addTo(this.map);
         this.markers = {};
-        this.last_update_timestamp = 0;
-        this._context_menu_callback = context_menu_callback;
         const that = this;
         const update_markers = (e) => {
             if (e.flyTo) {
@@ -208,8 +266,8 @@ class PhotoMap {
         this.map.on("move", update_markers);
         this.map.on("resize", update_markers);
         if (
-            this._context_menu_callback !== undefined &&
-            this._context_menu_callback !== null
+            this.context_menu_callback !== undefined &&
+            this.context_menu_callback !== null
         ) {
             this.map.on("contextmenu", context_menu);
         }
@@ -223,7 +281,7 @@ class PhotoMap {
     }
 
     context_menu(e) {
-        this._context_menu_callback(e.latlng, (content) => {
+        this.context_menu_callback(e.latlng, (content: string) => {
             return L.popup()
                 .setLatLng(e.latlng)
                 .setContent(content)
@@ -231,7 +289,7 @@ class PhotoMap {
         });
     }
 
-    update_bounds(location_url_json, fit_not_fly=false) {
+    update_bounds(location_url_json: SearchQueryParams, fit_not_fly = false) {
         const query = {
             ...location_url_json,
             skip_with_location: false,
@@ -261,7 +319,7 @@ class PhotoMap {
             });
     }
 
-    _similar(last_bounds, new_bounds, tolerance) {
+    _similar(last_bounds: Bounds, new_bounds: Bounds, tolerance: number) {
         if (last_bounds === undefined || last_bounds === null) {
             return false;
         }
@@ -282,32 +340,35 @@ class PhotoMap {
                 lat_tolerance
         );
     }
-    _should_skip(timestamp, bounds_query, non_bounds, change_view) {
-        const non_bounds_str = JSON.stringify(non_bounds);
+    _should_skip(params: LastUpdateMarkersCacheParam) {
+        const non_bounds_str = JSON.stringify(params.non_bounds);
         if (
-            this._last_update_markers.timestamp + 10000 > timestamp &&
-            this._last_update_markers.non_bounds === non_bounds_str &&
+            this.last_update_markers !== null &&
+            this.last_update_markers.timestamp + 10000 > params.timestamp &&
+            JSON.stringify(this.last_update_markers.non_bounds) ===
+                non_bounds_str &&
             this._similar(
-                this._last_update_markers.bounds,
-                bounds_query,
+                this.last_update_markers.bounds,
+                params.bounds,
                 0.1
             ) &&
-            this._last_update_markers.change_view === change_view
+            this.last_update_markers.change_view === params.change_view
         ) {
             return true;
         }
-        this._last_update_markers.non_bounds = non_bounds_str;
-        this._last_update_markers.bounds = bounds_query;
-        this._last_update_markers.change_view = change_view;
-        this._last_update_markers.timestamp = timestamp;
+        this.last_update_timestamp = params.timestamp;
+        this.last_update_markers = params;
         return false;
     }
 
-    update_markers(location_url_json, change_view = false) {
+    update_markers(location_url_json: SearchQueryParams, change_view = false) {
         // TODO: wrapped maps: shift from 0 + wrap around
         const should_use_query =
-            document.getElementById(this._should_use_query_div)?.checked ||
-            false;
+            (
+                document.getElementById(
+                    this.should_use_query_div
+                ) as (HTMLInputElement | null)
+            )?.checked || false;
 
         var bounds = this.map.getBounds();
         var nw = bounds.getNorthWest();
@@ -315,7 +376,7 @@ class PhotoMap {
         var sz = this.map.getSize();
         var cluster_pixel_size = 10;
         var timestamp = new Date().getTime();
-        const bounds_query = {
+        const bounds_query: Bounds = {
             tl: {
                 latitude: nw.lat,
                 longitude: nw.lng,
@@ -338,7 +399,12 @@ class PhotoMap {
             ),
         };
         if (
-            this._should_skip(timestamp, bounds_query, non_bounds, change_view)
+            this._should_skip({
+                timestamp,
+                bounds: bounds_query,
+                non_bounds,
+                change_view,
+            })
         ) {
             return;
         }
@@ -362,7 +428,7 @@ class PhotoMap {
                     this.update_bounds(location_url_json);
                 }
                 this.last_update_timestamp = timestamp;
-                var new_markers = {};
+                var new_markers: { [key: string]: LeafMarker } = {};
                 for (var i = 0; i < clusters.length; i++) {
                     var cluster = clusters[i];
                     var existing = this.markers[cluster.example_path_md5];
@@ -405,50 +471,52 @@ class PhotoMap {
 }
 
 class Switchable {
+    private enabled: boolean;
+    private callbacks: { [key: string]: () => void };
     constructor() {
-        this._enabled = true;
-        this._callbacks = {};
+        this.enabled = true;
+        this.callbacks = {};
     }
     disable() {
-        if (this._enabled === false) {
+        if (this.enabled === false) {
             false;
         }
-        this._enabled = false;
-        this._callbacks = {};
+        this.enabled = false;
+        this.callbacks = {};
     }
     enable() {
-        if (this._enabled === true) {
+        if (this.enabled === true) {
             return;
         }
-        this._enabled = true;
-        Object.values(this._callbacks).forEach((callback) => {
+        this.enabled = true;
+        Object.values(this.callbacks).forEach((callback) => {
             if (callback !== undefined && callback !== null) {
                 callback();
             }
         });
-        this._callbacks = {};
+        this.callbacks = {};
     }
-    call_or_store(name, callback) {
-        if (this._enabled) {
+    call_or_store(name: string, callback: () => void) {
+        if (this.enabled) {
             return callback();
         }
-        this._callbacks[name] = callback;
+        this.callbacks[name] = callback;
     }
 }
 
 class Directories {
-    constructor(div_id) {
-        this._div_id = div_id;
+    public switchable: Switchable;
+    constructor(private div_id: string) {
         this.switchable = new Switchable();
     }
 
-    fetch(url_data) {
+    fetch(url_data: SearchQueryParams) {
         return this.switchable.call_or_store("fetch", () =>
             this.fetch_impl(url_data)
         );
     }
 
-    fetch_impl(url_data) {
+    fetch_impl(url_data: SearchQueryParams) {
         const url = `/internal/directories.html`;
         fetch(url, {
             method: "POST",
@@ -459,18 +527,19 @@ class Directories {
         })
             .then((response) => response.text())
             .then((text) => {
-                const gallery = document.getElementById(this._div_id);
-                gallery.innerHTML = text;
+                const element = document.getElementById(this.div_id);
+                if (element === null) {
+                    throw new Error(`Unable to find element ${this.div_id}`);
+                }
+                element.innerHTML = text;
             });
     }
 }
 
 class AggregateInfo {
-    constructor(div_id) {
-        this._div_id = div_id;
-    }
+    constructor(private div_id: string) {}
 
-    fetch(url_data, paging) {
+    fetch(url_data: SearchQueryParams, paging: PagingParams) {
         const url = `/internal/aggregate.html`;
         fetch(url, {
             method: "POST",
@@ -481,20 +550,23 @@ class AggregateInfo {
         })
             .then((response) => response.text())
             .then((text) => {
-                const gallery = document.getElementById(this._div_id);
-                gallery.innerHTML = text;
+                const element = document.getElementById(this.div_id);
+                if (element === null) {
+                    throw new Error(`Unable to find element ${this.div_id}`);
+                }
+                element.innerHTML = text;
             });
     }
 }
 
-class GenericFetch {
-    constructor(div_id, endpoint) {
-        this._div_id = div_id;
-        this._endpoint = endpoint;
-    }
+class GenericFetch<T> {
+    constructor(
+        protected readonly div_id: string,
+        private endpoint: string
+    ) {}
 
-    fetch_impl(request) {
-        return fetch(this._endpoint, {
+    fetch_impl(request: T): Promise<void> {
+        return fetch(this.endpoint, {
             method: "POST",
             body: JSON.stringify(request),
             headers: {
@@ -503,95 +575,125 @@ class GenericFetch {
         })
             .then((response) => response.text())
             .then((text) => {
-                const gallery = document.getElementById(this._div_id);
-                gallery.innerHTML = text;
+                const element = document.getElementById(this.div_id);
+                if (element === null) {
+                    throw Error(`Unable to find element ${this.div_id}`);
+                }
+                element.innerHTML = text;
             });
     }
 }
 function now_s() {
     return Date.now() / 1000.0;
 }
-class JobProgress extends GenericFetch {
-    constructor(div_id, update_state_fn, job_list_fn) {
+class JobProgress<S extends { ts: number }> extends GenericFetch<{
+    job_list_fn: string;
+    update_state_fn: string;
+    state: S;
+}> {
+    public switchable: Switchable;
+    private states: S[];
+    constructor(
+        div_id: string,
+        private update_state_fn: string,
+        private job_list_fn: string
+    ) {
         super(div_id, "/internal/job_progress.html");
-        this._states = [];
-        this._update_state_fn = update_state_fn;
-        this._job_list_fn = job_list_fn;
+        this.states = [];
         this.switchable = new Switchable();
     }
     fetch() {
         this.switchable.call_or_store("fetch", () => {
             return this.fetch_impl({
-                job_list_fn: this._job_list_fn,
-                update_state_fn: this._update_state_fn,
-                state: this._states[0],
+                job_list_fn: this.job_list_fn,
+                update_state_fn: this.update_state_fn,
+                state: this.states[0],
             });
         });
     }
-    add_state(state) {
-        this._states.push(state);
-        this._states = this._states.filter((x) => state.ts - x.ts < 300.0);
+    add_state(state: S) {
+        this.states.push(state);
+        this.states = this.states.filter((x) => state.ts - x.ts < 300.0);
     }
-    add_state_base64(base64) {
+    add_state_base64(base64: string) {
         const state = JSON.parse(window.atob(base64));
         this.add_state(state);
     }
 }
-class JobList extends GenericFetch {
-    constructor(div_id) {
+class JobList extends GenericFetch<{}> {
+    private shown: boolean;
+    constructor(div_id: string) {
         super(div_id, "/internal/job_list.html");
-        self._div_id = div_id;
-        this._shown = false;
+        this.shown = false;
     }
     fetch() {
         return this.fetch_impl({}).then(() => {
-            this._shown = true;
+            this.shown = true;
         });
     }
     show_or_close() {
-        if (this._shown) {
-            this._shown = false;
-            document.getElementById(this._div_id).innerHTML = "";
+        if (this.shown) {
+            this.shown = false;
+            const element = document.getElementById(this.div_id);
+            if (element === null) {
+                throw new Error(`Unable to fine element ${this.div_id})`);
+            }
+            element.innerHTML = "";
         } else {
             this.fetch();
         }
     }
 }
 
-class MapSearch extends GenericFetch {
-    constructor(div_id) {
+class MapSearch extends GenericFetch<{ query: string | null }> {
+    constructor(div_id: string) {
         super(div_id, "/internal/map_search.html");
     }
-    fetch(search_str) {
+    fetch(search_str: string | null) {
         return this.fetch_impl({ query: search_str });
     }
 }
 
-class AddressInfo extends GenericFetch {
-    constructor(div_id) {
+class AddressInfo extends GenericFetch<{
+    latitude: number;
+    longitude: number;
+}> {
+    constructor(div_id: string) {
         super(div_id, "/internal/fetch_location_info.html");
     }
-    fetch(latitude, longitude) {
+    fetch(latitude: number, longitude: number) {
         return this.fetch_impl({ latitude, longitude });
     }
 }
 
-class AnnotationOverlay extends GenericFetch {
-    constructor(div_id) {
+class AnnotationOverlay extends GenericFetch<{
+    latitude: number;
+    longitude: number;
+    query: SearchQueryParams;
+}> {
+    constructor(div_id: string) {
         super(div_id, "/internal/submit_annotations_overlay.html");
     }
-    fetch(latitude, longitude, query) {
+    fetch(latitude: number, longitude: number, query: SearchQueryParams) {
         return this.fetch_impl({ latitude, longitude, query });
     }
 }
 
-function null_if_empty(str) {
-    if (str === null || str === undefined || str.trim() === "") {
+function null_if_empty(str: null | undefined | string | File): null | string {
+    if (
+        str === null ||
+        str === undefined ||
+        typeof str !== "string" ||
+        str.trim() === ""
+    ) {
         return null;
     }
     return str;
 }
-function parse_float_or_null(str) {
+function parse_float_or_null(str: string | null | File): number | null {
+    if (str === null || typeof str !== "string") {
+        return null;
+    }
     const value = parseFloat(str);
     if (value != value) {
         return null;
@@ -599,7 +701,7 @@ function parse_float_or_null(str) {
     return value;
 }
 
-function error_box(div_id, value) {
+function error_box(div_id: string, value: any) {
     console.log(div_id, value);
     const e = document.getElementById(div_id);
     console.log(e);
@@ -613,23 +715,32 @@ function error_box(div_id, value) {
     try {
         pre.innerHTML = JSON.stringify(value, null, 2);
     } catch {
-        pre.innerHTML = value;
+        pre.innerHTML = value.toString();
     }
     element.appendChild(pre);
     e.innerHTML = "";
     e.appendChild(element);
 }
 
-function submit_annotations(div_id, form_id, return_id, advance_in_time) {
-    const formData = new FormData(document.getElementById(form_id));
+function submit_annotations(
+    div_id: string,
+    form_id: string,
+    return_id: string,
+    advance_in_time: number | null
+) {
+    const formElement = document.getElementById(form_id);
+    if (formElement === null) {
+        throw new Error(`Unable to find element ${form_id}`);
+    }
+    const formData = new FormData(formElement as HTMLFormElement);
     const checkbox_value = formData.get("sanity_check");
-    [
-        ...document.getElementById(form_id).getElementsByClassName("uncheck"),
-    ].forEach((element) => {
+    [...formElement.getElementsByClassName("uncheck")].forEach((element) => {
         // Prevent from accidentally submitting again
-        element.checked = false;
+        (element as HTMLInputElement).checked = false;
     });
-    const query = JSON.parse(window.atob(formData.get("query_json_base64")));
+    const query = JSON.parse(
+        window.atob(formData.get("query_json_base64") as string)
+    );
     const latitude = parse_float_or_null(formData.get("latitude"));
     if (latitude === null) {
         return error_box(return_id, {
@@ -646,7 +757,9 @@ function submit_annotations(div_id, form_id, return_id, advance_in_time) {
     }
     const location_override = formData.get("location_override");
     let address_name = null_if_empty(formData.get("address_name"));
-    const address_name_original = formData.get("address_name_original");
+    const address_name_original = null_if_empty(
+        formData.get("address_name_original")
+    );
     if (
         address_name === null ||
         address_name.trim() === address_name_original
@@ -654,7 +767,9 @@ function submit_annotations(div_id, form_id, return_id, advance_in_time) {
         address_name = address_name_original;
     }
     let address_country = null_if_empty(formData.get("address_country"));
-    const address_country_original = formData.get("address_country_original");
+    const address_country_original = null_if_empty(
+        formData.get("address_country_original")
+    );
     if (
         address_country === null ||
         address_country.trim() === address_country_original
@@ -701,7 +816,11 @@ function submit_annotations(div_id, form_id, return_id, advance_in_time) {
                     shift_float_params("tsfrom", "tsto", advance_in_time);
                     set_page(0);
                 }
-                document.getElementById(div_id).remove();
+                const element = document.getElementById(div_id);
+                if (element === null) {
+                    throw Error(`Unable to find element ${div_id}`);
+                }
+                element.remove();
             })
             // TODO: put error into stuff
             .catch((err) => {
@@ -713,7 +832,14 @@ function submit_annotations(div_id, form_id, return_id, advance_in_time) {
     );
 }
 
-function location_preview(loc, show_content_fn) {
+type LeafPosition = {
+    lat: number;
+    lng: number;
+};
+function location_preview(
+    loc: LeafPosition,
+    show_content_fn: (content: string) => any
+) {
     const existing = document.getElementById("LocPreview");
     if (existing !== undefined && existing !== null) {
         existing.remove();
@@ -726,11 +852,11 @@ function location_preview(loc, show_content_fn) {
 }
 
 class InputForm {
-    constructor(div_id) {
-        this._div_id = div_id;
+    constructor(private div_id: string) {
+        this.div_id = div_id;
     }
 
-    fetch(url_data) {
+    fetch(url_data: SearchQueryParams) {
         const url = `/internal/input.html`;
         fetch(url, {
             method: "POST",
@@ -741,24 +867,24 @@ class InputForm {
         })
             .then((response) => response.text())
             .then((text) => {
-                const gallery = document.getElementById(this._div_id);
+                const gallery = document.getElementById(this.div_id);
+                if (gallery === null) {
+                    throw Error(`Unable to find element ${this.div_id}`);
+                }
                 gallery.innerHTML = text;
             });
     }
 }
 
 class Gallery {
-    constructor(div_id, prev_page, next_page) {
-        this._div_id = div_id;
-        this._next_page = next_page;
-        this._prev_page = prev_page;
-    }
+    constructor(
+        private div_id: string,
+        private prev_page: () => void,
+        private next_page: () => void
+    ) {}
 
-    fetch(url_data, paging, sort) {
-        var url = `/internal/gallery.html?oi=${this._oi}`;
-        if (this._oi === undefined || this._oi === null) {
-            url = `/internal/gallery.html`;
-        }
+    fetch(url_data: SearchQueryParams, paging: PagingParams, sort: SortParams) {
+        const url = "/internal/gallery.html";
         fetch(url, {
             method: "POST",
             body: JSON.stringify({ query: url_data, paging, sort }),
@@ -768,20 +894,23 @@ class Gallery {
         })
             .then((response) => response.text())
             .then((text) => {
-                const gallery = document.getElementById(this._div_id);
+                const gallery = document.getElementById(this.div_id);
+                if (gallery === null) {
+                    throw Error(`Unable to find element ${this.div_id}`);
+                }
                 gallery.innerHTML = text;
                 const prev = gallery.getElementsByClassName("prev-url");
                 for (var i = 0; i < prev.length; i++) {
-                    const p = prev[i];
+                    const p = prev[i] as HTMLElement;
                     p.onclick = (e) => {
-                        this._prev_page();
+                        this.prev_page();
                     };
                 }
                 const next = gallery.getElementsByClassName("next-url");
                 for (var i = 0; i < next.length; i++) {
-                    const p = next[i];
+                    const p = next[i] as HTMLElement;
                     p.onclick = (e) => {
-                        this._next_page();
+                        this.next_page();
                     };
                 }
             });
@@ -789,12 +918,19 @@ class Gallery {
 }
 
 class Dates {
-    constructor(div_id, update_url, tooltip_div) {
+    public switchable: Switchable;
+    private clickTimeStart: null | [number, number];
+    private chart: Chart;
+    constructor(
+        div_id: string,
+        update_url: (data: SearchQueryParams) => void,
+        private tooltip_div: string
+    ) {
         this.switchable = new Switchable();
-        this._clickTimeStart = null;
-        this._tooltip_div = tooltip_div;
+        this.clickTimeStart = null;
         const ctx = document.getElementById(div_id);
-        this._chart = new Chart(ctx, {
+        const that = this;
+        this.chart = new Chart(ctx, {
             type: "line",
             data: {
                 datasets: [
@@ -832,7 +968,14 @@ class Dates {
                 plugins: {
                     tooltip: {
                         callbacks: {
-                            afterFooter: function (context) {
+                            afterFooter: function (context: any) {
+                                const tooltip =
+                                    document.getElementById(tooltip_div);
+                                if (tooltip === null) {
+                                    throw new Error(
+                                        `${tooltip_div} was not found`
+                                    );
+                                }
                                 const cluster = context[0].raw.cluster;
                                 const duration = pretty_print_duration(
                                     cluster.bucket_max - cluster.bucket_min
@@ -853,8 +996,7 @@ ${cluster.total} images, ${duration} bucket<br/>
 <img loading="lazy" src="/img?hsh=${image_md5}&size=preview" class="gallery_image" />
 </div>
         `;
-                                document.getElementById(tooltip_div).innerHTML =
-                                    innerHtml2;
+                                tooltip.innerHTML = innerHtml2;
                             },
                         },
                     },
@@ -863,26 +1005,29 @@ ${cluster.total} images, ${duration} bucket<br/>
             plugins: [
                 {
                     id: "Events",
-                    beforeEvent(chart, args, pluginOptions) {
+                    beforeEvent(chart: Chart, args: any, pluginOptions: any) {
                         const event = args.event;
                         const canvasPosition =
                             Chart.helpers.getRelativePosition(event, chart);
-                        const dataX = chart.scales.x.getValueForPixel(
+                        const dataX: number = chart.scales.x.getValueForPixel(
                             canvasPosition.x
                         );
-                        const dataY = chart.scales.y.getValueForPixel(
+                        const dataY: number = chart.scales.y.getValueForPixel(
                             canvasPosition.y
                         );
                         if (event.type === "mousedown") {
-                            this._clickTimeStart = [canvasPosition.x, dataX];
+                            that.clickTimeStart = [canvasPosition.x, dataX];
                         } else if (event.type === "mouseup") {
+                            if (that.clickTimeStart === null) {
+                                return;
+                            }
                             if (
                                 Math.abs(
-                                    canvasPosition.x - this._clickTimeStart[0]
+                                    canvasPosition.x - that.clickTimeStart[0]
                                 ) > 1
                             ) {
                                 const x = [
-                                    this._clickTimeStart[1] / 1000.0,
+                                    that.clickTimeStart[1] / 1000.0,
                                     dataX / 1000.0,
                                 ];
                                 x.sort((x, y) => {
@@ -895,7 +1040,10 @@ ${cluster.total} images, ${duration} bucket<br/>
                                     }
                                 });
                                 const [f, t] = x;
-                                update_url({ tsfrom: f, tsto: t });
+                                update_url({
+                                    tsfrom: f.toString(),
+                                    tsto: t.toString(),
+                                });
                             }
                         }
                     },
@@ -904,9 +1052,9 @@ ${cluster.total} images, ${duration} bucket<br/>
         });
     }
 
-    fetch(location_url_json) {
+    fetch(location_url_json: SearchQueryParams) {
         return this.switchable.call_or_store("fetch", () => {
-            const tool = document.getElementById(this._tooltip_div);
+            const tool = document.getElementById(this.tooltip_div);
             if (tool !== null && tool !== undefined) {
                 tool.innerHTML = "";
             }
@@ -921,8 +1069,8 @@ ${cluster.total} images, ${duration} bucket<br/>
                 },
             })
                 .then((response) => response.json())
-                .then((clusters) => {
-                    function to_datapoint(c) {
+                .then((clusters: DateClusterResponseItem[]) => {
+                    function to_datapoint(c: DateClusterResponseItem) {
                         return {
                             x: c.avg_timestamp * 1000,
                             y: c.total,
@@ -932,22 +1080,36 @@ ${cluster.total} images, ${duration} bucket<br/>
                     const dates = clusters
                         .filter((c) => c.overfetched == false)
                         .map(to_datapoint);
-                    this._chart.data.datasets[0].data = dates;
+                    this.chart.data.datasets[0].data = dates;
                     const overfetched = clusters
                         .filter((c) => c.overfetched == true)
                         .map(to_datapoint);
-                    this._chart.data.datasets[1].data = overfetched;
-                    this._chart.update();
+                    this.chart.data.datasets[1].data = overfetched;
+                    this.chart.update();
                 });
         });
     }
 }
+type DateClusterResponseItem = {
+    avg_timestamp: number;
+    total: number;
+    overfetched: boolean;
+};
 
 class TabSwitch {
-    constructor(div_id, callbacks) {
-        this._defaults = {};
-        this._callbacks = callbacks;
+    private defaults: { [key: string]: boolean };
+    private sync: UrlSync;
+    constructor(
+        div_id: string,
+        private callbacks: { [key: string]: Switchable }
+    ) {
+        this.defaults = {};
         const element = document.getElementById(div_id);
+        if (element === null) {
+            throw new Error(
+                `Unable to initialize tab switching, element not found ${div_id}`
+            );
+        }
         const buttons = element.getElementsByTagName("button");
         const ids = [];
         for (var i = 0; i < buttons.length; i++) {
@@ -961,10 +1123,10 @@ class TabSwitch {
             const sync_id = button.id.replace("TabSource", "Tab");
             ids.push(sync_id);
             const is_active_default = button.classList.contains("active");
-            this._defaults[sync_id] = is_active_default;
+            this.defaults[sync_id] = is_active_default;
         }
-        this._sync = new UrlSync(ids);
-        const url_params = this._sync.get_url();
+        this.sync = new UrlSync(ids);
+        const url_params = this.sync.get_url();
         const that = this;
         for (var i = 0; i < buttons.length; i++) {
             const button = buttons[i];
@@ -981,25 +1143,25 @@ class TabSwitch {
             });
             this.set_tab_visibility(
                 is_active_from_url === undefined || is_active_from_url === null
-                    ? this._defaults[sync_id]
+                    ? this.defaults[sync_id]
                     : is_active_from_url === "true",
                 button
             );
         }
     }
-    set_tab_visibility(is_active, button) {
+    set_tab_visibility(is_active: boolean, button: HTMLElement) {
         const id = button.id;
         const target_class = id.replace("TabSource", "TabTarget");
         const sync_id = id.replace("TabSource", "Tab");
         const targets = document.getElementsByClassName(target_class);
-        const url = this._sync.get_url();
-        if (this._defaults[sync_id] === is_active) {
+        const url = this.sync.get_url();
+        if (this.defaults[sync_id] === is_active) {
             delete url[sync_id];
         } else {
-            url[sync_id] = is_active;
+            url[sync_id] = is_active.toString();
         }
-        this._sync.update(url);
-        const callback = this._callbacks[sync_id];
+        this.sync.update(url);
+        const callback = this.callbacks[sync_id];
         if (is_active) {
             button.classList.add("active");
             for (var i = 0; i < targets.length; i++) {
@@ -1018,13 +1180,13 @@ class TabSwitch {
             }
         }
     }
-    switch_tab_visibility(button) {
+    switch_tab_visibility(button: HTMLElement) {
         const is_active = button.classList.contains("active");
         this.set_tab_visibility(!is_active, button);
     }
 }
 
-const _PRETTY_DURATIONS = [
+const _PRETTY_DURATIONS: Array<[number, string]> = [
     [365 * 86400, "y"],
     [30 * 86400, " mon"],
     [7 * 86400, "w"],
@@ -1034,9 +1196,9 @@ const _PRETTY_DURATIONS = [
     [1, "s"],
 ];
 
-function pretty_print_duration(duration) {
+function pretty_print_duration(duration: number): string | null {
     var dur = duration;
-    let out = [];
+    let out: string[] = [];
     _PRETTY_DURATIONS.forEach(([seconds, tick]) => {
         const num = Math.trunc(dur / seconds);
         if (num === 0) {
@@ -1047,13 +1209,13 @@ function pretty_print_duration(duration) {
     });
     return out.join(" ");
 }
-function pprange(ts1, ts2) {
+function pprange(ts1: number, ts2: number): string {
     const d1 = new Date();
     d1.setTime(ts1 * 1000);
     const d2 = new Date();
     d2.setTime(ts2 * 1000);
     const s1 = d1.toLocaleString();
-    let out = [];
+    let out: string[] = [];
     const ss1 = s1.split(" ");
     d2.toLocaleString()
         .split(" ")
