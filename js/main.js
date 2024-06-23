@@ -181,7 +181,6 @@ class PhotoMap {
     constructor(
         div_id,
         should_use_query_div,
-        bounds,
         get_url,
         context_menu_callback
     ) {
@@ -220,9 +219,7 @@ class PhotoMap {
             attribution:
                 '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
         }).addTo(this.map);
-        if (bounds !== undefined && bounds !== null) {
-            this.map.fitBounds(bounds);
-        }
+        this.update_bounds(get_url(), true);
     }
 
     context_menu(e) {
@@ -234,7 +231,7 @@ class PhotoMap {
         });
     }
 
-    update_bounds(location_url_json) {
+    update_bounds(location_url_json, fit_not_fly=false) {
         const query = {
             ...location_url_json,
             skip_with_location: false,
@@ -256,7 +253,11 @@ class PhotoMap {
                     [bounds.nw.latitude, bounds.nw.longitude],
                     [bounds.se.latitude, bounds.se.longitude],
                 ];
-                this.map.flyToBounds(latlngs, { duration: 1 });
+                if (fit_not_fly) {
+                    this.map.fitBounds(latlngs);
+                } else {
+                    this.map.flyToBounds(latlngs, { duration: 1 });
+                }
             });
     }
 

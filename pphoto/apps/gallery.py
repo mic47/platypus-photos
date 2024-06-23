@@ -759,14 +759,12 @@ async def index_page(
     bounds_url = copy.copy(url)
     bounds_url.skip_with_location = False
     bounds_url.skip_being_annotated = False
-    bounds = DB.get().get_location_bounds(bounds_url)
 
     return templates.TemplateResponse(
         request=request,
         name="index.html",
         context={
             "oi": oi,
-            "bounds": bounds,
             "url_parameters_fields": json.dumps([x.name for x in fields(SearchQuery)]),
             "paging_fields": json.dumps([x.name for x in fields(GalleryPaging)]),
             "sort_fields": json.dumps([x.name for x in fields(SortParams)]),
