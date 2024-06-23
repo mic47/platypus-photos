@@ -728,43 +728,11 @@ def input_request(request: Request, url: SearchQuery) -> HTMLResponse:
 @app.get("/", response_class=HTMLResponse)
 async def index_page(
     request: Request,
-    tag: str = "",
-    cls: str = "",
-    addr: str = "",
-    camera: str = "",
-    tsfrom: t.Optional[float] = None,
-    tsto: t.Optional[float] = None,
-    directory: str = "",
-    oi: t.Optional[int] = None,
-    skip_with_location: bool = False,
-    skip_being_annotated: bool = False,
 ) -> HTMLResponse:
-    url = SearchQuery(
-        tag,
-        cls,
-        addr,
-        directory,
-        camera,
-        tsfrom,
-        tsto,
-        skip_with_location,
-        skip_being_annotated,
-    )
-    del tag
-    del cls
-    del addr
-    del directory
-    del tsfrom
-    del tsto
-    bounds_url = copy.copy(url)
-    bounds_url.skip_with_location = False
-    bounds_url.skip_being_annotated = False
-
     return templates.TemplateResponse(
         request=request,
         name="index.html",
         context={
-            "oi": oi,
             "url_parameters_fields": json.dumps([x.name for x in fields(SearchQuery)]),
             "paging_fields": json.dumps([x.name for x in fields(GalleryPaging)]),
             "sort_fields": json.dumps([x.name for x in fields(SortParams)]),
