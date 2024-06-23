@@ -1,5 +1,5 @@
 {
-  "name": "speedscope",
+  "name": "platypus-photos",
   "type": "module",
   "scripts": {
     "prettier": "prettier --write 'ts/**/*.ts'",
