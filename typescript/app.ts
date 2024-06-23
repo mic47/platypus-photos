@@ -1,6 +1,6 @@
 import * as L from "leaflet";
 
-import data_model from "./data_model.generated.json"
+import data_model from "./data_model.generated.json";
 
 import {
     AppState,
@@ -46,7 +46,7 @@ function reset_param(key: string) {
 }
 function update_form(div_id: string) {
     const formData = new FormData(
-        document.getElementById(div_id) as HTMLFormElement
+        document.getElementById(div_id) as HTMLFormElement,
     );
     const values = ___state.get_url();
     for (const [key, value] of formData) {
@@ -71,7 +71,7 @@ function map_bounds() {
 function map_refetch() {
     ___map.update_markers(___state.get_url(), false);
 }
-const ___global_markers: { [id: string]: L.Marker} = {};
+const ___global_markers: { [id: string]: L.Marker } = {};
 type Marker = {
     latitude: number;
     longitude: number;
@@ -88,7 +88,7 @@ function get_markers_from_local_storage(): LocalStorageMarkers {
         parsed = JSON.parse(current);
         if (Array.isArray(parsed)) {
             parsed = Object.fromEntries(
-                parsed.map((e, i) => [i.toString(), e])
+                parsed.map((e, i) => [i.toString(), e]),
             );
         }
     } catch (error) {
@@ -99,7 +99,7 @@ function get_markers_from_local_storage(): LocalStorageMarkers {
 function add_marker_to_local_storage(
     latitude: number,
     longitude: number,
-    text: string
+    text: string,
 ) {
     const markers = get_markers_from_local_storage();
     const id = Math.random().toString().replace("0.", "");
@@ -159,7 +159,7 @@ function load_markers_initially() {
                     id,
                     value.latitude,
                     value.longitude,
-                    value.text
+                    value.text,
                 );
             }
         });
@@ -170,7 +170,7 @@ function map_add_point_only(
     id: string,
     latitude: number,
     longitude: number,
-    text: string
+    text: string,
 ) {
     const marker = L.marker([latitude, longitude], {
         alt: "Ad-hoc marker: " + text,
@@ -186,7 +186,7 @@ function map_add_point_only(
             "<br/>",
             '<input type="button" value="Delete this marker" ',
             `onclick="window.APP.delete_marker('${id}')">`,
-        ].join("")
+        ].join(""),
     );
     ___global_markers[id] = marker;
 }
@@ -199,7 +199,7 @@ function map_close_popup() {
 }
 function fetch_map_search() {
     const formData = new FormData(
-        document.getElementById("MapSearchId") as HTMLFormElement
+        document.getElementById("MapSearchId") as HTMLFormElement,
     );
     const values: { [key: string]: string } = {};
     for (const [key, value] of formData) {
@@ -248,7 +248,7 @@ function add_to_float_param(param: string, other: string, new_value: number) {
 function shift_float_params(
     param_to_start: string,
     second_param: string,
-    shift_by: number | null = null
+    shift_by: number | null = null,
 ) {
     const query = ___state.get_url();
     const start_value = parseFloat(query[param_to_start]);
@@ -278,7 +278,7 @@ export function submit_annotations(
     div_id: string,
     form_id: string,
     return_id: string,
-    advance_in_time: number | null
+    advance_in_time: number | null,
 ) {
     const formElement = document.getElementById(form_id);
     if (formElement === null) {
@@ -291,7 +291,7 @@ export function submit_annotations(
         (element as HTMLInputElement).checked = false;
     });
     const query = JSON.parse(
-        window.atob(formData.get("query_json_base64") as string)
+        window.atob(formData.get("query_json_base64") as string),
     );
     const latitude = parse_float_or_null(formData.get("latitude"));
     if (latitude === null) {
@@ -310,7 +310,7 @@ export function submit_annotations(
     const location_override = formData.get("location_override");
     let address_name = null_if_empty(formData.get("address_name"));
     const address_name_original = null_if_empty(
-        formData.get("address_name_original")
+        formData.get("address_name_original"),
     );
     if (
         address_name === null ||
@@ -320,7 +320,7 @@ export function submit_annotations(
     }
     let address_country = null_if_empty(formData.get("address_country"));
     const address_country_original = null_if_empty(
-        formData.get("address_country_original")
+        formData.get("address_country_original"),
     );
     if (
         address_country === null ||
@@ -389,7 +389,7 @@ function annotation_overlay(latitude: number, longitude: number) {
     overlay.fetch(latitude, longitude, ___state.get_url());
 }
 
-let job_progress: JobProgress<{ts: number}>;
+let job_progress: JobProgress<{ ts: number }>;
 function update_job_progress(state_base64: string) {
     job_progress.add_state_base64(state_base64);
 }
@@ -418,7 +418,7 @@ function init_fun() {
         "map",
         "MapUseQuery",
         () => ___state.get_url(),
-        location_preview
+        location_preview,
     );
     ___map_search = new MapSearch("MapSearch");
     const dates = new Dates(
@@ -426,18 +426,14 @@ function init_fun() {
         (x) => {
             ___state.update_url(x);
         },
-        "DateSelection"
+        "DateSelection",
     );
     const directories = new Directories("Directories");
     const aggregate_info = new AggregateInfo("AggregateInfo");
     ___state.register_url_hook((url_params) => {
         input_form.fetch(url_params);
         url_sync.update(url_params);
-        gallery.fetch(
-            url_params,
-            ___state.get_paging(),
-            ___state.get_sort()
-        );
+        gallery.fetch(url_params, ___state.get_paging(), ___state.get_sort());
         aggregate_info.fetch(url_params, ___state.get_paging());
 
         dates.fetch(url_params);
@@ -465,7 +461,7 @@ function init_fun() {
     job_progress = new JobProgress(
         "JobProgress",
         "update_job_progress",
-        "show_job_list"
+        "show_job_list",
     );
     job_progress.fetch();
     setInterval(() => {
@@ -513,4 +509,4 @@ const app: object = {
     overlay_next,
     overlay_prev,
 };
-(window as unknown as {APP: object}).APP = app;
+(window as unknown as { APP: object }).APP = app;

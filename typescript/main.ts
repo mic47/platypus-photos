@@ -16,7 +16,7 @@ export class AppState {
     constructor(
         private url_params: SearchQueryParams,
         private paging: PagingParams,
-        private sort: SortParams
+        private sort: SortParams,
     ) {
         this.url_params_hooks = [];
         this.paging_hooks = [];
@@ -81,7 +81,7 @@ export class UrlSync {
         return Object.fromEntries(
             this.registered_fields
                 .map((field) => [field, url.searchParams.get(field)])
-                .filter((x) => x[1] !== undefined && x[1] !== null && x[1])
+                .filter((x) => x[1] !== undefined && x[1] !== null && x[1]),
         );
     }
     update(new_url: { [key: string]: string }) {
@@ -114,7 +114,7 @@ function changeState(index: string | number | null) {
 function replace_image_size_inside(
     element: null | HTMLElement,
     source: string,
-    replacement: string
+    replacement: string,
 ) {
     if (element == null) {
         return;
@@ -168,12 +168,12 @@ export function overlay_close(element: HTMLElement) {
     replace_image_size_inside(
         root.previousElementSibling as HTMLElement | null,
         "original",
-        "preview"
+        "preview",
     );
     replace_image_size_inside(
         root.nextElementSibling as HTMLElement | null,
         "original",
-        "preview"
+        "preview",
     );
     root.classList.remove("overlay");
     changeState(null);
@@ -188,7 +188,7 @@ export function overlay_prev(element: HTMLElement, index: number) {
         grandpa === null
     ) {
         throw new Error(
-            `Element does not have grand-parent's previous sibling ${element}`
+            `Element does not have grand-parent's previous sibling ${element}`,
         );
     }
     this_is_overlay_element(target as HTMLElement);
@@ -206,7 +206,7 @@ export function overlay_next(element: HTMLElement, index: number) {
         grandpa === null
     ) {
         throw new Error(
-            `Element does not have grand-parent's next sibling ${element}`
+            `Element does not have grand-parent's next sibling ${element}`,
         );
     }
     this_is_overlay_element(target as HTMLElement);
@@ -251,8 +251,8 @@ export class PhotoMap {
         get_url: () => SearchQueryParams,
         private context_menu_callback: (
             latlng: L.LatLng,
-            callback: (content: string) => L.Popup
-        ) => L.Popup
+            callback: (content: string) => L.Popup,
+        ) => void,
     ) {
         this.map = L.map(div_id).fitWorld();
         L.control.scale({ imperial: false }).addTo(this.map);
@@ -357,7 +357,7 @@ export class PhotoMap {
             this._similar(
                 this.last_update_markers.bounds,
                 params.bounds,
-                0.1
+                0.1,
             ) &&
             this.last_update_markers.change_view === params.change_view
         ) {
@@ -373,7 +373,7 @@ export class PhotoMap {
         const should_use_query =
             (
                 document.getElementById(
-                    this.should_use_query_div
+                    this.should_use_query_div,
                 ) as HTMLInputElement | null
             )?.checked || false;
 
@@ -402,7 +402,7 @@ export class PhotoMap {
             url: Object.fromEntries(
                 Object.entries({
                     ...(should_use_query ? location_url_json : {}),
-                }).filter((x) => x[0] !== "page" && x[0] !== "paging")
+                }).filter((x) => x[0] !== "page" && x[0] !== "paging"),
             ),
         };
         if (
@@ -462,16 +462,16 @@ export class PhotoMap {
                             "&size=preview' class='popup'>",
                             '<input type="button" value="Use this location for selected photos" ',
                             `onclick="window.APP.annotation_overlay(${cluster.position.latitude}, ${cluster.position.longitude})">`,
-                        ].join("")
+                        ].join(""),
                     );
                     new_markers[cluster.example_path_md5] = marker;
                 }
                 Object.values(this.markers).forEach((m) => m.remove());
                 Object.keys(this.markers).forEach(
-                    (m) => delete this.markers[m]
+                    (m) => delete this.markers[m],
                 );
                 Object.entries(new_markers).forEach(
-                    (m) => (this.markers[m[0]] = m[1])
+                    (m) => (this.markers[m[0]] = m[1]),
                 );
             });
     }
@@ -519,7 +519,7 @@ export class Directories {
 
     fetch(url_data: SearchQueryParams) {
         return this.switchable.call_or_store("fetch", () =>
-            this.fetch_impl(url_data)
+            this.fetch_impl(url_data),
         );
     }
 
@@ -569,7 +569,7 @@ export class AggregateInfo {
 export class GenericFetch<T> {
     constructor(
         protected readonly div_id: string,
-        private endpoint: string
+        private endpoint: string,
     ) {}
 
     fetch_impl(request: T): Promise<void> {
@@ -600,7 +600,7 @@ export class JobProgress<S extends { ts: number }> extends GenericFetch<{
     constructor(
         div_id: string,
         private update_state_fn: string,
-        private job_list_fn: string
+        private job_list_fn: string,
     ) {
         super(div_id, "/internal/job_progress.html");
         this.states = [];
@@ -684,7 +684,7 @@ export class AnnotationOverlay extends GenericFetch<{
 }
 
 export function null_if_empty(
-    str: null | undefined | string | File
+    str: null | undefined | string | File,
 ): null | string {
     if (
         str === null ||
@@ -734,7 +734,7 @@ type LeafPosition = {
 };
 export function location_preview(
     loc: LeafPosition,
-    show_content_fn: (content: string) => L.Popup
+    show_content_fn: (content: string) => L.Popup,
 ) {
     const existing = document.getElementById("LocPreview");
     if (existing !== undefined && existing !== null) {
@@ -743,7 +743,7 @@ export function location_preview(
     const popup = show_content_fn('<div id="LocPreview"></div>');
     const info = new AddressInfo("LocPreview");
     info.fetch(loc.lat, loc.lng).then(() => {
-        popup._updateLayout();
+        (popup as unknown as { _updateLayout: () => void })._updateLayout();
     });
 }
 
@@ -776,7 +776,7 @@ export class Gallery {
     constructor(
         private div_id: string,
         private prev_page: () => void,
-        private next_page: () => void
+        private next_page: () => void,
     ) {}
 
     fetch(url_data: SearchQueryParams, paging: PagingParams, sort: SortParams) {
@@ -820,7 +820,7 @@ export class Dates {
     constructor(
         div_id: string,
         update_url: (data: SearchQueryParams) => void,
-        private tooltip_div: string
+        private tooltip_div: string,
     ) {
         this.switchable = new Switchable();
         this.clickTimeStart = null;
@@ -866,13 +866,13 @@ export class Dates {
                     tooltip: {
                         callbacks: {
                             afterFooter: function (
-                                context: TooltipItem<"line">[]
+                                context: TooltipItem<"line">[],
                             ) {
                                 const tooltip =
                                     document.getElementById(tooltip_div);
                                 if (tooltip === null) {
                                     throw new Error(
-                                        `${tooltip_div} was not found`
+                                        `${tooltip_div} was not found`,
                                     );
                                 }
                                 const cluster = (
@@ -881,11 +881,11 @@ export class Dates {
                                     }
                                 ).cluster;
                                 const duration = pretty_print_duration(
-                                    cluster.bucket_max - cluster.bucket_min
+                                    cluster.bucket_max - cluster.bucket_min,
                                 );
                                 const start = pprange(
                                     cluster.min_timestamp,
-                                    cluster.max_timestamp
+                                    cluster.max_timestamp,
                                 );
                                 const image_md5 = cluster.example_path_md5;
                                 const innerHtml2 = `
@@ -910,7 +910,7 @@ ${cluster.total} images, ${duration} bucket<br/>
                     id: "Events",
                     beforeEvent: (
                         chart: Chart,
-                        args: { event: ChartEvent }
+                        args: { event: ChartEvent },
                     ) => {
                         const event = args.event;
 
@@ -930,7 +930,7 @@ ${cluster.total} images, ${duration} bucket<br/>
                             }
                             if (
                                 Math.abs(
-                                    canvasPosition.x - this.clickTimeStart[0]
+                                    canvasPosition.x - this.clickTimeStart[0],
                                 ) > 1
                             ) {
                                 const x = [
@@ -1013,13 +1013,13 @@ export class TabSwitch {
     private sync: UrlSync;
     constructor(
         div_id: string,
-        private callbacks: { [key: string]: Switchable }
+        private callbacks: { [key: string]: Switchable },
     ) {
         this.defaults = {};
         const element = document.getElementById(div_id);
         if (element === null) {
             throw new Error(
-                `Unable to initialize tab switching, element not found ${div_id}`
+                `Unable to initialize tab switching, element not found ${div_id}`,
             );
         }
         const buttons = element.getElementsByTagName("button");
@@ -1056,7 +1056,7 @@ export class TabSwitch {
                 is_active_from_url === undefined || is_active_from_url === null
                     ? this.defaults[sync_id]
                     : is_active_from_url === "true",
-                button
+                button,
             );
         }
     }
