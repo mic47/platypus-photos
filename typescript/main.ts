@@ -1,3 +1,9 @@
+import Chart from "chart.js/auto";
+import {getRelativePosition} from "chart.js/helpers";
+import 'chartjs-adapter-date-fns';
+import * as L from "leaflet";
+
+
 export type SearchQueryParams = { [key1: string]: string };
 export type PagingParams = { [key2: string]: string };
 export type SortParams = { [key3: string]: string };
@@ -221,6 +227,10 @@ type Bounds = {
     br: Position;
 };
 
+type ServerBounds = {
+    nw: Position;
+    se: Position;
+};
 type LastUpdateMarkersCacheParam = {
     timestamp: number;
     non_bounds: {
@@ -232,14 +242,11 @@ type LastUpdateMarkersCacheParam = {
     change_view: boolean;
 };
 
-type LeafMap = object;
-export type LeafMarker = object;
-
 export class PhotoMap {
-    public map: LeafMap;
+    public map: L.Map;
     private last_update_markers: LastUpdateMarkersCacheParam | null = null;
     private last_update_timestamp: number = 0;
-    private markers: { [id: string]: LeafMarker };
+    private markers: { [id: string]: L.Marker};
     constructor(
         div_id: string,
         private should_use_query_div: string,
@@ -250,14 +257,14 @@ export class PhotoMap {
         L.control.scale({ imperial: false }).addTo(this.map);
         this.markers = {};
         const that = this;
-        const update_markers = (e) => {
-            if (e.flyTo) {
+        const update_markers: L.LeafletEventHandlerFn = (e) => {
+            if ((e as any).flyTo) {
                 return;
             }
             that.update_markers(get_url(), false);
         };
-        const context_menu = (e) => {
-            that.context_menu(e);
+        const context_menu: L.LeafletEventHandlerFn = (e) => {
+            that.context_menu(e as L.LocationEvent);
         };
         this.map.on("load", update_markers);
         this.map.on("zoomend", update_markers);
@@ -280,7 +287,7 @@ export class PhotoMap {
         this.update_bounds(get_url(), true);
     }
 
-    context_menu(e) {
+    context_menu(e: L.LocationEvent) {
         this.context_menu_callback(e.latlng, (content: string) => {
             return L.popup()
                 .setLatLng(e.latlng)
@@ -303,11 +310,11 @@ export class PhotoMap {
             },
         })
             .then((response) => response.json())
-            .then((bounds) => {
+            .then((bounds: ServerBounds) => {
                 if (bounds === undefined || bounds === null) {
                     return;
                 }
-                const latlngs = [
+                const latlngs: L.LatLngBoundsLiteral = [
                     [bounds.nw.latitude, bounds.nw.longitude],
                     [bounds.se.latitude, bounds.se.longitude],
                 ];
@@ -428,7 +435,7 @@ export class PhotoMap {
                     this.update_bounds(location_url_json);
                 }
                 this.last_update_timestamp = timestamp;
-                var new_markers: { [key: string]: LeafMarker } = {};
+                var new_markers: { [key: string]: L.Marker} = {};
                 for (var i = 0; i < clusters.length; i++) {
                     var cluster = clusters[i];
                     var existing = this.markers[cluster.example_path_md5];
@@ -679,7 +686,7 @@ export class AnnotationOverlay extends GenericFetch<{
     }
 }
 
-function null_if_empty(str: null | undefined | string | File): null | string {
+export function null_if_empty(str: null | undefined | string | File): null | string {
     if (
         str === null ||
         str === undefined ||
@@ -690,7 +697,7 @@ function null_if_empty(str: null | undefined | string | File): null | string {
     }
     return str;
 }
-function parse_float_or_null(str: string | null | File): number | null {
+export function parse_float_or_null(str: string | null | File): number | null {
     if (str === null || typeof str !== "string") {
         return null;
     }
@@ -701,7 +708,7 @@ function parse_float_or_null(str: string | null | File): number | null {
     return value;
 }
 
-function error_box(div_id: string, value: any) {
+export function error_box(div_id: string, value: any) {
     console.log(div_id, value);
     const e = document.getElementById(div_id);
     console.log(e);
@@ -720,116 +727,6 @@ function error_box(div_id: string, value: any) {
     element.appendChild(pre);
     e.innerHTML = "";
     e.appendChild(element);
-}
-
-export function submit_annotations(
-    div_id: string,
-    form_id: string,
-    return_id: string,
-    advance_in_time: number | null
-) {
-    const formElement = document.getElementById(form_id);
-    if (formElement === null) {
-        throw new Error(`Unable to find element ${form_id}`);
-    }
-    const formData = new FormData(formElement as HTMLFormElement);
-    const checkbox_value = formData.get("sanity_check");
-    [...formElement.getElementsByClassName("uncheck")].forEach((element) => {
-        // Prevent from accidentally submitting again
-        (element as HTMLInputElement).checked = false;
-    });
-    const query = JSON.parse(
-        window.atob(formData.get("query_json_base64") as string)
-    );
-    const latitude = parse_float_or_null(formData.get("latitude"));
-    if (latitude === null) {
-        return error_box(return_id, {
-            error: "Invalid request, latitude",
-            formData,
-        });
-    }
-    const longitude = parse_float_or_null(formData.get("longitude"));
-    if (longitude === null) {
-        return error_box(return_id, {
-            error: "Invalid request, longitude",
-            formData,
-        });
-    }
-    const location_override = formData.get("location_override");
-    let address_name = null_if_empty(formData.get("address_name"));
-    const address_name_original = null_if_empty(
-        formData.get("address_name_original")
-    );
-    if (
-        address_name === null ||
-        address_name.trim() === address_name_original
-    ) {
-        address_name = address_name_original;
-    }
-    let address_country = null_if_empty(formData.get("address_country"));
-    const address_country_original = null_if_empty(
-        formData.get("address_country_original")
-    );
-    if (
-        address_country === null ||
-        address_country.trim() === address_country_original
-    ) {
-        address_country = address_country_original;
-    }
-    const location_request = {
-        latitude,
-        longitude,
-        address_name,
-        address_country,
-    };
-    const extra_tags = null_if_empty(formData.get("extra_tags"));
-    const extra_description = null_if_empty(formData.get("extra_description"));
-    const text_override = formData.get("text_override");
-    const text_request = {
-        tags: extra_tags,
-        description: extra_description,
-    };
-    const request = {
-        query,
-        location: location_request,
-        location_override,
-        text: text_request,
-        text_override,
-    };
-    if (checkbox_value !== "on") {
-        return error_box(return_id, {
-            error: "You have to check 'Check this box' box to prevent accidental submissions",
-        });
-    }
-    return (
-        fetch("api/mass_manual_annotation", {
-            method: "POST",
-            body: JSON.stringify(request),
-            headers: {
-                "Content-type": "application/json; charset=UTF-8",
-            },
-        })
-            .then((response) => response.json())
-            .then((response) => {
-                if (advance_in_time !== undefined && advance_in_time !== null) {
-                    // TODO: resolve these imports
-                    shift_float_params("tsfrom", "tsto", advance_in_time);
-                    set_page(0);
-                }
-                const element = document.getElementById(div_id);
-                if (element === null) {
-                    throw Error(`Unable to find element ${div_id}`);
-                }
-                element.remove();
-            })
-            // TODO: put error into stuff
-            .catch((err) => {
-                return error_box(return_id, {
-                    msg: "There was error while processing on the server.",
-                    error: err,
-                });
-            })
-    );
 }
 
 type LeafPosition = {
@@ -929,8 +826,11 @@ export class Dates {
         this.switchable = new Switchable();
         this.clickTimeStart = null;
         const ctx = document.getElementById(div_id);
+        if (ctx === null) {
+            throw new Error(`Unable to find element ${div_id}`)
+        }
         const that = this;
-        this.chart = new Chart(ctx, {
+        this.chart = new Chart(ctx as HTMLCanvasElement, {
             type: "line",
             data: {
                 datasets: [
@@ -953,7 +853,6 @@ export class Dates {
                 parsing: false,
                 scales: {
                     y: {
-                        beginAtZero: true,
                         type: "logarithmic",
                     },
                     x: {
@@ -1008,13 +907,16 @@ ${cluster.total} images, ${duration} bucket<br/>
                     beforeEvent(chart: Chart, args: any, pluginOptions: any) {
                         const event = args.event;
                         const canvasPosition =
-                            Chart.helpers.getRelativePosition(event, chart);
-                        const dataX: number = chart.scales.x.getValueForPixel(
+                            getRelativePosition(event, chart as any);
+                        const dataX: number | undefined = chart.scales.x.getValueForPixel(
                             canvasPosition.x
                         );
-                        const dataY: number = chart.scales.y.getValueForPixel(
+                        const dataY: number | undefined = chart.scales.y.getValueForPixel(
                             canvasPosition.y
                         );
+                        if (dataX === undefined) {
+                            return
+                        }
                         if (event.type === "mousedown") {
                             that.clickTimeStart = [canvasPosition.x, dataX];
                         } else if (event.type === "mouseup") {

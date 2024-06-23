@@ -1,3 +1,5 @@
+import * as L from "leaflet";
+
 import {
     AppState,
     AnnotationOverlay,
@@ -9,7 +11,6 @@ import {
     AggregateInfo,
     location_preview,
     InputForm,
-    LeafMarker,
     MapSearch,
     overlay,
     overlay_close,
@@ -19,7 +20,9 @@ import {
     PhotoMap,
     SearchQueryParams,
     SortParams,
-    submit_annotations,
+    parse_float_or_null,
+    error_box,
+    null_if_empty,
     TabSwitch,
     UrlSync,
 } from "./main";
@@ -67,7 +70,7 @@ function map_bounds() {
 function map_refetch() {
     ___map.update_markers(___state.get_url(), false);
 }
-var ___global_markers: { [id: string]: LeafMarker } = {};
+var ___global_markers: { [id: string]: L.Marker} = {};
 type Marker = {
     latitude: number;
     longitude: number;
@@ -270,6 +273,116 @@ function shift_float_params(
     }
     ___state.update_url(update);
 }
+export function submit_annotations(
+    div_id: string,
+    form_id: string,
+    return_id: string,
+    advance_in_time: number | null
+) {
+    const formElement = document.getElementById(form_id);
+    if (formElement === null) {
+        throw new Error(`Unable to find element ${form_id}`);
+    }
+    const formData = new FormData(formElement as HTMLFormElement);
+    const checkbox_value = formData.get("sanity_check");
+    [...formElement.getElementsByClassName("uncheck")].forEach((element) => {
+        // Prevent from accidentally submitting again
+        (element as HTMLInputElement).checked = false;
+    });
+    const query = JSON.parse(
+        window.atob(formData.get("query_json_base64") as string)
+    );
+    const latitude = parse_float_or_null(formData.get("latitude"));
+    if (latitude === null) {
+        return error_box(return_id, {
+            error: "Invalid request, latitude",
+            formData,
+        });
+    }
+    const longitude = parse_float_or_null(formData.get("longitude"));
+    if (longitude === null) {
+        return error_box(return_id, {
+            error: "Invalid request, longitude",
+            formData,
+        });
+    }
+    const location_override = formData.get("location_override");
+    let address_name = null_if_empty(formData.get("address_name"));
+    const address_name_original = null_if_empty(
+        formData.get("address_name_original")
+    );
+    if (
+        address_name === null ||
+        address_name.trim() === address_name_original
+    ) {
+        address_name = address_name_original;
+    }
+    let address_country = null_if_empty(formData.get("address_country"));
+    const address_country_original = null_if_empty(
+        formData.get("address_country_original")
+    );
+    if (
+        address_country === null ||
+        address_country.trim() === address_country_original
+    ) {
+        address_country = address_country_original;
+    }
+    const location_request = {
+        latitude,
+        longitude,
+        address_name,
+        address_country,
+    };
+    const extra_tags = null_if_empty(formData.get("extra_tags"));
+    const extra_description = null_if_empty(formData.get("extra_description"));
+    const text_override = formData.get("text_override");
+    const text_request = {
+        tags: extra_tags,
+        description: extra_description,
+    };
+    const request = {
+        query,
+        location: location_request,
+        location_override,
+        text: text_request,
+        text_override,
+    };
+    if (checkbox_value !== "on") {
+        return error_box(return_id, {
+            error: "You have to check 'Check this box' box to prevent accidental submissions",
+        });
+    }
+    return (
+        fetch("api/mass_manual_annotation", {
+            method: "POST",
+            body: JSON.stringify(request),
+            headers: {
+                "Content-type": "application/json; charset=UTF-8",
+            },
+        })
+            .then((response) => response.json())
+            .then((response) => {
+                if (advance_in_time !== undefined && advance_in_time !== null) {
+                    // TODO: resolve these imports
+                    shift_float_params("tsfrom", "tsto", advance_in_time);
+                    set_page(0);
+                }
+                const element = document.getElementById(div_id);
+                if (element === null) {
+                    throw Error(`Unable to find element ${div_id}`);
+                }
+                element.remove();
+            })
+            // TODO: put error into stuff
+            .catch((err) => {
+                return error_box(return_id, {
+                    msg: "There was error while processing on the server.",
+                    error: err,
+                });
+            })
+    );
+}
+
 function annotation_overlay(latitude: number, longitude: number) {
     const overlay = new AnnotationOverlay("SubmitDataOverlay");
     overlay.fetch(latitude, longitude, ___state.get_url());
