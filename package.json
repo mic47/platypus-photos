@@ -1,0 +1,18 @@
+{
+  "name": "speedscope",
+  "scripts": {
+    "prettier": "prettier --write 'ts/**/*.ts'",
+    "lint": "eslint 'ts/**/*.ts'",
+    "coverage": "npm run jest -- --coverage",
+    "typecheck": "tsc --noEmit",
+    "dev-watch": "yarn parcel watch html/index.html --no-cache --dist-dir \"static/\" --public-url \"http://localhost:8000/static\" --detailed-report",
+    "prod-build": "yarn parcel build ts/index.html --no-cache --dist-dir \"static/\" --public-url \"http://localhost:8000/static\" --detailed-report --no-optimize",
+    "__last-one__": "Just to have trailing comma"
+  },
+  "devDependencies": {
+    "eslint": "^9.5.0",
+    "parcel": "^2.12.0",
+    "prettier": "^3.3.2",
+    "typescript": "^5.5.2"
+  }
+}

@@ -13,3 +13,5 @@ mypy/
 .coverage
 node_modules/
 deps.svg
+static/
+.parcel-cache

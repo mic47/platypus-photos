@@ -743,7 +743,7 @@ async def url_field_partitioning() -> UrlFieldPartitioning:
 @app.get("/index.html")
 @app.get("/")
 async def read_index() -> FileResponse:
-    return FileResponse("html/index.html")
+    return FileResponse("static/index.html")
 
 
 def classify_tag(value: float) -> str:
