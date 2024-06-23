@@ -29,7 +29,7 @@ import {
     UrlSync,
 } from "./main.ts";
 
-var ___state: AppState = null;
+var ___state: AppState;
 function update_dir(data: string) {
     ___state.update_url({ directory: data });
 }
@@ -61,8 +61,8 @@ function update_form(div_id: string) {
     }
     ___state.replace_url(values);
 }
-var ___map_search: MapSearch = null;
-var ___map: PhotoMap = null;
+var ___map_search: MapSearch;
+var ___map: PhotoMap;
 function map_zoom(latitude: number, longitude: number) {
     ___map.map.flyTo([latitude, longitude], 13, { duration: 1 });
 }
@@ -390,17 +390,17 @@ function annotation_overlay(latitude: number, longitude: number) {
     overlay.fetch(latitude, longitude, ___state.get_url());
 }
 
-var job_progress: JobProgress<any> = null;
+var job_progress: JobProgress<any>;
 function update_job_progress(state_base64: string) {
     job_progress.add_state_base64(state_base64);
 }
-var job_list: JobList = null;
+var job_list: JobList;
 function show_job_list() {
     job_list.show_or_close();
 }
 
 function init_fun() {
-    if (___state !== null) {
+    if (___state !== undefined) {
         throw new Error("State is already initialized!");
     }
 
