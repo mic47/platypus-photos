@@ -1,8 +1,7 @@
-import Chart from "chart.js/auto";
-import {getRelativePosition} from "chart.js/helpers";
-import 'chartjs-adapter-date-fns';
+import { Chart, ChartEvent, TooltipItem } from "chart.js/auto";
+import { getRelativePosition } from "chart.js/helpers";
+import "chartjs-adapter-date-fns";
 import * as L from "leaflet";
-
 
 export type SearchQueryParams = { [key1: string]: string };
 export type PagingParams = { [key2: string]: string };
@@ -78,7 +77,7 @@ export class AppState {
 export class UrlSync {
     constructor(private registered_fields: string[]) {}
     get_url(): { [key: string]: string } {
-        var url = new URL(window.location.href);
+        const url = new URL(window.location.href);
         return Object.fromEntries(
             this.registered_fields
                 .map((field) => [field, url.searchParams.get(field)])
@@ -86,7 +85,7 @@ export class UrlSync {
         );
     }
     update(new_url: { [key: string]: string }) {
-        var url = new URL(window.location.href);
+        const url = new URL(window.location.href);
         this.registered_fields.forEach((field) => {
             const new_value = new_url[field];
             if (new_value === null || new_value === undefined) {
@@ -102,8 +101,7 @@ export class UrlSync {
 }
 
 function changeState(index: string | number | null) {
-    var url = new URL(window.location.href);
-    const old_parameter = url.searchParams.get("oi");
+    const url = new URL(window.location.href);
     if (index == null) {
         url.searchParams.delete("oi");
     } else {
@@ -121,10 +119,10 @@ function replace_image_size_inside(
     if (element == null) {
         return;
     }
-    var images = element.getElementsByTagName("img");
-    for (var i = 0; i < images.length; i++) {
-        var image = images[i];
-        var repl = image.src.replace("size=" + source, "size=" + replacement);
+    const images = element.getElementsByTagName("img");
+    for (let i = 0; i < images.length; i++) {
+        const image = images[i];
+        const repl = image.src.replace("size=" + source, "size=" + replacement);
         if (repl != image.src) {
             image.src = repl;
         }
@@ -135,12 +133,12 @@ function replace_image_size_inside(
 }
 function this_is_overlay_element(element: HTMLElement) {
     replace_image_size_inside(element, "preview", "original");
-    var next = element.nextElementSibling;
+    let next = element.nextElementSibling;
     if (next != null) {
         replace_image_size_inside(next as HTMLElement, "preview", "original");
         next = next.nextElementSibling;
     }
-    var prev = element.previousElementSibling;
+    let prev = element.previousElementSibling;
     if (prev != null) {
         replace_image_size_inside(prev as HTMLElement, "preview", "original");
         prev = prev.previousElementSibling;
@@ -162,7 +160,7 @@ export function overlay(element: HTMLElement, index: string) {
     changeState(index);
 }
 export function overlay_close(element: HTMLElement) {
-    var root = element.parentElement?.parentElement;
+    const root = element.parentElement?.parentElement;
     if (root === undefined || root === null) {
         throw new Error(`Element does not have grand-parent ${element}`);
     }
@@ -246,25 +244,27 @@ export class PhotoMap {
     public map: L.Map;
     private last_update_markers: LastUpdateMarkersCacheParam | null = null;
     private last_update_timestamp: number = 0;
-    private markers: { [id: string]: L.Marker};
+    private markers: { [id: string]: L.Marker };
     constructor(
         div_id: string,
         private should_use_query_div: string,
         get_url: () => SearchQueryParams,
-        private context_menu_callback: any // TODO:  add types when map is fully types
+        private context_menu_callback: (
+            latlng: L.LatLng,
+            callback: (content: string) => L.Popup
+        ) => L.Popup
     ) {
         this.map = L.map(div_id).fitWorld();
         L.control.scale({ imperial: false }).addTo(this.map);
         this.markers = {};
-        const that = this;
         const update_markers: L.LeafletEventHandlerFn = (e) => {
-            if ((e as any).flyTo) {
+            if ((e as unknown as { flyTo: boolean }).flyTo) {
                 return;
             }
-            that.update_markers(get_url(), false);
+            this.update_markers(get_url(), false);
         };
         const context_menu: L.LeafletEventHandlerFn = (e) => {
-            that.context_menu(e as L.LocationEvent);
+            this.context_menu(e as L.LocationEvent);
         };
         this.map.on("load", update_markers);
         this.map.on("zoomend", update_markers);
@@ -340,11 +340,11 @@ export class PhotoMap {
             Math.abs(last_bounds.tl.latitude - new_bounds.tl.latitude) <
                 lat_tolerance &&
             Math.abs(last_bounds.tl.longitude - new_bounds.tl.longitude) <
-                lat_tolerance &&
+                lon_tolerance &&
             Math.abs(last_bounds.br.latitude - new_bounds.br.latitude) <
                 lat_tolerance &&
             Math.abs(last_bounds.br.longitude - new_bounds.br.longitude) <
-                lat_tolerance
+                lon_tolerance
         );
     }
     _should_skip(params: LastUpdateMarkersCacheParam) {
@@ -374,15 +374,15 @@ export class PhotoMap {
             (
                 document.getElementById(
                     this.should_use_query_div
-                ) as (HTMLInputElement | null)
+                ) as HTMLInputElement | null
             )?.checked || false;
 
-        var bounds = this.map.getBounds();
-        var nw = bounds.getNorthWest();
-        var se = bounds.getSouthEast();
-        var sz = this.map.getSize();
-        var cluster_pixel_size = 10;
-        var timestamp = new Date().getTime();
+        const bounds = this.map.getBounds();
+        const nw = bounds.getNorthWest();
+        const se = bounds.getSouthEast();
+        const sz = this.map.getSize();
+        const cluster_pixel_size = 10;
+        const timestamp = new Date().getTime();
         const bounds_query: Bounds = {
             tl: {
                 latitude: nw.lat,
@@ -435,16 +435,16 @@ export class PhotoMap {
                     this.update_bounds(location_url_json);
                 }
                 this.last_update_timestamp = timestamp;
-                var new_markers: { [key: string]: L.Marker} = {};
-                for (var i = 0; i < clusters.length; i++) {
-                    var cluster = clusters[i];
-                    var existing = this.markers[cluster.example_path_md5];
+                const new_markers: { [key: string]: L.Marker } = {};
+                for (let i = 0; i < clusters.length; i++) {
+                    const cluster = clusters[i];
+                    const existing = this.markers[cluster.example_path_md5];
                     if (existing !== undefined) {
                         new_markers[cluster.example_path_md5] = existing;
                         delete this.markers[cluster.example_path_md5];
                         continue;
                     }
-                    var marker = L.marker([
+                    const marker = L.marker([
                         cluster.position.latitude,
                         cluster.position.longitude,
                     ]).addTo(this.map);
@@ -590,9 +590,6 @@ export class GenericFetch<T> {
             });
     }
 }
-function now_s() {
-    return Date.now() / 1000.0;
-}
 export class JobProgress<S extends { ts: number }> extends GenericFetch<{
     job_list_fn: string;
     update_state_fn: string;
@@ -627,7 +624,7 @@ export class JobProgress<S extends { ts: number }> extends GenericFetch<{
         this.add_state(state);
     }
 }
-export class JobList extends GenericFetch<{}> {
+export class JobList extends GenericFetch<object> {
     private shown: boolean;
     constructor(div_id: string) {
         super(div_id, "/internal/job_list.html");
@@ -686,7 +683,9 @@ export class AnnotationOverlay extends GenericFetch<{
     }
 }
 
-export function null_if_empty(str: null | undefined | string | File): null | string {
+export function null_if_empty(
+    str: null | undefined | string | File
+): null | string {
     if (
         str === null ||
         str === undefined ||
@@ -708,7 +707,7 @@ export function parse_float_or_null(str: string | null | File): number | null {
     return value;
 }
 
-export function error_box(div_id: string, value: any) {
+export function error_box(div_id: string, value: object | number | string) {
     console.log(div_id, value);
     const e = document.getElementById(div_id);
     console.log(e);
@@ -735,7 +734,7 @@ type LeafPosition = {
 };
 export function location_preview(
     loc: LeafPosition,
-    show_content_fn: (content: string) => any
+    show_content_fn: (content: string) => L.Popup
 ) {
     const existing = document.getElementById("LocPreview");
     if (existing !== undefined && existing !== null) {
@@ -743,7 +742,7 @@ export function location_preview(
     }
     const popup = show_content_fn('<div id="LocPreview"></div>');
     const info = new AddressInfo("LocPreview");
-    info.fetch(loc.lat, loc.lng).then((_) => {
+    info.fetch(loc.lat, loc.lng).then(() => {
         popup._updateLayout();
     });
 }
@@ -797,16 +796,16 @@ export class Gallery {
                 }
                 gallery.innerHTML = text;
                 const prev = gallery.getElementsByClassName("prev-url");
-                for (var i = 0; i < prev.length; i++) {
+                for (let i = 0; i < prev.length; i++) {
                     const p = prev[i] as HTMLElement;
-                    p.onclick = (e) => {
+                    p.onclick = () => {
                         this.prev_page();
                     };
                 }
                 const next = gallery.getElementsByClassName("next-url");
-                for (var i = 0; i < next.length; i++) {
+                for (let i = 0; i < next.length; i++) {
                     const p = next[i] as HTMLElement;
-                    p.onclick = (e) => {
+                    p.onclick = () => {
                         this.next_page();
                     };
                 }
@@ -827,9 +826,8 @@ export class Dates {
         this.clickTimeStart = null;
         const ctx = document.getElementById(div_id);
         if (ctx === null) {
-            throw new Error(`Unable to find element ${div_id}`)
+            throw new Error(`Unable to find element ${div_id}`);
         }
-        const that = this;
         this.chart = new Chart(ctx as HTMLCanvasElement, {
             type: "line",
             data: {
@@ -867,7 +865,9 @@ export class Dates {
                 plugins: {
                     tooltip: {
                         callbacks: {
-                            afterFooter: function (context: any) {
+                            afterFooter: function (
+                                context: TooltipItem<"line">[]
+                            ) {
                                 const tooltip =
                                     document.getElementById(tooltip_div);
                                 if (tooltip === null) {
@@ -875,7 +875,11 @@ export class Dates {
                                         `${tooltip_div} was not found`
                                     );
                                 }
-                                const cluster = context[0].raw.cluster;
+                                const cluster = (
+                                    context[0].raw as {
+                                        cluster: DateClusterResponseItem;
+                                    }
+                                ).cluster;
                                 const duration = pretty_print_duration(
                                     cluster.bucket_max - cluster.bucket_min
                                 );
@@ -904,32 +908,33 @@ ${cluster.total} images, ${duration} bucket<br/>
             plugins: [
                 {
                     id: "Events",
-                    beforeEvent(chart: Chart, args: any, pluginOptions: any) {
+                    beforeEvent: (
+                        chart: Chart,
+                        args: { event: ChartEvent }
+                    ) => {
                         const event = args.event;
+
                         const canvasPosition =
-                            getRelativePosition(event, chart as any);
-                        const dataX: number | undefined = chart.scales.x.getValueForPixel(
-                            canvasPosition.x
-                        );
-                        const dataY: number | undefined = chart.scales.y.getValueForPixel(
-                            canvasPosition.y
-                        );
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                            getRelativePosition(event, chart as any); // Reason for any is that I am not sure what type to put there, and don't really care
+                        const dataX: number | undefined =
+                            chart.scales.x.getValueForPixel(canvasPosition.x);
                         if (dataX === undefined) {
-                            return
+                            return;
                         }
                         if (event.type === "mousedown") {
-                            that.clickTimeStart = [canvasPosition.x, dataX];
+                            this.clickTimeStart = [canvasPosition.x, dataX];
                         } else if (event.type === "mouseup") {
-                            if (that.clickTimeStart === null) {
+                            if (this.clickTimeStart === null) {
                                 return;
                             }
                             if (
                                 Math.abs(
-                                    canvasPosition.x - that.clickTimeStart[0]
+                                    canvasPosition.x - this.clickTimeStart[0]
                                 ) > 1
                             ) {
                                 const x = [
-                                    that.clickTimeStart[1] / 1000.0,
+                                    this.clickTimeStart[1] / 1000.0,
                                     dataX / 1000.0,
                                 ];
                                 x.sort((x, y) => {
@@ -994,6 +999,11 @@ ${cluster.total} images, ${duration} bucket<br/>
 }
 type DateClusterResponseItem = {
     avg_timestamp: number;
+    min_timestamp: number;
+    max_timestamp: number;
+    bucket_min: number;
+    bucket_max: number;
+    example_path_md5: string;
     total: number;
     overfetched: boolean;
 };
@@ -1014,7 +1024,7 @@ export class TabSwitch {
         }
         const buttons = element.getElementsByTagName("button");
         const ids = [];
-        for (var i = 0; i < buttons.length; i++) {
+        for (let i = 0; i < buttons.length; i++) {
             const button = buttons[i];
             if (!button.classList.contains("tablinks")) {
                 continue;
@@ -1029,8 +1039,7 @@ export class TabSwitch {
         }
         this.sync = new UrlSync(ids);
         const url_params = this.sync.get_url();
-        const that = this;
-        for (var i = 0; i < buttons.length; i++) {
+        for (let i = 0; i < buttons.length; i++) {
             const button = buttons[i];
             if (!button.classList.contains("tablinks")) {
                 continue;
@@ -1040,8 +1049,8 @@ export class TabSwitch {
             }
             const sync_id = button.id.replace("TabSource", "Tab");
             const is_active_from_url = url_params[sync_id];
-            button.addEventListener("click", function () {
-                that.switch_tab_visibility(button);
+            button.addEventListener("click", () => {
+                this.switch_tab_visibility(button);
             });
             this.set_tab_visibility(
                 is_active_from_url === undefined || is_active_from_url === null
@@ -1066,7 +1075,7 @@ export class TabSwitch {
         const callback = this.callbacks[sync_id];
         if (is_active) {
             button.classList.add("active");
-            for (var i = 0; i < targets.length; i++) {
+            for (let i = 0; i < targets.length; i++) {
                 targets[i].classList.remove("disabled");
             }
             if (callback !== undefined && callback !== null) {
@@ -1074,7 +1083,7 @@ export class TabSwitch {
             }
         } else {
             button.classList.remove("active");
-            for (var i = 0; i < targets.length; i++) {
+            for (let i = 0; i < targets.length; i++) {
                 targets[i].classList.add("disabled");
             }
             if (callback !== undefined && callback !== null) {
@@ -1099,8 +1108,8 @@ const _PRETTY_DURATIONS: Array<[number, string]> = [
 ];
 
 function pretty_print_duration(duration: number): string | null {
-    var dur = duration;
-    let out: string[] = [];
+    let dur = duration;
+    const out: string[] = [];
     _PRETTY_DURATIONS.forEach(([seconds, tick]) => {
         const num = Math.trunc(dur / seconds);
         if (num === 0) {

@@ -18,7 +18,6 @@ import {
     overlay_close,
     overlay_next,
     overlay_prev,
-    PagingParams,
     PhotoMap,
     SearchQueryParams,
     SortParams,
@@ -29,7 +28,7 @@ import {
     UrlSync,
 } from "./main.ts";
 
-var ___state: AppState;
+let ___state: AppState;
 function update_dir(data: string) {
     ___state.update_url({ directory: data });
 }
@@ -50,7 +49,7 @@ function update_form(div_id: string) {
         document.getElementById(div_id) as HTMLFormElement
     );
     const values = ___state.get_url();
-    for (let [key, value] of formData) {
+    for (const [key, value] of formData) {
         if (value !== null && value !== undefined && value !== "") {
             if (typeof value === "string") {
                 values[key] = value;
@@ -61,8 +60,8 @@ function update_form(div_id: string) {
     }
     ___state.replace_url(values);
 }
-var ___map_search: MapSearch;
-var ___map: PhotoMap;
+let ___map_search: MapSearch;
+let ___map: PhotoMap;
 function map_zoom(latitude: number, longitude: number) {
     ___map.map.flyTo([latitude, longitude], 13, { duration: 1 });
 }
@@ -72,7 +71,7 @@ function map_bounds() {
 function map_refetch() {
     ___map.update_markers(___state.get_url(), false);
 }
-var ___global_markers: { [id: string]: L.Marker} = {};
+const ___global_markers: { [id: string]: L.Marker} = {};
 type Marker = {
     latitude: number;
     longitude: number;
@@ -238,7 +237,7 @@ function next_page() {
 }
 function add_to_float_param(param: string, other: string, new_value: number) {
     const query = ___state.get_url();
-    let value = parseFloat(query[param]) || parseFloat(query[other]);
+    const value = parseFloat(query[param]) || parseFloat(query[other]);
     if (value != value) {
         return;
     }
@@ -363,7 +362,7 @@ export function submit_annotations(
             },
         })
             .then((response) => response.json())
-            .then((response) => {
+            .then(() => {
                 if (advance_in_time !== undefined && advance_in_time !== null) {
                     // TODO: resolve these imports
                     shift_float_params("tsfrom", "tsto", advance_in_time);
@@ -390,11 +389,11 @@ function annotation_overlay(latitude: number, longitude: number) {
     overlay.fetch(latitude, longitude, ___state.get_url());
 }
 
-var job_progress: JobProgress<any>;
+let job_progress: JobProgress<{ts: number}>;
 function update_job_progress(state_base64: string) {
     job_progress.add_state_base64(state_base64);
 }
-var job_list: JobList;
+let job_list: JobList;
 function show_job_list() {
     job_list.show_or_close();
 }
@@ -485,7 +484,7 @@ function update_sort(params: SortParams) {
     ___state.update_sort(params);
 }
 
-const app: any = {
+const app: object = {
     init_fun,
     update_dir,
     update_url,
@@ -514,4 +513,4 @@ const app: any = {
     overlay_next,
     overlay_prev,
 };
-(window as any).APP = app;
+(window as unknown as {APP: object}).APP = app;
