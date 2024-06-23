@@ -1,0 +1,21 @@
+{
+  "search_query": [
+    "tag",
+    "cls",
+    "addr",
+    "directory",
+    "camera",
+    "tsfrom",
+    "tsto",
+    "skip_with_location",
+    "skip_being_annotated"
+  ],
+  "paging": [
+    "page",
+    "paging"
+  ],
+  "sort": [
+    "sort_by",
+    "order"
+  ]
+}

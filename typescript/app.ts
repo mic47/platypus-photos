@@ -1,5 +1,7 @@
 import * as L from "leaflet";
 
+import data_model from "./data_model.generated.json"
+
 import {
     AppState,
     AnnotationOverlay,
@@ -25,7 +27,7 @@ import {
     null_if_empty,
     TabSwitch,
     UrlSync,
-} from "./main";
+} from "./main.ts";
 
 var ___state: AppState = null;
 function update_dir(data: string) {
@@ -402,92 +404,82 @@ function init_fun() {
         throw new Error("State is already initialized!");
     }
 
-    // Set parameters
-    return fetch("/api/url_field_partitioning", {
-        method: "GET",
-        headers: {
-            "Content-type": "application/json; charset=UTF-8",
+    const url_parameters_fields = data_model.search_query;
+    const paging_fields = data_model.paging;
+    const sort_fields = data_model.sort;
+
+    // Initialize all components
+    ___state = new AppState({}, {}, {});
+    const url_sync = new UrlSync(url_parameters_fields);
+    const paging_sync = new UrlSync(paging_fields);
+    const sort_sync = new UrlSync(sort_fields);
+    const input_form = new InputForm("InputForm");
+    const gallery = new Gallery("GalleryImages", prev_page, next_page);
+    ___map = new PhotoMap(
+        "map",
+        "MapUseQuery",
+        () => ___state.get_url(),
+        location_preview
+    );
+    ___map_search = new MapSearch("MapSearch");
+    const dates = new Dates(
+        "DateChart",
+        (x) => {
+            ___state.update_url(x);
         },
-    })
-        .then((response) => response.json())
-        .then((response) => {
-            const url_parameters_fields = response.search_query;
-            const paging_fields = response.paging;
-            const sort_fields = response.sort;
+        "DateSelection"
+    );
+    const directories = new Directories("Directories");
+    const aggregate_info = new AggregateInfo("AggregateInfo");
+    ___state.register_url_hook((url_params) => {
+        input_form.fetch(url_params);
+        url_sync.update(url_params);
+        gallery.fetch(
+            url_params,
+            ___state.get_paging(),
+            ___state.get_sort()
+        );
+        aggregate_info.fetch(url_params, ___state.get_paging());
 
-            // Initialize all components
-            ___state = new AppState({}, {}, {});
-            const url_sync = new UrlSync(url_parameters_fields);
-            const paging_sync = new UrlSync(paging_fields);
-            const sort_sync = new UrlSync(sort_fields);
-            const input_form = new InputForm("InputForm");
-            const gallery = new Gallery("GalleryImages", prev_page, next_page);
-            ___map = new PhotoMap(
-                "map",
-                "MapUseQuery",
-                () => ___state.get_url(),
-                location_preview
-            );
-            ___map_search = new MapSearch("MapSearch");
-            const dates = new Dates(
-                "DateChart",
-                (x) => {
-                    ___state.update_url(x);
-                },
-                "DateSelection"
-            );
-            const directories = new Directories("Directories");
-            const aggregate_info = new AggregateInfo("AggregateInfo");
-            ___state.register_url_hook((url_params) => {
-                input_form.fetch(url_params);
-                url_sync.update(url_params);
-                gallery.fetch(
-                    url_params,
-                    ___state.get_paging(),
-                    ___state.get_sort()
-                );
-                aggregate_info.fetch(url_params, ___state.get_paging());
+        dates.fetch(url_params);
 
-                dates.fetch(url_params);
+        directories.fetch(url_params);
 
-                directories.fetch(url_params);
+        ___map.update_markers(url_params, true);
+    });
+    ___state.register_paging_hook((paging) => {
+        paging_sync.update(paging);
+        gallery.fetch(___state.get_url(), paging, ___state.get_sort());
+    });
+    ___state.register_sort_hook((sort) => {
+        sort_sync.update(sort);
+        gallery.fetch(___state.get_url(), ___state.get_paging(), sort);
+    });
 
-                ___map.update_markers(url_params, true);
-            });
-            ___state.register_paging_hook((paging) => {
-                paging_sync.update(paging);
-                gallery.fetch(___state.get_url(), paging, ___state.get_sort());
-            });
-            ___state.register_sort_hook((sort) => {
-                sort_sync.update(sort);
-                gallery.fetch(___state.get_url(), ___state.get_paging(), sort);
-            });
+    // Set initial url, redraw everything
+    // TODO: check that this does not trigger too many refreshes
+    ___state.replace_paging(paging_sync.get_url());
+    ___state.replace_url(url_sync.get_url());
+    ___state.replace_sort(sort_sync.get_url());
+    ___map_search.fetch(null);
 
-            // Set initial url, redraw everything
-            // TODO: check that this does not trigger too many refreshes
-            ___state.replace_paging(paging_sync.get_url());
-            ___state.replace_url(url_sync.get_url());
-            ___state.replace_sort(sort_sync.get_url());
-            ___map_search.fetch(null);
+    job_progress = new JobProgress(
+        "JobProgress",
+        "update_job_progress",
+        "show_job_list"
+    );
+    job_progress.fetch();
+    setInterval(() => {
+        job_progress.fetch();
+    }, 10000);
+    job_list = new JobList("JobList");
+    new TabSwitch("RootTabs", {
+        TabDirectories: directories.switchable,
+        TabJobProgress: job_progress.switchable,
+        TabDates: dates.switchable,
+    });
 
-            job_progress = new JobProgress(
-                "JobProgress",
-                "update_job_progress",
-                "show_job_list"
-            );
-            job_progress.fetch();
-            setInterval(() => {
-                job_progress.fetch();
-            }, 10000);
-            job_list = new JobList("JobList");
-            new TabSwitch("RootTabs", {
-                TabDirectories: directories.switchable,
-                TabJobProgress: job_progress.switchable,
-                TabDates: dates.switchable,
-            });
-
-            load_markers_initially();
-        });
+    load_markers_initially();
 }
 function update_sort(params: SortParams) {
     ___state.update_sort(params);

@@ -3,6 +3,9 @@
     "isolatedModules": true,
     "moduleResolution": "nodenext",
     "module": "nodenext",
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
     "target": "es2021",
     "strict": true,
     "lib": [
