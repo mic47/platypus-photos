@@ -724,20 +724,31 @@ def input_request(request: Request, url: SearchQuery) -> HTMLResponse:
     )
 
 
+@dataclass
+class UrlFieldPartitioning:
+    search_query: t.List[str]
+    paging: t.List[str]
+    sort: t.List[str]
+
+
+# TODO: this could be simply generated and included
+@app.get("/api/url_field_partitioning")
+async def url_field_partitioning(
+    request: Request,
+) -> UrlFieldPartitioning:
+    return UrlFieldPartitioning(
+        search_query=[x.name for x in fields(SearchQuery)],
+        paging=[x.name for x in fields(GalleryPaging)],
+        sort=[x.name for x in fields(SortParams)],
+    )
+
+
 @app.get("/index.html", response_class=HTMLResponse)
 @app.get("/", response_class=HTMLResponse)
 async def index_page(
     request: Request,
 ) -> HTMLResponse:
-    return templates.TemplateResponse(
-        request=request,
-        name="index.html",
-        context={
-            "url_parameters_fields": json.dumps([x.name for x in fields(SearchQuery)]),
-            "paging_fields": json.dumps([x.name for x in fields(GalleryPaging)]),
-            "sort_fields": json.dumps([x.name for x in fields(SortParams)]),
-        },
-    )
+    return templates.TemplateResponse(request=request, name="index.html")
 
 
 def classify_tag(value: float) -> str:

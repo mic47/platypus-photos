@@ -184,7 +184,7 @@ class PhotoMap {
         get_url,
         context_menu_callback
     ) {
-        this.map = L.map(div_id).setView([51.505, -0.09], 13);
+        this.map = L.map(div_id).fitWorld();
         this._should_use_query_div = should_use_query_div;
         this._last_update_markers = {};
         L.control.scale({ imperial: false }).addTo(this.map);
