@@ -252,7 +252,7 @@ export class PhotoMap {
         private context_menu_callback: (
             latlng: L.LatLng,
             callback: (content: string) => L.Popup
-        ) => L.Popup
+        ) => void
     ) {
         this.map = L.map(div_id).fitWorld();
         L.control.scale({ imperial: false }).addTo(this.map);
@@ -743,7 +743,7 @@ export function location_preview(
     const popup = show_content_fn('<div id="LocPreview"></div>');
     const info = new AddressInfo("LocPreview");
     info.fetch(loc.lat, loc.lng).then(() => {
-        popup._updateLayout();
+        (popup as unknown as { _updateLayout: () => void })._updateLayout();
     });
 }
 
