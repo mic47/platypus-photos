@@ -459,11 +459,15 @@ export class PhotoMap {
                             cluster.size,
                             ")<br/>",
                             pprange(cluster.tsfrom, cluster.tsto),
-                            "<br/><img src='/img?hsh=",
+                            "<br/>",
+                            `<button onclick="window.APP.update_url({tsfrom: ${cluster.tsfrom - 0.01}, tsto: ${cluster.tsto + 0.01}})">➡️ from &amp; to ⬅️ </button>
+                            <button onclick="window.APP.update_url({tsfrom: ${cluster.tsfrom - 0.01}})">➡️ from</button>
+                            <button onclick="window.APP.update_url({tsto: ${cluster.tsto + 0.01}})">to ⬅️ </button><br/>`,
+                            '<input type="button" value="Use this location for selected photos" ',
+                            `onclick="window.APP.annotation_overlay(${cluster.position.latitude}, ${cluster.position.longitude})"><br/>`,
+                            "<img src='/img?hsh=",
                             cluster.example_path_md5,
                             "&size=preview' class='popup'>",
-                            '<input type="button" value="Use this location for selected photos" ',
-                            `onclick="window.APP.annotation_overlay(${cluster.position.latitude}, ${cluster.position.longitude})">`,
                         ].join(""),
                     );
                     new_markers[cluster.example_path_md5] = marker;
