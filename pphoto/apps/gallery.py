@@ -577,15 +577,21 @@ def image_template_params(
     estimated_loc = ""
     if omg.address.full is None and omg.date is not None and (prev_loc is not None or next_loc is not None):
         parts = []
-        if prev_loc is not None and next_loc is not None:
-            dist = prev_loc.distance(next_loc)
-            parts.append(f"{dist:.1f}m")
         if prev_loc is not None:
-            time_from_prev = _format_diff_date(prev_loc.date, omg.date) # int(prev_loc.timedist(omg.date))
+            time_from_prev = _format_diff_date(prev_loc.date, omg.date, -1) # int(prev_loc.timedist(omg.date))
             parts.append(f"prev: {time_from_prev}")
         if next_loc is not None:
-            time_from_next = _format_diff_date(omg.date, next_loc.date) # int(next_loc.timedist(omg.date))
+            time_from_next = _format_diff_date(omg.date, next_loc.date, -1) # int(next_loc.timedist(omg.date))
             parts.append(f"next: {time_from_next}")
+        if prev_loc is not None and next_loc is not None:
+            dist = prev_loc.distance(next_loc)
+            #parts.append(f"{dist:.1f}m")
+            prev_d = prev_loc.timedist(omg.date)
+            next_d = next_loc.timedist(omg.date)
+            t_d = prev_d + next_d
+            parts.append(f"pdst: {dist / t_d * prev_d:.1f}m")
+            parts.append(f"ndst: {dist / t_d * next_d:.1f}m")
+
         estimated_loc = ", ".join(parts)
     max_tag = min(1, max((omg.tags or {}).values(), default=1.0))
     loc = None
@@ -627,12 +633,14 @@ def image_template_params(
 
 
 # pylint: disable = too-many-return-statements
-def _format_diff_date(d1: t.Optional[datetime], d2: t.Optional[datetime]) -> t.Optional[str]:
+def _format_diff_date(d1: t.Optional[datetime], d2: t.Optional[datetime], none_threshold: int=60) -> t.Optional[str]:
     if d1 is None or d2 is None:
         return None
     seconds = abs(int((d1 - d2).total_seconds()))
-    if seconds < 60:
+    if seconds < none_threshold:
         return None
+    if seconds < 60:
+        return f"{seconds}s"
     minutes = seconds // 60
     if minutes < 100:
         return f"{minutes}m"
