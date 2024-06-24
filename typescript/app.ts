@@ -30,25 +30,25 @@ import {
 
 let ___state: AppState;
 function update_dir(data: string) {
-    ___state.update_url({ directory: data });
+    ___state.search_query.update({ directory: data });
 }
 function update_url(data: SearchQueryParams) {
-    ___state.update_url(data);
+    ___state.search_query.update(data);
 }
 function reset_param(key: string) {
     if (key === "__ALL__") {
-        ___state.replace_url({});
+        ___state.search_query.replace({});
         return;
     }
-    const state = ___state.get_url();
+    const state = ___state.search_query.get();
     delete state[key];
-    ___state.replace_url(state);
+    ___state.search_query.replace(state);
 }
 function update_form(div_id: string) {
     const formData = new FormData(
         document.getElementById(div_id) as HTMLFormElement,
     );
-    const values = ___state.get_url();
+    const values = ___state.search_query.get();
     for (const [key, value] of formData) {
         if (value !== null && value !== undefined && value !== "") {
             if (typeof value === "string") {
@@ -58,7 +58,7 @@ function update_form(div_id: string) {
             delete values[key];
         }
     }
-    ___state.replace_url(values);
+    ___state.search_query.replace(values);
 }
 let ___map_search: MapSearch;
 let ___map: PhotoMap;
@@ -66,10 +66,10 @@ function map_zoom(latitude: number, longitude: number) {
     ___map.map.flyTo([latitude, longitude], 13, { duration: 1 });
 }
 function map_bounds() {
-    ___map.update_bounds(___state.get_url());
+    ___map.update_bounds(___state.search_query.get());
 }
 function map_refetch() {
-    ___map.update_markers(___state.get_url(), false);
+    ___map.update_markers(___state.search_query.get(), false);
 }
 const ___global_markers: { [id: string]: L.Marker } = {};
 type Marker = {
@@ -214,43 +214,43 @@ function fetch_map_search() {
     }
 }
 function update_url_add_tag(tag: string) {
-    const old_tag = ___state.get_url()["tag"];
+    const old_tag = ___state.search_query.get()["tag"];
     if (old_tag === undefined || old_tag === null) {
-        ___state.update_url({ tag: tag });
+        ___state.search_query.update({ tag: tag });
     } else {
-        ___state.update_url({ tag: `${old_tag},${tag}` });
+        ___state.search_query.update({ tag: `${old_tag},${tag}` });
     }
 }
 function set_page(page: number) {
-    ___state.update_paging({ page: page.toString() });
+    ___state.paging.update({ page: page.toString() });
 }
 function prev_page() {
-    const page = parseInt(___state.get_paging()["page"]) || 0;
+    const page = parseInt(___state.paging.get()["page"]) || 0;
     if (page > 0) {
-        ___state.update_paging({ page: (page - 1).toString() });
+        ___state.paging.update({ page: (page - 1).toString() });
     }
 }
 function next_page() {
-    const page = parseInt(___state.get_paging()["page"]) || 0;
+    const page = parseInt(___state.paging.get()["page"]) || 0;
     const update = { page: (page + 1).toString() };
-    ___state.update_paging(update);
+    ___state.paging.update(update);
 }
 function add_to_float_param(param: string, other: string, new_value: number) {
-    const query = ___state.get_url();
+    const query = ___state.search_query.get();
     const value = parseFloat(query[param]) || parseFloat(query[other]);
     if (value != value) {
         return;
     }
     const update: { [key: string]: string } = {};
     update[param] = (value + new_value).toString();
-    ___state.update_url(update);
+    ___state.search_query.update(update);
 }
 function shift_float_params(
     param_to_start: string,
     second_param: string,
     shift_by: number | null = null,
 ) {
-    const query = ___state.get_url();
+    const query = ___state.search_query.get();
     const start_value = parseFloat(query[param_to_start]);
     const end_value = parseFloat(query[second_param]);
     if (end_value != end_value) {
@@ -272,7 +272,7 @@ function shift_float_params(
             ).toString();
         }
     }
-    ___state.update_url(update);
+    ___state.search_query.update(update);
 }
 export function submit_annotations(
     div_id: string,
@@ -386,7 +386,7 @@ export function submit_annotations(
 
 function annotation_overlay(latitude: number, longitude: number) {
     const overlay = new AnnotationOverlay("SubmitDataOverlay");
-    overlay.fetch(latitude, longitude, ___state.get_url());
+    overlay.fetch(latitude, longitude, ___state.search_query.get());
 }
 
 let job_progress: JobProgress<{ ts: number }>;
@@ -417,25 +417,25 @@ function init_fun() {
     ___map = new PhotoMap(
         "map",
         "MapUseQuery",
-        () => ___state.get_url(),
+        () => ___state.search_query.get(),
         location_preview,
     );
     ___map_search = new MapSearch("MapSearch");
     const dates = new Dates(
         "DateChart",
         (x) => {
-            ___state.update_url(x);
+            ___state.search_query.update(x);
         },
         "DateSelection",
         "DateChartGroupBy",
     );
     const directories = new Directories("Directories");
     const aggregate_info = new AggregateInfo("AggregateInfo");
-    ___state.register_url_hook((url_params) => {
+    ___state.search_query.register_hook((url_params) => {
         input_form.fetch(url_params);
         url_sync.update(url_params);
-        gallery.fetch(url_params, ___state.get_paging(), ___state.get_sort());
-        aggregate_info.fetch(url_params, ___state.get_paging());
+        gallery.fetch(url_params, ___state.paging.get(), ___state.sort.get());
+        aggregate_info.fetch(url_params, ___state.paging.get());
 
         dates.fetch(url_params);
 
@@ -443,20 +443,20 @@ function init_fun() {
 
         ___map.update_markers(url_params, true);
     });
-    ___state.register_paging_hook((paging) => {
+    ___state.paging.register_hook((paging) => {
         paging_sync.update(paging);
-        gallery.fetch(___state.get_url(), paging, ___state.get_sort());
+        gallery.fetch(___state.search_query.get(), paging, ___state.sort.get());
     });
-    ___state.register_sort_hook((sort) => {
+    ___state.sort.register_hook((sort) => {
         sort_sync.update(sort);
-        gallery.fetch(___state.get_url(), ___state.get_paging(), sort);
+        gallery.fetch(___state.search_query.get(), ___state.paging.get(), sort);
     });
 
     // Set initial url, redraw everything
     // TODO: check that this does not trigger too many refreshes
-    ___state.replace_paging(paging_sync.get_url());
-    ___state.replace_url(url_sync.get_url());
-    ___state.replace_sort(sort_sync.get_url());
+    ___state.paging.replace(paging_sync.get_url());
+    ___state.search_query.replace(url_sync.get_url());
+    ___state.sort.replace(sort_sync.get_url());
     ___map_search.fetch(null);
 
     job_progress = new JobProgress(
@@ -478,7 +478,7 @@ function init_fun() {
     load_markers_initially();
 }
 function update_sort(params: SortParams) {
-    ___state.update_sort(params);
+    ___state.sort.update(params);
 }
 
 const app: object = {

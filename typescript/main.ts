@@ -12,68 +12,46 @@ export type SortParams = { [key3: string]: string };
 
 type AppStateHook<T> = (data: T) => void;
 
+class StateWithHooks<T> {
+    private hooks: Array<AppStateHook<T>>;
+    constructor(private data: T) {
+        this.hooks = [];
+    }
+    register_hook(hook: AppStateHook<T>) {
+        this.hooks.push(hook);
+    }
+    get(): T {
+        return this.data;
+    }
+    private call_hooks(): StateWithHooks<T> {
+        const data = this.data;
+        this.hooks.forEach((x) => x(data));
+        return this;
+    }
+    update(update: T): StateWithHooks<T> {
+        this.data = { ...this.data, ...update };
+        this.call_hooks();
+        return this;
+    }
+    replace(newData: T): StateWithHooks<T> {
+        this.data = newData;
+        this.call_hooks();
+        return this;
+    }
+}
+
 export class AppState {
-    private url_params_hooks: Array<AppStateHook<SearchQueryParams>>;
-    private paging_hooks: Array<AppStateHook<PagingParams>>;
-    private sort_hooks: Array<AppStateHook<SortParams>>;
+    public search_query: StateWithHooks<SearchQueryParams>;
+    public paging: StateWithHooks<PagingParams>;
+    public sort: StateWithHooks<SortParams>;
     constructor(
-        private url_params: SearchQueryParams,
-        private paging: PagingParams,
-        private sort: SortParams,
+        search_query: SearchQueryParams,
+        paging: PagingParams,
+        sort: SortParams,
     ) {
-        this.url_params_hooks = [];
-        this.paging_hooks = [];
-        this.sort_hooks = [];
-    }
-
-    register_paging_hook(hook: AppStateHook<SearchQueryParams>) {
-        this.paging_hooks.push(hook);
-    }
-    get_paging(): PagingParams {
-        return this.paging;
-    }
-    update_paging(new_parts: PagingParams) {
-        this.paging = { ...this.paging, ...new_parts };
-        const paging = this.paging;
-        this.paging_hooks.forEach((x) => x(paging));
-    }
-    replace_paging(new_paging: PagingParams) {
-        this.paging = {};
-        this.update_paging(new_paging);
-    }
-
-    register_sort_hook(hook: AppStateHook<SortParams>) {
-        this.sort_hooks.push(hook);
-    }
-    get_sort(): SortParams {
-        return this.sort;
-    }
-    update_sort(new_parts: SortParams) {
-        this.sort = { ...this.sort, ...new_parts };
-        const sort = this.sort;
-        this.sort_hooks.forEach((x) => x(sort));
-    }
-    replace_sort(new_sort: SortParams) {
-        this.sort = {};
-        this.update_sort(new_sort);
-    }
-
-    get_url(): SearchQueryParams {
-        return { ...this.url_params };
-    }
-    update_url(new_parts: SearchQueryParams) {
-        // TODO: do this only on change
-        this.url_params = { ...this.url_params, ...new_parts };
-        const url = this.url_params;
-        this.url_params_hooks.forEach((x) => x(url));
-    }
-    replace_url(new_url: SearchQueryParams) {
-        // TODO: do this only on change
-        this.url_params = {};
-        this.update_url(new_url);
-    }
-    register_url_hook(hook: AppStateHook<SearchQueryParams>) {
-        this.url_params_hooks.push(hook);
+        this.search_query = new StateWithHooks(search_query);
+        this.paging = new StateWithHooks(paging);
+        this.sort = new StateWithHooks(sort);
     }
 }
 
