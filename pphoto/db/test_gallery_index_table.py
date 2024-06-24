@@ -14,10 +14,13 @@ def connection() -> GalleryConnection:
     return GalleryConnection(":memory:")
 
 
+DEFAULT_DATE = datetime(2024, 1, 2, 10, 30, 47)
+
+
 def _image(
     md5: str,
     version: int = Image.current_version(),
-    datetm: t.Optional[datetime] = datetime(2024, 1, 2, 10, 30, 47),
+    datetm: t.Optional[datetime] = DEFAULT_DATE,
     dependent_features_last_update: int = 0,
     tags: t.Optional[t.Dict[str, float]] = None,
     caption: t.Optional[str] = "There is something fishy here",
@@ -149,8 +152,8 @@ class TestGalleryIndexTable(unittest.TestCase):
                     1,
                     "Portlandia",
                     "Bristol",
-                    1704187847,
-                    1704187847,
+                    DEFAULT_DATE.timestamp(),
+                    DEFAULT_DATE.timestamp(),
                     LocPoint(49.0, 12.0),
                     LocPoint(49.0, 12.0),
                     LocPoint(49.0, 12.0),
@@ -161,8 +164,8 @@ class TestGalleryIndexTable(unittest.TestCase):
                     1,
                     "Foudlekf",
                     "Jaskd",
-                    1704187847,
-                    1704187847,
+                    DEFAULT_DATE.timestamp(),
+                    DEFAULT_DATE.timestamp(),
                     LocPoint(12.0, -18.0),
                     LocPoint(12.0, -18.0),
                     LocPoint(12.0, -18.0),
@@ -183,8 +186,8 @@ class TestGalleryIndexTable(unittest.TestCase):
                     size=3,
                     address_name="Portlandia",
                     address_country="Bristol",
-                    tsfrom=1704187847,
-                    tsto=1704187847,
+                    tsfrom=DEFAULT_DATE.timestamp(),
+                    tsto=DEFAULT_DATE.timestamp(),
                     top_left=LocPoint(latitude=49.0, longitude=34.0),
                     bottom_right=LocPoint(latitude=49.0, longitude=12.0),
                     position=LocPoint(latitude=49.0, longitude=26.0),
@@ -195,8 +198,8 @@ class TestGalleryIndexTable(unittest.TestCase):
                     size=1,
                     address_name="Foudlekf",
                     address_country="Jaskd",
-                    tsfrom=1704187847,
-                    tsto=1704187847,
+                    tsfrom=DEFAULT_DATE.timestamp(),
+                    tsto=DEFAULT_DATE.timestamp(),
                     top_left=LocPoint(latitude=12.0, longitude=-18.0),
                     bottom_right=LocPoint(latitude=12.0, longitude=-18.0),
                     position=LocPoint(latitude=12.0, longitude=-18.0),
