@@ -57,7 +57,7 @@ export class AppState {
 
 export class UrlSync {
     constructor(private registered_fields: string[]) {}
-    get_url(): { [key: string]: string } {
+    get(): { [key: string]: string } {
         const url = new URL(window.location.href);
         return Object.fromEntries(
             this.registered_fields
@@ -1127,7 +1127,7 @@ export class TabSwitch {
             this.defaults[sync_id] = is_active_default;
         }
         this.sync = new UrlSync(ids);
-        const url_params = this.sync.get_url();
+        const url_params = this.sync.get();
         for (let i = 0; i < buttons.length; i++) {
             const button = buttons[i];
             if (!button.classList.contains("tablinks")) {
@@ -1154,7 +1154,7 @@ export class TabSwitch {
         const target_class = id.replace("TabSource", "TabTarget");
         const sync_id = id.replace("TabSource", "Tab");
         const targets = document.getElementsByClassName(target_class);
-        const url = this.sync.get_url();
+        const url = this.sync.get();
         if (this.defaults[sync_id] === is_active) {
             delete url[sync_id];
         } else {

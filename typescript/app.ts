@@ -409,7 +409,7 @@ function init_fun() {
 
     // Initialize all components
     ___state = new AppState({}, {}, {});
-    const url_sync = new UrlSync(url_parameters_fields);
+    const search_query_sync = new UrlSync(url_parameters_fields);
     const paging_sync = new UrlSync(paging_fields);
     const sort_sync = new UrlSync(sort_fields);
     const input_form = new InputForm("InputForm");
@@ -433,7 +433,7 @@ function init_fun() {
     const aggregate_info = new AggregateInfo("AggregateInfo");
     ___state.search_query.register_hook((url_params) => {
         input_form.fetch(url_params);
-        url_sync.update(url_params);
+        search_query_sync.update(url_params);
         gallery.fetch(url_params, ___state.paging.get(), ___state.sort.get());
         aggregate_info.fetch(url_params, ___state.paging.get());
 
@@ -454,9 +454,9 @@ function init_fun() {
 
     // Set initial url, redraw everything
     // TODO: check that this does not trigger too many refreshes
-    ___state.paging.replace(paging_sync.get_url());
-    ___state.search_query.replace(url_sync.get_url());
-    ___state.sort.replace(sort_sync.get_url());
+    ___state.paging.replace(paging_sync.get());
+    ___state.search_query.replace(search_query_sync.get());
+    ___state.sort.replace(sort_sync.get());
     ___map_search.fetch(null);
 
     job_progress = new JobProgress(
