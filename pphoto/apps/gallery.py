@@ -25,7 +25,7 @@ from pphoto.annots.geo import Geolocator
 from pphoto.data_model.config import DBFilesConfig, Config
 from pphoto.data_model.base import PathWithMd5
 from pphoto.db.types_location import LocationCluster, LocPoint, LocationBounds
-from pphoto.db.types_date import DateCluster
+from pphoto.db.types_date import DateCluster, DateClusterGroupBy
 from pphoto.db.connection import PhotosConnection, GalleryConnection, JobsConnection
 from pphoto.file_mgmt.remote_control import RefreshJobs, write_serialized_rc_job
 from pphoto.utils import assert_never, Lazy
@@ -206,6 +206,7 @@ def location_bounds_endpoint(params: SearchQuery) -> t.Optional[LocationBounds]:
 @dataclass
 class DateClusterParams:
     url: SearchQuery
+    group_by: t.List[DateClusterGroupBy]
     buckets: int
 
 
@@ -213,6 +214,7 @@ class DateClusterParams:
 def date_clusters_endpoint(params: DateClusterParams) -> t.List[DateCluster]:
     clusters = DB.get().get_date_clusters(
         params.url,
+        params.group_by,
         params.buckets,
     )
     return clusters

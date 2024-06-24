@@ -11,7 +11,7 @@ from pphoto.remote_jobs.db import RemoteJobsTable
 from pphoto.db.types_image import ImageAggregation, Image
 from pphoto.db.types_location import LocationCluster, LocPoint, LocationBounds
 from pphoto.db.types_file import FileRow
-from pphoto.db.types_date import DateCluster
+from pphoto.db.types_date import DateCluster, DateClusterGroupBy
 from pphoto.db.types_directory import DirectoryStats
 from pphoto.gallery.url import SearchQuery, GalleryPaging, SortParams
 
@@ -59,8 +59,10 @@ class ImageSqlDB:
     def get_aggregate_stats(self, url: "SearchQuery") -> ImageAggregation:
         return self._gallery_index.get_aggregate_stats(url)
 
-    def get_date_clusters(self, url: SearchQuery, buckets: int) -> t.List[DateCluster]:
-        return self._gallery_index.get_date_clusters(url, buckets)
+    def get_date_clusters(
+        self, url: SearchQuery, group_by: t.List[DateClusterGroupBy], buckets: int
+    ) -> t.List[DateCluster]:
+        return self._gallery_index.get_date_clusters(url, group_by, buckets)
 
     def get_matching_directories(self, url: SearchQuery) -> t.List[DirectoryStats]:
         return self._gallery_index.get_matching_directories(url)

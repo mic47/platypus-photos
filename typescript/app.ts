@@ -403,9 +403,9 @@ function init_fun() {
         throw new Error("State is already initialized!");
     }
 
-    const url_parameters_fields = data_model.search_query;
-    const paging_fields = data_model.paging;
-    const sort_fields = data_model.sort;
+    const url_parameters_fields = data_model.fields.search_query;
+    const paging_fields = data_model.fields.paging;
+    const sort_fields = data_model.fields.sort;
 
     // Initialize all components
     ___state = new AppState({}, {}, {});
@@ -427,6 +427,7 @@ function init_fun() {
             ___state.update_url(x);
         },
         "DateSelection",
+        "DateChartGroupBy",
     );
     const directories = new Directories("Directories");
     const aggregate_info = new AggregateInfo("AggregateInfo");

@@ -1,5 +1,10 @@
+from __future__ import annotations
+
+import dataclasses as dc
 import datetime as dt
 import typing as t
+
+from dataclasses_json import DataClassJsonMixin
 
 # LEFT="⬅️"
 # RIGHT="➡️"
@@ -275,6 +280,21 @@ _FLAGS = {
     }.items()
     for v in vs
 }
+
+
+@dc.dataclass
+class UnicodeEmojiData(DataClassJsonMixin):
+    clocks_oh: t.List[str]  # noqa: F841
+    clocks_thirty: t.List[str]  # noqa: F841
+    flags: t.Dict[str, str]  # noqa: F841
+
+    @staticmethod
+    def create() -> UnicodeEmojiData:
+        return UnicodeEmojiData(
+            _OCLOCK,
+            _THIRTY,
+            _FLAGS,
+        )
 
 
 def append_flag(country: str) -> str:

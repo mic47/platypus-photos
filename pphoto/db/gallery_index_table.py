@@ -19,7 +19,7 @@ from pphoto.data_model.manual import ManualText, ManualLocation
 from pphoto.db.connection import GalleryConnection
 from pphoto.db.directories_table import DirectoriesTable
 from pphoto.db.types_location import LocationCluster, LocPoint, LocationBounds
-from pphoto.db.types_date import DateCluster
+from pphoto.db.types_date import DateCluster, DateClusterGroup, DateClusterGroupBy
 from pphoto.db.types_directory import (
     DirectoryStats,
 )
@@ -302,7 +302,9 @@ WHERE
         (query, params) = self._matching_query("md5", url, extra_clauses)
         return [x for (x,) in self._con.execute(query, params).fetchall()]
 
-    def get_date_clusters(self, url: SearchQuery, buckets: int) -> t.List[DateCluster]:
+    def get_date_clusters(
+        self, url: SearchQuery, group_by: t.List[DateClusterGroupBy], buckets: int
+    ) -> t.List[DateCluster]:
         minmax_select = self._matching_query("timestamp", url)
         minmax = self._con.execute(
             f"""
@@ -323,7 +325,27 @@ WHERE
             url.tsfrom -= diff / 2
         if url.tsto:
             url.tsto += diff / 2
-        final_subselect_query = self._matching_query("timestamp, md5", url)
+
+        country_col = "NULL AS address_country"
+        camera_col = "NULL AS camera"
+        has_loc_col = "NULL AS has_location"
+        address_name_col = "NULL AS address_name"
+        for g in group_by:
+            if g == DateClusterGroupBy.COUNTRY:
+                country_col = "address_country"
+            elif g == DateClusterGroupBy.CAMERA:
+                camera_col = "camera"
+            elif g == DateClusterGroupBy.HAS_LOCATION:
+                has_loc_col = "address_country IS NOT NULL as has_location"
+            elif g == DateClusterGroupBy.ADDRESS_NAME:
+                address_name_col = "address_name"
+            else:
+                assert_never(g)
+
+        final_subselect_query = self._matching_query(
+            f"timestamp, md5, {country_col}, {camera_col}, {has_loc_col}, {address_name_col}, timestamp < ? OR timestamp > ? as overfetched",
+            url,
+        )
         final_params = tuple(
             itertools.chain(
                 [original_url.tsfrom or minmax[0], original_url.tsto or minmax[1]], final_subselect_query[1]
@@ -339,20 +361,28 @@ SELECT
   max_timestamp,
   avg_timestamp,
   total,
-  example_md5
+  example_md5,
+  address_country,
+  camera,
+  has_location,
+  address_name
 FROM (
   SELECT
     CAST((timestamp - {minmax[0]})/ {bucket_size} AS INT) AS bucket,
-    timestamp < ? OR timestamp > ? as overfetched,
+    overfetched,
     MIN(timestamp) AS min_timestamp,
     MAX(timestamp) AS max_timestamp,
     AVG(timestamp) AS avg_timestamp,
     COUNT(1) as total,
-    MIN(md5) as example_md5
+    MIN(md5) as example_md5,
+    IIF(overfetched, NULL, address_country) AS address_country,
+    IIF(overfetched, NULL, camera) AS camera,
+    IIF(overfetched, NULL, has_location) AS has_location,
+    IIF(overfetched, NULL, address_name) AS address_name
   FROM
     ({final_subselect_query[0]}) sl
   WHERE timestamp IS NOT NULL
-  GROUP BY bucket, overfetched
+  GROUP BY bucket, overfetched, address_country, camera, has_location, address_name
 
 ) fl
             """,
@@ -368,6 +398,12 @@ FROM (
                 max_timestamp,
                 avg_timestamp,
                 total,
+                DateClusterGroup(
+                    address_name,
+                    address_country,
+                    camera,
+                    bool(has_location) if has_location is not None else None,
+                ),
             )
             for (
                 bucket_min,
@@ -378,6 +414,10 @@ FROM (
                 avg_timestamp,
                 total,
                 example_path_md5,
+                address_country,
+                camera,
+                has_location,
+                address_name,
             ) in final.fetchall()
         ]
 
