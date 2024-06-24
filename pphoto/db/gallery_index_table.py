@@ -232,6 +232,12 @@ WHERE
                 None,
             ]
         ] = []
+        timestamp_column = "timestamp"
+        if url.timestamp_trans:
+            timestamp_column = f"({url.timestamp_trans})"
+            select = select.replace("timestamp ", f"{timestamp_column} ").replace(
+                "timestamp,", f"{timestamp_column} AS timestamp,"
+            )
         if url.addr:
             clauses.append("address_full like ?")
             variables.append(f"%{url.addr}%")
@@ -249,10 +255,10 @@ WHERE
             clauses.append("camera like ?")
             variables.append(f"%{url.camera}%")
         if url.tsfrom:
-            clauses.append("timestamp >= ?")
+            clauses.append(f"{timestamp_column} >= ?")
             variables.append(url.tsfrom)
         if url.tsto:
-            clauses.append("timestamp <= ?")
+            clauses.append(f"{timestamp_column} <= ?")
             variables.append(url.tsto)
         if url.skip_with_location:
             clauses.append("address_full IS NULL")

@@ -38,3 +38,4 @@ class SearchQuery(DataClassJsonMixin):
     tsto: t.Optional[float] = None
     skip_with_location: bool = False
     skip_being_annotated: bool = False
+    timestamp_trans: t.Optional[str] = None

@@ -709,6 +709,7 @@ def input_request(request: Request, url: SearchQuery) -> HTMLResponse:
                 "skip_being_annotated": url.skip_being_annotated,
                 "directory": url.directory,
                 "camera": url.camera,
+                "timestamp_trans": url.timestamp_trans or "",
                 "tsfrom": url.tsfrom or "",
                 "tsfrom_pretty": (
                     datetime.fromtimestamp(url.tsfrom).strftime("%a %Y-%m-%d %H:%M:%S")

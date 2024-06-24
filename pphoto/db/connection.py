@@ -47,7 +47,11 @@ class _Connection:
             self._connection = self._connect()
         if parameters is None:
             return self._connection.execute(sql)
-        return self._connection.execute(sql, parameters)
+        try:
+            return self._connection.execute(sql, parameters)
+        except:
+            print(sql, parameters)
+            raise
 
     def executemany(
         self,
