@@ -3,6 +3,7 @@ from datetime import (
     timedelta,
 )
 import sqlite3
+import sys
 import typing as t
 
 Parameter = t.Union[str, bytes, int, float, None]
@@ -50,7 +51,7 @@ class _Connection:
         try:
             return self._connection.execute(sql, parameters)
         except:
-            print(sql, parameters)
+            print(sql, parameters, file=sys.stderr)
             raise
 
     def executemany(

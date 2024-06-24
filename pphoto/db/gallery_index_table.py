@@ -235,9 +235,9 @@ WHERE
         timestamp_column = "timestamp"
         if url.timestamp_trans:
             timestamp_column = f"({url.timestamp_trans})"
-            select = select.replace("timestamp ", f"{timestamp_column} ").replace(
-                "timestamp,", f"{timestamp_column} AS timestamp,"
-            )
+        select = select.replace("#as#timestamp#", f"{timestamp_column} AS timestamp").replace(
+            "#timestamp#", timestamp_column
+        )
         if url.addr:
             clauses.append("address_full like ?")
             variables.append(f"%{url.addr}%")
@@ -311,7 +311,7 @@ WHERE
     def get_date_clusters(
         self, url: SearchQuery, group_by: t.List[DateClusterGroupBy], buckets: int
     ) -> t.List[DateCluster]:
-        minmax_select = self._matching_query("timestamp", url)
+        minmax_select = self._matching_query("#as#timestamp#", url)
         minmax = self._con.execute(
             f"""
             SELECT MIN(timestamp), MAX(timestamp) FROM ({minmax_select[0]})
@@ -349,7 +349,7 @@ WHERE
                 assert_never(g)
 
         final_subselect_query = self._matching_query(
-            f"timestamp, md5, {country_col}, {camera_col}, {has_loc_col}, {address_name_col}, timestamp < ? OR timestamp > ? as overfetched",
+            f"#as#timestamp#, md5, {country_col}, {camera_col}, {has_loc_col}, {address_name_col}, #timestamp# < ? OR #timestamp# > ? as overfetched",
             url,
         )
         final_params = tuple(
@@ -445,7 +445,7 @@ FROM (
         select_items, variables = self._matching_query(
             f"""
             address_name, address_country, latitude, longitude,
-            md5, classifications, timestamp,
+            md5, classifications, #as#timestamp#,
             round(latitude/{lat_scale})*{lat_scale} as cluster_lat,
             round(longitude/{lon_scale})*{lon_scale} as cluster_lon
         """,
@@ -631,7 +631,7 @@ SELECT "cam", camera, COUNT(1) FROM matched_images GROUP BY camera
             query,
             variables,
         ) = self._matching_query(
-            "md5, timestamp, tags, tags_probs, classifications, address_country, address_name, address_full, feature_last_update, latitude, longitude, altitude, version, manual_features, being_annotated, camera, software",
+            "md5, #as#timestamp#, tags, tags_probs, classifications, address_country, address_name, address_full, feature_last_update, latitude, longitude, altitude, version, manual_features, being_annotated, camera, software",
             url,
         )
         sort_by = None
@@ -708,7 +708,7 @@ SELECT "cam", camera, COUNT(1) FROM matched_images GROUP BY camera
 
     def get_matching_directories(self, url: SearchQuery) -> t.List[DirectoryStats]:
         (match_query, match_params) = self._matching_query(
-            "md5, address_full, timestamp, being_annotated", url
+            "md5, address_full, #as#timestamp#, being_annotated", url
         )
         ret = self._con.execute(
             f"""
