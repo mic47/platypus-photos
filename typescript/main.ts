@@ -1018,6 +1018,7 @@ ${cluster.total} images, ${duration} bucket<br/>
                             }
                             const newDataset = datasets[label];
                             if (newDataset === undefined) {
+                                this.colors.remove(label);
                                 return null;
                             }
                             newDataset.backgroundColor = this.colors.get_str(
