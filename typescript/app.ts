@@ -3,7 +3,6 @@ import * as L from "leaflet";
 import data_model from "./data_model.generated.json";
 
 import {
-    AppState,
     AnnotationOverlay,
     JobList,
     JobProgress,
@@ -19,14 +18,12 @@ import {
     overlay_next,
     overlay_prev,
     PhotoMap,
-    SearchQueryParams,
-    SortParams,
     parse_float_or_null,
     error_box,
     null_if_empty,
     TabSwitch,
-    UrlSync,
 } from "./main.ts";
+import { AppState, SearchQueryParams, SortParams, UrlSync } from "./state.ts";
 
 let ___state: AppState;
 function update_dir(data: string) {
