@@ -17,13 +17,13 @@ import {
     overlay_close,
     overlay_next,
     overlay_prev,
-    PhotoMap,
     parse_float_or_null,
     error_box,
     null_if_empty,
     TabSwitch,
 } from "./main.ts";
 import { AppState, SearchQueryParams, SortParams, UrlSync } from "./state.ts";
+import { PhotoMap } from "./photo_map.ts";
 
 let ___state: AppState;
 function update_dir(data: string) {
