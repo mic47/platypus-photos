@@ -901,7 +901,7 @@ export class Dates {
                                                     : undefined;
                                             if (flag === undefined) {
                                                 if (typeof x === "boolean") {
-                                                    return `${k}={x}`;
+                                                    return `${k}=${x}`;
                                                 } else {
                                                     return x;
                                                 }
@@ -1079,7 +1079,7 @@ function clusters_to_datasets(
                                 : undefined;
                         if (flag === undefined) {
                             if (typeof x === "boolean") {
-                                return `${k}={x}`;
+                                return `${k}=${x}`;
                             } else {
                                 return x;
                             }
