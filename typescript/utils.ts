@@ -43,3 +43,47 @@ export function pprange(ts1: number, ts2: number): string {
     }
     return out.join(" ");
 }
+export function null_if_empty(
+    str: null | undefined | string | File,
+): null | string {
+    if (
+        str === null ||
+        str === undefined ||
+        typeof str !== "string" ||
+        str.trim() === ""
+    ) {
+        return null;
+    }
+    return str;
+}
+export function parse_float_or_null(str: string | null | File): number | null {
+    if (str === null || typeof str !== "string") {
+        return null;
+    }
+    const value = parseFloat(str);
+    if (value != value) {
+        return null;
+    }
+    return value;
+}
+
+export function error_box(div_id: string, value: object | number | string) {
+    console.log(div_id, value);
+    const e = document.getElementById(div_id);
+    console.log(e);
+    if (e === null || e === undefined) {
+        alert(value);
+        return;
+    }
+    const element = document.createElement("div");
+    element.classList.add("error");
+    const pre = document.createElement("pre");
+    try {
+        pre.innerHTML = JSON.stringify(value, null, 2);
+    } catch {
+        pre.innerHTML = value.toString();
+    }
+    element.appendChild(pre);
+    e.innerHTML = "";
+    e.appendChild(element);
+}

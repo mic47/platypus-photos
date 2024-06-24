@@ -2,6 +2,7 @@ import * as L from "leaflet";
 
 import { SearchQueryParams } from "./state.ts";
 import { pprange } from "./utils.ts";
+import { GenericFetch } from "./generic_fetch.ts";
 
 type Position = {
     latitude: number;
@@ -269,4 +270,57 @@ export class PhotoMap {
                 );
             });
     }
+}
+
+export class MapSearch extends GenericFetch<{ query: string | null }> {
+    constructor(div_id: string) {
+        super(div_id, "/internal/map_search.html");
+    }
+    fetch(search_str: string | null) {
+        return this.fetch_impl({ query: search_str });
+    }
+}
+
+export class AddressInfo extends GenericFetch<{
+    latitude: number;
+    longitude: number;
+}> {
+    constructor(div_id: string) {
+        super(div_id, "/internal/fetch_location_info.html");
+    }
+    fetch(latitude: number, longitude: number) {
+        return this.fetch_impl({ latitude, longitude });
+    }
+}
+
+export class AnnotationOverlay extends GenericFetch<{
+    latitude: number;
+    longitude: number;
+    query: SearchQueryParams;
+}> {
+    constructor(div_id: string) {
+        super(div_id, "/internal/submit_annotations_overlay.html");
+    }
+    fetch(latitude: number, longitude: number, query: SearchQueryParams) {
+        return this.fetch_impl({ latitude, longitude, query });
+    }
+}
+
+type LeafPosition = {
+    lat: number;
+    lng: number;
+};
+export function location_preview(
+    loc: LeafPosition,
+    show_content_fn: (content: string) => L.Popup,
+) {
+    const existing = document.getElementById("LocPreview");
+    if (existing !== undefined && existing !== null) {
+        existing.remove();
+    }
+    const popup = show_content_fn('<div id="LocPreview"></div>');
+    const info = new AddressInfo("LocPreview");
+    info.fetch(loc.lat, loc.lng).then(() => {
+        (popup as unknown as { _updateLayout: () => void })._updateLayout();
+    });
 }

@@ -2,28 +2,27 @@ import * as L from "leaflet";
 
 import data_model from "./data_model.generated.json";
 
+import { Dates } from "./dates_chart.ts";
 import {
-    AnnotationOverlay,
-    JobList,
-    JobProgress,
-    Gallery,
-    Dates,
-    Directories,
     AggregateInfo,
-    location_preview,
-    InputForm,
-    MapSearch,
+    Gallery,
     overlay,
     overlay_close,
     overlay_next,
     overlay_prev,
-    parse_float_or_null,
-    error_box,
-    null_if_empty,
-    TabSwitch,
-} from "./main.ts";
+} from "./gallery.ts";
+import { InputForm } from "./input.ts";
+import { parse_float_or_null, error_box, null_if_empty } from "./utils.ts";
+import {
+    AnnotationOverlay,
+    MapSearch,
+    PhotoMap,
+    location_preview,
+} from "./photo_map.ts";
 import { AppState, SearchQueryParams, SortParams, UrlSync } from "./state.ts";
-import { PhotoMap } from "./photo_map.ts";
+import { JobList, JobProgress } from "./jobs.ts";
+import { Directories } from "./directories.ts";
+import { TabSwitch } from "./switchable.ts";
 
 let ___state: AppState;
 function update_dir(data: string) {
