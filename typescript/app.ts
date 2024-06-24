@@ -407,13 +407,28 @@ function init_fun() {
     const paging_fields = data_model.fields.paging;
     const sort_fields = data_model.fields.sort;
 
-    // Initialize all components
+    /* Initialize state and url syncs */
     ___state = new AppState({}, {}, {});
     const search_query_sync = new UrlSync(url_parameters_fields);
+    ___state.search_query.register_hook((u) => search_query_sync.update(u));
     const paging_sync = new UrlSync(paging_fields);
+    ___state.paging.register_hook((u) => paging_sync.update(u));
     const sort_sync = new UrlSync(sort_fields);
+    ___state.sort.register_hook((u) => sort_sync.update(u));
     const input_form = new InputForm("InputForm");
+    ___state.search_query.register_hook((u) => input_form.fetch(u));
+    /* Gallery */
     const gallery = new Gallery("GalleryImages", prev_page, next_page);
+    ___state.search_query.register_hook((search_query) => {
+        gallery.fetch(search_query, ___state.paging.get(), ___state.sort.get());
+    });
+    ___state.paging.register_hook((paging) => {
+        gallery.fetch(___state.search_query.get(), paging, ___state.sort.get());
+    });
+    ___state.sort.register_hook((sort) => {
+        gallery.fetch(___state.search_query.get(), ___state.paging.get(), sort);
+    });
+    /* Map */
     ___map = new PhotoMap(
         "map",
         "MapUseQuery",
@@ -421,6 +436,10 @@ function init_fun() {
         location_preview,
     );
     ___map_search = new MapSearch("MapSearch");
+    ___state.search_query.register_hook((url_params) => {
+        ___map.update_markers(url_params, true);
+    });
+    /* Dates */
     const dates = new Dates(
         "DateChart",
         (x) => {
@@ -429,36 +448,25 @@ function init_fun() {
         "DateSelection",
         "DateChartGroupBy",
     );
+    ___state.search_query.register_hook((u) => dates.fetch(u));
+    /* Directories */
     const directories = new Directories("Directories");
+    ___state.search_query.register_hook((u) => directories.fetch(u));
+    /* Aggregate Info */
     const aggregate_info = new AggregateInfo("AggregateInfo");
     ___state.search_query.register_hook((url_params) => {
-        input_form.fetch(url_params);
-        search_query_sync.update(url_params);
-        gallery.fetch(url_params, ___state.paging.get(), ___state.sort.get());
         aggregate_info.fetch(url_params, ___state.paging.get());
-
-        dates.fetch(url_params);
-
-        directories.fetch(url_params);
-
-        ___map.update_markers(url_params, true);
-    });
-    ___state.paging.register_hook((paging) => {
-        paging_sync.update(paging);
-        gallery.fetch(___state.search_query.get(), paging, ___state.sort.get());
-    });
-    ___state.sort.register_hook((sort) => {
-        sort_sync.update(sort);
-        gallery.fetch(___state.search_query.get(), ___state.paging.get(), sort);
     });
 
-    // Set initial url, redraw everything
-    // TODO: check that this does not trigger too many refreshes
-    ___state.paging.replace(paging_sync.get());
+    /* Trigger redrawing of componentsl */
+    // WARNING: here we assume that search_query will update everything
+    ___state.paging.replace_no_hook_update(paging_sync.get());
+    // WARNING: here we assume that search_query will update everything
+    ___state.sort.replace_no_hook_update(sort_sync.get());
     ___state.search_query.replace(search_query_sync.get());
-    ___state.sort.replace(sort_sync.get());
     ___map_search.fetch(null);
 
+    /* Job progress / list UI */
     job_progress = new JobProgress(
         "JobProgress",
         "update_job_progress",
@@ -469,6 +477,7 @@ function init_fun() {
         job_progress.fetch();
     }, 10000);
     job_list = new JobList("JobList");
+    /* Tab */
     new TabSwitch("RootTabs", {
         TabDirectories: directories.switchable,
         TabJobProgress: job_progress.switchable,

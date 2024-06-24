@@ -23,7 +23,7 @@ class StateWithHooks<T> {
     get(): T {
         return this.data;
     }
-    private call_hooks(): StateWithHooks<T> {
+    call_hooks(): StateWithHooks<T> {
         const data = this.data;
         this.hooks.forEach((x) => x(data));
         return this;
@@ -36,6 +36,10 @@ class StateWithHooks<T> {
     replace(newData: T): StateWithHooks<T> {
         this.data = newData;
         this.call_hooks();
+        return this;
+    }
+    replace_no_hook_update(newData: T): StateWithHooks<T> {
+        this.data = newData;
         return this;
     }
 }
