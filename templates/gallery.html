@@ -42,6 +42,9 @@
         {% if image.timeicon %}<br/>{% endif %}
         ⏱️{{image.diff_date}}
     {% endif %}
+    {% if image.estimated_loc %}
+        <br/>{{image.estimated_loc}}
+    {% endif %}
     <div class="gallery_container" onclick="window.APP.overlay(this, {{ loop.index0 }})">
         <img loading="lazy" src="/img?hsh={{image.hsh}}&size={% if loop.index0 == oi %}original{%else%}preview{%endif%}" class="gallery_image" alt="{{image.classifications}}" title="{{image.classifications}}"/>
     </div>

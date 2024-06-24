@@ -14,6 +14,7 @@ from datetime import datetime, timedelta
 from dataclasses import dataclass
 
 from dataclasses_json import DataClassJsonMixin
+from geopy.distance import distance
 from PIL import Image, ImageFile
 
 from fastapi import FastAPI, Request, Response
@@ -566,8 +567,26 @@ class GalleryRequest:
     sort: SortParams
 
 
-def image_template_params(omg: ImageRow, prev_date: t.Optional[datetime] = None) -> t.Dict[str, t.Any]:
+def image_template_params(
+    omg: ImageRow,
+    prev_date: t.Optional[datetime] = None,
+    prev_loc: t.Optional[DateWithLoc] = None,
+    next_loc: t.Optional[DateWithLoc] = None,
+) -> t.Dict[str, t.Any]:
 
+    estimated_loc = ""
+    if omg.address.full is None and omg.date is not None and (prev_loc is not None or next_loc is not None):
+        parts = []
+        if prev_loc is not None and next_loc is not None:
+            dist = prev_loc.distance(next_loc)
+            parts.append(f"{dist:.1f}m")
+        if prev_loc is not None:
+            time_from_prev = _format_diff_date(prev_loc.date, omg.date) # int(prev_loc.timedist(omg.date))
+            parts.append(f"prev: {time_from_prev}")
+        if next_loc is not None:
+            time_from_next = _format_diff_date(omg.date, next_loc.date) # int(next_loc.timedist(omg.date))
+            parts.append(f"next: {time_from_next}")
+        estimated_loc = ", ".join(parts)
     max_tag = min(1, max((omg.tags or {}).values(), default=1.0))
     loc = None
     if omg.latitude is not None and omg.longitude is not None:
@@ -585,6 +604,7 @@ def image_template_params(omg: ImageRow, prev_date: t.Optional[datetime] = None)
         "hsh": omg.md5,
         "paths": paths,
         "loc": loc,
+        "estimated_loc": estimated_loc,
         "classifications": omg.classifications or "",
         "tags": [
             (tg, classify_tag(x / max_tag)) for tg, x in sorted((omg.tags or {}).items(), key=lambda x: -x[1])
@@ -632,13 +652,40 @@ def _format_diff_date(d1: t.Optional[datetime], d2: t.Optional[datetime]) -> t.O
     return f"{years}y"
 
 
+@dataclass
+class DateWithLoc:
+    latitude: float
+    longitude: float
+    date: datetime
+
+    def distance(self, other: DateWithLoc) -> float:
+        return t.cast(float, distance((self.latitude, self.longitude), (other.latitude, other.longitude)).m)
+
+    def timedist(self, other: datetime) -> float:
+        return abs((self.date - other).total_seconds())
+
+
 @app.post("/internal/gallery.html", response_class=HTMLResponse)
 async def gallery_div(request: Request, params: GalleryRequest, oi: t.Optional[int] = None) -> HTMLResponse:
     images = []
     omgs, has_next_page = DB.get().get_matching_images(params.query, params.sort, params.paging)
     prev_date = None
+    last = None
+    forward: t.List[t.Optional[DateWithLoc]] = []
     for omg in omgs:
-        images.append(image_template_params(omg, prev_date))
+        forward.append(last)
+        if omg.latitude is not None and omg.longitude is not None and omg.date is not None:
+            last = DateWithLoc(omg.latitude, omg.longitude, omg.date)
+    last = None
+    backward: t.List[t.Optional[DateWithLoc]] = []
+    for omg in reversed(omgs):
+        backward.append(last)
+        if omg.latitude is not None and omg.longitude is not None and omg.date is not None:
+            last = DateWithLoc(omg.latitude, omg.longitude, omg.date)
+    backward.reverse()
+
+    for index, omg in enumerate(omgs):
+        images.append(image_template_params(omg, prev_date, forward[index], backward[index]))
         prev_date = omg.date
 
     return templates.TemplateResponse(
