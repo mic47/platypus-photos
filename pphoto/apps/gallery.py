@@ -570,29 +570,8 @@ class GalleryRequest:
 def image_template_params(
     omg: ImageRow,
     prev_date: t.Optional[datetime] = None,
-    prev_loc: t.Optional[DateWithLoc] = None,
-    next_loc: t.Optional[DateWithLoc] = None,
 ) -> t.Dict[str, t.Any]:
 
-    estimated_loc = ""
-    if omg.address.full is None and omg.date is not None and (prev_loc is not None or next_loc is not None):
-        parts = []
-        if prev_loc is not None:
-            time_from_prev = _format_diff_date(prev_loc.date, omg.date, -1) # int(prev_loc.timedist(omg.date))
-            parts.append(f"prev: {time_from_prev}")
-        if next_loc is not None:
-            time_from_next = _format_diff_date(omg.date, next_loc.date, -1) # int(next_loc.timedist(omg.date))
-            parts.append(f"next: {time_from_next}")
-        if prev_loc is not None and next_loc is not None:
-            dist = prev_loc.distance(next_loc)
-            #parts.append(f"{dist:.1f}m")
-            prev_d = prev_loc.timedist(omg.date)
-            next_d = next_loc.timedist(omg.date)
-            t_d = prev_d + next_d
-            parts.append(f"pdst: {dist / t_d * prev_d:.1f}m")
-            parts.append(f"ndst: {dist / t_d * next_d:.1f}m")
-
-        estimated_loc = ", ".join(parts)
     max_tag = min(1, max((omg.tags or {}).values(), default=1.0))
     loc = None
     if omg.latitude is not None and omg.longitude is not None:
@@ -610,7 +589,6 @@ def image_template_params(
         "hsh": omg.md5,
         "paths": paths,
         "loc": loc,
-        "estimated_loc": estimated_loc,
         "classifications": omg.classifications or "",
         "tags": [
             (tg, classify_tag(x / max_tag)) for tg, x in sorted((omg.tags or {}).items(), key=lambda x: -x[1])
@@ -633,10 +611,16 @@ def image_template_params(
 
 
 # pylint: disable = too-many-return-statements
-def _format_diff_date(d1: t.Optional[datetime], d2: t.Optional[datetime], none_threshold: int=60) -> t.Optional[str]:
+def _format_diff_date(
+    d1: t.Optional[datetime], d2: t.Optional[datetime], none_threshold: int = 60
+) -> t.Optional[str]:
     if d1 is None or d2 is None:
         return None
     seconds = abs(int((d1 - d2).total_seconds()))
+    return _format_seconds_to_duration(seconds, none_threshold)
+
+
+def _format_seconds_to_duration(seconds: float, none_threshold: int = -1) -> t.Optional[str]:
     if seconds < none_threshold:
         return None
     if seconds < 60:
@@ -662,12 +646,20 @@ def _format_diff_date(d1: t.Optional[datetime], d2: t.Optional[datetime], none_t
 
 @dataclass
 class DateWithLoc:
-    latitude: float
-    longitude: float
+    loc: LocPoint
     date: datetime
 
+    @staticmethod
+    def from_image(omg: ImageRow) -> t.Optional[DateWithLoc]:
+        if omg.latitude is not None and omg.longitude is not None and omg.date is not None:
+            return DateWithLoc(LocPoint(omg.latitude, omg.longitude), omg.date)
+        return None
+
     def distance(self, other: DateWithLoc) -> float:
-        return t.cast(float, distance((self.latitude, self.longitude), (other.latitude, other.longitude)).m)
+        return t.cast(
+            float,
+            distance((self.loc.latitude, self.loc.longitude), (other.loc.latitude, other.loc.longitude)).m,
+        )
 
     def timedist(self, other: datetime) -> float:
         return abs((self.date - other).total_seconds())
@@ -677,23 +669,23 @@ class DateWithLoc:
 async def gallery_div(request: Request, params: GalleryRequest, oi: t.Optional[int] = None) -> HTMLResponse:
     images = []
     omgs, has_next_page = DB.get().get_matching_images(params.query, params.sort, params.paging)
-    prev_date = None
-    last = None
-    forward: t.List[t.Optional[DateWithLoc]] = []
-    for omg in omgs:
-        forward.append(last)
-        if omg.latitude is not None and omg.longitude is not None and omg.date is not None:
-            last = DateWithLoc(omg.latitude, omg.longitude, omg.date)
-    last = None
-    backward: t.List[t.Optional[DateWithLoc]] = []
-    for omg in reversed(omgs):
-        backward.append(last)
-        if omg.latitude is not None and omg.longitude is not None and omg.date is not None:
-            last = DateWithLoc(omg.latitude, omg.longitude, omg.date)
-    backward.reverse()
+    fwdbwd = forward_backward(omgs, DateWithLoc.from_image)
 
+    prev_date = None
     for index, omg in enumerate(omgs):
-        images.append(image_template_params(omg, prev_date, forward[index], backward[index]))
+        predicted_location = predict_location(omg, fwdbwd[index][0], fwdbwd[index][1])
+        estimated_loc = predict_location_to_str(predicted_location)
+        estimated_loc_suspicious = suspicious(predicted_location)
+        images.append(
+            {
+                **image_template_params(omg, prev_date),
+                "estimated_loc": estimated_loc,
+                "estimated_loc_suspicious": estimated_loc_suspicious,
+                "estimated_loc_onesided": predicted_location is not None
+                and (predicted_location.earlier is None or predicted_location.later is None),
+                "predicted_loc": predicted_location,
+            }
+        )
         prev_date = omg.date
 
     return templates.TemplateResponse(
@@ -709,6 +701,114 @@ async def gallery_div(request: Request, params: GalleryRequest, oi: t.Optional[i
             },
         },
     )
+
+
+T = t.TypeVar("T")
+R = t.TypeVar("R")
+
+
+def forward_backward(
+    seq: t.Sequence[T], fun: t.Callable[[T], t.Optional[R]]
+) -> t.List[t.Tuple[t.Optional[R], t.Optional[R]]]:
+    last = None
+    backward: t.List[t.Optional[R]] = []
+    for omg in reversed(seq):
+        backward.append(last)
+        last = fun(omg)
+    last = None
+    forward: t.List[t.Tuple[t.Optional[R], t.Optional[R]]] = []
+    for index, omg in enumerate(seq):
+        forward.append((last, backward[-(index + 1)]))
+        last = fun(omg)
+    return forward
+
+
+@dataclass
+class ReferenceStats(DataClassJsonMixin):
+    distance_m: float
+    seconds: float
+
+
+@dataclass
+class PredictedLocation(DataClassJsonMixin):
+    loc: LocPoint
+    earlier: t.Optional[ReferenceStats]
+    later: t.Optional[ReferenceStats]
+
+
+def distance_m(p1: LocPoint, p2: LocPoint) -> float:
+    return t.cast(float, distance((p1.latitude, p1.longitude), (p2.latitude, p2.longitude)).m)
+
+
+def suspicious(loc: t.Optional[PredictedLocation]) -> bool:
+    if loc is None:
+        return False
+    if loc.earlier is not None:
+        if loc.earlier.distance_m > 1000 or loc.earlier.seconds > 3600:
+            return True
+    if loc.later is not None:
+        if loc.later.distance_m > 1000 or loc.later.seconds > 3600:
+            return True
+    return False
+
+
+def predict_location(
+    omg: ImageRow,
+    prev_loc: t.Optional[DateWithLoc] = None,
+    next_loc: t.Optional[DateWithLoc] = None,
+) -> t.Optional[PredictedLocation]:
+    if omg.date is None:
+        return None
+    if omg.latitude is not None and omg.longitude is not None:
+        return None
+    if prev_loc is not None and next_loc is not None:
+        prev_d = prev_loc.timedist(omg.date)
+        next_d = next_loc.timedist(omg.date)
+        t_d = prev_d + next_d
+        loc_point = prev_loc.loc + (next_loc.loc - prev_loc.loc).scale(prev_d / t_d)
+        return PredictedLocation(
+            loc_point,
+            ReferenceStats(distance_m(prev_loc.loc, loc_point), prev_d),
+            ReferenceStats(distance_m(loc_point, next_loc.loc), next_d),
+        )
+    if prev_loc is not None:
+        return PredictedLocation(
+            prev_loc.loc,
+            ReferenceStats(0.0, prev_loc.timedist(omg.date)),
+            None,
+        )
+    if next_loc is not None:
+        return PredictedLocation(
+            next_loc.loc,
+            ReferenceStats(0.0, next_loc.timedist(omg.date)),
+            None,
+        )
+    return None
+
+
+def predict_location_to_str(
+    predicted: t.Optional[PredictedLocation],
+) -> t.Optional[str]:
+    if predicted is None:
+        return None
+    parts = []
+    if predicted.earlier:
+        speed_str = ""
+        if predicted.earlier.seconds > 0.1:
+            speed = predicted.earlier.distance_m / predicted.earlier.seconds * 1000 / 3600
+            speed_str = f", {speed:.1f}km/h"
+        parts.append(
+            f"early: {predicted.earlier.distance_m:.1f}m, {_format_seconds_to_duration(predicted.earlier.seconds)}{speed_str}"
+        )
+    if predicted.later:
+        speed_str = ""
+        if predicted.later.seconds > 0.1:
+            speed = predicted.later.distance_m / predicted.later.seconds * 1000 / 3600
+            speed_str = f", {speed:.1f}km/h"
+        parts.append(
+            f"later: {predicted.later.distance_m:.1f}m, {_format_seconds_to_duration(predicted.later.seconds)}{speed_str}"
+        )
+    return ", ".join(parts)
 
 
 @dataclass
