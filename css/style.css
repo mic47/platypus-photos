@@ -262,6 +262,9 @@ div.gallery_item:hover {
 .LocPredView {
     display: none;
 }
+#LocPredCheck:checked~button.LocPredView {
+    display: inline;
+}
 #LocPredCheck:checked~div .LocPredView {
     display: block;
 }

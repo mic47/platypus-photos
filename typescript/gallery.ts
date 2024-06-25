@@ -1,4 +1,9 @@
-import { PagingParams, SearchQueryParams, SortParams } from "./state.ts";
+import {
+    CheckboxesParams,
+    PagingParams,
+    SearchQueryParams,
+    SortParams,
+} from "./state.ts";
 
 export class AggregateInfo {
     constructor(private div_id: string) {}
@@ -30,11 +35,16 @@ export class Gallery {
         private next_page: () => void,
     ) {}
 
-    fetch(url_data: SearchQueryParams, paging: PagingParams, sort: SortParams) {
+    fetch(
+        url_data: SearchQueryParams,
+        paging: PagingParams,
+        sort: SortParams,
+        checkboxes: CheckboxesParams,
+    ) {
         const url = "/internal/gallery.html";
         fetch(url, {
             method: "POST",
-            body: JSON.stringify({ query: url_data, paging, sort }),
+            body: JSON.stringify({ query: url_data, paging, sort, checkboxes }),
             headers: {
                 "Content-type": "application/json; charset=UTF-8",
             },

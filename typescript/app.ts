@@ -19,7 +19,13 @@ import {
     PhotoMap,
     location_preview,
 } from "./photo_map.ts";
-import { AppState, SearchQueryParams, SortParams, UrlSync } from "./state.ts";
+import {
+    AppState,
+    CheckboxSync,
+    SearchQueryParams,
+    SortParams,
+    UrlSync,
+} from "./state.ts";
 import { JobList, JobProgress } from "./jobs.ts";
 import { Directories } from "./directories.ts";
 import { TabSwitch } from "./switchable.ts";
@@ -393,6 +399,7 @@ let job_list: JobList;
 function show_job_list() {
     job_list.show_or_close();
 }
+const ___checkbox_sync: CheckboxSync = new CheckboxSync();
 
 function init_fun() {
     if (___state !== undefined) {
@@ -416,13 +423,28 @@ function init_fun() {
     /* Gallery */
     const gallery = new Gallery("GalleryImages", prev_page, next_page);
     ___state.search_query.register_hook((search_query) => {
-        gallery.fetch(search_query, ___state.paging.get(), ___state.sort.get());
+        gallery.fetch(
+            search_query,
+            ___state.paging.get(),
+            ___state.sort.get(),
+            ___checkbox_sync.get(),
+        );
     });
     ___state.paging.register_hook((paging) => {
-        gallery.fetch(___state.search_query.get(), paging, ___state.sort.get());
+        gallery.fetch(
+            ___state.search_query.get(),
+            paging,
+            ___state.sort.get(),
+            ___checkbox_sync.get(),
+        );
     });
     ___state.sort.register_hook((sort) => {
-        gallery.fetch(___state.search_query.get(), ___state.paging.get(), sort);
+        gallery.fetch(
+            ___state.search_query.get(),
+            ___state.paging.get(),
+            sort,
+            ___checkbox_sync.get(),
+        );
     });
     /* Map */
     ___map = new PhotoMap(
@@ -487,6 +509,7 @@ function update_sort(params: SortParams) {
 }
 
 const app: object = {
+    checkbox_sync: ___checkbox_sync,
     init_fun,
     update_dir,
     update_url,

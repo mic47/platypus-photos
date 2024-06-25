@@ -1,6 +1,7 @@
 export type SearchQueryParams = { [key1: string]: string };
 export type PagingParams = { [key2: string]: string };
 export type SortParams = { [key3: string]: string };
+export type CheckboxesParams = { [key4: string]: boolean };
 
 type AppStateHook<T> = (data: T) => void;
 
@@ -48,6 +49,19 @@ export class AppState {
         this.search_query = new StateWithHooks(search_query);
         this.paging = new StateWithHooks(paging);
         this.sort = new StateWithHooks(sort);
+    }
+}
+
+export class CheckboxSync {
+    private state: { [id: string]: boolean };
+    constructor() {
+        this.state = {};
+    }
+    get(): { [id: string]: boolean } {
+        return this.state;
+    }
+    update_from_element(element: HTMLInputElement) {
+        this.state[element.id] = element.checked;
     }
 }
 

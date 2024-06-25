@@ -565,6 +565,7 @@ class GalleryRequest:
     query: SearchQuery
     paging: GalleryPaging
     sort: SortParams
+    checkboxes: t.Dict[str, bool]
 
 
 def image_template_params(
@@ -694,6 +695,7 @@ async def gallery_div(request: Request, params: GalleryRequest, oi: t.Optional[i
         name="gallery.html",
         context={
             "oi": oi,
+            "checkboxes": params.checkboxes,
             "images": images,
             "has_next_page": has_next_page,
             "ascending": params.sort.order == SortOrder.ASC,
