@@ -780,8 +780,8 @@ def predict_location(
     if next_loc is not None:
         return PredictedLocation(
             next_loc.loc,
-            ReferenceStats(0.0, next_loc.timedist(omg.date)),
             None,
+            ReferenceStats(0.0, next_loc.timedist(omg.date)),
         )
     return None
 
