@@ -212,7 +212,7 @@ function fetch_map_search() {
         }
     }
     if (___map_search !== null) {
-        ___map_search.fetch(values["query"] || null);
+        ___map_search.fetch(values["query"] || null, ___checkbox_sync.get());
     }
 }
 function update_url_add_tag(tag: string) {
@@ -482,7 +482,7 @@ function init_fun() {
     // WARNING: here we assume that search_query will update everything
     ___state.sort.replace_no_hook_update(sort_sync.get());
     ___state.search_query.replace(search_query_sync.get());
-    ___map_search.fetch(null);
+    ___map_search.fetch(null, ___checkbox_sync.get());
 
     /* Job progress / list UI */
     job_progress = new JobProgress(

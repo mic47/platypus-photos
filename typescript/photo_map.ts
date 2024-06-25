@@ -1,6 +1,6 @@
 import * as L from "leaflet";
 
-import { SearchQueryParams } from "./state.ts";
+import { CheckboxesParams, SearchQueryParams } from "./state.ts";
 import { pprange } from "./utils.ts";
 import { GenericFetch } from "./generic_fetch.ts";
 
@@ -272,12 +272,15 @@ export class PhotoMap {
     }
 }
 
-export class MapSearch extends GenericFetch<{ query: string | null }> {
+export class MapSearch extends GenericFetch<{
+    query: string | null;
+    checkboxes: CheckboxesParams;
+}> {
     constructor(div_id: string) {
         super(div_id, "/internal/map_search.html");
     }
-    fetch(search_str: string | null) {
-        return this.fetch_impl({ query: search_str });
+    fetch(search_str: string | null, checkboxes: CheckboxesParams) {
+        return this.fetch_impl({ query: search_str, checkboxes });
     }
 }
 

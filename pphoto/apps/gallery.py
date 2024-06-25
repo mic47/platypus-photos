@@ -11,7 +11,7 @@ import time
 import enum
 import traceback
 from datetime import datetime, timedelta
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from dataclasses_json import DataClassJsonMixin
 from geopy.distance import distance
@@ -306,6 +306,7 @@ GEOLOCATOR = Geolocator()
 @dataclass
 class MapSearchRequest:
     query: t.Optional[str] = None
+    checkboxes: t.Dict[str, bool] = field(default_factory=dict)
 
 
 @app.post("/internal/map_search.html", response_class=HTMLResponse)
