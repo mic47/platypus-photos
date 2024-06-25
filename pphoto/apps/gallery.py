@@ -714,12 +714,12 @@ def forward_backward(
     backward: t.List[t.Optional[R]] = []
     for omg in reversed(seq):
         backward.append(last)
-        last = fun(omg)
+        last = fun(omg) or last
     last = None
     forward: t.List[t.Tuple[t.Optional[R], t.Optional[R]]] = []
     for index, omg in enumerate(seq):
         forward.append((last, backward[-(index + 1)]))
-        last = fun(omg)
+        last = fun(omg) or last
     return forward
 
 
