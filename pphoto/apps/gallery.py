@@ -621,6 +621,7 @@ def _format_diff_date(
 
 
 def _format_seconds_to_duration(seconds: float, none_threshold: int = -1) -> t.Optional[str]:
+    seconds = int(seconds)
     if seconds < none_threshold:
         return None
     if seconds < 60:
@@ -798,7 +799,7 @@ def predict_location_to_str(
             speed = predicted.earlier.distance_m / predicted.earlier.seconds * 1000 / 3600
             speed_str = f", {speed:.1f}km/h"
         parts.append(
-            f"early: {predicted.earlier.distance_m:.1f}m, {_format_seconds_to_duration(predicted.earlier.seconds)}{speed_str}"
+            f"e: {predicted.earlier.distance_m:.0f}m, {_format_seconds_to_duration(predicted.earlier.seconds)}{speed_str}"
         )
     if predicted.later:
         speed_str = ""
@@ -806,7 +807,7 @@ def predict_location_to_str(
             speed = predicted.later.distance_m / predicted.later.seconds * 1000 / 3600
             speed_str = f", {speed:.1f}km/h"
         parts.append(
-            f"later: {predicted.later.distance_m:.1f}m, {_format_seconds_to_duration(predicted.later.seconds)}{speed_str}"
+            f"l: {predicted.later.distance_m:.0f}m, {_format_seconds_to_duration(predicted.later.seconds)}{speed_str}"
         )
     return ", ".join(parts)
 
