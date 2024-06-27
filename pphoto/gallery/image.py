@@ -102,6 +102,8 @@ def make_image(
         manual_features.append(type(manual_location).__name__)
     if manual_text is not None:
         manual_features.append(type(manual_text).__name__)
+    if transformed_date is not None:
+        manual_features.append(type(transformed_date).__name__)
 
     return Image(
         md5,
