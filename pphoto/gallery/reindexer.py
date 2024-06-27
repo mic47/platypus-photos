@@ -117,6 +117,7 @@ class Reindexer:
                 if path is not None:
                     directories.add(os.path.dirname(path))
 
+        effective_max_last_update = max(max_last_update, max_dir_last_update)
         omg = make_image(
             md5,
             exif,
@@ -135,11 +136,11 @@ class Reindexer:
                 )
                 if x is not None
             ],
-            # TODO: add max_dir_last_update?
-            max_last_update,
+            effective_max_last_update,
         )
 
-        assert max_last_update > 0.0
+        assert effective_max_last_update > 0.0
+
         self._directories_table.multi_add([(d, md5) for d in directories])
         self._files_table.undirty(md5, max_dir_last_update)
         self._gallery_index.add(omg)
