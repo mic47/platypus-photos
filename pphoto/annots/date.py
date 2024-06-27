@@ -50,7 +50,7 @@ class PathDateExtractor:
                     int(match.group("second")),
                 )
                 return date_
-        # pylint: disable = broad-exception-caught
+        # pylint: disable-next = broad-exception-caught
         except Exception as e:
             print("ERR", filename, e, file=sys.stderr)
         for ddf in self._dated_directory:
@@ -63,7 +63,7 @@ class PathDateExtractor:
                         int(match.group("day")),
                     )
                     return date_
-            # pylint: disable = broad-exception-caught
+            # pylint: disable-next = broad-exception-caught
             except Exception as e:
                 print("ERR", filename, e, ddf, file=sys.stderr)
         for s, date_ in self._path_to_date:

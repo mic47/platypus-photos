@@ -87,3 +87,7 @@ export function error_box(div_id: string, value: object | number | string) {
     e.innerHTML = "";
     e.appendChild(element);
 }
+
+export function base64_decode_object(data: string): object {
+    return JSON.parse(window.atob(data));
+}

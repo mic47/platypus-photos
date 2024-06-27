@@ -27,15 +27,24 @@ from pphoto.data_model.config import DBFilesConfig, Config
 from pphoto.data_model.base import PathWithMd5
 from pphoto.db.types_location import LocationCluster, LocPoint, LocationBounds
 from pphoto.db.types_date import DateCluster, DateClusterGroupBy
+from pphoto.db.types_image import ImageAddress
 from pphoto.db.connection import PhotosConnection, GalleryConnection, JobsConnection
 from pphoto.file_mgmt.remote_control import RefreshJobs, write_serialized_rc_job
 from pphoto.utils import assert_never, Lazy
-from pphoto.remote_jobs.types import RemoteJobType, ManualLocation, TextAnnotation, ManualAnnotationTask
+from pphoto.remote_jobs.types import (
+    RemoteJobType,
+    ManualLocation,
+    TextAnnotation,
+    ManualAnnotationTask,
+    ManualDate,
+)
 
 from pphoto.gallery.db import ImageSqlDB, Image as ImageRow
 from pphoto.gallery.image import make_image_address
 from pphoto.gallery.url import SearchQuery, GalleryPaging, SortParams, SortBy, SortOrder
 from pphoto.gallery.utils import (
+    format_diff_date,
+    format_seconds_to_duration,
     maybe_datetime_to_date,
     maybe_datetime_to_time,
     maybe_datetime_to_timestamp,
@@ -172,15 +181,15 @@ def location_clusters_endpoint(params: LocClusterParams) -> t.List[LocationClust
     for job in jobs:
         if job.type_ == RemoteJobType.MASS_MANUAL_ANNOTATION:
             try:
-                og_req = MassManualAnnotation.from_json(job.original_request)
-                point = LocPoint(og_req.location.latitude, og_req.location.longitude)
+                og_req = mass_manual_annotation_from_json(job.original_request)
+                point = LocPoint(og_req.location.location.latitude, og_req.location.location.longitude)
                 clusters.append(
                     LocationCluster(
                         job.example_path_md5 or "missing",
-                        og_req.text.description,
+                        og_req.text.text.description,
                         job.total,
-                        og_req.location.address_name,
-                        og_req.location.address_country,
+                        og_req.location.location.address_name,
+                        og_req.location.location.address_country,
                         og_req.query.tsfrom,
                         og_req.query.tsto,
                         point,
@@ -188,7 +197,7 @@ def location_clusters_endpoint(params: LocClusterParams) -> t.List[LocationClust
                         point,
                     )
                 )
-            # pylint: disable = broad-exception-caught
+            # pylint: disable-next = broad-exception-caught
             except Exception:
                 continue
         else:
@@ -235,7 +244,14 @@ class TextAnnotationOverride(enum.Enum):
 
 
 @dataclass
-class MassManualAnnotation(DataClassJsonMixin):
+class LocationQueryFixedLocation(DataClassJsonMixin):
+    t: t.Literal["FixedLocation"]
+    location: ManualLocation
+    override: ManualLocationOverride
+
+
+@dataclass
+class MassManualAnnotationDeprecated(DataClassJsonMixin):
     query: SearchQuery
     location: ManualLocation
     location_override: ManualLocationOverride
@@ -243,50 +259,183 @@ class MassManualAnnotation(DataClassJsonMixin):
     text_override: TextAnnotationOverride
 
 
+@dataclass
+class TextQueryFixedText(DataClassJsonMixin):
+    t: t.Literal["FixedText"]
+    text: TextAnnotation
+    override: TextAnnotationOverride
+    loc_only: bool
+
+
+@dataclass
+class AnnotationOverlayInterpolateLocation(DataClassJsonMixin):
+    t: t.Literal["InterpolatedLocation"]
+    location: ManualLocation  # Actually not manual location, it's just sample. But structurally same type
+
+
+@dataclass
+class TransDate(DataClassJsonMixin):
+    t: t.Literal["TransDate"]
+    adjust_dates: bool
+
+
+LocationTypes = LocationQueryFixedLocation | AnnotationOverlayInterpolateLocation
+TextTypes = TextQueryFixedText
+DateTypes = TransDate
+
+
+@dataclass
+class MassLocationAndTextAnnotation(DataClassJsonMixin):
+    t: t.Literal["MassLocAndTxt"]
+    query: SearchQuery
+    location: LocationTypes
+    text: TextTypes
+    date: DateTypes
+
+
+MassManualAnnotation = MassManualAnnotationDeprecated | MassLocationAndTextAnnotation
+
+
+def mass_manual_annotation_from_json(j: bytes) -> MassLocationAndTextAnnotation:
+    d = json.loads(j)
+    type_ = d.get("t")
+    if type_ is None:
+        return mass_manual_annotation_migrate(MassManualAnnotationDeprecated.from_dict(d))
+    if type_ == "MassLocAndTxt":
+        return MassLocationAndTextAnnotation.from_dict(d)
+    raise NotImplementedError
+
+
+def mass_manual_annotation_migrate(params: MassManualAnnotation) -> MassLocationAndTextAnnotation:
+    if isinstance(params, MassManualAnnotationDeprecated):
+        return MassLocationAndTextAnnotation(
+            "MassLocAndTxt",
+            params.query,
+            LocationQueryFixedLocation(
+                "FixedLocation",
+                params.location,
+                params.location_override,
+            ),
+            TextQueryFixedText(
+                "FixedText",
+                params.text,
+                params.text_override,
+                False,
+            ),
+            TransDate(
+                "TransDate",
+                False,
+            ),
+        )
+    return params
+
+
+def location_tasks_recipes(
+    location: LocationTypes,
+    query: SearchQuery,
+    db: ImageSqlDB,
+    all_images: Lazy[t.Tuple[t.List[ImageRow], bool]],
+) -> t.Dict[str, ManualLocation]:
+    location_tasks_recipe = {}
+    if location.t == "FixedLocation":
+        has_location = None
+        has_manual_location = None
+        if location.override == ManualLocationOverride.NO_LOCATION_NO_MANUAL:
+            has_location = False
+            has_manual_location = False
+        elif location.override == ManualLocationOverride.NO_LOCATION_YES_MANUAL:
+            has_location = False
+            has_manual_location = None
+        elif location.override == ManualLocationOverride.YES_LOCATION_NO_MANUAL:
+            has_location = None
+            has_manual_location = False
+        elif location.override == ManualLocationOverride.YES_LOCATION_YES_MANUAL:
+            has_location = None
+            has_manual_location = None
+        else:
+            assert_never(location.override)
+        location_tasks_recipe = {
+            md5: location.location
+            for md5 in db.get_matching_md5(
+                query, has_location=has_location, has_manual_location=has_manual_location
+            )
+        }
+    elif location.t == "InterpolatedLocation":
+        location_tasks_recipe = {}
+        omgs, _ = all_images.get()
+        fwdbwd = forward_backward(omgs, DateWithLoc.from_image)
+        for index, omg in enumerate(omgs):
+            predicted_location = predict_location(omg, fwdbwd[index][0], fwdbwd[index][1])
+            if predicted_location is not None and omg.latitude is None and omg.longitude is None:
+                location_tasks_recipe[omg.md5] = ManualLocation(
+                    predicted_location.loc.latitude,
+                    predicted_location.loc.longitude,
+                    # TODO: Should we allow this?
+                    None,
+                    None,
+                )
+    else:
+        assert_never(location.t)
+    return location_tasks_recipe
+
+
+def date_tasks_recipes(
+    date: DateTypes,
+    all_images: Lazy[t.Tuple[t.List[ImageRow], bool]],
+) -> t.Dict[str, ManualDate]:
+    transformed_date_recipe = {}
+    if date.t == "TransDate":
+        if date.adjust_dates:
+            omgs, _ = all_images.get()
+            for omg in omgs:
+                if omg.date_transformed:
+                    transformed_date_recipe[omg.md5] = ManualDate(omg.date)
+    else:
+        assert_never(date.t)
+    return transformed_date_recipe
+
+
 @app.post("/api/mass_manual_annotation")
 def mass_manual_annotation_endpoint(params: MassManualAnnotation) -> int:
     db = DB.get()
-    has_location = None
-    has_manual_location = None
-    if params.location_override == ManualLocationOverride.NO_LOCATION_NO_MANUAL:
-        has_location = False
-        has_manual_location = False
-    elif params.location_override == ManualLocationOverride.NO_LOCATION_YES_MANUAL:
-        has_location = False
-        has_manual_location = None
-    elif params.location_override == ManualLocationOverride.YES_LOCATION_NO_MANUAL:
-        has_location = None
-        has_manual_location = False
-    elif params.location_override == ManualLocationOverride.YES_LOCATION_YES_MANUAL:
-        has_location = None
-        has_manual_location = None
-    else:
-        assert_never(params.location_override)
-    location_md5s = set(
-        db.get_matching_md5(params.query, has_location=has_location, has_manual_location=has_manual_location)
+
+    params = mass_manual_annotation_migrate(params)
+
+    all_images = Lazy(
+        lambda: DB.get().get_matching_images(
+            params.query, SortParams(sort_by=SortBy.TIMESTAMP, order=SortOrder.ASC), GalleryPaging(0, 1000000)
+        )
     )
+
+    transformed_date_recipe = date_tasks_recipes(params.date, all_images)
+
+    location_tasks_recipe = location_tasks_recipes(params.location, params.query, db, all_images)
+
     has_manual_text = None
     extend = False
-    if params.text_override == TextAnnotationOverride.EXTEND_MANUAL:
+    if params.text.override == TextAnnotationOverride.EXTEND_MANUAL:
         has_manual_text = None
         extend = True
-    elif params.text_override == TextAnnotationOverride.YES_MANUAL:
+    elif params.text.override == TextAnnotationOverride.YES_MANUAL:
         has_manual_text = None
-    elif params.text_override == TextAnnotationOverride.NO_MANUAL:
+    elif params.text.override == TextAnnotationOverride.NO_MANUAL:
         has_manual_text = False
     else:
-        assert_never(params.text_override)
+        assert_never(params.text.override)
     text_md5s = set(db.get_matching_md5(params.query, has_manual_text=has_manual_text))
+    if params.text.loc_only:
+        text_md5s = text_md5s.intersection(location_tasks_recipe.keys())
 
     tasks = []
-    for md5 in location_md5s.union(text_md5s):
+    for md5 in text_md5s.union(location_tasks_recipe.keys()).union(transformed_date_recipe.keys()):
         tasks.append(
             (
                 md5,
                 ManualAnnotationTask(
-                    params.location if md5 in location_md5s else None,
-                    params.text if md5 in text_md5s else None,
+                    location_tasks_recipe.get(md5),
+                    params.text.text if md5 in text_md5s else None,
                     extend,
+                    transformed_date_recipe.get(md5),
                 )
                 .to_json(ensure_ascii=False)
                 .encode("utf-8"),
@@ -314,7 +463,7 @@ def map_search_endpoint(request: Request, req: MapSearchRequest) -> HTMLResponse
     error = ""
     try:
         result = GEOLOCATOR.search(req.query, limit=10) if req.query is not None else []
-    # pylint: disable = broad-exception-caught
+    # pylint: disable-next = broad-exception-caught
     except Exception as e:
         traceback.print_exc()
         error = f"{e}\n{traceback.format_exc()}"
@@ -417,24 +566,25 @@ def job_list_endpoint(request: Request, _req: JobListRequest) -> HTMLResponse:
         query = ""
         if job.type_ == RemoteJobType.MASS_MANUAL_ANNOTATION:
             try:
-                og_req = MassManualAnnotation.from_json(job.original_request)
-                if og_req.text.description:
+                og_req = mass_manual_annotation_from_json(job.original_request)
+                if og_req.text.text.description:
                     type_.append("📝")
-                    replacements.append(f"📝{og_req.text.description}")
-                if og_req.text.tags:
+                    replacements.append(f"📝{og_req.text.text.description}")
+                if og_req.text.text.tags:
                     type_.append("🏷️")
-                    replacements.append(f"🏷️{og_req.text.tags}")
-                if og_req.location.address_name:
+                    replacements.append(f"🏷️{og_req.text.text.tags}")
+                if og_req.location.location.address_name:
                     type_.append("📛")
-                    replacements.append(f"📛{og_req.location.address_name}")
-                if og_req.location.address_country:
-                    type_.append(flag(og_req.location.address_country) or "🎌")
+                    replacements.append(f"📛{og_req.location.location.address_name}")
+                if og_req.location.location.address_country:
+                    type_.append(flag(og_req.location.location.address_country) or "🎌")
                     replacements.append(
-                        flag(og_req.location.address_country) or og_req.location.address_country
+                        flag(og_req.location.location.address_country)
+                        or og_req.location.location.address_country
                     )
                 query = og_req.to_json(ensure_ascii=False, indent=2)
 
-            # pylint: disable = broad-exception-caught
+            # pylint: disable-next = broad-exception-caught
             except Exception as e:
                 replacements.append(str(e))
         else:
@@ -451,8 +601,8 @@ def job_list_endpoint(request: Request, _req: JobListRequest) -> HTMLResponse:
                 "type_": "".join(type_),
                 "repls": repls,
                 "time": (job.last_update or job.created).timestamp(),
-                "latitude": og_req.location.latitude,
-                "longitude": og_req.location.longitude,
+                "latitude": og_req.location.location.latitude,
+                "longitude": og_req.location.location.longitude,
                 "query_json": query,
                 "job_json": json.dumps(job_dict, ensure_ascii=False, indent=2),
                 "example_path_md5": job.example_path_md5,
@@ -466,15 +616,31 @@ def job_list_endpoint(request: Request, _req: JobListRequest) -> HTMLResponse:
 
 
 @dataclass
-class AnnotationOverlayRequest(DataClassJsonMixin):
+class AnnotationOverlayFixedLocation(DataClassJsonMixin):
+    t: t.Literal["FixedLocation"]
     latitude: float
     longitude: float
+
+
+@dataclass
+class AnnotationOverlayRequest(DataClassJsonMixin):
+    request: AnnotationOverlayFixedLocation | AnnotationOverlayInterpolateLocation
     query: SearchQuery
 
 
 @app.post("/internal/submit_annotations_overlay.html", response_class=HTMLResponse)
 def submit_annotation_overlay_form_endpoint(request: Request, req: AnnotationOverlayRequest) -> HTMLResponse:
-    address = make_image_address(GEOLOCATOR.address(PathWithMd5("", ""), req.latitude, req.longitude).p, None)
+    address = None
+    if req.request.t == "FixedLocation":
+        address = make_image_address(
+            GEOLOCATOR.address(PathWithMd5("", ""), req.request.latitude, req.request.longitude).p,
+            None,
+        )
+    elif req.request.t == "InterpolatedLocation":
+        # there is nothing to do.
+        address = ImageAddress(req.request.location.address_country, req.request.location.address_name, None)
+    else:
+        assert_never(req.request.t)
     aggr = DB.get().get_aggregate_stats(req.query)
     top_tags = sorted(aggr.tag.items(), key=lambda x: -x[1])
     top_cls = sorted(aggr.classification.items(), key=lambda x: -x[1])
@@ -489,6 +655,7 @@ def submit_annotation_overlay_form_endpoint(request: Request, req: AnnotationOve
         name="submit_annotations_overlay.html",
         context={
             "total": aggr.total,
+            "request_type": req.request.t,
             "top": {
                 "tag": top_tags[:15],
                 "cls": top_cls[:5],
@@ -509,13 +676,15 @@ def submit_annotation_overlay_form_endpoint(request: Request, req: AnnotationOve
             "query_json": json.dumps(
                 {k: v for k, v in req.query.to_dict(encode_json=True).items() if v}, indent=2
             ),
-            "query_json_base64": base64.b64encode(
-                req.query.to_json(ensure_ascii=True).encode("utf-8")
-            ).decode("utf-8"),
+            "query_json_base64": jtob64(req.query),
             "directories": directories,
             "images": images,
         },
     )
+
+
+def jtob64(data: DataClassJsonMixin) -> str:
+    return base64.b64encode(data.to_json(ensure_ascii=True).encode("utf-8")).decode("utf-8")
 
 
 @dataclass
@@ -586,7 +755,7 @@ def image_template_params(
         }
         for file in DB.get().files(omg.md5)
     ]
-    diff_date = _format_diff_date(omg.date, prev_date)
+    diff_date = format_diff_date(omg.date, prev_date)
     return {
         "hsh": omg.md5,
         "paths": paths,
@@ -610,41 +779,6 @@ def image_template_params(
             {"k": k, "v": json.dumps(v, ensure_ascii=True)} for k, v in omg.to_dict(encode_json=True).items()
         ],
     }
-
-
-# pylint: disable = too-many-return-statements
-def _format_diff_date(
-    d1: t.Optional[datetime], d2: t.Optional[datetime], none_threshold: int = 60
-) -> t.Optional[str]:
-    if d1 is None or d2 is None:
-        return None
-    seconds = abs(int((d1 - d2).total_seconds()))
-    return _format_seconds_to_duration(seconds, none_threshold)
-
-
-def _format_seconds_to_duration(seconds: float, none_threshold: int = -1) -> t.Optional[str]:
-    seconds = int(seconds)
-    if seconds < none_threshold:
-        return None
-    if seconds < 60:
-        return f"{seconds}s"
-    minutes = seconds // 60
-    if minutes < 100:
-        return f"{minutes}m"
-    hours = seconds // 3600
-    if hours < 48:
-        return f"{hours}h"
-    days = seconds // 86400
-    if days < 14:
-        return f"{days}d"
-    weeks = seconds // (86400 * 7)
-    if weeks < 6:
-        return f"{weeks}w"
-    months = seconds // (86400 * 30)
-    if months < 19:
-        return f"{months}mon"
-    years = seconds // (86400 * 365.25)
-    return f"{years}y"
 
 
 @dataclass
@@ -675,7 +809,15 @@ async def gallery_div(request: Request, params: GalleryRequest, oi: t.Optional[i
     fwdbwd = forward_backward(omgs, DateWithLoc.from_image)
 
     prev_date = None
+    some_location = None
     for index, omg in enumerate(omgs):
+        if omg.latitude is not None and omg.longitude is not None:
+            some_location = ManualLocation(
+                omg.latitude,
+                omg.longitude,
+                omg.address.name,
+                omg.address.country,
+            )
         predicted_location = predict_location(omg, fwdbwd[index][0], fwdbwd[index][1])
         estimated_loc = predict_location_to_str(predicted_location)
         estimated_loc_suspicious = suspicious(predicted_location)
@@ -697,6 +839,11 @@ async def gallery_div(request: Request, params: GalleryRequest, oi: t.Optional[i
         context={
             "oi": oi,
             "checkboxes": params.checkboxes,
+            "location_encoded_base64": (
+                base64.b64encode(some_location.to_json().encode("utf-8")).decode("utf-8")
+                if some_location is not None
+                else None
+            ),
             "images": images,
             "has_next_page": has_next_page,
             "ascending": params.sort.order == SortOrder.ASC,
@@ -802,7 +949,7 @@ def predict_location_to_str(
             speed = predicted.earlier.distance_m / predicted.earlier.seconds * 1000 / 3600
             speed_str = f", {speed:.1f}km/h"
         parts.append(
-            f"e: {predicted.earlier.distance_m:.0f}m, {_format_seconds_to_duration(predicted.earlier.seconds)}{speed_str}"
+            f"e: {predicted.earlier.distance_m:.0f}m, {format_seconds_to_duration(predicted.earlier.seconds)}{speed_str}"
         )
     if predicted.later:
         speed_str = ""
@@ -810,7 +957,7 @@ def predict_location_to_str(
             speed = predicted.later.distance_m / predicted.later.seconds * 1000 / 3600
             speed_str = f", {speed:.1f}km/h"
         parts.append(
-            f"l: {predicted.later.distance_m:.0f}m, {_format_seconds_to_duration(predicted.later.seconds)}{speed_str}"
+            f"l: {predicted.later.distance_m:.0f}m, {format_seconds_to_duration(predicted.later.seconds)}{speed_str}"
         )
     return ", ".join(parts)
 

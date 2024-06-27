@@ -3,8 +3,10 @@
 <div class="submit_overlay_result" id="submit_overlay_result"></div>
 <div class="annotation_scrollable_area">
   <form action="javascript:window.APP.submit_annotations('submit_overlay','SubmitAnnotations','submit_overlay_result', null)" id='SubmitAnnotations'>
-    <h3>Location Info</h3>
-    <input type="hidden" value='{{query_json_base64|safe}}' name="query_json_base64">
+    <input type="hidden" value='{{query_json_base64|safe}}' name="query_json_base64"/>
+    <input type="hidden" value='{{req.request.t}}' name="request_type"/>
+    {% if req.request.t == "FixedLocation" %}
+    <h3>Fixed Location Info</h3>
     <b>How to override location?</b>
       <select name="location_override">
         <option value="NoLocNoMan">Override images without location and manual annotation</option>
@@ -22,11 +24,39 @@
       <input type="text" name="address_country" value="{{address.country}}">
       <input type="hidden" name="address_country_original" value="{{address.country}}">
       <br/>
-    <b>Latitude:</b> {{req.latitude}}<br/>
-    <input type="hidden" value="{{req.latitude}}" name="latitude">
-    <b>Longitude:</b> {{req.longitude}}<br/>
-    <input type="hidden" value="{{req.longitude}}" name="longitude">
+    <b>Latitude:</b> {{req.request.latitude}}<br/>
+    <input type="hidden" value="{{req.request.latitude}}" name="latitude">
+    <b>Longitude:</b> {{req.request.longitude}}<br/>
+    <input type="hidden" value="{{req.request.longitude}}" name="longitude">
+    {% elif req.request.t == "InterpolatedLocation" %}
+    <h3>Interpolated Location Info</h3>
+    This will interpolate only for photos that does not have location information.
+    All photos in selection will be annotated.
+    There is no sanity check for long distances or times.
+    Change the query if you don't like which photos are being annotated.
+    <br>
+    Following address will be used to identify job in UI (this is random address from the selection).
+    <br>
+    <b>Name:</b> {{address.name}}<br/>
+    <input type="hidden" name="address_name_original" value="{{address.name}}">
+    <b>Country:</b> {{address.country}}<br/>
+    <input type="hidden" name="address_country_original" value="{{address.country}}">
+    <b>Latitude:</b> {{req.request.location.latitude}}<br/>
+    <input type="hidden" value="{{req.request.location.latitude}}" name="latitude">
+    <b>Longitude:</b> {{req.request.location.longitude}}<br/>
+    <input type="hidden" value="{{req.request.location.longitude}}" name="longitude">
+    {% else %}
+    <h3>What? This is some wrong request</h3>
+    {% endif %}
+    {% if req.query.timestamp_trans %}
+    <h3>Time transformation</h3>
+    There seems to be following timestamp transformation: {{req.query.timestamp_trans}}<br>
+    <input type="checkbox" name="apply_timestamp_trans" checked/>Apply time transformation on photos where it made difference
+    {% endif %}
     <h3>Annotation Info</h3>
+    {% if req.request.t == "InterpolatedLocation" %}
+    <input type="checkbox" name="text_loc_only" checked/>Apply text annotation only when applying location<br/>
+    {% endif %}
     <b>How to override text info?</b>
       <select name="text_override">
         <option value="ExMan">Extend manual annotations</option>

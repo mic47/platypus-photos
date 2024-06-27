@@ -12,9 +12,15 @@ import {
     overlay_prev,
 } from "./gallery.ts";
 import { InputForm } from "./input.ts";
-import { parse_float_or_null, error_box, null_if_empty } from "./utils.ts";
+import {
+    parse_float_or_null,
+    error_box,
+    null_if_empty,
+    base64_decode_object,
+} from "./utils.ts";
 import {
     AnnotationOverlay,
+    ManualLocation,
     MapSearch,
     PhotoMap,
     location_preview,
@@ -29,6 +35,12 @@ import {
 import { JobList, JobProgress } from "./jobs.ts";
 import { Directories } from "./directories.ts";
 import { TabSwitch } from "./switchable.ts";
+import {
+    LocationOverride,
+    LocationTypes,
+    MassLocationAndTextAnnotation,
+    TextOverride,
+} from "./annotations.ts";
 
 let ___state: AppState;
 function update_dir(data: string) {
@@ -292,8 +304,8 @@ export function submit_annotations(
         // Prevent from accidentally submitting again
         (element as HTMLInputElement).checked = false;
     });
-    const query = JSON.parse(
-        window.atob(formData.get("query_json_base64") as string),
+    const query = base64_decode_object(
+        formData.get("query_json_base64") as string,
     );
     const latitude = parse_float_or_null(formData.get("latitude"));
     if (latitude === null) {
@@ -330,12 +342,28 @@ export function submit_annotations(
     ) {
         address_country = address_country_original;
     }
-    const location_request = {
+    const manualLocation = {
         latitude,
         longitude,
         address_name,
         address_country,
     };
+    let location: LocationTypes;
+    const request_type = formData.get("request_type");
+    if (request_type == "FixedLocation") {
+        location = {
+            t: request_type,
+            location: manualLocation,
+            override: (location_override ?? "NoLocNoMan") as LocationOverride,
+        };
+    } else if (request_type == "InterpolatedLocation") {
+        location = {
+            t: request_type,
+            location: manualLocation,
+        };
+    } else {
+        throw new Error(`Unsupported request type ${request_type}`);
+    }
     const extra_tags = null_if_empty(formData.get("extra_tags"));
     const extra_description = null_if_empty(formData.get("extra_description"));
     const text_override = formData.get("text_override");
@@ -343,12 +371,22 @@ export function submit_annotations(
         tags: extra_tags,
         description: extra_description,
     };
-    const request = {
-        query,
-        location: location_request,
-        location_override,
-        text: text_request,
-        text_override,
+    const loc_only = formData.get("text_loc_only") == "on";
+    const adjust_dates = formData.get("apply_timestamp_trans") == "on";
+    const request: MassLocationAndTextAnnotation = {
+        t: "MassLocAndTxt",
+        query: query as SearchQueryParams,
+        location,
+        text: {
+            t: "FixedText",
+            text: text_request,
+            override: (text_override ?? "ExMan") as TextOverride,
+            loc_only,
+        },
+        date: {
+            t: "TransDate",
+            adjust_dates,
+        },
     };
     if (checkbox_value !== "on") {
         return error_box(return_id, {
@@ -388,7 +426,22 @@ export function submit_annotations(
 
 function annotation_overlay(latitude: number, longitude: number) {
     const overlay = new AnnotationOverlay("SubmitDataOverlay");
-    overlay.fetch(latitude, longitude, ___state.search_query.get());
+    overlay.fetch(
+        { t: "FixedLocation", latitude, longitude },
+        ___state.search_query.get(),
+    );
+}
+function annotation_overlay_interpolated(location_encoded_base64: string) {
+    const overlay = new AnnotationOverlay("SubmitDataOverlay");
+    overlay.fetch(
+        {
+            t: "InterpolatedLocation",
+            location: base64_decode_object(
+                location_encoded_base64,
+            ) as ManualLocation,
+        },
+        ___state.search_query.get(),
+    );
 }
 
 let job_progress: JobProgress<{ ts: number }>;
@@ -528,6 +581,7 @@ const app: object = {
     add_to_float_param,
     shift_float_params,
     annotation_overlay,
+    annotation_overlay_interpolated,
     update_job_progress,
     show_job_list,
     delete_marker,

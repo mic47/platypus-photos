@@ -25,6 +25,7 @@ class ImageAddress(DataClassJsonMixin):
 class Image(DataClassJsonMixin):
     md5: str
     date: t.Optional[datetime]
+    date_transformed: bool
     tags: t.Optional[t.Dict[str, float]]
     classifications: t.Optional[str]
     address: ImageAddress

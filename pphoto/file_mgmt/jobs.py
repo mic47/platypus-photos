@@ -110,7 +110,7 @@ class Jobs:
         self._files.add_if_not_exists(
             new_path.path, new_path.md5, path_with_md5.path, ManagedLifecycle.IMPORTED, None
         )
-        # pylint: disable = consider-using-in
+        # pylint: disable-next = consider-using-in
         if mode == ImportMode.MOVE or mode == ImportMode.MOVE_OR_DELETE:
             shutil.move(path_with_md5.path, new_path.path)
         elif mode == ImportMode.COPY:
@@ -151,7 +151,7 @@ class Jobs:
         self._files.set_lifecycle(new_path.path, ManagedLifecycle.SYNCED, None)
 
     def add_manual_annotation(self, task: RemoteTask[ManualAnnotationTask]) -> None:
-        (loc, _text) = self._annotator.manual_features(task)
+        (loc, _dt, _text) = self._annotator.manual_features(task)
         for file in self._files.by_md5(task.id_.md5):
             self.cheap_features(PathWithMd5(file.file, task.id_.md5), recompute_location=loc is not None)
         self._jobs.finish_task(task.id_)

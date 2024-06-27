@@ -1,3 +1,4 @@
+import datetime as dt
 import typing as t
 
 from dataclasses import dataclass
@@ -23,6 +24,15 @@ class ManualLocation(HasCurrentVersion):
 class ManualText(HasCurrentVersion):
     tags: t.List[str]
     description: t.List[str]
+
+    @staticmethod
+    def current_version() -> int:
+        return 0
+
+
+@dataclass
+class ManualDate(HasCurrentVersion):
+    date: t.Optional[dt.datetime]
 
     @staticmethod
     def current_version() -> int:
