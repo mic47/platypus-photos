@@ -15,7 +15,7 @@
       <td class="center">{{bar[1].progress}}</td>
       <td class="center">{% if bar[1].total > 0%}{{bar[1].total}}{%endif%}</td>
       <td class="center">{%if bar[1].rate %}{{bar[1].rate | round(1)}} it/s{%endif%}</td>
-      <td class="center">{{bar[1].elapsed | round(1)}}</td>
+      <td class="center">{{bar[1].elapsed | format_seconds_to_duration}}</td>
     </tr>
   {% endfor %}
 </table>
