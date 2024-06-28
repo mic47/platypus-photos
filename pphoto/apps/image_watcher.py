@@ -19,6 +19,7 @@ from pphoto.db.files_table import FilesTable
 from pphoto.db.queries import PhotosQueries
 from pphoto.annots.annotator import Annotator
 from pphoto.annots.date import PathDateExtractor
+from pphoto.communication.server import start_image_server_loop
 from pphoto.remote_jobs.types import TaskId, RemoteTask, ManualAnnotationTask
 from pphoto.remote_jobs.db import RemoteJobsTable
 from pphoto.file_mgmt.jobs import Jobs, JobType, IMPORT_PRIORITY, DEFAULT_PRIORITY, REALTIME_PRIORITY
@@ -26,6 +27,7 @@ from pphoto.file_mgmt.queues import Queues, Queue
 from pphoto.file_mgmt.remote_control import ImportCommand, parse_rc_job, RefreshJobs
 from pphoto.gallery.reindexer import Reindexer
 from pphoto.utils import assert_never, Lazy
+from pphoto.utils.alive import Alive
 from pphoto.utils.files import get_paths, expand_vars_in_path
 from pphoto.utils.progress_bar import ProgressBar
 
@@ -44,11 +46,8 @@ class GlobalContext:
         self.files = files
 
 
-async def worker(
-    name: str,
-    context: GlobalContext,
-    queue: Queue,
-) -> None:
+@Alive(persistent=True, key=[0])
+async def worker(name: str, context: GlobalContext, queue: Queue, /) -> None:
     while True:
         # Get a "work item" out of the queue.
         item = await queue.get()
@@ -81,8 +80,9 @@ async def worker(
             await asyncio.sleep(0)
 
 
+@Alive(persistent=True, key=[0])
 async def manual_annotation_worker(
-    name: str, input_queue: asyncio.Queue[RefreshJobs], context: GlobalContext
+    name: str, input_queue: asyncio.Queue[RefreshJobs], context: GlobalContext, /
 ) -> None:
     visited: t.Set[TaskId] = set()
     while True:
@@ -109,7 +109,8 @@ async def manual_annotation_worker(
             continue
 
 
-async def inotify_worker(name: str, dirs: t.List[str], context: GlobalContext) -> None:
+@Alive(persistent=True, key=[0])
+async def inotify_worker(name: str, dirs: t.List[str], context: GlobalContext, /) -> None:
     with asyncinotify.Inotify() as inotify:
         for dir_ in dirs:
             inotify.add_watch(
@@ -121,19 +122,19 @@ async def inotify_worker(name: str, dirs: t.List[str], context: GlobalContext) -
                 continue
             try:
                 path = event.path.absolute().resolve().as_posix()
+                path_with_md5 = context.jobs.get_path_with_md5_to_enqueue(path, can_add=True)
+                if path_with_md5 is None:
+                    continue
+                context.queues.enqueue_path_skipped_known(path_with_md5, REALTIME_PRIORITY)
             # pylint: disable-next = bare-except
             except:
                 traceback.print_exc()
                 print("Error in inotify worker", name)
                 continue
-            # TODO: this shoudl be in try catch
-            path_with_md5 = context.jobs.get_path_with_md5_to_enqueue(path, can_add=True)
-            if path_with_md5 is None:
-                return
-            context.queues.enqueue_path_skipped_known(path_with_md5, REALTIME_PRIORITY)
 
 
-async def reingest_directories_worker(context: GlobalContext, config: Config) -> None:
+@Alive(persistent=True, key=[])
+async def reingest_directories_worker(context: GlobalContext, config: Config, /) -> None:
     total_for_reingest = 0
     while True:
         await context.queues.cheap_features.join()
@@ -143,7 +144,7 @@ async def reingest_directories_worker(context: GlobalContext, config: Config) ->
                 continue
             path_with_md5 = context.jobs.get_path_with_md5_to_enqueue(path, can_add=True)
             if path_with_md5 is None:
-                return
+                continue
             context.queues.enqueue_path_skipped_known(path_with_md5, DEFAULT_PRIORITY)
             total_for_reingest += 1
             if total_for_reingest % 1000 == 0:
@@ -155,8 +156,9 @@ async def reingest_directories_worker(context: GlobalContext, config: Config) ->
         await asyncio.sleep(3600 * 8)
 
 
+@Alive(persistent=True, key=[])
 async def watch_import_path(
-    config: Config, import_queue: asyncio.Queue[ImportCommand], jobs_queue: asyncio.Queue[RefreshJobs]
+    config: Config, import_queue: asyncio.Queue[ImportCommand], jobs_queue: asyncio.Queue[RefreshJobs], /
 ) -> None:
     try:
         if os.path.exists(config.import_fifo):
@@ -196,8 +198,9 @@ async def watch_import_path(
             await asyncio.sleep(0)
 
 
+@Alive(persistent=True, key=[])
 async def managed_worker_and_import_worker(
-    context: GlobalContext, queue: asyncio.Queue[ImportCommand]
+    context: GlobalContext, queue: asyncio.Queue[ImportCommand], /
 ) -> None:
     # TODO: check for new files in managed folders, and add them. Run it from time to time
     progress_bar = Lazy(lambda: context.queues.get_progress_bar(JobType.CHEAP_FEATURES, IMPORT_PRIORITY))
@@ -238,7 +241,8 @@ async def managed_worker_and_import_worker(
             await asyncio.sleep(0)
 
 
-async def reindex_gallery(reindexer: Reindexer) -> None:
+@Alive(persistent=True, key=[])
+async def reindex_gallery(reindexer: Reindexer, /) -> None:
     # Allow other tasks to start
     await asyncio.sleep(0)
     sleep_time = 1
@@ -261,6 +265,7 @@ async def reindex_gallery(reindexer: Reindexer) -> None:
         await asyncio.sleep(sleep_time)
 
 
+# pylint: disable-next = too-many-statements
 async def main() -> None:
     files_config = DBFilesConfig()
     parser = argparse.ArgumentParser(prog="Photo annotator")
@@ -277,12 +282,15 @@ async def main() -> None:
     features = FeaturesTable(photos_connection)
     files = FilesTable(photos_connection)
 
+    @Alive(persistent=True, key=[])
     async def check_db_connection() -> None:
         while True:
             photos_connection.check_unused()
             reindexer.check_unused()
             Lazy.check_ttl()
             await asyncio.sleep(10)
+
+    await start_image_server_loop("unix-domain-socket")
 
     tasks = []
     tasks.append(asyncio.create_task(check_db_connection()))
@@ -320,6 +328,7 @@ async def main() -> None:
         tasks.append(asyncio.create_task(reingest_directories_worker(context, config)))
         for i in range(1):
             task = asyncio.create_task(worker(f"worker-cheap-{i}", context, queues.cheap_features))
+            tasks.append(task)
         for i in range(args.image_to_text_workers):
             task = asyncio.create_task(worker(f"worker-image-to-text-{i}", context, queues.image_to_text))
             tasks.append(task)

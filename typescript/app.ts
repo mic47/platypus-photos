@@ -41,6 +41,7 @@ import {
     MassLocationAndTextAnnotation,
     TextOverride,
 } from "./annotations.ts";
+import { SystemStatus } from "./system_status.ts";
 
 let ___state: AppState;
 function update_dir(data: string) {
@@ -464,6 +465,7 @@ function show_job_list() {
     job_list.show_or_close();
 }
 const ___checkbox_sync: CheckboxSync = new CheckboxSync();
+let system_status: SystemStatus;
 
 function init_fun() {
     if (___state !== undefined) {
@@ -559,10 +561,17 @@ function init_fun() {
         job_progress.fetch();
     }, 10000);
     job_list = new JobList("JobList");
+    /* System Status */
+    system_status = new SystemStatus("SystemStatus");
+    system_status.fetch();
+    setInterval(() => {
+        system_status.fetch();
+    }, 10000);
     /* Tab */
     new TabSwitch("RootTabs", {
         TabDirectories: directories.switchable,
         TabJobProgress: job_progress.switchable,
+        TabSystemStatus: system_status.switchable,
         TabDates: dates.switchable,
     });
 
