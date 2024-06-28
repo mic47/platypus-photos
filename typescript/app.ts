@@ -307,66 +307,69 @@ export function submit_annotations(
     const query = base64_decode_object(
         formData.get("query_json_base64") as string,
     );
-    const latitude = parse_float_or_null(formData.get("latitude"));
-    if (latitude === null) {
-        return error_box(return_id, {
-            error: "Invalid request, latitude",
-            formData,
-        });
-    }
-    const longitude = parse_float_or_null(formData.get("longitude"));
-    if (longitude === null) {
-        return error_box(return_id, {
-            error: "Invalid request, longitude",
-            formData,
-        });
-    }
-    const location_override = formData.get("location_override");
-    let address_name = null_if_empty(formData.get("address_name"));
-    const address_name_original = null_if_empty(
-        formData.get("address_name_original"),
-    );
-    if (
-        address_name === null ||
-        address_name.trim() === address_name_original
-    ) {
-        address_name = address_name_original;
-    }
-    let address_country = null_if_empty(formData.get("address_country"));
-    const address_country_original = null_if_empty(
-        formData.get("address_country_original"),
-    );
-    if (
-        address_country === null ||
-        address_country.trim() === address_country_original
-    ) {
-        address_country = address_country_original;
-    }
-    const manualLocation = {
-        latitude,
-        longitude,
-        address_name,
-        address_country,
-    };
-    let location: LocationTypes;
     const request_type = formData.get("request_type");
-    if (request_type == "FixedLocation") {
-        location = {
-            t: request_type,
-            location: manualLocation,
-            override: (location_override ?? "NoLocNoMan") as LocationOverride,
-        };
-    } else if (request_type == "InterpolatedLocation") {
-        location = {
-            t: request_type,
-            location: manualLocation,
-        };
-    } else if (request_type == "NoLocation") {
+    let location: LocationTypes;
+    if (request_type == "NoLocation") {
         location = {
             t: request_type,
         };
     } else {
-        throw new Error(`Unsupported request type ${request_type}`);
+        const latitude = parse_float_or_null(formData.get("latitude"));
+        if (latitude === null) {
+            return error_box(return_id, {
+                error: "Invalid request, latitude",
+                formData,
+            });
+        }
+        const longitude = parse_float_or_null(formData.get("longitude"));
+        if (longitude === null) {
+            return error_box(return_id, {
+                error: "Invalid request, longitude",
+                formData,
+            });
+        }
+        const location_override = formData.get("location_override");
+        let address_name = null_if_empty(formData.get("address_name"));
+        const address_name_original = null_if_empty(
+            formData.get("address_name_original"),
+        );
+        if (
+            address_name === null ||
+            address_name.trim() === address_name_original
+        ) {
+            address_name = address_name_original;
+        }
+        let address_country = null_if_empty(formData.get("address_country"));
+        const address_country_original = null_if_empty(
+            formData.get("address_country_original"),
+        );
+        if (
+            address_country === null ||
+            address_country.trim() === address_country_original
+        ) {
+            address_country = address_country_original;
+        }
+        const manualLocation = {
+            latitude,
+            longitude,
+            address_name,
+            address_country,
+        };
+        if (request_type == "FixedLocation") {
+            location = {
+                t: request_type,
+                location: manualLocation,
+                override: (location_override ??
+                    "NoLocNoMan") as LocationOverride,
+            };
+        } else if (request_type == "InterpolatedLocation") {
+            location = {
+                t: request_type,
+                location: manualLocation,
+            };
+        } else {
+            throw new Error(`Unsupported request type ${request_type}`);
+        }
     }
     const extra_tags = null_if_empty(formData.get("extra_tags"));
     const extra_description = null_if_empty(formData.get("extra_description"));
