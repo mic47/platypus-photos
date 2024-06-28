@@ -311,6 +311,9 @@ type AnnotationOverlayRequest =
     | {
           t: "InterpolatedLocation";
           location: ManualLocation;
+      }
+    | {
+          t: "NoLocation";
       };
 
 export class AnnotationOverlay extends GenericFetch<{

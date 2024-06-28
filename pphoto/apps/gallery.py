@@ -182,21 +182,27 @@ def location_clusters_endpoint(params: LocClusterParams) -> t.List[LocationClust
         if job.type_ == RemoteJobType.MASS_MANUAL_ANNOTATION:
             try:
                 og_req = mass_manual_annotation_from_json(job.original_request)
-                point = LocPoint(og_req.location.location.latitude, og_req.location.location.longitude)
-                clusters.append(
-                    LocationCluster(
-                        job.example_path_md5 or "missing",
-                        og_req.text.text.description,
-                        job.total,
-                        og_req.location.location.address_name,
-                        og_req.location.location.address_country,
-                        og_req.query.tsfrom,
-                        og_req.query.tsto,
-                        point,
-                        point,
-                        point,
+                # pylint: disable-next = consider-using-in
+                if og_req.location.t == "InterpolatedLocation" or og_req.location.t == "FixedLocation":
+                    point = LocPoint(og_req.location.location.latitude, og_req.location.location.longitude)
+                    clusters.append(
+                        LocationCluster(
+                            job.example_path_md5 or "missing",
+                            og_req.text.text.description,
+                            job.total,
+                            og_req.location.location.address_name,
+                            og_req.location.location.address_country,
+                            og_req.query.tsfrom,
+                            og_req.query.tsto,
+                            point,
+                            point,
+                            point,
+                        )
                     )
-                )
+                elif og_req.location.t == "NoLocation":
+                    pass
+                else:
+                    assert_never(og_req.location.t)
             # pylint: disable-next = broad-exception-caught
             except Exception:
                 continue
@@ -274,12 +280,19 @@ class AnnotationOverlayInterpolateLocation(DataClassJsonMixin):
 
 
 @dataclass
+class AnnotationOverlayNoLocation(DataClassJsonMixin):
+    t: t.Literal["NoLocation"]
+
+
+@dataclass
 class TransDate(DataClassJsonMixin):
     t: t.Literal["TransDate"]
     adjust_dates: bool
 
 
-LocationTypes = LocationQueryFixedLocation | AnnotationOverlayInterpolateLocation
+LocationTypes = (
+    LocationQueryFixedLocation | AnnotationOverlayInterpolateLocation | AnnotationOverlayNoLocation
+)
 TextTypes = TextQueryFixedText
 DateTypes = TransDate
 
@@ -374,6 +387,8 @@ def location_tasks_recipes(
                     None,
                     None,
                 )
+    elif location.t == "NoLocation":
+        location_tasks_recipe = {}
     else:
         assert_never(location.t)
     return location_tasks_recipe
@@ -564,6 +579,8 @@ def job_list_endpoint(request: Request, _req: JobListRequest) -> HTMLResponse:
         type_ = ["🗺️"]
         replacements = []
         query = ""
+        latitude = None
+        longitude = None
         if job.type_ == RemoteJobType.MASS_MANUAL_ANNOTATION:
             try:
                 og_req = mass_manual_annotation_from_json(job.original_request)
@@ -573,15 +590,23 @@ def job_list_endpoint(request: Request, _req: JobListRequest) -> HTMLResponse:
                 if og_req.text.text.tags:
                     type_.append("🏷️")
                     replacements.append(f"🏷️{og_req.text.text.tags}")
-                if og_req.location.location.address_name:
-                    type_.append("📛")
-                    replacements.append(f"📛{og_req.location.location.address_name}")
-                if og_req.location.location.address_country:
-                    type_.append(flag(og_req.location.location.address_country) or "🎌")
-                    replacements.append(
-                        flag(og_req.location.location.address_country)
-                        or og_req.location.location.address_country
-                    )
+                # pylint: disable-next = consider-using-in
+                if og_req.location.t == "InterpolatedLocation" or og_req.location.t == "FixedLocation":
+                    if og_req.location.location.address_name:
+                        type_.append("📛")
+                        replacements.append(f"📛{og_req.location.location.address_name}")
+                    if og_req.location.location.address_country:
+                        type_.append(flag(og_req.location.location.address_country) or "🎌")
+                        replacements.append(
+                            flag(og_req.location.location.address_country)
+                            or og_req.location.location.address_country
+                        )
+                    latitude = og_req.location.location.latitude
+                    longitude = og_req.location.location.longitude
+                elif og_req.location.t == "NoLocation":
+                    pass
+                else:
+                    assert_never(og_req.location.t)
                 query = og_req.to_json(ensure_ascii=False, indent=2)
 
             # pylint: disable-next = broad-exception-caught
@@ -601,8 +626,8 @@ def job_list_endpoint(request: Request, _req: JobListRequest) -> HTMLResponse:
                 "type_": "".join(type_),
                 "repls": repls,
                 "time": (job.last_update or job.created).timestamp(),
-                "latitude": og_req.location.location.latitude,
-                "longitude": og_req.location.location.longitude,
+                "latitude": latitude,
+                "longitude": longitude,
                 "query_json": query,
                 "job_json": json.dumps(job_dict, ensure_ascii=False, indent=2),
                 "example_path_md5": job.example_path_md5,
@@ -624,7 +649,9 @@ class AnnotationOverlayFixedLocation(DataClassJsonMixin):
 
 @dataclass
 class AnnotationOverlayRequest(DataClassJsonMixin):
-    request: AnnotationOverlayFixedLocation | AnnotationOverlayInterpolateLocation
+    request: (
+        AnnotationOverlayFixedLocation | AnnotationOverlayInterpolateLocation | AnnotationOverlayNoLocation
+    )
     query: SearchQuery
 
 
@@ -639,6 +666,9 @@ def submit_annotation_overlay_form_endpoint(request: Request, req: AnnotationOve
     elif req.request.t == "InterpolatedLocation":
         # there is nothing to do.
         address = ImageAddress(req.request.location.address_country, req.request.location.address_name, None)
+    elif req.request.t == "NoLocation":
+        # There is no location, so nothing to do
+        pass
     else:
         assert_never(req.request.t)
     aggr = DB.get().get_aggregate_stats(req.query)

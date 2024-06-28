@@ -14,7 +14,7 @@
       <td>{{job.total}}</td>
       <td>{{job.type_}}</td>
       <td>{{job.time | timestamp_to_pretty_datetime}}</td>
-      <td class="hovered">hover<divi class="left_algn hover_show">
+      <td class="hovered">hover<div class="left_algn hover_show">
 
 <pre>
 <img loading="lazy" src="/img?hsh={{job.example_path_md5}}&size=preview" class="gallery_image" />
@@ -24,7 +24,11 @@ Stats: {{job.job_json}}
 </pre>
       </div></td>
       <td>{{job.repls}}</td>
-      <td><a href="#" onclick='window.APP.show_job_list();window.APP.map_zoom({{job.latitude}}, {{job.longitude}});'>{{job.latitude|round(5)}} {{job.longitude|round(5)}}</a></td>
+      <td>
+        {% if job.latitude is not none %}
+          <a href="#" onclick='window.APP.show_job_list();window.APP.map_zoom({{job.latitude}}, {{job.longitude}});'>{{job.latitude|round(5)}} {{job.longitude|round(5)}}</a>
+        {% endif %}
+      </td>
   </tr>
 {% endfor %}
 </table>

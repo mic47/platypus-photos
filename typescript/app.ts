@@ -361,6 +361,10 @@ export function submit_annotations(
             t: request_type,
             location: manualLocation,
         };
+    } else if (request_type == "NoLocation") {
+        location = {
+            t: request_type,
+        };
     } else {
         throw new Error(`Unsupported request type ${request_type}`);
     }
@@ -430,6 +434,10 @@ function annotation_overlay(latitude: number, longitude: number) {
         { t: "FixedLocation", latitude, longitude },
         ___state.search_query.get(),
     );
+}
+function annotation_overlay_no_location() {
+    const overlay = new AnnotationOverlay("SubmitDataOverlay");
+    overlay.fetch({ t: "NoLocation" }, ___state.search_query.get());
 }
 function annotation_overlay_interpolated(location_encoded_base64: string) {
     const overlay = new AnnotationOverlay("SubmitDataOverlay");
@@ -582,6 +590,7 @@ const app: object = {
     shift_float_params,
     annotation_overlay,
     annotation_overlay_interpolated,
+    annotation_overlay_no_location,
     update_job_progress,
     show_job_list,
     delete_marker,

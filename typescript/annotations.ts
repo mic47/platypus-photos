@@ -30,6 +30,10 @@ type AnnotationOverlayInterpolateLocation = {
     location: ManualLocation;
 };
 
+type AnnotationOverlayNoLocation = {
+    t: "NoLocation";
+};
+
 export type LocationOverride =
     | "NoLocNoMan"
     | "NoLocYeMan"
@@ -43,7 +47,8 @@ type LocationQueryFixedLocation = {
 
 export type LocationTypes =
     | LocationQueryFixedLocation
-    | AnnotationOverlayInterpolateLocation;
+    | AnnotationOverlayInterpolateLocation
+    | AnnotationOverlayNoLocation;
 type TextTypes = TextQueryFixedText;
 type DateTypes = TransDate;
 

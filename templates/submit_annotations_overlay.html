@@ -45,6 +45,8 @@
     <input type="hidden" value="{{req.request.location.latitude}}" name="latitude">
     <b>Longitude:</b> {{req.request.location.longitude}}<br/>
     <input type="hidden" value="{{req.request.location.longitude}}" name="longitude">
+    {% elif req.request.t == "NoLocation" %}
+    <h3>No location will be assigned</h3>
     {% else %}
     <h3>What? This is some wrong request</h3>
     {% endif %}
