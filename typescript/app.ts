@@ -12,17 +12,35 @@ import {
     overlay_prev,
 } from "./gallery.ts";
 import { InputForm } from "./input.ts";
-import { parse_float_or_null, error_box, null_if_empty } from "./utils.ts";
+import {
+    parse_float_or_null,
+    error_box,
+    null_if_empty,
+    base64_decode_object,
+} from "./utils.ts";
 import {
     AnnotationOverlay,
+    ManualLocation,
     MapSearch,
     PhotoMap,
     location_preview,
 } from "./photo_map.ts";
-import { AppState, SearchQueryParams, SortParams, UrlSync } from "./state.ts";
+import {
+    AppState,
+    CheckboxSync,
+    SearchQueryParams,
+    SortParams,
+    UrlSync,
+} from "./state.ts";
 import { JobList, JobProgress } from "./jobs.ts";
 import { Directories } from "./directories.ts";
 import { TabSwitch } from "./switchable.ts";
+import {
+    LocationOverride,
+    LocationTypes,
+    MassLocationAndTextAnnotation,
+    TextOverride,
+} from "./annotations.ts";
 
 let ___state: AppState;
 function update_dir(data: string) {
@@ -206,7 +224,7 @@ function fetch_map_search() {
         }
     }
     if (___map_search !== null) {
-        ___map_search.fetch(values["query"] || null);
+        ___map_search.fetch(values["query"] || null, ___checkbox_sync.get());
     }
 }
 function update_url_add_tag(tag: string) {
@@ -286,8 +304,8 @@ export function submit_annotations(
         // Prevent from accidentally submitting again
         (element as HTMLInputElement).checked = false;
     });
-    const query = JSON.parse(
-        window.atob(formData.get("query_json_base64") as string),
+    const query = base64_decode_object(
+        formData.get("query_json_base64") as string,
     );
     const latitude = parse_float_or_null(formData.get("latitude"));
     if (latitude === null) {
@@ -324,12 +342,28 @@ export function submit_annotations(
     ) {
         address_country = address_country_original;
     }
-    const location_request = {
+    const manualLocation = {
         latitude,
         longitude,
         address_name,
         address_country,
     };
+    let location: LocationTypes;
+    const request_type = formData.get("request_type");
+    if (request_type == "FixedLocation") {
+        location = {
+            t: request_type,
+            location: manualLocation,
+            override: (location_override ?? "NoLocNoMan") as LocationOverride,
+        };
+    } else if (request_type == "InterpolatedLocation") {
+        location = {
+            t: request_type,
+            location: manualLocation,
+        };
+    } else {
+        throw new Error(`Unsupported request type ${request_type}`);
+    }
     const extra_tags = null_if_empty(formData.get("extra_tags"));
     const extra_description = null_if_empty(formData.get("extra_description"));
     const text_override = formData.get("text_override");
@@ -337,12 +371,22 @@ export function submit_annotations(
         tags: extra_tags,
         description: extra_description,
     };
-    const request = {
-        query,
-        location: location_request,
-        location_override,
-        text: text_request,
-        text_override,
+    const loc_only = formData.get("text_loc_only") == "on";
+    const adjust_dates = formData.get("apply_timestamp_trans") == "on";
+    const request: MassLocationAndTextAnnotation = {
+        t: "MassLocAndTxt",
+        query: query as SearchQueryParams,
+        location,
+        text: {
+            t: "FixedText",
+            text: text_request,
+            override: (text_override ?? "ExMan") as TextOverride,
+            loc_only,
+        },
+        date: {
+            t: "TransDate",
+            adjust_dates,
+        },
     };
     if (checkbox_value !== "on") {
         return error_box(return_id, {
@@ -382,7 +426,22 @@ export function submit_annotations(
 
 function annotation_overlay(latitude: number, longitude: number) {
     const overlay = new AnnotationOverlay("SubmitDataOverlay");
-    overlay.fetch(latitude, longitude, ___state.search_query.get());
+    overlay.fetch(
+        { t: "FixedLocation", latitude, longitude },
+        ___state.search_query.get(),
+    );
+}
+function annotation_overlay_interpolated(location_encoded_base64: string) {
+    const overlay = new AnnotationOverlay("SubmitDataOverlay");
+    overlay.fetch(
+        {
+            t: "InterpolatedLocation",
+            location: base64_decode_object(
+                location_encoded_base64,
+            ) as ManualLocation,
+        },
+        ___state.search_query.get(),
+    );
 }
 
 let job_progress: JobProgress<{ ts: number }>;
@@ -393,6 +452,7 @@ let job_list: JobList;
 function show_job_list() {
     job_list.show_or_close();
 }
+const ___checkbox_sync: CheckboxSync = new CheckboxSync();
 
 function init_fun() {
     if (___state !== undefined) {
@@ -416,13 +476,28 @@ function init_fun() {
     /* Gallery */
     const gallery = new Gallery("GalleryImages", prev_page, next_page);
     ___state.search_query.register_hook((search_query) => {
-        gallery.fetch(search_query, ___state.paging.get(), ___state.sort.get());
+        gallery.fetch(
+            search_query,
+            ___state.paging.get(),
+            ___state.sort.get(),
+            ___checkbox_sync.get(),
+        );
     });
     ___state.paging.register_hook((paging) => {
-        gallery.fetch(___state.search_query.get(), paging, ___state.sort.get());
+        gallery.fetch(
+            ___state.search_query.get(),
+            paging,
+            ___state.sort.get(),
+            ___checkbox_sync.get(),
+        );
     });
     ___state.sort.register_hook((sort) => {
-        gallery.fetch(___state.search_query.get(), ___state.paging.get(), sort);
+        gallery.fetch(
+            ___state.search_query.get(),
+            ___state.paging.get(),
+            sort,
+            ___checkbox_sync.get(),
+        );
     });
     /* Map */
     ___map = new PhotoMap(
@@ -460,7 +535,7 @@ function init_fun() {
     // WARNING: here we assume that search_query will update everything
     ___state.sort.replace_no_hook_update(sort_sync.get());
     ___state.search_query.replace(search_query_sync.get());
-    ___map_search.fetch(null);
+    ___map_search.fetch(null, ___checkbox_sync.get());
 
     /* Job progress / list UI */
     job_progress = new JobProgress(
@@ -487,6 +562,7 @@ function update_sort(params: SortParams) {
 }
 
 const app: object = {
+    checkbox_sync: ___checkbox_sync,
     init_fun,
     update_dir,
     update_url,
@@ -505,6 +581,7 @@ const app: object = {
     add_to_float_param,
     shift_float_params,
     annotation_overlay,
+    annotation_overlay_interpolated,
     update_job_progress,
     show_job_list,
     delete_marker,

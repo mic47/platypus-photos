@@ -1,7 +1,12 @@
-<div>
+<span>
   {% if input.page > 0 %}<a href="#" class="prev-url">Prev Page</a>{% else %}Prev Page{% endif %}
   {% if has_next_page %}<a href="#" class="next-url">Next Page</a>{% else %}Next Page{% endif %}
-</div>
+</span>
+<input type="checkbox" id="LocPredCheck" {%if checkboxes['LocPredCheck'] %}checked{%endif%} onclick="window.APP.checkbox_sync.update_from_element(this)"/>Show Location Interpolation
+{% if location_encoded_base64 %}
+<button class="LocPredView" onclick='window.APP.annotation_overlay_interpolated("{{location_encoded_base64|safe}}")'>Run Location Interpolation</button>
+{% endif %}
+<div>
 {% for image in images %}
   {% if loop.index0 == oi %}
   <div class="gallery_item overlay">
@@ -42,6 +47,9 @@
         {% if image.timeicon %}<br/>{% endif %}
         ⏱️{{image.diff_date}}
     {% endif %}
+    {% if image.estimated_loc %}
+        <div class="LocPredView{% if image.estimated_loc_onesided%} onesided{%endif%}{% if image.estimated_loc_suspicious %} suspicious{%endif%}">{{image.estimated_loc}}</div>
+    {% endif %}
     <div class="gallery_container" onclick="window.APP.overlay(this, {{ loop.index0 }})">
         <img loading="lazy" src="/img?hsh={{image.hsh}}&size={% if loop.index0 == oi %}original{%else%}preview{%endif%}" class="gallery_image" alt="{{image.classifications}}" title="{{image.classifications}}"/>
     </div>
@@ -79,4 +87,5 @@
 <div style="float: left; background: #CCCCCC; height: 10em;">
   {% if input.page > 0 %}<a href="#" class="prev-url">Prev Page</a>{% else %}Prev Page{% endif %}
   {% if has_next_page %}<a href="#" class="next-url">Next Page</a>{% else %}Next Page{% endif %}
+</div>
 </div>

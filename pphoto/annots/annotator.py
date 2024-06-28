@@ -9,7 +9,7 @@ from pphoto.annots.geo import Geolocator, GeoAddress
 from pphoto.annots.text import Models, ImageClassification
 from pphoto.data_model.config import DirectoryMatchingConfig, DBFilesConfig
 from pphoto.data_model.base import WithMD5, PathWithMd5, Error, HasCurrentVersion
-from pphoto.data_model.manual import ManualLocation, ManualText
+from pphoto.data_model.manual import ManualLocation, ManualText, ManualDate
 from pphoto.remote_jobs.types import RemoteTask, ManualAnnotationTask
 from pphoto.db.cache import SQLiteCache
 from pphoto.db.features_table import FeaturesTable
@@ -31,6 +31,7 @@ class Annotator:
         exif_cache = SQLiteCache(features, ImageExif, files_config.exif_jsonl)
         self.exif = Exif(exif_cache)
         self.manual_location = SQLiteCache(features, ManualLocation, files_config.manual_location_jsonl)
+        self.manual_date = SQLiteCache(features, ManualDate, files_config.manual_date_jsonl)
         self.manual_text = SQLiteCache(features, ManualText, files_config.manual_text_jsonl)
         geolocator_cache = SQLiteCache(features, GeoAddress, files_config.geo_address_jsonl)
         self.geolocator = Geolocator(geolocator_cache)
@@ -39,12 +40,19 @@ class Annotator:
 
     def manual_features(
         self, task: RemoteTask[ManualAnnotationTask]
-    ) -> t.Tuple[t.Optional[WithMD5[ManualLocation]], t.Optional[WithMD5[ManualText]]]:
+    ) -> t.Tuple[
+        t.Optional[WithMD5[ManualLocation]], t.Optional[WithMD5[ManualDate]], t.Optional[WithMD5[ManualText]]
+    ]:
         ml = None
+        md = None
         mt = None
         if task.payload.location is not None:
             ml = self.manual_location.add(
                 WithMD5(task.id_.md5, ManualLocation.current_version(), task.payload.location, None)
+            )
+        if task.payload.date is not None:
+            md = self.manual_date.add(
+                WithMD5(task.id_.md5, ManualDate.current_version(), task.payload.date, None)
             )
         if task.payload.text is not None:
             txt = task.payload.text
@@ -60,7 +68,7 @@ class Annotator:
                     old_desc = set(t_pay.description)
                     t_pay.description.extend(x for x in old_pay.payload.p.description if x not in old_desc)
             mt = self.manual_text.add(WithMD5(task.id_.md5, ManualText.current_version(), t_pay, None))
-        return (ml, mt)
+        return (ml, md, mt)
 
     def cheap_features(self, path: PathWithMd5, recompute_location: bool) -> t.Tuple[
         PathWithMd5,

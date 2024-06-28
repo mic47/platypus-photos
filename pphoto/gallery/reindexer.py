@@ -11,7 +11,7 @@ from pphoto.data_model.base import (
 from pphoto.data_model.exif import ImageExif
 from pphoto.data_model.geo import GeoAddress
 from pphoto.data_model.text import ImageClassification
-from pphoto.data_model.manual import ManualLocation, ManualText
+from pphoto.data_model.manual import ManualLocation, ManualText, ManualDate
 from pphoto.db.features_table import FeaturesTable
 from pphoto.db.gallery_index_table import GalleryIndexTable
 from pphoto.db.connection import PhotosConnection, GalleryConnection
@@ -46,6 +46,7 @@ class Reindexer:
         self._text_classification = SQLiteCache(self._features_table, ImageClassification)
         self._manual_location = SQLiteCache(self._features_table, ManualLocation)
         self._manual_text = SQLiteCache(self._features_table, ManualText)
+        self._manual_date = SQLiteCache(self._features_table, ManualDate)
         self._gallery_index = GalleryIndexTable(self._g_con)
         self._feature_types = [
             ImageExif.__name__,
@@ -53,6 +54,7 @@ class Reindexer:
             ImageClassification.__name__,
             ManualText.__name__,
             ManualLocation.__name__,
+            ManualDate.__name__,
         ]
 
     def reconnect(self) -> None:
@@ -108,6 +110,7 @@ class Reindexer:
         text_cls = extract_data(self._text_classification.get(md5))
         manual_location = extract_data(self._manual_location.get(md5))
         manual_text = extract_data(self._manual_text.get(md5))
+        manual_date = extract_data(self._manual_date.get(md5))
         files = self._files_table.by_md5(md5)
         directories = set()
         max_dir_last_update = 0.0
@@ -117,6 +120,7 @@ class Reindexer:
                 if path is not None:
                     directories.add(os.path.dirname(path))
 
+        effective_max_last_update = max(max_last_update, max_dir_last_update)
         omg = make_image(
             md5,
             exif,
@@ -124,6 +128,7 @@ class Reindexer:
             text_cls,
             manual_location,
             manual_text,
+            manual_date,
             [
                 x
                 for x in itertools.chain.from_iterable(
@@ -135,11 +140,11 @@ class Reindexer:
                 )
                 if x is not None
             ],
-            # TODO: add max_dir_last_update?
-            max_last_update,
+            effective_max_last_update,
         )
 
-        assert max_last_update > 0.0
+        assert effective_max_last_update > 0.0
+
         self._directories_table.multi_add([(d, md5) for d in directories])
         self._files_table.undirty(md5, max_dir_last_update)
         self._gallery_index.add(omg)

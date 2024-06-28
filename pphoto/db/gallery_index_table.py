@@ -15,7 +15,7 @@ from pphoto.gallery.utils import (
 # TODO: extract this type into query payload
 from pphoto.gallery.url import SearchQuery, GalleryPaging, SortParams, SortBy
 from pphoto.utils import assert_never
-from pphoto.data_model.manual import ManualText, ManualLocation
+from pphoto.data_model.manual import ManualText, ManualLocation, ManualDate
 from pphoto.db.connection import GalleryConnection
 from pphoto.db.directories_table import DirectoriesTable
 from pphoto.db.types_location import LocationCluster, LocPoint, LocationBounds
@@ -235,8 +235,10 @@ WHERE
         timestamp_column = "timestamp"
         if url.timestamp_trans:
             timestamp_column = f"({url.timestamp_trans})"
-        select = select.replace("#as#timestamp#", f"{timestamp_column} AS timestamp").replace(
-            "#timestamp#", timestamp_column
+        select = (
+            select.replace("#as#timestamp#", f"{timestamp_column} AS timestamp")
+            .replace("#timestamp#", timestamp_column)
+            .replace("#timestamp_transformed#", f"timestamp != ({timestamp_column}) as timestamp_transformed")
         )
         if url.addr:
             clauses.append("address_full like ?")
@@ -287,6 +289,7 @@ WHERE
         has_location: t.Optional[bool] = None,
         has_manual_location: t.Optional[bool] = None,
         has_manual_text: t.Optional[bool] = None,
+        has_manual_date: t.Optional[bool] = None,
     ) -> t.List[str]:
         extra_clauses: t.List[t.Tuple[str, t.List[str | int | float | None]]] = []
         if has_location is not None:
@@ -304,6 +307,11 @@ WHERE
                 extra_clauses.append((f"manual_features LIKE '%,{ManualText.__name__},%'", []))
             else:
                 extra_clauses.append((f"manual_features NOT LIKE '%,{ManualText.__name__},%'", []))
+        if has_manual_date is not None:
+            if has_manual_date:
+                extra_clauses.append((f"manual_features LIKE '%,{ManualDate.__name__},%'", []))
+            else:
+                extra_clauses.append((f"manual_features NOT LIKE '%,{ManualDate.__name__},%'", []))
 
         (query, params) = self._matching_query("md5", url, extra_clauses)
         return [x for (x,) in self._con.execute(query, params).fetchall()]
@@ -631,7 +639,7 @@ SELECT "cam", camera, COUNT(1) FROM matched_images GROUP BY camera
             query,
             variables,
         ) = self._matching_query(
-            "md5, #as#timestamp#, tags, tags_probs, classifications, address_country, address_name, address_full, feature_last_update, latitude, longitude, altitude, version, manual_features, being_annotated, camera, software",
+            "md5, #as#timestamp#, #timestamp_transformed#, tags, tags_probs, classifications, address_country, address_name, address_full, feature_last_update, latitude, longitude, altitude, version, manual_features, being_annotated, camera, software",
             url,
         )
         sort_by = None
@@ -654,6 +662,7 @@ SELECT "cam", camera, COUNT(1) FROM matched_images GROUP BY camera
         for (
             md5,
             timestamp,
+            timestamp_transformed,
             tags,
             tags_probs,
             classifications,
@@ -674,6 +683,7 @@ SELECT "cam", camera, COUNT(1) FROM matched_images GROUP BY camera
                 Image(
                     md5,
                     None if timestamp is None else datetime.fromtimestamp(timestamp),  # TODO convert
+                    bool(timestamp_transformed),
                     (
                         None
                         if not tags

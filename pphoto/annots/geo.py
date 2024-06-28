@@ -70,7 +70,7 @@ class Geolocator:
             try:
                 ret = self.geolocator.reverse(query, language="en")
                 break
-            # pylint: disable = broad-exception-caught
+            # pylint: disable-next = broad-exception-caught
             except Exception as e:
                 if retries_left <= 0:
                     # This is valid case of transient error, we raise exception
@@ -88,7 +88,7 @@ class Geolocator:
         raw_add = ret.raw.get("address")
         try:
             raw_data = json.dumps(ret.raw, ensure_ascii=False)
-        # pylint: disable = broad-exception-caught
+        # pylint: disable-next = broad-exception-caught
         except Exception as _:
             raw_data = str(ret.raw)
         if raw_add is not None:

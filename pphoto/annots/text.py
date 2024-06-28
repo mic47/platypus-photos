@@ -67,7 +67,7 @@ def image_endpoint(models: "Models", image: AnnotateRequest) -> ImageClassificat
     try:
         x = models.process_image_data(image)
         return ImageClassificationWithMD5(x.md5, x.version, x.p, x.e)
-    # pylint: disable = broad-exception-caught
+    # pylint: disable-next = broad-exception-caught
     except Exception as e:
         traceback.print_exc()
         print("Error processing file:", image.path, file=sys.stderr)
@@ -109,13 +109,13 @@ class PipelineProtocol(t.Protocol):
 
 def cast(x: t.Any, type_: t.Type[T]) -> T:
     if not isinstance(x, type_):
-        # pylint: disable = broad-exception-raised
+        # pylint: disable-next = broad-exception-raised
         raise Exception(f"Expected value of type '{type_}', got value '{x}'")
     return x
 
 
 def yolo_model(model: str) -> YoloProtocol:
-    # pylint: disable = import-outside-toplevel,import-error
+    # pylint: disable-next = import-outside-toplevel,import-error
     import ultralytics
 
     ret = ultralytics.YOLO(model)
@@ -123,10 +123,10 @@ def yolo_model(model: str) -> YoloProtocol:
 
 
 def image_to_text_model() -> PipelineProtocol:
-    # pylint: disable = import-outside-toplevel,import-error,unused-import
+    # pylint: disable-next = import-outside-toplevel,import-error,unused-import
     import transformers  # noqa: F401
 
-    # pylint: disable = import-outside-toplevel,import-error
+    # pylint: disable-next = import-outside-toplevel,import-error
     from transformers import pipeline
 
     ret = pipeline("image-to-text", model="Salesforce/blip-image-captioning-base")
@@ -160,7 +160,7 @@ class Models:
         self._version = ImageClassification.current_version()
         ttl = datetime.timedelta(seconds=5 * 60)
         self._pool = Lazy(
-            # pylint: disable = consider-using-with
+            # pylint: disable-next = consider-using-with
             lambda: multiprocessing.Pool(processes=1),
             ttl=ttl,
             destructor=_close_pool,
@@ -196,7 +196,7 @@ class Models:
                         AnnotateRequest(path, data.decode("utf-8"), gap_threshold, discard_threshold),
                     )
                     return self._cache.add(ret)
-                # pylint: disable = bare-except
+                # pylint: disable-next = bare-except
                 except:
                     traceback.print_exc()
         else:

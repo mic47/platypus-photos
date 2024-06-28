@@ -35,6 +35,7 @@ def _image(
     return Image(
         md5,
         datetm,
+        False,
         tags,
         caption,
         ImageAddress(

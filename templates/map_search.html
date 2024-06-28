@@ -1,7 +1,7 @@
 <form id="MapSearchId" action="javascript:window.APP.fetch_map_search()">
 <input type="text" name="query" value="{% if req.query %}{{req.query}}{% endif %}">
 <button onclick="window.APP.map_bounds()">Zoom to query</button>
-<input type="checkbox" id="MapUseQuery" onclick="window.APP.map_refetch()">Map uses query</button>
+<input type="checkbox" id="MapUseQuery" {%if req.checkboxes['MapUseQuery'] %}checked{%endif%} onclick="window.APP.checkbox_sync.update_from_element(this);window.APP.map_refetch()">Map uses query</button>
 </form>
 {% if result %}
 <div class="search_result">

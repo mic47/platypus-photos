@@ -15,6 +15,7 @@ disable = '''
   missing-class-docstring,
   missing-module-docstring,
   fixme,
+  too-many-lines,
 
   duplicate-code,
   line-too-long,

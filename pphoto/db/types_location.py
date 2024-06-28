@@ -11,6 +11,24 @@ class LocPoint(DataClassJsonMixin):
     latitude: float
     longitude: float
 
+    def __sub__(self, other: LocPoint) -> LocPoint:
+        return LocPoint(
+            self.latitude - other.latitude,
+            self.longitude - other.longitude,
+        )
+
+    def __add__(self, other: LocPoint) -> LocPoint:
+        return LocPoint(
+            self.latitude + other.latitude,
+            self.longitude + other.longitude,
+        )
+
+    def scale(self, other: float) -> LocPoint:
+        return LocPoint(
+            self.latitude * other,
+            self.longitude * other,
+        )
+
 
 @dataclass
 class LocationBounds(DataClassJsonMixin):

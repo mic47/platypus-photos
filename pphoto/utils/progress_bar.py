@@ -8,7 +8,7 @@ _POSITION = 0
 
 
 def _get_position() -> int:
-    # pylint: disable = global-statement
+    # pylint: disable-next = global-statement
     global _POSITION
     ret = _POSITION
     _POSITION += 1
@@ -45,7 +45,7 @@ class ProgressBar:
         return self
 
     def update_total(self) -> ProgressBar:
-        self._tqdm.reset(total=self._total)
-        self._tqdm.update(self._progress)
+        self._tqdm.total = self._total
+        self._tqdm.update(0)
         self._tqdm.refresh()
         return self

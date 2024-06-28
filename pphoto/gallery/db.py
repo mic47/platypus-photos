@@ -73,8 +73,11 @@ class ImageSqlDB:
         has_location: t.Optional[bool] = None,
         has_manual_location: t.Optional[bool] = None,
         has_manual_text: t.Optional[bool] = None,
+        has_manual_date: t.Optional[bool] = None,
     ) -> t.List[str]:
-        return self._gallery_index.get_matching_md5(url, has_location, has_manual_location, has_manual_text)
+        return self._gallery_index.get_matching_md5(
+            url, has_location, has_manual_location, has_manual_text, has_manual_date
+        )
 
     def get_location_bounds(self, url: "SearchQuery") -> t.Optional[LocationBounds]:
         return self._gallery_index.get_location_bounds(url)

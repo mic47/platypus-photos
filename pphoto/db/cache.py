@@ -14,7 +14,7 @@ class JsonlWriter:
         if path is None:
             self._file = None
         else:
-            # pylint: disable=consider-using-with
+            # pylint: disable-next = consider-using-with
             self._file = open(path, "a", encoding="utf-8")
 
     def append(self, data: str) -> None:

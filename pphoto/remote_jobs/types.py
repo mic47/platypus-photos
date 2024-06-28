@@ -7,7 +7,7 @@ import typing as t
 
 from dataclasses_json import DataClassJsonMixin
 
-from pphoto.data_model.manual import ManualLocation
+from pphoto.data_model.manual import ManualLocation, ManualDate
 
 
 class RemoteJobType(enum.Enum):
@@ -71,3 +71,4 @@ class ManualAnnotationTask(DataClassJsonMixin):
     location: t.Optional[ManualLocation]
     text: t.Optional[TextAnnotation]
     text_extend: bool
+    date: t.Optional[ManualDate]  # TODO: set default to None

@@ -258,3 +258,19 @@ div.gallery_item:hover {
 .column {
   flex: 50%;
 }
+
+.LocPredView {
+    display: none;
+}
+#LocPredCheck:checked~button.LocPredView {
+    display: inline;
+}
+#LocPredCheck:checked~div .LocPredView {
+    display: block;
+}
+.onesided {
+    color: orangered;
+}
+.suspicious {
+    color: red;
+}

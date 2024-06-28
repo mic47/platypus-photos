@@ -67,7 +67,7 @@ async def worker(
                     assert False, "Wrong type for ADD_MANUAL_ANNOTATION"
             else:
                 assert_never(type_)
-        # pylint: disable = broad-exception-caught
+        # pylint: disable-next = broad-exception-caught
         except Exception as e:
             traceback.print_exc()
             print("Error while processing path in ", name, path, e, file=sys.stderr)
@@ -94,7 +94,7 @@ async def manual_annotation_worker(
                     continue
                 try:
                     parsed_task = task.map(ManualAnnotationTask.from_json)
-                # pylint: disable = bare-except
+                # pylint: disable-next = bare-except
                 except:
                     traceback.print_exc()
                     print("Error while parsing manual task", name, task)
@@ -102,7 +102,7 @@ async def manual_annotation_worker(
 
                 context.queues.enqueue_path([(parsed_task, JobType.ADD_MANUAL_ANNOTATION)], REALTIME_PRIORITY)
                 visited.add(task.id_)
-        # pylint: disable = bare-except
+        # pylint: disable-next = bare-except
         except:
             traceback.print_exc()
             print("Error in manual annotation worker", name, refresh_job)
@@ -121,11 +121,12 @@ async def inotify_worker(name: str, dirs: t.List[str], context: GlobalContext) -
                 continue
             try:
                 path = event.path.absolute().resolve().as_posix()
-            # pylint: disable = bare-except
+            # pylint: disable-next = bare-except
             except:
                 traceback.print_exc()
                 print("Error in inotify worker", name)
                 continue
+            # TODO: this shoudl be in try catch
             path_with_md5 = context.jobs.get_path_with_md5_to_enqueue(path, can_add=True)
             if path_with_md5 is None:
                 return
@@ -164,7 +165,7 @@ async def watch_import_path(
                 sys.exit(1)
         else:
             os.mkfifo(config.import_fifo)
-    # pylint: disable = broad-exception-caught
+    # pylint: disable-next = broad-exception-caught
     except Exception as e:
         traceback.print_exc()
         print("Unable to create fifo file", config.import_fifo, e, file=sys.stderr)
@@ -183,7 +184,7 @@ async def watch_import_path(
                         jobs_queue.put_nowait(job)
                     else:
                         assert_never(job)
-                # pylint: disable = broad-exception-caught
+                # pylint: disable-next = broad-exception-caught
                 except Exception as e:
                     traceback.print_exc()
                     print("Error while pricessing import request", line, e, file=sys.stderr)
@@ -216,7 +217,7 @@ async def managed_worker_and_import_worker(
                         context.queues.enqueue_path(
                             [(action.path_with_md5, t) for t in action.job_types], action.priority
                         )
-                # pylint: disable = broad-exception-caught
+                # pylint: disable-next = broad-exception-caught
                 except Exception as e:
                     traceback.print_exc()
                     print("Error while importing path", path, e, file=sys.stderr)
@@ -227,7 +228,7 @@ async def managed_worker_and_import_worker(
                     await asyncio.sleep(0)
             if enqueued and paths:
                 context.queues.update_progress_bars()
-        # pylint: disable = broad-exception-caught
+        # pylint: disable-next = broad-exception-caught
         except Exception as e:
             traceback.print_exc()
             print("Error while pricessing import request", import_command, e, file=sys.stderr)
@@ -250,7 +251,7 @@ async def reindex_gallery(reindexer: Reindexer) -> None:
                 sleep_time = min(sleep_time * 2, max_sleep_time)
             else:
                 sleep_time = 1
-        # pylint: disable = broad-exception-caught
+        # pylint: disable-next = broad-exception-caught
         except Exception as e:
             traceback.print_exc()
             print("Error while trying to refresh data in db:", e)

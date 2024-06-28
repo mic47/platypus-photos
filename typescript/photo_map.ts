@@ -1,6 +1,6 @@
 import * as L from "leaflet";
 
-import { SearchQueryParams } from "./state.ts";
+import { CheckboxesParams, SearchQueryParams } from "./state.ts";
 import { pprange } from "./utils.ts";
 import { GenericFetch } from "./generic_fetch.ts";
 
@@ -272,12 +272,15 @@ export class PhotoMap {
     }
 }
 
-export class MapSearch extends GenericFetch<{ query: string | null }> {
+export class MapSearch extends GenericFetch<{
+    query: string | null;
+    checkboxes: CheckboxesParams;
+}> {
     constructor(div_id: string) {
         super(div_id, "/internal/map_search.html");
     }
-    fetch(search_str: string | null) {
-        return this.fetch_impl({ query: search_str });
+    fetch(search_str: string | null, checkboxes: CheckboxesParams) {
+        return this.fetch_impl({ query: search_str, checkboxes });
     }
 }
 
@@ -293,16 +296,36 @@ export class AddressInfo extends GenericFetch<{
     }
 }
 
-export class AnnotationOverlay extends GenericFetch<{
+export type ManualLocation = {
     latitude: number;
     longitude: number;
+    address_name: string | null;
+    address_country: string | null;
+};
+type AnnotationOverlayRequest =
+    | {
+          t: "FixedLocation";
+          latitude: number;
+          longitude: number;
+      }
+    | {
+          t: "InterpolatedLocation";
+          location: ManualLocation;
+      };
+
+export class AnnotationOverlay extends GenericFetch<{
+    request: AnnotationOverlayRequest;
     query: SearchQueryParams;
 }> {
     constructor(div_id: string) {
         super(div_id, "/internal/submit_annotations_overlay.html");
     }
-    fetch(latitude: number, longitude: number, query: SearchQueryParams) {
-        return this.fetch_impl({ latitude, longitude, query });
+    fetch(request: AnnotationOverlayRequest, query: SearchQueryParams) {
+        console.log(request);
+        return this.fetch_impl({
+            request,
+            query,
+        });
     }
 }
 
