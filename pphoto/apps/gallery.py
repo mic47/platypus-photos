@@ -308,7 +308,7 @@ class MassLocationAndTextAnnotation(DataClassJsonMixin):
     date: DateTypes
 
 
-MassManualAnnotation = MassManualAnnotationDeprecated | MassLocationAndTextAnnotation
+MassManualAnnotation = MassLocationAndTextAnnotation
 
 
 def mass_manual_annotation_from_json(j: bytes) -> MassLocationAndTextAnnotation:
@@ -321,28 +321,26 @@ def mass_manual_annotation_from_json(j: bytes) -> MassLocationAndTextAnnotation:
     raise NotImplementedError
 
 
-def mass_manual_annotation_migrate(params: MassManualAnnotation) -> MassLocationAndTextAnnotation:
-    if isinstance(params, MassManualAnnotationDeprecated):
-        return MassLocationAndTextAnnotation(
-            "MassLocAndTxt",
-            params.query,
-            LocationQueryFixedLocation(
-                "FixedLocation",
-                params.location,
-                params.location_override,
-            ),
-            TextQueryFixedText(
-                "FixedText",
-                params.text,
-                params.text_override,
-                False,
-            ),
-            TransDate(
-                "TransDate",
-                False,
-            ),
-        )
-    return params
+def mass_manual_annotation_migrate(params: MassManualAnnotationDeprecated) -> MassLocationAndTextAnnotation:
+    return MassLocationAndTextAnnotation(
+        "MassLocAndTxt",
+        params.query,
+        LocationQueryFixedLocation(
+            "FixedLocation",
+            params.location,
+            params.location_override,
+        ),
+        TextQueryFixedText(
+            "FixedText",
+            params.text,
+            params.text_override,
+            False,
+        ),
+        TransDate(
+            "TransDate",
+            False,
+        ),
+    )
 
 
 def location_tasks_recipes(
@@ -415,8 +413,6 @@ def date_tasks_recipes(
 @app.post("/api/mass_manual_annotation")
 def mass_manual_annotation_endpoint(params: MassManualAnnotation) -> int:
     db = DB.get()
-
-    params = mass_manual_annotation_migrate(params)
 
     all_images = Lazy(
         lambda: DB.get().get_matching_images(

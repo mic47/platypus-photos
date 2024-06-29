@@ -48,6 +48,8 @@ def main() -> None:
                 routes=gallery_app.routes,
             ),
             f,
+            ensure_ascii=False,
+            indent=2,
         )
 
 

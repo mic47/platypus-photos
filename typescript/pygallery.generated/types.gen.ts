@@ -163,14 +163,6 @@ export type MassLocationAndTextAnnotation = {
 
 export type t4 = 'MassLocAndTxt';
 
-export type MassManualAnnotationDeprecated = {
-    query: SearchQuery;
-    location: ManualLocation;
-    location_override: ManualLocationOverride;
-    text: TextAnnotation;
-    text_override: TextAnnotationOverride;
-};
-
 export type SearchQuery = {
     tag?: string;
     cls?: string;
@@ -248,7 +240,7 @@ export type DateClustersEndpointApiDateClustersPostData = {
 export type DateClustersEndpointApiDateClustersPostResponse = Array<DateCluster>;
 
 export type MassManualAnnotationEndpointApiMassManualAnnotationPostData = {
-    requestBody: MassManualAnnotationDeprecated | MassLocationAndTextAnnotation;
+    requestBody: MassLocationAndTextAnnotation;
 };
 
 export type MassManualAnnotationEndpointApiMassManualAnnotationPostResponse = number;

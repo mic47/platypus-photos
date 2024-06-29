@@ -617,29 +617,6 @@ export const $MassLocationAndTextAnnotation = {
     title: 'MassLocationAndTextAnnotation'
 } as const;
 
-export const $MassManualAnnotationDeprecated = {
-    properties: {
-        query: {
-            '$ref': '#/components/schemas/SearchQuery'
-        },
-        location: {
-            '$ref': '#/components/schemas/ManualLocation'
-        },
-        location_override: {
-            '$ref': '#/components/schemas/ManualLocationOverride'
-        },
-        text: {
-            '$ref': '#/components/schemas/TextAnnotation'
-        },
-        text_override: {
-            '$ref': '#/components/schemas/TextAnnotationOverride'
-        }
-    },
-    type: 'object',
-    required: ['query', 'location', 'location_override', 'text', 'text_override'],
-    title: 'MassManualAnnotationDeprecated'
-} as const;
-
 export const $SearchQuery = {
     properties: {
         tag: {
