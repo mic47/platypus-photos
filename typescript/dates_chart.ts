@@ -5,7 +5,7 @@ import { ColorAssigner } from "./color_assigner.ts";
 import data_model from "./data_model.generated.json";
 import { pprange, pretty_print_duration } from "./utils.ts";
 import { Switchable } from "./switchable.ts";
-import { SearchQueryParams } from "./state.ts";
+import { SearchQuery } from "./pygallery.generated/types.gen.ts";
 
 export class Dates {
     public switchable: Switchable;
@@ -14,7 +14,7 @@ export class Dates {
     private colors: ColorAssigner;
     constructor(
         div_id: string,
-        update_url: (data: SearchQueryParams) => void,
+        update_url: (data: SearchQuery) => void,
         private tooltip_div: string,
         private group_by_div: string,
     ) {
@@ -155,8 +155,8 @@ ${cluster.total} images, ${duration} bucket<br/>
                                 });
                                 const [f, t] = x;
                                 update_url({
-                                    tsfrom: f.toString(),
-                                    tsto: t.toString(),
+                                    tsfrom: f,
+                                    tsto: t,
                                 });
                             }
                         }
@@ -166,7 +166,7 @@ ${cluster.total} images, ${duration} bucket<br/>
         });
     }
 
-    fetch(location_url_json: SearchQueryParams) {
+    fetch(location_url_json: SearchQuery) {
         return this.switchable.call_or_store("fetch", () => {
             const tool = document.getElementById(this.tooltip_div);
             if (tool !== null && tool !== undefined) {

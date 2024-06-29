@@ -74,7 +74,7 @@ export class TabSwitch {
                 console.log("Error, this button should have id", button);
             }
             const sync_id = button.id.replace("TabSource", "Tab");
-            const is_active_from_url = url_params[sync_id];
+            const is_active_from_url = url_params.unparsed[sync_id];
             button.addEventListener("click", () => {
                 this.switch_tab_visibility(button);
             });
@@ -93,11 +93,11 @@ export class TabSwitch {
         const targets = document.getElementsByClassName(target_class);
         const url = this.sync.get();
         if (this.defaults[sync_id] === is_active) {
-            delete url[sync_id];
+            delete url.unparsed[sync_id];
         } else {
-            url[sync_id] = is_active.toString();
+            url.unparsed[sync_id] = is_active.toString();
         }
-        this.sync.update(url);
+        this.sync.update(url.unparsed);
         const callback = this.callbacks[sync_id];
         if (is_active) {
             button.classList.add("active");

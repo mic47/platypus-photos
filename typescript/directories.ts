@@ -1,4 +1,4 @@
-import { SearchQueryParams } from "./state.ts";
+import { SearchQuery } from "./pygallery.generated/types.gen.ts";
 import { Switchable } from "./switchable.ts";
 
 export class Directories {
@@ -7,13 +7,13 @@ export class Directories {
         this.switchable = new Switchable();
     }
 
-    fetch(url_data: SearchQueryParams) {
+    fetch(url_data: SearchQuery) {
         return this.switchable.call_or_store("fetch", () =>
             this.fetch_impl(url_data),
         );
     }
 
-    fetch_impl(url_data: SearchQueryParams) {
+    fetch_impl(url_data: SearchQuery) {
         const url = `/internal/directories.html`;
         fetch(url, {
             method: "POST",

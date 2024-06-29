@@ -1,14 +1,14 @@
 import {
-    CheckboxesParams,
-    PagingParams,
-    SearchQueryParams,
+    GalleryPaging,
+    SearchQuery,
     SortParams,
-} from "./state.ts";
+} from "./pygallery.generated/types.gen.ts";
+import { CheckboxesParams } from "./state.ts";
 
 export class AggregateInfo {
     constructor(private div_id: string) {}
 
-    fetch(url_data: SearchQueryParams, paging: PagingParams) {
+    fetch(url_data: SearchQuery, paging: GalleryPaging) {
         const url = `/internal/aggregate.html`;
         fetch(url, {
             method: "POST",
@@ -36,8 +36,8 @@ export class Gallery {
     ) {}
 
     fetch(
-        url_data: SearchQueryParams,
-        paging: PagingParams,
+        url_data: SearchQuery,
+        paging: GalleryPaging,
         sort: SortParams,
         checkboxes: CheckboxesParams,
     ) {

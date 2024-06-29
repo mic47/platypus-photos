@@ -1,8 +1,9 @@
 import * as L from "leaflet";
 
-import { CheckboxesParams, SearchQueryParams } from "./state.ts";
+import { CheckboxesParams } from "./state.ts";
 import { pprange } from "./utils.ts";
 import { GenericFetch } from "./generic_fetch.ts";
+import { SearchQuery } from "./pygallery.generated/types.gen.ts";
 
 type Position = {
     latitude: number;
@@ -23,7 +24,7 @@ type LastUpdateMarkersCacheParam = {
     non_bounds: {
         res: Position;
         of: number;
-        url: SearchQueryParams;
+        url: SearchQuery;
     };
     bounds: Bounds;
     change_view: boolean;
@@ -37,7 +38,7 @@ export class PhotoMap {
     constructor(
         div_id: string,
         private should_use_query_div: string,
-        get_url: () => SearchQueryParams,
+        get_url: () => SearchQuery,
         private context_menu_callback: (
             latlng: L.LatLng,
             callback: (content: string) => L.Popup,
@@ -85,7 +86,7 @@ export class PhotoMap {
         });
     }
 
-    update_bounds(location_url_json: SearchQueryParams, fit_not_fly = false) {
+    update_bounds(location_url_json: SearchQuery, fit_not_fly = false) {
         const query = {
             ...location_url_json,
             skip_with_location: false,
@@ -157,7 +158,7 @@ export class PhotoMap {
         return false;
     }
 
-    update_markers(location_url_json: SearchQueryParams, change_view = false) {
+    update_markers(location_url_json: SearchQuery, change_view = false) {
         // TODO: wrapped maps: shift from 0 + wrap around
         const should_use_query =
             (
@@ -318,12 +319,12 @@ type AnnotationOverlayRequest =
 
 export class AnnotationOverlay extends GenericFetch<{
     request: AnnotationOverlayRequest;
-    query: SearchQueryParams;
+    query: SearchQuery;
 }> {
     constructor(div_id: string) {
         super(div_id, "/internal/submit_annotations_overlay.html");
     }
-    fetch(request: AnnotationOverlayRequest, query: SearchQueryParams) {
+    fetch(request: AnnotationOverlayRequest, query: SearchQuery) {
         console.log(request);
         return this.fetch_impl({
             request,

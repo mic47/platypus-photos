@@ -28,9 +28,11 @@ import {
 import {
     AppState,
     CheckboxSync,
-    SearchQueryParams,
-    SortParams,
     UrlSync,
+    parse_gallery_paging,
+    parse_search_query,
+    parse_sort_params,
+    update_search_query_value,
 } from "./state.ts";
 import { JobList, JobProgress } from "./jobs.ts";
 import { Directories } from "./directories.ts";
@@ -39,9 +41,11 @@ import { SystemStatus } from "./system_status.ts";
 
 import * as pygallery_service from "./pygallery.generated/services.gen.ts";
 import {
+    SortParams,
     ManualLocationOverride,
     MassLocationAndTextAnnotation,
     TextAnnotationOverride,
+    SearchQuery,
 } from "./pygallery.generated/types.gen.ts";
 import { LocationTypes } from "./annotations.ts";
 
@@ -49,10 +53,10 @@ let ___state: AppState;
 function update_dir(data: string) {
     ___state.search_query.update({ directory: data });
 }
-function update_url(data: SearchQueryParams) {
+function update_url(data: SearchQuery) {
     ___state.search_query.update(data);
 }
-function reset_param(key: string) {
+function reset_param(key: keyof SearchQuery | "__ALL__") {
     if (key === "__ALL__") {
         ___state.search_query.replace({});
         return;
@@ -66,11 +70,10 @@ function update_form(div_id: string) {
         document.getElementById(div_id) as HTMLFormElement,
     );
     const values = ___state.search_query.get();
-    for (const [key, value] of formData) {
+    for (const [key_untyped, value] of formData) {
+        const key: keyof SearchQuery = key_untyped as keyof SearchQuery;
         if (value !== null && value !== undefined && value !== "") {
-            if (typeof value === "string") {
-                values[key] = value;
-            }
+            update_search_query_value(values, key, value);
         } else {
             delete values[key];
         }
@@ -239,23 +242,27 @@ function update_url_add_tag(tag: string) {
     }
 }
 function set_page(page: number) {
-    ___state.paging.update({ page: page.toString() });
+    ___state.paging.update({ page });
 }
 function prev_page() {
-    const page = parseInt(___state.paging.get()["page"]) || 0;
+    const page = ___state.paging.get()["page"] || 0;
     if (page > 0) {
-        ___state.paging.update({ page: (page - 1).toString() });
+        ___state.paging.update({ page: page - 1 });
     }
 }
 function next_page() {
-    const page = parseInt(___state.paging.get()["page"]) || 0;
-    const update = { page: (page + 1).toString() };
+    const page = ___state.paging.get()["page"] || 0;
+    const update = { page: page + 1 };
     ___state.paging.update(update);
 }
-function add_to_float_param(param: string, other: string, new_value: number) {
+function add_to_float_param(
+    param: "tsfrom" | "tsto",
+    other: "tsfrom" | "tsto",
+    new_value: number,
+) {
     const query = ___state.search_query.get();
-    const value = parseFloat(query[param]) || parseFloat(query[other]);
-    if (value != value) {
+    const value = query[param] || query[other];
+    if (value != value || value === null || value === undefined) {
         return;
     }
     const update: { [key: string]: string } = {};
@@ -263,30 +270,30 @@ function add_to_float_param(param: string, other: string, new_value: number) {
     ___state.search_query.update(update);
 }
 function shift_float_params(
-    param_to_start: string,
-    second_param: string,
+    param_to_start: "tsto" | "tsfrom",
+    second_param: "tsto" | "tsfrom",
     shift_by: number | null = null,
 ) {
     const query = ___state.search_query.get();
-    const start_value = parseFloat(query[param_to_start]);
-    const end_value = parseFloat(query[second_param]);
-    if (end_value != end_value) {
+    const start_value = query[param_to_start];
+    const end_value = query[second_param];
+    if (end_value === null || end_value === undefined) {
         // This does not make sense, second param is empty
         return;
     }
-    const update: { [key: string]: string } = {};
-    update[param_to_start] = end_value.toString();
+    const update: SearchQuery = {};
+    update[param_to_start] = end_value;
     if (shift_by !== undefined && shift_by !== null) {
-        update[second_param] = (end_value + shift_by).toString();
+        update[second_param] = end_value + shift_by;
     } else {
-        if (start_value != start_value) {
+        if (
+            start_value != start_value ||
+            start_value === null ||
+            start_value === undefined
+        ) {
             delete update[second_param];
         } else {
-            update[second_param] = (
-                end_value +
-                end_value -
-                start_value
-            ).toString();
+            update[second_param] = end_value + end_value - start_value;
         }
     }
     ___state.search_query.update(update);
@@ -385,7 +392,7 @@ export function submit_annotations(
     const adjust_dates = formData.get("apply_timestamp_trans") == "on";
     const request: MassLocationAndTextAnnotation = {
         t: "MassLocAndTxt",
-        query: query as SearchQueryParams,
+        query: query as SearchQuery,
         location,
         text: {
             t: "FixedText",
@@ -540,10 +547,12 @@ function init_fun() {
 
     /* Trigger redrawing of componentsl */
     // WARNING: here we assume that search_query will update everything
-    ___state.paging.replace_no_hook_update(paging_sync.get());
+    ___state.paging.replace_no_hook_update(
+        parse_gallery_paging(paging_sync.get()),
+    );
     // WARNING: here we assume that search_query will update everything
-    ___state.sort.replace_no_hook_update(sort_sync.get());
-    ___state.search_query.replace(search_query_sync.get());
+    ___state.sort.replace_no_hook_update(parse_sort_params(sort_sync.get()));
+    ___state.search_query.replace(parse_search_query(search_query_sync.get()));
     ___map_search.fetch(null, ___checkbox_sync.get());
 
     /* Job progress / list UI */

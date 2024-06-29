@@ -1,11 +1,11 @@
-import { SearchQueryParams } from "./state.ts";
+import { SearchQuery } from "./pygallery.generated/types.gen";
 
 export class InputForm {
     constructor(private div_id: string) {
         this.div_id = div_id;
     }
 
-    fetch(url_data: SearchQueryParams) {
+    fetch(url_data: SearchQuery) {
         const url = `/internal/input.html`;
         fetch(url, {
             method: "POST",
