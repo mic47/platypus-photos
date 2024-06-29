@@ -24,14 +24,13 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from pphoto.annots.geo import Geolocator
-from pphoto.communication.client import get_system_status
-from pphoto.data_model.config import DBFilesConfig, Config
+from pphoto.communication.client import get_system_status, refresh_jobs
+from pphoto.data_model.config import DBFilesConfig
 from pphoto.data_model.base import PathWithMd5
 from pphoto.db.types_location import LocationCluster, LocPoint, LocationBounds
 from pphoto.db.types_date import DateCluster, DateClusterGroupBy
 from pphoto.db.types_image import ImageAddress
 from pphoto.db.connection import PhotosConnection, GalleryConnection, JobsConnection
-from pphoto.file_mgmt.remote_control import RefreshJobs, write_serialized_rc_job
 from pphoto.utils import assert_never, Lazy
 from pphoto.remote_jobs.types import (
     RemoteJobType,
@@ -84,7 +83,6 @@ templates.env.filters["replace_with_flag"] = replace_with_flag
 templates.env.filters["dataclass_to_json_pretty"] = lambda x: x.to_json(indent=2, ensure_ascii=False)
 templates.env.filters["format_seconds_to_duration"] = lambda x: format_seconds_to_duration(float(x))
 
-CONFIG = Config.load("config.yaml")
 DB = Lazy(
     lambda: ImageSqlDB(
         PhotosConnection(DBFilesConfig().photos_db, check_same_thread=False),
@@ -419,7 +417,7 @@ def date_tasks_recipes(
 
 
 @app.post("/api/mass_manual_annotation")
-def mass_manual_annotation_endpoint(params: MassManualAnnotation) -> int:
+async def mass_manual_annotation_endpoint(params: MassManualAnnotation) -> int:
     db = DB.get()
 
     all_images = Lazy(
@@ -466,7 +464,7 @@ def mass_manual_annotation_endpoint(params: MassManualAnnotation) -> int:
         RemoteJobType.MASS_MANUAL_ANNOTATION, params.to_json(ensure_ascii=False).encode("utf-8"), tasks
     )
     db.mark_annotated([t for t, _ in tasks])
-    write_serialized_rc_job(CONFIG.import_fifo, RefreshJobs(job_id))
+    await refresh_jobs(job_id)
     return job_id
 
 

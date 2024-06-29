@@ -17,7 +17,7 @@ from pphoto.remote_jobs.db import RemoteJobsTable
 from pphoto.db.files_table import FilesTable
 from pphoto.db.queries import PhotosQueries
 from pphoto.db.types_file import ManagedLifecycle
-from pphoto.file_mgmt.remote_control import ImportMode
+from pphoto.communication.types import ImportMode
 from pphoto.utils import assert_never
 from pphoto.utils.files import supported_media, pathify
 

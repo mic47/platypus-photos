@@ -1,12 +1,9 @@
 import argparse
 import asyncio
-import os
-import stat
 import sys
 import traceback
 import typing as t
 
-import aiofiles
 import aiohttp
 import asyncinotify
 import tqdm
@@ -19,12 +16,11 @@ from pphoto.db.files_table import FilesTable
 from pphoto.db.queries import PhotosQueries
 from pphoto.annots.annotator import Annotator
 from pphoto.annots.date import PathDateExtractor
-from pphoto.communication.server import start_image_server_loop
+from pphoto.communication.server import start_image_server_loop, ImportDirectory, RefreshJobs
 from pphoto.remote_jobs.types import TaskId, RemoteTask, ManualAnnotationTask
 from pphoto.remote_jobs.db import RemoteJobsTable
 from pphoto.file_mgmt.jobs import Jobs, JobType, IMPORT_PRIORITY, DEFAULT_PRIORITY, REALTIME_PRIORITY
 from pphoto.file_mgmt.queues import Queues, Queue
-from pphoto.file_mgmt.remote_control import ImportCommand, parse_rc_job, RefreshJobs
 from pphoto.gallery.reindexer import Reindexer
 from pphoto.utils import assert_never, Lazy
 from pphoto.utils.alive import Alive
@@ -157,50 +153,8 @@ async def reingest_directories_worker(context: GlobalContext, config: Config, /)
 
 
 @Alive(persistent=True, key=[])
-async def watch_import_path(
-    config: Config, import_queue: asyncio.Queue[ImportCommand], jobs_queue: asyncio.Queue[RefreshJobs], /
-) -> None:
-    try:
-        if os.path.exists(config.import_fifo):
-            if not stat.S_ISFIFO(os.stat(config.import_fifo).st_mode):
-                print(f"FATAL: {config.import_fifo} is not FIFo!", file=sys.stderr)
-                sys.exit(1)
-        else:
-            os.mkfifo(config.import_fifo)
-    # pylint: disable-next = broad-exception-caught
-    except Exception as e:
-        traceback.print_exc()
-        print("Unable to create fifo file", config.import_fifo, e, file=sys.stderr)
-        sys.exit(1)
-    while True:
-        async with aiofiles.open(config.import_fifo, "r") as import_fifo:
-            async for line in import_fifo:
-                line = line.strip()
-                if not line:
-                    continue
-                try:
-                    job = parse_rc_job(line)
-                    if isinstance(job, ImportCommand):
-                        import_queue.put_nowait(job)
-                    elif isinstance(job, RefreshJobs):
-                        jobs_queue.put_nowait(job)
-                    else:
-                        assert_never(job)
-                # pylint: disable-next = broad-exception-caught
-                except Exception as e:
-                    traceback.print_exc()
-                    print("Error while pricessing import request", line, e, file=sys.stderr)
-                    continue
-                finally:
-                    # So that we gave up place for other workers too
-                    await asyncio.sleep(0)
-            # So that we gave up place for other workers too
-            await asyncio.sleep(0)
-
-
-@Alive(persistent=True, key=[])
 async def managed_worker_and_import_worker(
-    context: GlobalContext, queue: asyncio.Queue[ImportCommand], /
+    context: GlobalContext, queue: asyncio.Queue[ImportDirectory], /
 ) -> None:
     # TODO: check for new files in managed folders, and add them. Run it from time to time
     progress_bar = Lazy(lambda: context.queues.get_progress_bar(JobType.CHEAP_FEATURES, IMPORT_PRIORITY))
@@ -290,7 +244,9 @@ async def main() -> None:
             Lazy.check_ttl()
             await asyncio.sleep(10)
 
-    await start_image_server_loop("unix-domain-socket")
+    import_queue: asyncio.Queue[ImportDirectory] = asyncio.Queue()
+    refresh_queue: asyncio.Queue[RefreshJobs] = asyncio.Queue()
+    await start_image_server_loop(refresh_queue, import_queue, "unix-domain-socket")
 
     tasks = []
     tasks.append(asyncio.create_task(check_db_connection()))
@@ -317,10 +273,7 @@ async def main() -> None:
         del unannotated
         context.queues.update_progress_bars()
 
-        import_queue: asyncio.Queue[ImportCommand] = asyncio.Queue()
-        refresh_queue: asyncio.Queue[RefreshJobs] = asyncio.Queue()
         # Starting async tasks
-        tasks.append(asyncio.create_task(watch_import_path(config, import_queue, refresh_queue)))
         tasks.append(
             asyncio.create_task(manual_annotation_worker("manual-annotation", refresh_queue, context))
         )
