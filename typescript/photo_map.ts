@@ -4,6 +4,7 @@ import { CheckboxesParams } from "./state.ts";
 import { pprange } from "./utils.ts";
 import { GenericFetch } from "./generic_fetch.ts";
 import { SearchQuery } from "./pygallery.generated/types.gen.ts";
+import * as pygallery_service from "./pygallery.generated/services.gen.ts";
 
 type Position = {
     latitude: number;
@@ -278,7 +279,7 @@ export class MapSearch extends GenericFetch<{
     checkboxes: CheckboxesParams;
 }> {
     constructor(div_id: string) {
-        super(div_id, "/internal/map_search.html");
+        super(div_id, pygallery_service.mapSearchEndpointPost);
     }
     fetch(search_str: string | null, checkboxes: CheckboxesParams) {
         return this.fetch_impl({ query: search_str, checkboxes });
@@ -290,7 +291,7 @@ export class AddressInfo extends GenericFetch<{
     longitude: number;
 }> {
     constructor(div_id: string) {
-        super(div_id, "/internal/fetch_location_info.html");
+        super(div_id, pygallery_service.fetchLocationInfoEndpointPost);
     }
     fetch(latitude: number, longitude: number) {
         return this.fetch_impl({ latitude, longitude });
@@ -322,7 +323,10 @@ export class AnnotationOverlay extends GenericFetch<{
     query: SearchQuery;
 }> {
     constructor(div_id: string) {
-        super(div_id, "/internal/submit_annotations_overlay.html");
+        super(
+            div_id,
+            pygallery_service.submitAnnotationOverlayFormEndpointPost,
+        );
     }
     fetch(request: AnnotationOverlayRequest, query: SearchQuery) {
         console.log(request);

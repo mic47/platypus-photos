@@ -15,7 +15,8 @@ export class Directories {
     }
 
     fetch_impl(url_data: SearchQuery) {
-        pygallery_service.directoriesEndpointPost({requestBody: url_data})
+        pygallery_service
+            .directoriesEndpointPost({ requestBody: url_data })
             .then((text) => {
                 const element = document.getElementById(this.div_id);
                 if (element === null) {

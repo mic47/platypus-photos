@@ -1,10 +1,12 @@
 import { GenericFetch } from "./generic_fetch.ts";
 import { Switchable } from "./switchable.ts";
+import * as pygallery_service from "./pygallery.generated/services.gen.ts";
+import { JobProgressState } from "./pygallery.generated/types.gen.ts";
 
 export class JobList extends GenericFetch<object> {
     private shown: boolean;
     constructor(div_id: string) {
-        super(div_id, "/internal/job_list.html");
+        super(div_id, pygallery_service.jobListEndpointPost);
         this.shown = false;
     }
     fetch() {
@@ -26,7 +28,7 @@ export class JobList extends GenericFetch<object> {
     }
 }
 
-export class JobProgress<S extends { ts: number }> extends GenericFetch<{
+export class JobProgress<S extends JobProgressState> extends GenericFetch<{
     job_list_fn: string;
     update_state_fn: string;
     state: S;
@@ -38,7 +40,7 @@ export class JobProgress<S extends { ts: number }> extends GenericFetch<{
         private update_state_fn: string,
         private job_list_fn: string,
     ) {
-        super(div_id, "/internal/job_progress.html");
+        super(div_id, pygallery_service.jobProgressEndpointPost);
         this.states = [];
         this.switchable = new Switchable();
     }

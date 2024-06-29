@@ -46,6 +46,7 @@ import {
     MassLocationAndTextAnnotation,
     TextAnnotationOverride,
     SearchQuery,
+    JobProgressState,
 } from "./pygallery.generated/types.gen.ts";
 import { LocationTypes } from "./annotations.ts";
 
@@ -459,7 +460,7 @@ function annotation_overlay_interpolated(location_encoded_base64: string) {
     );
 }
 
-let job_progress: JobProgress<{ ts: number }>;
+let job_progress: JobProgress<JobProgressState>;
 function update_job_progress(state_base64: string) {
     job_progress.add_state_base64(state_base64);
 }
