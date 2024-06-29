@@ -1,5 +1,6 @@
 import { SearchQuery } from "./pygallery.generated/types.gen.ts";
 import { Switchable } from "./switchable.ts";
+import * as pygallery_service from "./pygallery.generated/services.gen.ts";
 
 export class Directories {
     public switchable: Switchable;
@@ -14,15 +15,7 @@ export class Directories {
     }
 
     fetch_impl(url_data: SearchQuery) {
-        const url = `/internal/directories.html`;
-        fetch(url, {
-            method: "POST",
-            body: JSON.stringify(url_data),
-            headers: {
-                "Content-type": "application/json; charset=UTF-8",
-            },
-        })
-            .then((response) => response.text())
+        pygallery_service.directoriesEndpointPost({requestBody: url_data})
             .then((text) => {
                 const element = document.getElementById(this.div_id);
                 if (element === null) {
