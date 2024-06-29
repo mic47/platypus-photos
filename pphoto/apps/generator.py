@@ -1,10 +1,15 @@
 from dataclasses import dataclass, fields
+import json
 import typing as t
 
 from dataclasses_json import DataClassJsonMixin
 
+from fastapi.openapi.utils import get_openapi
+
 from pphoto.gallery.url import SearchQuery, GalleryPaging, SortParams
 from pphoto.gallery.unicode import UnicodeEmojiData
+
+from pphoto.apps.gallery import app as gallery_app
 
 
 @dataclass
@@ -32,6 +37,17 @@ def main() -> None:
                 UnicodeEmojiData.create(),
             ).to_json(ensure_ascii=False, indent=2),
             file=f,
+        )
+    with open("schema/pygallery.openapi.json", "w", encoding="utf-8") as f:
+        json.dump(
+            get_openapi(
+                title=gallery_app.title,
+                version=gallery_app.version,
+                openapi_version=gallery_app.openapi_version,
+                description=gallery_app.description,
+                routes=gallery_app.routes,
+            ),
+            f,
         )
 
 

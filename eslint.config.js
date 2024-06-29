@@ -10,6 +10,9 @@ export default [
   { languageOptions: { parserOptions: { ecmaFeatures: { jsx: true } } } },
   {languageOptions: { globals: globals.browser }},
   pluginJs.configs.recommended,
+  {ignores: [
+      "typescript/*.generated/**/*.ts",
+  ]},
   ...tseslint.configs.recommended,
   ...fixupConfigRules(pluginReactConfig),
 ];

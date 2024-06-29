@@ -12,10 +12,14 @@ cits:
 	yarn typecheck
 	yarn lint
 
+gen:
+	python3 -m pphoto.apps.generator
+	yarn gen-code
+
 ci:
 	make cipy
-	python3 -m pphoto.apps.generator
 	yarn
+	make gen
 	make cits
 
 covfefe:
