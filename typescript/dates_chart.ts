@@ -5,7 +5,13 @@ import { ColorAssigner } from "./color_assigner.ts";
 import data_model from "./data_model.generated.json";
 import { pprange, pretty_print_duration } from "./utils.ts";
 import { Switchable } from "./switchable.ts";
-import { SearchQuery } from "./pygallery.generated/types.gen.ts";
+import {
+    DateCluster,
+    DateClusterGroupBy,
+    SearchQuery,
+} from "./pygallery.generated/types.gen.ts";
+
+import * as pygallery_service from "./pygallery.generated/services.gen.ts";
 
 export class Dates {
     public switchable: Switchable;
@@ -61,7 +67,7 @@ export class Dates {
                                 }
                                 const cluster = (
                                     context[0].raw as {
-                                        cluster: DateClusterResponseItem;
+                                        cluster: DateCluster;
                                     }
                                 ).cluster;
                                 const duration = pretty_print_duration(
@@ -181,19 +187,15 @@ ${cluster.total} images, ${duration} bucket<br/>
                     group_by.push(element.value);
                 }
             }
-            return fetch("/api/date_clusters", {
-                method: "POST",
-                body: JSON.stringify({
-                    url: location_url_json,
-                    group_by,
-                    buckets: 100,
-                }),
-                headers: {
-                    "Content-type": "application/json; charset=UTF-8",
-                },
-            })
-                .then((response) => response.json())
-                .then((clusters: DateClusterResponseItem[]) => {
+            pygallery_service
+                .dateClustersEndpointPost({
+                    requestBody: {
+                        url: location_url_json,
+                        group_by: group_by as DateClusterGroupBy[],
+                        buckets: 100,
+                    },
+                })
+                .then((clusters) => {
                     const datasets = clusters_to_datasets(clusters);
                     const newDatasets = this.chart.data.datasets.map(
                         (oldDataset) => {
@@ -232,18 +234,16 @@ const OVERFETCHED_LABEL = "❌⌚";
 type DatasetPoints = {
     [label: string]: {
         label: string;
-        data: Array<{ x: number; y: number; cluster: DateClusterResponseItem }>;
+        data: Array<{ x: number; y: number; cluster: DateCluster }>;
         borderWidth: number;
         showLine: boolean;
         backgroundColor?: string;
     };
 };
 const FLAGS: { [key: string]: string } = data_model.unicode.flags;
-function clusters_to_datasets(
-    clusters: DateClusterResponseItem[],
-): DatasetPoints {
+function clusters_to_datasets(clusters: DateCluster[]): DatasetPoints {
     const data_points: DatasetPoints = {};
-    function to_datapoint(c: DateClusterResponseItem) {
+    function to_datapoint(c: DateCluster) {
         return {
             x: c.avg_timestamp * 1000,
             y: c.total,
@@ -287,19 +287,3 @@ function clusters_to_datasets(
     });
     return data_points;
 }
-type DateClusterResponseItem = {
-    avg_timestamp: number;
-    min_timestamp: number;
-    max_timestamp: number;
-    bucket_min: number;
-    bucket_max: number;
-    example_path_md5: string;
-    total: number;
-    overfetched: boolean;
-    group_by: {
-        country: string | null;
-        camera: string | null;
-        has_location: boolean | null;
-        address_name: string | null;
-    };
-};
