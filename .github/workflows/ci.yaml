@@ -21,6 +21,7 @@ jobs:
       #    cache: 'pip'
       - run: pip install -r <(cat requirements.txt | grep -v '^\(transformers\|ultralytics\)==')
       - run: pip freeze
+      - run: make prepare-ci
       - run: make ci
       - run: git diff --exit-code
       - run: echo "🍏 This job's status is ${{ job.status }}."
