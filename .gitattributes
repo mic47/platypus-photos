@@ -1,0 +1,3 @@
+schema/pygallery.openapi.json linguist-generated=true
+typescript/data_model.generated.json linguist-generated=true
+typescript/pygallery.generated/** linguist-generated=true
