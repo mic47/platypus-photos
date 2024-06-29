@@ -35,13 +35,15 @@ import {
 import { JobList, JobProgress } from "./jobs.ts";
 import { Directories } from "./directories.ts";
 import { TabSwitch } from "./switchable.ts";
-import {
-    LocationOverride,
-    LocationTypes,
-    MassLocationAndTextAnnotation,
-    TextOverride,
-} from "./annotations.ts";
 import { SystemStatus } from "./system_status.ts";
+
+import * as pygallery_service from "./pygallery.generated/services.gen.ts";
+import {
+    ManualLocationOverride,
+    MassLocationAndTextAnnotation,
+    TextAnnotationOverride,
+} from "./pygallery.generated/types.gen.ts";
+import { LocationTypes } from "./annotations.ts";
 
 let ___state: AppState;
 function update_dir(data: string) {
@@ -361,7 +363,7 @@ export function submit_annotations(
                 t: request_type,
                 location: manualLocation,
                 override: (location_override ??
-                    "NoLocNoMan") as LocationOverride,
+                    "NoLocNoMan") as ManualLocationOverride,
             };
         } else if (request_type == "InterpolatedLocation") {
             location = {
@@ -388,7 +390,7 @@ export function submit_annotations(
         text: {
             t: "FixedText",
             text: text_request,
-            override: (text_override ?? "ExMan") as TextOverride,
+            override: (text_override ?? "ExMan") as TextAnnotationOverride,
             loc_only,
         },
         date: {
@@ -402,14 +404,8 @@ export function submit_annotations(
         });
     }
     return (
-        fetch("api/mass_manual_annotation", {
-            method: "POST",
-            body: JSON.stringify(request),
-            headers: {
-                "Content-type": "application/json; charset=UTF-8",
-            },
-        })
-            .then((response) => response.json())
+        pygallery_service
+            .massManualAnnotationEndpointPost({ requestBody: request })
             .then(() => {
                 if (advance_in_time !== undefined && advance_in_time !== null) {
                     // TODO: resolve these imports
