@@ -19,6 +19,7 @@ from PIL import Image, ImageFile
 
 from fastapi import FastAPI, Request, Response
 from fastapi.responses import HTMLResponse, FileResponse
+from fastapi.routing import APIRoute
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
@@ -57,7 +58,13 @@ from pphoto.gallery.unicode import maybe_datetime_to_clock, append_flag, replace
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 
-app = FastAPI()
+def custom_generate_unique_id(route: APIRoute) -> str:
+    method = "_".join(sorted(route.methods))
+    if route.tags:
+        return f"{route.tags[0]}-{route.name}-{method}"
+    return f"{route.name}-{method}"
+
+app = FastAPI(generate_unique_id_function=custom_generate_unique_id)
 app.mount("/static", StaticFiles(directory="static/"), name="static")
 app.mount("/css", StaticFiles(directory="css/"), name="static")
 templates = Jinja2Templates(directory="templates")

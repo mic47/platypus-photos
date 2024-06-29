@@ -214,102 +214,102 @@ export type ValidationError = {
     type: string;
 };
 
-export type ImageEndpointImgGetData = {
+export type ImageEndpointGetData = {
     hsh: number | string;
     size?: ImageSize;
 };
 
-export type ImageEndpointImgGetResponse = unknown;
+export type ImageEndpointGetResponse = unknown;
 
-export type LocationClustersEndpointApiLocationClustersPostData = {
+export type LocationClustersEndpointPostData = {
     requestBody: LocClusterParams;
 };
 
-export type LocationClustersEndpointApiLocationClustersPostResponse = Array<LocationCluster>;
+export type LocationClustersEndpointPostResponse = Array<LocationCluster>;
 
-export type LocationBoundsEndpointApiBoundsPostData = {
+export type LocationBoundsEndpointPostData = {
     requestBody: SearchQuery;
 };
 
-export type LocationBoundsEndpointApiBoundsPostResponse = LocationBounds | null;
+export type LocationBoundsEndpointPostResponse = LocationBounds | null;
 
-export type DateClustersEndpointApiDateClustersPostData = {
+export type DateClustersEndpointPostData = {
     requestBody: DateClusterParams;
 };
 
-export type DateClustersEndpointApiDateClustersPostResponse = Array<DateCluster>;
+export type DateClustersEndpointPostResponse = Array<DateCluster>;
 
-export type MassManualAnnotationEndpointApiMassManualAnnotationPostData = {
+export type MassManualAnnotationEndpointPostData = {
     requestBody: MassLocationAndTextAnnotation;
 };
 
-export type MassManualAnnotationEndpointApiMassManualAnnotationPostResponse = number;
+export type MassManualAnnotationEndpointPostResponse = number;
 
-export type MapSearchEndpointInternalMapSearchHtmlPostData = {
+export type MapSearchEndpointPostData = {
     requestBody: MapSearchRequest;
 };
 
-export type MapSearchEndpointInternalMapSearchHtmlPostResponse = string;
+export type MapSearchEndpointPostResponse = string;
 
-export type JobProgressEndpointInternalJobProgressHtmlPostData = {
+export type JobProgressEndpointPostData = {
     requestBody: JobProgressRequest;
 };
 
-export type JobProgressEndpointInternalJobProgressHtmlPostResponse = string;
+export type JobProgressEndpointPostResponse = string;
 
-export type JobListEndpointInternalJobListHtmlPostData = {
+export type JobListEndpointPostData = {
     requestBody: JobListRequest;
 };
 
-export type JobListEndpointInternalJobListHtmlPostResponse = string;
+export type JobListEndpointPostResponse = string;
 
-export type SystemStatusEndpointInternalSystemStatusHtmlPostResponse = string;
+export type SystemStatusEndpointPostResponse = string;
 
-export type SubmitAnnotationOverlayFormEndpointInternalSubmitAnnotationsOverlayHtmlPostData = {
+export type SubmitAnnotationOverlayFormEndpointPostData = {
     requestBody: AnnotationOverlayRequest;
 };
 
-export type SubmitAnnotationOverlayFormEndpointInternalSubmitAnnotationsOverlayHtmlPostResponse = string;
+export type SubmitAnnotationOverlayFormEndpointPostResponse = string;
 
-export type FetchLocationInfoEndpointInternalFetchLocationInfoHtmlPostData = {
+export type FetchLocationInfoEndpointPostData = {
     requestBody: LocationInfoRequest;
 };
 
-export type FetchLocationInfoEndpointInternalFetchLocationInfoHtmlPostResponse = string;
+export type FetchLocationInfoEndpointPostResponse = string;
 
-export type DirectoriesEndpointInternalDirectoriesHtmlPostData = {
+export type DirectoriesEndpointPostData = {
     requestBody: SearchQuery;
 };
 
-export type DirectoriesEndpointInternalDirectoriesHtmlPostResponse = string;
+export type DirectoriesEndpointPostResponse = string;
 
-export type GalleryDivInternalGalleryHtmlPostData = {
+export type GalleryDivPostData = {
     oi?: number | null;
     requestBody: GalleryRequest;
 };
 
-export type GalleryDivInternalGalleryHtmlPostResponse = string;
+export type GalleryDivPostResponse = string;
 
-export type AggregateEndpointInternalAggregateHtmlPostData = {
+export type AggregateEndpointPostData = {
     requestBody: AggregateQuery;
 };
 
-export type AggregateEndpointInternalAggregateHtmlPostResponse = string;
+export type AggregateEndpointPostResponse = string;
 
-export type InputRequestInternalInputHtmlPostData = {
+export type InputRequestPostData = {
     requestBody: SearchQuery;
 };
 
-export type InputRequestInternalInputHtmlPostResponse = string;
+export type InputRequestPostResponse = string;
 
 export type ReadIndexGetResponse = unknown;
 
-export type ReadIndexIndexHtmlGetResponse = unknown;
+export type ReadIndexGet1Response = unknown;
 
 export type $OpenApiTs = {
     '/img': {
         get: {
-            req: ImageEndpointImgGetData;
+            req: ImageEndpointGetData;
             res: {
                 /**
                  * photo
@@ -324,7 +324,7 @@ export type $OpenApiTs = {
     };
     '/api/location_clusters': {
         post: {
-            req: LocationClustersEndpointApiLocationClustersPostData;
+            req: LocationClustersEndpointPostData;
             res: {
                 /**
                  * Successful Response
@@ -339,7 +339,7 @@ export type $OpenApiTs = {
     };
     '/api/bounds': {
         post: {
-            req: LocationBoundsEndpointApiBoundsPostData;
+            req: LocationBoundsEndpointPostData;
             res: {
                 /**
                  * Successful Response
@@ -354,7 +354,7 @@ export type $OpenApiTs = {
     };
     '/api/date_clusters': {
         post: {
-            req: DateClustersEndpointApiDateClustersPostData;
+            req: DateClustersEndpointPostData;
             res: {
                 /**
                  * Successful Response
@@ -369,7 +369,7 @@ export type $OpenApiTs = {
     };
     '/api/mass_manual_annotation': {
         post: {
-            req: MassManualAnnotationEndpointApiMassManualAnnotationPostData;
+            req: MassManualAnnotationEndpointPostData;
             res: {
                 /**
                  * Successful Response
@@ -384,7 +384,7 @@ export type $OpenApiTs = {
     };
     '/internal/map_search.html': {
         post: {
-            req: MapSearchEndpointInternalMapSearchHtmlPostData;
+            req: MapSearchEndpointPostData;
             res: {
                 /**
                  * Successful Response
@@ -399,7 +399,7 @@ export type $OpenApiTs = {
     };
     '/internal/job_progress.html': {
         post: {
-            req: JobProgressEndpointInternalJobProgressHtmlPostData;
+            req: JobProgressEndpointPostData;
             res: {
                 /**
                  * Successful Response
@@ -414,7 +414,7 @@ export type $OpenApiTs = {
     };
     '/internal/job_list.html': {
         post: {
-            req: JobListEndpointInternalJobListHtmlPostData;
+            req: JobListEndpointPostData;
             res: {
                 /**
                  * Successful Response
@@ -439,7 +439,7 @@ export type $OpenApiTs = {
     };
     '/internal/submit_annotations_overlay.html': {
         post: {
-            req: SubmitAnnotationOverlayFormEndpointInternalSubmitAnnotationsOverlayHtmlPostData;
+            req: SubmitAnnotationOverlayFormEndpointPostData;
             res: {
                 /**
                  * Successful Response
@@ -454,7 +454,7 @@ export type $OpenApiTs = {
     };
     '/internal/fetch_location_info.html': {
         post: {
-            req: FetchLocationInfoEndpointInternalFetchLocationInfoHtmlPostData;
+            req: FetchLocationInfoEndpointPostData;
             res: {
                 /**
                  * Successful Response
@@ -469,7 +469,7 @@ export type $OpenApiTs = {
     };
     '/internal/directories.html': {
         post: {
-            req: DirectoriesEndpointInternalDirectoriesHtmlPostData;
+            req: DirectoriesEndpointPostData;
             res: {
                 /**
                  * Successful Response
@@ -484,7 +484,7 @@ export type $OpenApiTs = {
     };
     '/internal/gallery.html': {
         post: {
-            req: GalleryDivInternalGalleryHtmlPostData;
+            req: GalleryDivPostData;
             res: {
                 /**
                  * Successful Response
@@ -499,7 +499,7 @@ export type $OpenApiTs = {
     };
     '/internal/aggregate.html': {
         post: {
-            req: AggregateEndpointInternalAggregateHtmlPostData;
+            req: AggregateEndpointPostData;
             res: {
                 /**
                  * Successful Response
@@ -514,7 +514,7 @@ export type $OpenApiTs = {
     };
     '/internal/input.html': {
         post: {
-            req: InputRequestInternalInputHtmlPostData;
+            req: InputRequestPostData;
             res: {
                 /**
                  * Successful Response

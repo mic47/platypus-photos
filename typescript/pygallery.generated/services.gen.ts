@@ -3,7 +3,7 @@
 import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
-import type { ImageEndpointImgGetData, ImageEndpointImgGetResponse, LocationClustersEndpointApiLocationClustersPostData, LocationClustersEndpointApiLocationClustersPostResponse, LocationBoundsEndpointApiBoundsPostData, LocationBoundsEndpointApiBoundsPostResponse, DateClustersEndpointApiDateClustersPostData, DateClustersEndpointApiDateClustersPostResponse, MassManualAnnotationEndpointApiMassManualAnnotationPostData, MassManualAnnotationEndpointApiMassManualAnnotationPostResponse, MapSearchEndpointInternalMapSearchHtmlPostData, MapSearchEndpointInternalMapSearchHtmlPostResponse, JobProgressEndpointInternalJobProgressHtmlPostData, JobProgressEndpointInternalJobProgressHtmlPostResponse, JobListEndpointInternalJobListHtmlPostData, JobListEndpointInternalJobListHtmlPostResponse, SystemStatusEndpointInternalSystemStatusHtmlPostResponse, SubmitAnnotationOverlayFormEndpointInternalSubmitAnnotationsOverlayHtmlPostData, SubmitAnnotationOverlayFormEndpointInternalSubmitAnnotationsOverlayHtmlPostResponse, FetchLocationInfoEndpointInternalFetchLocationInfoHtmlPostData, FetchLocationInfoEndpointInternalFetchLocationInfoHtmlPostResponse, DirectoriesEndpointInternalDirectoriesHtmlPostData, DirectoriesEndpointInternalDirectoriesHtmlPostResponse, GalleryDivInternalGalleryHtmlPostData, GalleryDivInternalGalleryHtmlPostResponse, AggregateEndpointInternalAggregateHtmlPostData, AggregateEndpointInternalAggregateHtmlPostResponse, InputRequestInternalInputHtmlPostData, InputRequestInternalInputHtmlPostResponse, ReadIndexGetResponse, ReadIndexIndexHtmlGetResponse } from './types.gen';
+import type { ImageEndpointGetData, ImageEndpointGetResponse, LocationClustersEndpointPostData, LocationClustersEndpointPostResponse, LocationBoundsEndpointPostData, LocationBoundsEndpointPostResponse, DateClustersEndpointPostData, DateClustersEndpointPostResponse, MassManualAnnotationEndpointPostData, MassManualAnnotationEndpointPostResponse, MapSearchEndpointPostData, MapSearchEndpointPostResponse, JobProgressEndpointPostData, JobProgressEndpointPostResponse, JobListEndpointPostData, JobListEndpointPostResponse, SystemStatusEndpointPostResponse, SubmitAnnotationOverlayFormEndpointPostData, SubmitAnnotationOverlayFormEndpointPostResponse, FetchLocationInfoEndpointPostData, FetchLocationInfoEndpointPostResponse, DirectoriesEndpointPostData, DirectoriesEndpointPostResponse, GalleryDivPostData, GalleryDivPostResponse, AggregateEndpointPostData, AggregateEndpointPostResponse, InputRequestPostData, InputRequestPostResponse, ReadIndexGetResponse, ReadIndexGet1Response } from './types.gen';
 
 /**
  * Image Endpoint
@@ -13,7 +13,7 @@ import type { ImageEndpointImgGetData, ImageEndpointImgGetResponse, LocationClus
  * @returns unknown photo
  * @throws ApiError
  */
-export const imageEndpointImgGet = (data: ImageEndpointImgGetData): CancelablePromise<ImageEndpointImgGetResponse> => { return __request(OpenAPI, {
+export const imageEndpointGet = (data: ImageEndpointGetData): CancelablePromise<ImageEndpointGetResponse> => { return __request(OpenAPI, {
     method: 'GET',
     url: '/img',
     query: {
@@ -32,7 +32,7 @@ export const imageEndpointImgGet = (data: ImageEndpointImgGetData): CancelablePr
  * @returns LocationCluster Successful Response
  * @throws ApiError
  */
-export const locationClustersEndpointApiLocationClustersPost = (data: LocationClustersEndpointApiLocationClustersPostData): CancelablePromise<LocationClustersEndpointApiLocationClustersPostResponse> => { return __request(OpenAPI, {
+export const locationClustersEndpointPost = (data: LocationClustersEndpointPostData): CancelablePromise<LocationClustersEndpointPostResponse> => { return __request(OpenAPI, {
     method: 'POST',
     url: '/api/location_clusters',
     body: data.requestBody,
@@ -49,7 +49,7 @@ export const locationClustersEndpointApiLocationClustersPost = (data: LocationCl
  * @returns unknown Successful Response
  * @throws ApiError
  */
-export const locationBoundsEndpointApiBoundsPost = (data: LocationBoundsEndpointApiBoundsPostData): CancelablePromise<LocationBoundsEndpointApiBoundsPostResponse> => { return __request(OpenAPI, {
+export const locationBoundsEndpointPost = (data: LocationBoundsEndpointPostData): CancelablePromise<LocationBoundsEndpointPostResponse> => { return __request(OpenAPI, {
     method: 'POST',
     url: '/api/bounds',
     body: data.requestBody,
@@ -66,7 +66,7 @@ export const locationBoundsEndpointApiBoundsPost = (data: LocationBoundsEndpoint
  * @returns DateCluster Successful Response
  * @throws ApiError
  */
-export const dateClustersEndpointApiDateClustersPost = (data: DateClustersEndpointApiDateClustersPostData): CancelablePromise<DateClustersEndpointApiDateClustersPostResponse> => { return __request(OpenAPI, {
+export const dateClustersEndpointPost = (data: DateClustersEndpointPostData): CancelablePromise<DateClustersEndpointPostResponse> => { return __request(OpenAPI, {
     method: 'POST',
     url: '/api/date_clusters',
     body: data.requestBody,
@@ -83,7 +83,7 @@ export const dateClustersEndpointApiDateClustersPost = (data: DateClustersEndpoi
  * @returns number Successful Response
  * @throws ApiError
  */
-export const massManualAnnotationEndpointApiMassManualAnnotationPost = (data: MassManualAnnotationEndpointApiMassManualAnnotationPostData): CancelablePromise<MassManualAnnotationEndpointApiMassManualAnnotationPostResponse> => { return __request(OpenAPI, {
+export const massManualAnnotationEndpointPost = (data: MassManualAnnotationEndpointPostData): CancelablePromise<MassManualAnnotationEndpointPostResponse> => { return __request(OpenAPI, {
     method: 'POST',
     url: '/api/mass_manual_annotation',
     body: data.requestBody,
@@ -100,7 +100,7 @@ export const massManualAnnotationEndpointApiMassManualAnnotationPost = (data: Ma
  * @returns string Successful Response
  * @throws ApiError
  */
-export const mapSearchEndpointInternalMapSearchHtmlPost = (data: MapSearchEndpointInternalMapSearchHtmlPostData): CancelablePromise<MapSearchEndpointInternalMapSearchHtmlPostResponse> => { return __request(OpenAPI, {
+export const mapSearchEndpointPost = (data: MapSearchEndpointPostData): CancelablePromise<MapSearchEndpointPostResponse> => { return __request(OpenAPI, {
     method: 'POST',
     url: '/internal/map_search.html',
     body: data.requestBody,
@@ -117,7 +117,7 @@ export const mapSearchEndpointInternalMapSearchHtmlPost = (data: MapSearchEndpoi
  * @returns string Successful Response
  * @throws ApiError
  */
-export const jobProgressEndpointInternalJobProgressHtmlPost = (data: JobProgressEndpointInternalJobProgressHtmlPostData): CancelablePromise<JobProgressEndpointInternalJobProgressHtmlPostResponse> => { return __request(OpenAPI, {
+export const jobProgressEndpointPost = (data: JobProgressEndpointPostData): CancelablePromise<JobProgressEndpointPostResponse> => { return __request(OpenAPI, {
     method: 'POST',
     url: '/internal/job_progress.html',
     body: data.requestBody,
@@ -134,7 +134,7 @@ export const jobProgressEndpointInternalJobProgressHtmlPost = (data: JobProgress
  * @returns string Successful Response
  * @throws ApiError
  */
-export const jobListEndpointInternalJobListHtmlPost = (data: JobListEndpointInternalJobListHtmlPostData): CancelablePromise<JobListEndpointInternalJobListHtmlPostResponse> => { return __request(OpenAPI, {
+export const jobListEndpointPost = (data: JobListEndpointPostData): CancelablePromise<JobListEndpointPostResponse> => { return __request(OpenAPI, {
     method: 'POST',
     url: '/internal/job_list.html',
     body: data.requestBody,
@@ -149,7 +149,7 @@ export const jobListEndpointInternalJobListHtmlPost = (data: JobListEndpointInte
  * @returns string Successful Response
  * @throws ApiError
  */
-export const systemStatusEndpointInternalSystemStatusHtmlPost = (): CancelablePromise<SystemStatusEndpointInternalSystemStatusHtmlPostResponse> => { return __request(OpenAPI, {
+export const systemStatusEndpointPost = (): CancelablePromise<SystemStatusEndpointPostResponse> => { return __request(OpenAPI, {
     method: 'POST',
     url: '/internal/system_status.html'
 }); };
@@ -161,7 +161,7 @@ export const systemStatusEndpointInternalSystemStatusHtmlPost = (): CancelablePr
  * @returns string Successful Response
  * @throws ApiError
  */
-export const submitAnnotationOverlayFormEndpointInternalSubmitAnnotationsOverlayHtmlPost = (data: SubmitAnnotationOverlayFormEndpointInternalSubmitAnnotationsOverlayHtmlPostData): CancelablePromise<SubmitAnnotationOverlayFormEndpointInternalSubmitAnnotationsOverlayHtmlPostResponse> => { return __request(OpenAPI, {
+export const submitAnnotationOverlayFormEndpointPost = (data: SubmitAnnotationOverlayFormEndpointPostData): CancelablePromise<SubmitAnnotationOverlayFormEndpointPostResponse> => { return __request(OpenAPI, {
     method: 'POST',
     url: '/internal/submit_annotations_overlay.html',
     body: data.requestBody,
@@ -178,7 +178,7 @@ export const submitAnnotationOverlayFormEndpointInternalSubmitAnnotationsOverlay
  * @returns string Successful Response
  * @throws ApiError
  */
-export const fetchLocationInfoEndpointInternalFetchLocationInfoHtmlPost = (data: FetchLocationInfoEndpointInternalFetchLocationInfoHtmlPostData): CancelablePromise<FetchLocationInfoEndpointInternalFetchLocationInfoHtmlPostResponse> => { return __request(OpenAPI, {
+export const fetchLocationInfoEndpointPost = (data: FetchLocationInfoEndpointPostData): CancelablePromise<FetchLocationInfoEndpointPostResponse> => { return __request(OpenAPI, {
     method: 'POST',
     url: '/internal/fetch_location_info.html',
     body: data.requestBody,
@@ -195,7 +195,7 @@ export const fetchLocationInfoEndpointInternalFetchLocationInfoHtmlPost = (data:
  * @returns string Successful Response
  * @throws ApiError
  */
-export const directoriesEndpointInternalDirectoriesHtmlPost = (data: DirectoriesEndpointInternalDirectoriesHtmlPostData): CancelablePromise<DirectoriesEndpointInternalDirectoriesHtmlPostResponse> => { return __request(OpenAPI, {
+export const directoriesEndpointPost = (data: DirectoriesEndpointPostData): CancelablePromise<DirectoriesEndpointPostResponse> => { return __request(OpenAPI, {
     method: 'POST',
     url: '/internal/directories.html',
     body: data.requestBody,
@@ -213,7 +213,7 @@ export const directoriesEndpointInternalDirectoriesHtmlPost = (data: Directories
  * @returns string Successful Response
  * @throws ApiError
  */
-export const galleryDivInternalGalleryHtmlPost = (data: GalleryDivInternalGalleryHtmlPostData): CancelablePromise<GalleryDivInternalGalleryHtmlPostResponse> => { return __request(OpenAPI, {
+export const galleryDivPost = (data: GalleryDivPostData): CancelablePromise<GalleryDivPostResponse> => { return __request(OpenAPI, {
     method: 'POST',
     url: '/internal/gallery.html',
     query: {
@@ -233,7 +233,7 @@ export const galleryDivInternalGalleryHtmlPost = (data: GalleryDivInternalGaller
  * @returns string Successful Response
  * @throws ApiError
  */
-export const aggregateEndpointInternalAggregateHtmlPost = (data: AggregateEndpointInternalAggregateHtmlPostData): CancelablePromise<AggregateEndpointInternalAggregateHtmlPostResponse> => { return __request(OpenAPI, {
+export const aggregateEndpointPost = (data: AggregateEndpointPostData): CancelablePromise<AggregateEndpointPostResponse> => { return __request(OpenAPI, {
     method: 'POST',
     url: '/internal/aggregate.html',
     body: data.requestBody,
@@ -250,7 +250,7 @@ export const aggregateEndpointInternalAggregateHtmlPost = (data: AggregateEndpoi
  * @returns string Successful Response
  * @throws ApiError
  */
-export const inputRequestInternalInputHtmlPost = (data: InputRequestInternalInputHtmlPostData): CancelablePromise<InputRequestInternalInputHtmlPostResponse> => { return __request(OpenAPI, {
+export const inputRequestPost = (data: InputRequestPostData): CancelablePromise<InputRequestPostResponse> => { return __request(OpenAPI, {
     method: 'POST',
     url: '/internal/input.html',
     body: data.requestBody,
@@ -275,7 +275,7 @@ export const readIndexGet = (): CancelablePromise<ReadIndexGetResponse> => { ret
  * @returns unknown Successful Response
  * @throws ApiError
  */
-export const readIndexIndexHtmlGet = (): CancelablePromise<ReadIndexIndexHtmlGetResponse> => { return __request(OpenAPI, {
+export const readIndexGet1 = (): CancelablePromise<ReadIndexGet1Response> => { return __request(OpenAPI, {
     method: 'GET',
     url: '/index.html'
 }); };

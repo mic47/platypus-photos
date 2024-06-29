@@ -8,7 +8,7 @@
     "/img": {
       "get": {
         "summary": "Image Endpoint",
-        "operationId": "image_endpoint_img_get",
+        "operationId": "image_endpoint-GET",
         "parameters": [
           {
             "name": "hsh",
@@ -47,7 +47,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "title": "Response Image Endpoint Img Get"
+                  "title": "Response Image Endpoint-Get"
                 }
               },
               "image/jpeg": {
@@ -71,7 +71,7 @@
     "/api/location_clusters": {
       "post": {
         "summary": "Location Clusters Endpoint",
-        "operationId": "location_clusters_endpoint_api_location_clusters_post",
+        "operationId": "location_clusters_endpoint-POST",
         "requestBody": {
           "content": {
             "application/json": {
@@ -92,7 +92,7 @@
                     "$ref": "#/components/schemas/LocationCluster"
                   },
                   "type": "array",
-                  "title": "Response Location Clusters Endpoint Api Location Clusters Post"
+                  "title": "Response Location Clusters Endpoint-Post"
                 }
               }
             }
@@ -113,7 +113,7 @@
     "/api/bounds": {
       "post": {
         "summary": "Location Bounds Endpoint",
-        "operationId": "location_bounds_endpoint_api_bounds_post",
+        "operationId": "location_bounds_endpoint-POST",
         "requestBody": {
           "content": {
             "application/json": {
@@ -138,7 +138,7 @@
                       "type": "null"
                     }
                   ],
-                  "title": "Response Location Bounds Endpoint Api Bounds Post"
+                  "title": "Response Location Bounds Endpoint-Post"
                 }
               }
             }
@@ -159,7 +159,7 @@
     "/api/date_clusters": {
       "post": {
         "summary": "Date Clusters Endpoint",
-        "operationId": "date_clusters_endpoint_api_date_clusters_post",
+        "operationId": "date_clusters_endpoint-POST",
         "requestBody": {
           "content": {
             "application/json": {
@@ -180,7 +180,7 @@
                     "$ref": "#/components/schemas/DateCluster"
                   },
                   "type": "array",
-                  "title": "Response Date Clusters Endpoint Api Date Clusters Post"
+                  "title": "Response Date Clusters Endpoint-Post"
                 }
               }
             }
@@ -201,7 +201,7 @@
     "/api/mass_manual_annotation": {
       "post": {
         "summary": "Mass Manual Annotation Endpoint",
-        "operationId": "mass_manual_annotation_endpoint_api_mass_manual_annotation_post",
+        "operationId": "mass_manual_annotation_endpoint-POST",
         "requestBody": {
           "content": {
             "application/json": {
@@ -219,7 +219,7 @@
               "application/json": {
                 "schema": {
                   "type": "integer",
-                  "title": "Response Mass Manual Annotation Endpoint Api Mass Manual Annotation Post"
+                  "title": "Response Mass Manual Annotation Endpoint-Post"
                 }
               }
             }
@@ -240,7 +240,7 @@
     "/internal/map_search.html": {
       "post": {
         "summary": "Map Search Endpoint",
-        "operationId": "map_search_endpoint_internal_map_search_html_post",
+        "operationId": "map_search_endpoint-POST",
         "requestBody": {
           "content": {
             "application/json": {
@@ -278,7 +278,7 @@
     "/internal/job_progress.html": {
       "post": {
         "summary": "Job Progress Endpoint",
-        "operationId": "job_progress_endpoint_internal_job_progress_html_post",
+        "operationId": "job_progress_endpoint-POST",
         "requestBody": {
           "content": {
             "application/json": {
@@ -316,7 +316,7 @@
     "/internal/job_list.html": {
       "post": {
         "summary": "Job List Endpoint",
-        "operationId": "job_list_endpoint_internal_job_list_html_post",
+        "operationId": "job_list_endpoint-POST",
         "requestBody": {
           "content": {
             "application/json": {
@@ -354,7 +354,7 @@
     "/internal/system_status.html": {
       "post": {
         "summary": "System Status Endpoint",
-        "operationId": "system_status_endpoint_internal_system_status_html_post",
+        "operationId": "system_status_endpoint-POST",
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -372,7 +372,7 @@
     "/internal/submit_annotations_overlay.html": {
       "post": {
         "summary": "Submit Annotation Overlay Form Endpoint",
-        "operationId": "submit_annotation_overlay_form_endpoint_internal_submit_annotations_overlay_html_post",
+        "operationId": "submit_annotation_overlay_form_endpoint-POST",
         "requestBody": {
           "content": {
             "application/json": {
@@ -410,7 +410,7 @@
     "/internal/fetch_location_info.html": {
       "post": {
         "summary": "Fetch Location Info Endpoint",
-        "operationId": "fetch_location_info_endpoint_internal_fetch_location_info_html_post",
+        "operationId": "fetch_location_info_endpoint-POST",
         "requestBody": {
           "content": {
             "application/json": {
@@ -448,7 +448,7 @@
     "/internal/directories.html": {
       "post": {
         "summary": "Directories Endpoint",
-        "operationId": "directories_endpoint_internal_directories_html_post",
+        "operationId": "directories_endpoint-POST",
         "requestBody": {
           "content": {
             "application/json": {
@@ -486,7 +486,7 @@
     "/internal/gallery.html": {
       "post": {
         "summary": "Gallery Div",
-        "operationId": "gallery_div_internal_gallery_html_post",
+        "operationId": "gallery_div-POST",
         "parameters": [
           {
             "name": "oi",
@@ -542,7 +542,7 @@
     "/internal/aggregate.html": {
       "post": {
         "summary": "Aggregate Endpoint",
-        "operationId": "aggregate_endpoint_internal_aggregate_html_post",
+        "operationId": "aggregate_endpoint-POST",
         "requestBody": {
           "content": {
             "application/json": {
@@ -580,7 +580,7 @@
     "/internal/input.html": {
       "post": {
         "summary": "Input Request",
-        "operationId": "input_request_internal_input_html_post",
+        "operationId": "input_request-POST",
         "requestBody": {
           "content": {
             "application/json": {
@@ -618,7 +618,7 @@
     "/": {
       "get": {
         "summary": "Read Index",
-        "operationId": "read_index__get",
+        "operationId": "read_index-GET",
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -634,7 +634,7 @@
     "/index.html": {
       "get": {
         "summary": "Read Index",
-        "operationId": "read_index_index_html_get",
+        "operationId": "read_index-GET",
         "responses": {
           "200": {
             "description": "Successful Response",
