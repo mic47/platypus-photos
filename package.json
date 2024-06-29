@@ -8,6 +8,7 @@
     "typecheck": "tsc --noEmit",
     "dev-watch": "yarn parcel watch typescript/index.html --no-cache --dist-dir \"static/\" --public-url \"/static\" --detailed-report",
     "prod-build": "yarn parcel build typescript/index.html --no-cache --dist-dir \"static/\" --public-url \"/static\" --detailed-report --no-optimize --no-scope-hoist",
+    "gen-code": "openapi-ts --input schema/pygallery.openapi.json --output ./typescript/pygallery.generated --client fetch",
     "__last-one__": "Just to have trailing comma"
   },
   "prettier": {
@@ -21,6 +22,7 @@
     "@eslint/compat": "^1.1.0",
     "@eslint/js": "^9.5.0",
     "@types/leaflet": "^1.9.12",
+    "buffer": "^5.5.0||^6.0.0",
     "eslint": "9.x",
     "eslint-plugin-react": "^7.34.3",
     "globals": "^15.6.0",
@@ -30,6 +32,7 @@
     "typescript-eslint": "^7.13.1"
   },
   "dependencies": {
+    "@hey-api/openapi-ts": "^0.48.0",
     "chart.js": "^4.4.3",
     "chartjs-adapter-date-fns": "^3.0.0",
     "date-fns": "^3.6.0",

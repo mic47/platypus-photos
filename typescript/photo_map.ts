@@ -1,8 +1,13 @@
 import * as L from "leaflet";
 
-import { CheckboxesParams, SearchQueryParams } from "./state.ts";
+import { CheckboxesParams } from "./state.ts";
 import { pprange } from "./utils.ts";
 import { GenericFetch } from "./generic_fetch.ts";
+import {
+    AnnotationOverlayRequest,
+    SearchQuery,
+} from "./pygallery.generated/types.gen.ts";
+import * as pygallery_service from "./pygallery.generated/services.gen.ts";
 
 type Position = {
     latitude: number;
@@ -14,16 +19,12 @@ type Bounds = {
     br: Position;
 };
 
-type ServerBounds = {
-    nw: Position;
-    se: Position;
-};
 type LastUpdateMarkersCacheParam = {
     timestamp: number;
     non_bounds: {
         res: Position;
         of: number;
-        url: SearchQueryParams;
+        url: SearchQuery;
     };
     bounds: Bounds;
     change_view: boolean;
@@ -37,7 +38,7 @@ export class PhotoMap {
     constructor(
         div_id: string,
         private should_use_query_div: string,
-        get_url: () => SearchQueryParams,
+        get_url: () => SearchQuery,
         private context_menu_callback: (
             latlng: L.LatLng,
             callback: (content: string) => L.Popup,
@@ -85,21 +86,15 @@ export class PhotoMap {
         });
     }
 
-    update_bounds(location_url_json: SearchQueryParams, fit_not_fly = false) {
+    update_bounds(location_url_json: SearchQuery, fit_not_fly = false) {
         const query = {
             ...location_url_json,
             skip_with_location: false,
             skip_being_annotated: false,
         };
-        return fetch("/api/bounds", {
-            method: "POST",
-            body: JSON.stringify(query),
-            headers: {
-                "Content-type": "application/json; charset=UTF-8",
-            },
-        })
-            .then((response) => response.json())
-            .then((bounds: ServerBounds) => {
+        pygallery_service
+            .locationBoundsEndpointPost({ requestBody: query })
+            .then((bounds) => {
                 if (bounds === undefined || bounds === null) {
                     return;
                 }
@@ -157,7 +152,7 @@ export class PhotoMap {
         return false;
     }
 
-    update_markers(location_url_json: SearchQueryParams, change_view = false) {
+    update_markers(location_url_json: SearchQuery, change_view = false) {
         // TODO: wrapped maps: shift from 0 + wrap around
         const should_use_query =
             (
@@ -208,14 +203,8 @@ export class PhotoMap {
             ...bounds_query,
             ...non_bounds,
         };
-        fetch("/api/location_clusters", {
-            method: "POST",
-            body: JSON.stringify(query_final),
-            headers: {
-                "Content-type": "application/json; charset=UTF-8",
-            },
-        })
-            .then((response) => response.json())
+        pygallery_service
+            .locationClustersEndpointPost({ requestBody: query_final })
             .then((clusters) => {
                 if (timestamp < this.last_update_timestamp) {
                     return;
@@ -237,6 +226,14 @@ export class PhotoMap {
                         cluster.position.latitude,
                         cluster.position.longitude,
                     ]).addTo(this.map);
+                    const tsfromStr =
+                        cluster.tsfrom === null
+                            ? "undefined"
+                            : `${cluster.tsfrom - 0.01}`;
+                    const tstoStr =
+                        cluster.tsto === null
+                            ? "undefined"
+                            : `${cluster.tsto + 0.01}`;
                     marker.bindPopup(
                         [
                             cluster.example_classification,
@@ -249,9 +246,9 @@ export class PhotoMap {
                             ")<br/>",
                             pprange(cluster.tsfrom, cluster.tsto),
                             "<br/>",
-                            `<button onclick="window.APP.update_url({tsfrom: ${cluster.tsfrom - 0.01}, tsto: ${cluster.tsto + 0.01}})">➡️ from &amp; to ⬅️ </button>
-                            <button onclick="window.APP.update_url({tsfrom: ${cluster.tsfrom - 0.01}})">➡️ from</button>
-                            <button onclick="window.APP.update_url({tsto: ${cluster.tsto + 0.01}})">to ⬅️ </button><br/>`,
+                            `<button onclick="window.APP.update_url({tsfrom: ${tsfromStr}, tsto: ${tstoStr}})">➡️ from &amp; to ⬅️ </button>
+                            <button onclick="window.APP.update_url({tsfrom: ${tsfromStr}})">➡️ from</button>
+                            <button onclick="window.APP.update_url({tsto: ${tstoStr}})">to ⬅️ </button><br/>`,
                             '<input type="button" value="Use this location for selected photos" ',
                             `onclick="window.APP.annotation_overlay(${cluster.position.latitude}, ${cluster.position.longitude})"><br/>`,
                             "<img src='/img?hsh=",
@@ -277,7 +274,7 @@ export class MapSearch extends GenericFetch<{
     checkboxes: CheckboxesParams;
 }> {
     constructor(div_id: string) {
-        super(div_id, "/internal/map_search.html");
+        super(div_id, pygallery_service.mapSearchEndpointPost);
     }
     fetch(search_str: string | null, checkboxes: CheckboxesParams) {
         return this.fetch_impl({ query: search_str, checkboxes });
@@ -289,46 +286,22 @@ export class AddressInfo extends GenericFetch<{
     longitude: number;
 }> {
     constructor(div_id: string) {
-        super(div_id, "/internal/fetch_location_info.html");
+        super(div_id, pygallery_service.fetchLocationInfoEndpointPost);
     }
     fetch(latitude: number, longitude: number) {
         return this.fetch_impl({ latitude, longitude });
     }
 }
 
-export type ManualLocation = {
-    latitude: number;
-    longitude: number;
-    address_name: string | null;
-    address_country: string | null;
-};
-type AnnotationOverlayRequest =
-    | {
-          t: "FixedLocation";
-          latitude: number;
-          longitude: number;
-      }
-    | {
-          t: "InterpolatedLocation";
-          location: ManualLocation;
-      }
-    | {
-          t: "NoLocation";
-      };
-
-export class AnnotationOverlay extends GenericFetch<{
-    request: AnnotationOverlayRequest;
-    query: SearchQueryParams;
-}> {
+export class AnnotationOverlay extends GenericFetch<AnnotationOverlayRequest> {
     constructor(div_id: string) {
-        super(div_id, "/internal/submit_annotations_overlay.html");
+        super(
+            div_id,
+            pygallery_service.submitAnnotationOverlayFormEndpointPost,
+        );
     }
-    fetch(request: AnnotationOverlayRequest, query: SearchQueryParams) {
-        console.log(request);
-        return this.fetch_impl({
-            request,
-            query,
-        });
+    fetch(request: AnnotationOverlayRequest) {
+        return this.fetch_impl(request);
     }
 }
 

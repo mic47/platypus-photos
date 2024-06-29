@@ -12,11 +12,18 @@ cits:
 	yarn typecheck
 	yarn lint
 
+gen:
+	python3 -m pphoto.apps.generator
+	yarn gen-code
+
 ci:
 	make cipy
-	python3 -m pphoto.apps.generator
 	yarn
+	make gen
 	make cits
+
+prepare-ci:
+	cp config.example.yaml config.yaml
 
 covfefe:
 	coverage run --source=. -m unittest discover -p test_*.py && coverage html

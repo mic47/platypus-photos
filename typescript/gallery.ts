@@ -1,23 +1,17 @@
 import {
-    CheckboxesParams,
-    PagingParams,
-    SearchQueryParams,
+    GalleryPaging,
+    SearchQuery,
     SortParams,
-} from "./state.ts";
+} from "./pygallery.generated/types.gen.ts";
+import { CheckboxesParams } from "./state.ts";
+import * as pygallery_service from "./pygallery.generated/services.gen.ts";
 
 export class AggregateInfo {
     constructor(private div_id: string) {}
 
-    fetch(url_data: SearchQueryParams, paging: PagingParams) {
-        const url = `/internal/aggregate.html`;
-        fetch(url, {
-            method: "POST",
-            body: JSON.stringify({ query: url_data, paging }),
-            headers: {
-                "Content-type": "application/json; charset=UTF-8",
-            },
-        })
-            .then((response) => response.text())
+    fetch(url_data: SearchQuery, paging: GalleryPaging) {
+        pygallery_service
+            .aggregateEndpointPost({ requestBody: { query: url_data, paging } })
             .then((text) => {
                 const element = document.getElementById(this.div_id);
                 if (element === null) {
@@ -36,20 +30,20 @@ export class Gallery {
     ) {}
 
     fetch(
-        url_data: SearchQueryParams,
-        paging: PagingParams,
+        url_data: SearchQuery,
+        paging: GalleryPaging,
         sort: SortParams,
         checkboxes: CheckboxesParams,
     ) {
-        const url = "/internal/gallery.html";
-        fetch(url, {
-            method: "POST",
-            body: JSON.stringify({ query: url_data, paging, sort, checkboxes }),
-            headers: {
-                "Content-type": "application/json; charset=UTF-8",
-            },
-        })
-            .then((response) => response.text())
+        pygallery_service
+            .galleryDivPost({
+                requestBody: {
+                    query: url_data,
+                    paging,
+                    sort,
+                    checkboxes,
+                },
+            })
             .then((text) => {
                 const gallery = document.getElementById(this.div_id);
                 if (gallery === null) {

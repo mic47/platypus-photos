@@ -19,6 +19,7 @@ from PIL import Image, ImageFile
 
 from fastapi import FastAPI, Request, Response
 from fastapi.responses import HTMLResponse, FileResponse
+from fastapi.routing import APIRoute
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
@@ -57,7 +58,14 @@ from pphoto.gallery.unicode import maybe_datetime_to_clock, append_flag, replace
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 
-app = FastAPI()
+def custom_generate_unique_id(route: APIRoute) -> str:
+    method = "_".join(sorted(route.methods))
+    if route.tags:
+        return f"{route.tags[0]}-{route.name}-{method}"
+    return f"{route.name}-{method}"
+
+
+app = FastAPI(generate_unique_id_function=custom_generate_unique_id)
 app.mount("/static", StaticFiles(directory="static/"), name="static")
 app.mount("/css", StaticFiles(directory="css/"), name="static")
 templates = Jinja2Templates(directory="templates")
@@ -308,7 +316,7 @@ class MassLocationAndTextAnnotation(DataClassJsonMixin):
     date: DateTypes
 
 
-MassManualAnnotation = MassManualAnnotationDeprecated | MassLocationAndTextAnnotation
+MassManualAnnotation = MassLocationAndTextAnnotation
 
 
 def mass_manual_annotation_from_json(j: bytes) -> MassLocationAndTextAnnotation:
@@ -321,28 +329,26 @@ def mass_manual_annotation_from_json(j: bytes) -> MassLocationAndTextAnnotation:
     raise NotImplementedError
 
 
-def mass_manual_annotation_migrate(params: MassManualAnnotation) -> MassLocationAndTextAnnotation:
-    if isinstance(params, MassManualAnnotationDeprecated):
-        return MassLocationAndTextAnnotation(
-            "MassLocAndTxt",
-            params.query,
-            LocationQueryFixedLocation(
-                "FixedLocation",
-                params.location,
-                params.location_override,
-            ),
-            TextQueryFixedText(
-                "FixedText",
-                params.text,
-                params.text_override,
-                False,
-            ),
-            TransDate(
-                "TransDate",
-                False,
-            ),
-        )
-    return params
+def mass_manual_annotation_migrate(params: MassManualAnnotationDeprecated) -> MassLocationAndTextAnnotation:
+    return MassLocationAndTextAnnotation(
+        "MassLocAndTxt",
+        params.query,
+        LocationQueryFixedLocation(
+            "FixedLocation",
+            params.location,
+            params.location_override,
+        ),
+        TextQueryFixedText(
+            "FixedText",
+            params.text,
+            params.text_override,
+            False,
+        ),
+        TransDate(
+            "TransDate",
+            False,
+        ),
+    )
 
 
 def location_tasks_recipes(
@@ -415,8 +421,6 @@ def date_tasks_recipes(
 @app.post("/api/mass_manual_annotation")
 def mass_manual_annotation_endpoint(params: MassManualAnnotation) -> int:
     db = DB.get()
-
-    params = mass_manual_annotation_migrate(params)
 
     all_images = Lazy(
         lambda: DB.get().get_matching_images(

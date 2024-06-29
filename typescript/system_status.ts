@@ -1,10 +1,11 @@
 import { GenericFetch } from "./generic_fetch.ts";
 import { Switchable } from "./switchable.ts";
+import * as pygallery_service from "./pygallery.generated/services.gen.ts";
 
 export class SystemStatus extends GenericFetch<object> {
     public switchable: Switchable;
     constructor(div_id: string) {
-        super(div_id, "/internal/system_status.html");
+        super(div_id, pygallery_service.systemStatusEndpointPost);
         this.switchable = new Switchable();
     }
 

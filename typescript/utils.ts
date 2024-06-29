@@ -21,7 +21,10 @@ export function pretty_print_duration(duration: number): string | null {
     });
     return out.join(" ");
 }
-export function pprange(ts1: number, ts2: number): string {
+export function pprange(ts1: number | null, ts2: number | null): string {
+    if (ts1 === null || ts2 === null) {
+        return "Dates cannot be null";
+    }
     const d1 = new Date();
     d1.setTime(ts1 * 1000);
     const d2 = new Date();
@@ -56,8 +59,22 @@ export function null_if_empty(
     }
     return str;
 }
-export function parse_float_or_null(str: string | null | File): number | null {
-    if (str === null || typeof str !== "string") {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function impissible(_unused: never): never {
+    throw new Error("This shoudl be impissible");
+}
+export function parse_string_or_null(
+    str: string | null | undefined | File,
+): string | null {
+    if (str === null || str === undefined || typeof str !== "string") {
+        return null;
+    }
+    return str;
+}
+export function parse_float_or_null(
+    str: string | null | undefined | File,
+): number | null {
+    if (str === null || str === undefined || typeof str !== "string") {
         return null;
     }
     const value = parseFloat(str);
