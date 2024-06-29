@@ -20,7 +20,6 @@ import {
 } from "./utils.ts";
 import {
     AnnotationOverlay,
-    ManualLocation,
     MapSearch,
     PhotoMap,
     location_preview,
@@ -42,6 +41,7 @@ import { SystemStatus } from "./system_status.ts";
 import * as pygallery_service from "./pygallery.generated/services.gen.ts";
 import {
     SortParams,
+    ManualLocation,
     ManualLocationOverride,
     MassLocationAndTextAnnotation,
     TextAnnotationOverride,
@@ -438,26 +438,29 @@ export function submit_annotations(
 
 function annotation_overlay(latitude: number, longitude: number) {
     const overlay = new AnnotationOverlay("SubmitDataOverlay");
-    overlay.fetch(
-        { t: "FixedLocation", latitude, longitude },
-        ___state.search_query.get(),
-    );
+    overlay.fetch({
+        request: { t: "FixedLocation", latitude, longitude },
+        query: ___state.search_query.get(),
+    });
 }
 function annotation_overlay_no_location() {
     const overlay = new AnnotationOverlay("SubmitDataOverlay");
-    overlay.fetch({ t: "NoLocation" }, ___state.search_query.get());
+    overlay.fetch({
+        request: { t: "NoLocation" },
+        query: ___state.search_query.get(),
+    });
 }
 function annotation_overlay_interpolated(location_encoded_base64: string) {
     const overlay = new AnnotationOverlay("SubmitDataOverlay");
-    overlay.fetch(
-        {
+    overlay.fetch({
+        request: {
             t: "InterpolatedLocation",
             location: base64_decode_object(
                 location_encoded_base64,
             ) as ManualLocation,
         },
-        ___state.search_query.get(),
-    );
+        query: ___state.search_query.get(),
+    });
 }
 
 let job_progress: JobProgress<JobProgressState>;

@@ -21,7 +21,10 @@ export function pretty_print_duration(duration: number): string | null {
     });
     return out.join(" ");
 }
-export function pprange(ts1: number, ts2: number): string {
+export function pprange(ts1: number | null, ts2: number | null): string {
+    if (ts1 === null || ts2 === null) {
+        return "Dates cannot be null";
+    }
     const d1 = new Date();
     d1.setTime(ts1 * 1000);
     const d2 = new Date();
