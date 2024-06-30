@@ -58,6 +58,12 @@ export type DateClusterParams = {
     buckets: number;
 };
 
+export type ExceptionInfo = {
+    exc_type: string | null;
+    exc_val: string | null;
+    exc_tb: Array<(string)> | null;
+};
+
 export type GalleryPaging = {
     page?: number;
     paging?: number;
@@ -163,6 +169,14 @@ export type MassLocationAndTextAnnotation = {
 
 export type t4 = 'MassLocAndTxt';
 
+export type ProgressBarProgress = {
+    desc: string | null;
+    progress: number;
+    total: number;
+    rate: number | null;
+    elapsed: number | null;
+};
+
 export type SearchQuery = {
     tag?: string;
     cls?: string;
@@ -185,6 +199,28 @@ export type SortParams = {
     order?: SortOrder;
 };
 
+export type State = {
+    name: string;
+    state: StateEnum;
+    when: number;
+    exception: ExceptionInfo | null;
+};
+
+export type StateEnum = 'initialized' | 'running' | 'finished' | 'unexpected finish' | 'error';
+
+export type SystemStatus = {
+    progress_bars: Array<[
+        number,
+        ProgressBarProgress
+    ]>;
+    current_state: {
+        [key: string]: State;
+    };
+    t?: 'SystemStatus';
+};
+
+export type t5 = 'SystemStatus';
+
 export type TextAnnotation = {
     description: string | null;
     tags: string | null;
@@ -199,14 +235,14 @@ export type TextQueryFixedText = {
     loc_only: boolean;
 };
 
-export type t5 = 'FixedText';
+export type t6 = 'FixedText';
 
 export type TransDate = {
     t: 'TransDate';
     adjust_dates: boolean;
 };
 
-export type t6 = 'TransDate';
+export type t7 = 'TransDate';
 
 export type ValidationError = {
     loc: Array<(string | number)>;
@@ -263,7 +299,7 @@ export type JobListEndpointPostData = {
 
 export type JobListEndpointPostResponse = string;
 
-export type SystemStatusEndpointPostResponse = string;
+export type SystemStatusGetResponse = SystemStatus;
 
 export type SubmitAnnotationOverlayFormEndpointPostData = {
     requestBody: AnnotationOverlayRequest;
@@ -427,13 +463,13 @@ export type $OpenApiTs = {
             };
         };
     };
-    '/internal/system_status.html': {
-        post: {
+    '/api/system_status': {
+        get: {
             res: {
                 /**
                  * Successful Response
                  */
-                200: string;
+                200: SystemStatus;
             };
         };
     };

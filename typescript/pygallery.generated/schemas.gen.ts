@@ -215,6 +215,50 @@ export const $DateClusterParams = {
     title: 'DateClusterParams'
 } as const;
 
+export const $ExceptionInfo = {
+    properties: {
+        exc_type: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Exc Type'
+        },
+        exc_val: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Exc Val'
+        },
+        exc_tb: {
+            anyOf: [
+                {
+                    items: {
+                        type: 'string'
+                    },
+                    type: 'array'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Exc Tb'
+        }
+    },
+    type: 'object',
+    required: ['exc_type', 'exc_val', 'exc_tb'],
+    title: 'ExceptionInfo'
+} as const;
+
 export const $GalleryPaging = {
     properties: {
         page: {
@@ -617,6 +661,55 @@ export const $MassLocationAndTextAnnotation = {
     title: 'MassLocationAndTextAnnotation'
 } as const;
 
+export const $ProgressBarProgress = {
+    properties: {
+        desc: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Desc'
+        },
+        progress: {
+            type: 'integer',
+            title: 'Progress'
+        },
+        total: {
+            type: 'integer',
+            title: 'Total'
+        },
+        rate: {
+            anyOf: [
+                {
+                    type: 'number'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Rate'
+        },
+        elapsed: {
+            anyOf: [
+                {
+                    type: 'number'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Elapsed'
+        }
+    },
+    type: 'object',
+    required: ['desc', 'progress', 'total', 'rate', 'elapsed'],
+    title: 'ProgressBarProgress'
+} as const;
+
 export const $SearchQuery = {
     properties: {
         tag: {
@@ -725,6 +818,80 @@ export const $SortParams = {
     },
     type: 'object',
     title: 'SortParams'
+} as const;
+
+export const $State = {
+    properties: {
+        name: {
+            type: 'string',
+            title: 'Name'
+        },
+        state: {
+            '$ref': '#/components/schemas/StateEnum'
+        },
+        when: {
+            type: 'number',
+            title: 'When'
+        },
+        exception: {
+            anyOf: [
+                {
+                    '$ref': '#/components/schemas/ExceptionInfo'
+                },
+                {
+                    type: 'null'
+                }
+            ]
+        }
+    },
+    type: 'object',
+    required: ['name', 'state', 'when', 'exception'],
+    title: 'State'
+} as const;
+
+export const $StateEnum = {
+    type: 'string',
+    enum: ['initialized', 'running', 'finished', 'unexpected finish', 'error'],
+    title: 'StateEnum'
+} as const;
+
+export const $SystemStatus = {
+    properties: {
+        progress_bars: {
+            items: {
+                prefixItems: [
+                    {
+                        type: 'integer'
+                    },
+                    {
+                        '$ref': '#/components/schemas/ProgressBarProgress'
+                    }
+                ],
+                type: 'array',
+                maxItems: 2,
+                minItems: 2
+            },
+            type: 'array',
+            title: 'Progress Bars'
+        },
+        current_state: {
+            additionalProperties: {
+                '$ref': '#/components/schemas/State'
+            },
+            type: 'object',
+            title: 'Current State'
+        },
+        t: {
+            type: 'string',
+            enum: ['SystemStatus'],
+            const: 'SystemStatus',
+            title: 'T',
+            default: 'SystemStatus'
+        }
+    },
+    type: 'object',
+    required: ['progress_bars', 'current_state'],
+    title: 'SystemStatus'
 } as const;
 
 export const $TextAnnotation = {

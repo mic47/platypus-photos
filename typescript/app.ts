@@ -36,7 +36,7 @@ import {
 import { JobList, JobProgress } from "./jobs.ts";
 import { Directories } from "./directories.ts";
 import { TabSwitch } from "./switchable.ts";
-import { SystemStatus } from "./system_status.ts";
+import { SystemStatus } from "./system_status";
 
 import * as pygallery_service from "./pygallery.generated/services.gen.ts";
 import {

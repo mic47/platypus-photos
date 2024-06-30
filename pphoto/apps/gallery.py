@@ -24,7 +24,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from pphoto.annots.geo import Geolocator
-from pphoto.communication.client import get_system_status, refresh_jobs
+from pphoto.communication.client import get_system_status, refresh_jobs, SystemStatus
 from pphoto.data_model.config import DBFilesConfig
 from pphoto.data_model.base import PathWithMd5
 from pphoto.db.types_location import LocationCluster, LocPoint, LocationBounds
@@ -644,18 +644,9 @@ def job_list_endpoint(request: Request, _req: JobListRequest) -> HTMLResponse:
     )
 
 
-@app.post("/internal/system_status.html", response_class=HTMLResponse)
-async def system_status_endpoint(request: Request) -> HTMLResponse:
-    system_status = await get_system_status()
-
-    return templates.TemplateResponse(
-        request=request,
-        name="system_status.html",
-        context={
-            "status": system_status,
-            "now": datetime.now().timestamp(),
-        },
-    )
+@app.get("/api/system_status")
+async def system_status(_request: Request) -> SystemStatus:
+    return await get_system_status()
 
 
 @dataclass
