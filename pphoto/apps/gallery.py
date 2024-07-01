@@ -33,6 +33,7 @@ from pphoto.db.types_image import ImageAddress
 from pphoto.db.connection import PhotosConnection, GalleryConnection, JobsConnection
 from pphoto.utils import assert_never, Lazy
 from pphoto.remote_jobs.types import (
+    RemoteJob,
     RemoteJobType,
     ManualLocation,
     TextAnnotation,
@@ -563,8 +564,23 @@ class JobListRequest:
     pass
 
 
-@app.post("/internal/job_list.html", response_class=HTMLResponse)
-def job_list_endpoint(request: Request, _req: JobListRequest) -> HTMLResponse:
+@dataclass
+class JobDescription:
+    icon: str
+    total: str
+    id: int
+    type: str
+    replacements: str
+    time: float
+    latitude: float | None
+    longitude: float | None
+    query: MassLocationAndTextAnnotation
+    job: RemoteJob[bytes]
+    example_path_md5: str | None
+
+
+@app.get("/api/remote_jobs")
+def remote_jobs(request: Request) -> t.List[JobDescription]:
     jobs = []
     for job in sorted(DB.get().jobs.get_jobs(skip_finished=False), key=lambda x: x.created, reverse=True):
         total = f"{job.finished_tasks}/{job.total}"
@@ -577,7 +593,6 @@ def job_list_endpoint(request: Request, _req: JobListRequest) -> HTMLResponse:
             icon = "🏗️"
         type_ = ["🗺️"]
         replacements = []
-        query = ""
         latitude = None
         longitude = None
         if job.type_ == RemoteJobType.MASS_MANUAL_ANNOTATION:
@@ -618,25 +633,21 @@ def job_list_endpoint(request: Request, _req: JobListRequest) -> HTMLResponse:
         if "original_request" in job_dict:
             job_dict.pop("original_request")
         jobs.append(
-            {
-                "icon": icon,
-                "total": total,
-                "id_": job.id_,
-                "type_": "".join(type_),
-                "repls": repls,
-                "time": (job.last_update or job.created).timestamp(),
-                "latitude": latitude,
-                "longitude": longitude,
-                "query_json": query,
-                "job_json": json.dumps(job_dict, ensure_ascii=False, indent=2),
-                "example_path_md5": job.example_path_md5,
-            }
+            JobDescription(
+                icon,
+                total,
+                job.id_,
+                "".join(type_),
+                repls,
+                (job.last_update or job.created).timestamp(),
+                latitude,
+                longitude,
+                og_req,
+                job,
+                job.example_path_md5,
+            )
         )
-    return templates.TemplateResponse(
-        request=request,
-        name="job_list.html",
-        context={"jobs": jobs},
-    )
+    return jobs
 
 
 @app.get("/api/system_status")

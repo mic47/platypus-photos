@@ -43,7 +43,7 @@ import {
     SortParams,
     ManualLocation,
     ManualLocationOverride,
-    MassLocationAndTextAnnotation,
+    MassLocationAndTextAnnotation_Input,
     TextAnnotationOverride,
     SearchQuery,
 } from "./pygallery.generated/types.gen.ts";
@@ -390,7 +390,7 @@ export function submit_annotations(
     };
     const loc_only = formData.get("text_loc_only") == "on";
     const adjust_dates = formData.get("apply_timestamp_trans") == "on";
-    const request: MassLocationAndTextAnnotation = {
+    const request: MassLocationAndTextAnnotation_Input = {
         t: "MassLocAndTxt",
         query: query as SearchQuery,
         location,
@@ -561,7 +561,7 @@ function init_fun() {
     setInterval(() => {
         job_progress.fetch();
     }, 10000);
-    job_list = new JobList("JobList");
+    job_list = new JobList("JobList", show_job_list, map_zoom);
     /* System Status */
     system_status = new SystemStatus("SystemStatus");
     system_status.fetch();

@@ -320,10 +320,75 @@ export const $ImageSize = {
     title: 'ImageSize'
 } as const;
 
-export const $JobListRequest = {
-    properties: {},
+export const $JobDescription = {
+    properties: {
+        icon: {
+            type: 'string',
+            title: 'Icon'
+        },
+        total: {
+            type: 'string',
+            title: 'Total'
+        },
+        id: {
+            type: 'integer',
+            title: 'Id'
+        },
+        type: {
+            type: 'string',
+            title: 'Type'
+        },
+        replacements: {
+            type: 'string',
+            title: 'Replacements'
+        },
+        time: {
+            type: 'number',
+            title: 'Time'
+        },
+        latitude: {
+            anyOf: [
+                {
+                    type: 'number'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Latitude'
+        },
+        longitude: {
+            anyOf: [
+                {
+                    type: 'number'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Longitude'
+        },
+        query: {
+            '$ref': '#/components/schemas/MassLocationAndTextAnnotation-Output'
+        },
+        job: {
+            '$ref': '#/components/schemas/RemoteJob_bytes_'
+        },
+        example_path_md5: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Example Path Md5'
+        }
+    },
     type: 'object',
-    title: 'JobListRequest'
+    required: ['icon', 'total', 'id', 'type', 'replacements', 'time', 'latitude', 'longitude', 'query', 'job', 'example_path_md5'],
+    title: 'JobDescription'
 } as const;
 
 export const $JobProgressRequest = {
@@ -647,7 +712,44 @@ export const $MapSearchRequest = {
     title: 'MapSearchRequest'
 } as const;
 
-export const $MassLocationAndTextAnnotation = {
+export const $MassLocationAndTextAnnotation_Input = {
+    properties: {
+        t: {
+            type: 'string',
+            enum: ['MassLocAndTxt'],
+            const: 'MassLocAndTxt',
+            title: 'T'
+        },
+        query: {
+            '$ref': '#/components/schemas/SearchQuery'
+        },
+        location: {
+            anyOf: [
+                {
+                    '$ref': '#/components/schemas/LocationQueryFixedLocation'
+                },
+                {
+                    '$ref': '#/components/schemas/AnnotationOverlayInterpolateLocation'
+                },
+                {
+                    '$ref': '#/components/schemas/AnnotationOverlayNoLocation'
+                }
+            ],
+            title: 'Location'
+        },
+        text: {
+            '$ref': '#/components/schemas/TextQueryFixedText'
+        },
+        date: {
+            '$ref': '#/components/schemas/TransDate'
+        }
+    },
+    type: 'object',
+    required: ['t', 'query', 'location', 'text', 'date'],
+    title: 'MassLocationAndTextAnnotation'
+} as const;
+
+export const $MassLocationAndTextAnnotation_Output = {
     properties: {
         t: {
             type: 'string',
@@ -731,6 +833,69 @@ export const $ProgressBarProgress = {
     type: 'object',
     required: ['desc', 'progress', 'total', 'rate', 'elapsed'],
     title: 'ProgressBarProgress'
+} as const;
+
+export const $RemoteJobType = {
+    type: 'string',
+    enum: ['mass_manual_annotation'],
+    const: 'mass_manual_annotation',
+    title: 'RemoteJobType'
+} as const;
+
+export const $RemoteJob_bytes_ = {
+    properties: {
+        id_: {
+            type: 'integer',
+            title: 'Id '
+        },
+        type_: {
+            '$ref': '#/components/schemas/RemoteJobType'
+        },
+        total: {
+            type: 'integer',
+            title: 'Total'
+        },
+        finished_tasks: {
+            type: 'integer',
+            title: 'Finished Tasks'
+        },
+        original_request: {
+            type: 'string',
+            format: 'binary',
+            title: 'Original Request'
+        },
+        created: {
+            type: 'string',
+            format: 'date-time',
+            title: 'Created'
+        },
+        last_update: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'date-time'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Last Update'
+        },
+        example_path_md5: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Example Path Md5'
+        }
+    },
+    type: 'object',
+    required: ['id_', 'type_', 'total', 'finished_tasks', 'original_request', 'created', 'last_update', 'example_path_md5'],
+    title: 'RemoteJob'
 } as const;
 
 export const $SearchQuery = {

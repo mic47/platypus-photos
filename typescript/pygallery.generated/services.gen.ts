@@ -3,7 +3,7 @@
 import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
-import type { ImageEndpointGetData, ImageEndpointGetResponse, LocationClustersEndpointPostData, LocationClustersEndpointPostResponse, LocationBoundsEndpointPostData, LocationBoundsEndpointPostResponse, DateClustersEndpointPostData, DateClustersEndpointPostResponse, MassManualAnnotationEndpointPostData, MassManualAnnotationEndpointPostResponse, MapSearchEndpointPostData, MapSearchEndpointPostResponse, JobProgressStatePostData, JobProgressStatePostResponse, JobListEndpointPostData, JobListEndpointPostResponse, SystemStatusGetResponse, SubmitAnnotationOverlayFormEndpointPostData, SubmitAnnotationOverlayFormEndpointPostResponse, FetchLocationInfoEndpointPostData, FetchLocationInfoEndpointPostResponse, DirectoriesEndpointPostData, DirectoriesEndpointPostResponse, GalleryDivPostData, GalleryDivPostResponse, AggregateEndpointPostData, AggregateEndpointPostResponse, InputRequestPostData, InputRequestPostResponse, ReadIndexGetResponse, ReadIndexGet1Response } from './types.gen';
+import type { ImageEndpointGetData, ImageEndpointGetResponse, LocationClustersEndpointPostData, LocationClustersEndpointPostResponse, LocationBoundsEndpointPostData, LocationBoundsEndpointPostResponse, DateClustersEndpointPostData, DateClustersEndpointPostResponse, MassManualAnnotationEndpointPostData, MassManualAnnotationEndpointPostResponse, MapSearchEndpointPostData, MapSearchEndpointPostResponse, JobProgressStatePostData, JobProgressStatePostResponse, RemoteJobsGetResponse, SystemStatusGetResponse, SubmitAnnotationOverlayFormEndpointPostData, SubmitAnnotationOverlayFormEndpointPostResponse, FetchLocationInfoEndpointPostData, FetchLocationInfoEndpointPostResponse, DirectoriesEndpointPostData, DirectoriesEndpointPostResponse, GalleryDivPostData, GalleryDivPostResponse, AggregateEndpointPostData, AggregateEndpointPostResponse, InputRequestPostData, InputRequestPostResponse, ReadIndexGetResponse, ReadIndexGet1Response } from './types.gen';
 
 /**
  * Image Endpoint
@@ -128,20 +128,13 @@ export const jobProgressStatePost = (data: JobProgressStatePostData): Cancelable
 }); };
 
 /**
- * Job List Endpoint
- * @param data The data for the request.
- * @param data.requestBody
- * @returns string Successful Response
+ * Remote Jobs
+ * @returns JobDescription Successful Response
  * @throws ApiError
  */
-export const jobListEndpointPost = (data: JobListEndpointPostData): CancelablePromise<JobListEndpointPostResponse> => { return __request(OpenAPI, {
-    method: 'POST',
-    url: '/internal/job_list.html',
-    body: data.requestBody,
-    mediaType: 'application/json',
-    errors: {
-        422: 'Validation Error'
-    }
+export const remoteJobsGet = (): CancelablePromise<RemoteJobsGetResponse> => { return __request(OpenAPI, {
+    method: 'GET',
+    url: '/api/remote_jobs'
 }); };
 
 /**

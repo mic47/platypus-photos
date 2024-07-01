@@ -84,7 +84,19 @@ export type HTTPValidationError = {
 
 export type ImageSize = 'original' | 'medium' | 'preview';
 
-export type JobListRequest = unknown;
+export type JobDescription = {
+    icon: string;
+    total: string;
+    id: number;
+    type: string;
+    replacements: string;
+    time: number;
+    latitude: number | null;
+    longitude: number | null;
+    query: MassLocationAndTextAnnotation_Output;
+    job: RemoteJob_bytes_;
+    example_path_md5: string | null;
+};
 
 export type JobProgressRequest = {
     state?: JobProgressState | null;
@@ -163,7 +175,7 @@ export type MapSearchRequest = {
     };
 };
 
-export type MassLocationAndTextAnnotation = {
+export type MassLocationAndTextAnnotation_Input = {
     t: 'MassLocAndTxt';
     query: SearchQuery;
     location: LocationQueryFixedLocation | AnnotationOverlayInterpolateLocation | AnnotationOverlayNoLocation;
@@ -173,12 +185,33 @@ export type MassLocationAndTextAnnotation = {
 
 export type t4 = 'MassLocAndTxt';
 
+export type MassLocationAndTextAnnotation_Output = {
+    t: 'MassLocAndTxt';
+    query: SearchQuery;
+    location: LocationQueryFixedLocation | AnnotationOverlayInterpolateLocation | AnnotationOverlayNoLocation;
+    text: TextQueryFixedText;
+    date: TransDate;
+};
+
 export type ProgressBarProgress = {
     desc: string | null;
     progress: number;
     total: number;
     rate: number | null;
     elapsed: number | null;
+};
+
+export type RemoteJobType = 'mass_manual_annotation';
+
+export type RemoteJob_bytes_ = {
+    id_: number;
+    type_: RemoteJobType;
+    total: number;
+    finished_tasks: number;
+    original_request: (Blob | File);
+    created: string;
+    last_update: string | null;
+    example_path_md5: string | null;
 };
 
 export type SearchQuery = {
@@ -280,7 +313,7 @@ export type DateClustersEndpointPostData = {
 export type DateClustersEndpointPostResponse = Array<DateCluster>;
 
 export type MassManualAnnotationEndpointPostData = {
-    requestBody: MassLocationAndTextAnnotation;
+    requestBody: MassLocationAndTextAnnotation_Input;
 };
 
 export type MassManualAnnotationEndpointPostResponse = number;
@@ -297,11 +330,7 @@ export type JobProgressStatePostData = {
 
 export type JobProgressStatePostResponse = JobProgressStateResponse;
 
-export type JobListEndpointPostData = {
-    requestBody: JobListRequest;
-};
-
-export type JobListEndpointPostResponse = string;
+export type RemoteJobsGetResponse = Array<JobDescription>;
 
 export type SystemStatusGetResponse = SystemStatus;
 
@@ -452,18 +481,13 @@ export type $OpenApiTs = {
             };
         };
     };
-    '/internal/job_list.html': {
-        post: {
-            req: JobListEndpointPostData;
+    '/api/remote_jobs': {
+        get: {
             res: {
                 /**
                  * Successful Response
                  */
-                200: string;
-                /**
-                 * Validation Error
-                 */
-                422: HTTPValidationError;
+                200: Array<JobDescription>;
             };
         };
     };

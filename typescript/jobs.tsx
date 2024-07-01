@@ -1,30 +1,119 @@
 import { createRoot, Root } from "react-dom/client";
 import React from "react";
 
-import { GenericFetch } from "./generic_fetch.ts";
 import { Switchable } from "./switchable.ts";
 import * as pygallery_service from "./pygallery.generated/services.gen.ts";
-import { JobProgressState } from "./pygallery.generated/types.gen.ts";
+import {
+    JobDescription,
+    JobProgressState,
+} from "./pygallery.generated/types.gen.ts";
 
-export class JobList extends GenericFetch<object> {
+interface JobListViewProps {
+    jobs: JobDescription[];
+    show_job_list: () => void;
+    map_zoom: (latitude: number, longitude: number) => void;
+}
+
+function round(n: number, digits: number = 0) {
+    const mul = Math.pow(10, digits);
+    return Math.round(mul * n) / n;
+}
+
+function JobListView({ jobs, show_job_list, map_zoom }: JobListViewProps) {
+    const rows = jobs.map((job) => {
+        let location = null;
+        if (job.latitude !== null && job.longitude !== null) {
+            const latitude = job.latitude;
+            const longitude = job.longitude;
+            const onClick = () => {
+                show_job_list();
+                map_zoom(latitude, longitude);
+            };
+            location =
+                job.latitude === null || job.longitude === null ? null : (
+                    <a href="#" onClick={onClick}>
+                        {round(job.latitude, 5)} {round(job.longitude, 5)}
+                    </a>
+                );
+        }
+        const formattedText = `
+ID: ${job.id}
+Query: ${JSON.stringify(job.query, null, 2)}
+Stats: ${JSON.stringify({...job.job, original_request: "(redacted)"}, null, 2)}
+`
+        return (
+            <tr key={job.id}>
+                <td>{job.icon}</td>
+                <td>{job.total}</td>
+                <td>{job.type}</td>
+                <td>{job.time}</td>
+                <td className="hovered">
+                    hover
+                    <div className="left_algn hover_show">
+                        <img
+                            loading="lazy"
+                            src={`/img?hsh=${job.example_path_md5}&size=preview`}
+                            className="gallery_image"
+                        />
+                        <pre>
+                            {formattedText}
+                        </pre>
+                    </div>
+                </td>
+                <td>{job.replacements}</td>
+                <td>{location}</td>
+            </tr>
+        );
+    });
+    return (
+        <table>
+            <thead>
+                <tr>
+                    <th></th>
+                    <th>total</th>
+                    <th>what</th>
+                    <th>last update</th>
+                    <th>raw</th>
+                    <th>text changes</th>
+                    <th>loc changes</th>
+                </tr>
+            </thead>
+            <tbody>{rows}</tbody>
+        </table>
+    );
+}
+
+export class JobList {
     private shown: boolean;
-    constructor(div_id: string) {
-        super(div_id, pygallery_service.jobListEndpointPost);
+    private root: Root;
+    constructor(
+        private div_id: string,
+        private show_job_list: () => void,
+        private map_zoom: (latitude: number, longitude: number) => void,
+    ) {
         this.shown = false;
+        const element = document.getElementById(this.div_id);
+        if (element === null) {
+            throw new Error(`Unable to find element ${this.div_id}`);
+        }
+        this.root = createRoot(element);
     }
     fetch() {
-        return this.fetch_impl({}).then(() => {
+        pygallery_service.remoteJobsGet().then((jobs) => {
             this.shown = true;
+            this.root.render(
+                <JobListView
+                    jobs={jobs}
+                    show_job_list={this.show_job_list}
+                    map_zoom={this.map_zoom}
+                />
+            );
         });
     }
     show_or_close() {
         if (this.shown) {
             this.shown = false;
-            const element = document.getElementById(this.div_id);
-            if (element === null) {
-                throw new Error(`Unable to fine element ${this.div_id})`);
-            }
-            element.innerHTML = "";
+            this.root.render(<></>);
         } else {
             this.fetch();
         }
