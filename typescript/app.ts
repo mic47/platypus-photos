@@ -33,7 +33,7 @@ import {
     parse_sort_params,
     update_search_query_value,
 } from "./state.ts";
-import { JobList, JobProgress } from "./jobs";
+import { JobProgress } from "./jobs";
 import { Directories } from "./directories.ts";
 import { TabSwitch } from "./switchable.ts";
 import { SystemStatus } from "./system_status";
@@ -462,11 +462,6 @@ function annotation_overlay_interpolated(location_encoded_base64: string) {
     });
 }
 
-let job_progress: JobProgress;
-let job_list: JobList;
-function show_job_list() {
-    job_list.show_or_close();
-}
 const ___checkbox_sync: CheckboxSync = new CheckboxSync();
 let system_status: SystemStatus;
 
@@ -556,12 +551,7 @@ function init_fun() {
     ___map_search.fetch(null, ___checkbox_sync.get());
 
     /* Job progress / list UI */
-    job_progress = new JobProgress("JobProgress", show_job_list);
-    job_progress.fetch();
-    setInterval(() => {
-        job_progress.fetch();
-    }, 10000);
-    job_list = new JobList("JobList", show_job_list, map_zoom);
+    const job_progress = new JobProgress("JobProgress", map_zoom);
     /* System Status */
     system_status = new SystemStatus("SystemStatus");
     system_status.fetch();
@@ -604,7 +594,6 @@ const app: object = {
     annotation_overlay,
     annotation_overlay_interpolated,
     annotation_overlay_no_location,
-    show_job_list,
     delete_marker,
     submit_annotations,
     update_sort,
