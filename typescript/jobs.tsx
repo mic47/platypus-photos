@@ -83,7 +83,7 @@ Stats: ${JSON.stringify({ ...job.job, original_request: "(redacted)" }, null, 2)
 }
 
 interface JobProgressViewProps {
-    state: JobProgressState;
+    state: JobProgressState | null;
     diff: JobProgressState | null;
     job_list: null | JobDescription[];
     eta_str: string | null;
@@ -99,6 +99,9 @@ function JobProgressView({
     switch_job_list,
     map_zoom,
 }: JobProgressViewProps) {
+    if (state === null) {
+        return <></>;
+    }
     const finished =
         diff === null
             ? ""
@@ -162,14 +165,12 @@ function JobProgressView({
 
 interface JobProgressComponentProps {
     switchable: Switchable;
-    initialState: JobProgressState;
     interval_seconds: number;
     map_zoom: (latitude: number, longitude: number) => void;
 }
 
 function JobProgressComponent({
     switchable,
-    initialState,
     interval_seconds,
     map_zoom,
 }: JobProgressComponentProps) {
@@ -179,22 +180,20 @@ function JobProgressComponent({
     const [progress, updateProgress] = React.useState<{
         response: JobProgressStateResponse;
         states: JobProgressState[];
-    }>({
-        response: { state: initialState, diff: null, eta_str: null },
-        states: [],
-    });
+    } | null>(null);
     const [intervalSet, updateSetInterval] = React.useState<boolean>(false);
 
     const update_progress = () => {
         switchable.call_or_store("fetch", () => {
             pygallery_service
                 .jobProgressStatePost({
-                    requestBody: { state: progress.states[0] },
+                    requestBody: { state: progress?.states[0] },
                 })
                 .then((response) => {
-                    const newStates = progress.states.filter(
-                        (x) => response.state.ts - x.ts < 300.0,
-                    );
+                    const newStates =
+                        progress?.states.filter(
+                            (x) => response.state.ts - x.ts < 300.0,
+                        ) || [];
                     newStates.push(response.state);
                     updateProgress({ response, states: newStates });
                 });
@@ -221,9 +220,9 @@ function JobProgressComponent({
 
     return (
         <JobProgressView
-            state={progress.response.state}
-            diff={progress.response.diff}
-            eta_str={progress.response.eta_str}
+            state={progress?.response.state || null}
+            diff={progress?.response.diff || null}
+            eta_str={progress?.response.eta_str || null}
             job_list={jobList}
             switch_job_list={show_or_close_job_list}
             map_zoom={map_zoom}
@@ -244,17 +243,12 @@ export class JobProgress {
             throw new Error(`Unable to find element ${this.div_id}`);
         }
         this.root = createRoot(element);
-        pygallery_service
-            .jobProgressStatePost({ requestBody: { state: null } })
-            .then((state) => {
-                this.root.render(
-                    <JobProgressComponent
-                        switchable={this.switchable}
-                        initialState={state.state}
-                        interval_seconds={10}
-                        map_zoom={map_zoom}
-                    />,
-                );
-            });
+        this.root.render(
+            <JobProgressComponent
+                switchable={this.switchable}
+                interval_seconds={10}
+                map_zoom={map_zoom}
+            />,
+        );
     }
 }
