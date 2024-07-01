@@ -554,10 +554,6 @@ function init_fun() {
     const job_progress = new JobProgress("JobProgress", map_zoom);
     /* System Status */
     system_status = new SystemStatus("SystemStatus");
-    system_status.fetch();
-    setInterval(() => {
-        system_status.fetch();
-    }, 10000);
     /* Tab */
     new TabSwitch("RootTabs", {
         TabDirectories: directories.switchable,

@@ -216,6 +216,7 @@ function JobProgressComponent({
         setInterval(() => {
             update_progress();
         }, interval_seconds * 1000);
+        update_progress();
     }
 
     return (

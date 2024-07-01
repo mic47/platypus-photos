@@ -16,22 +16,52 @@ export class SystemStatus {
         }
         this.root = createRoot(element);
         this.switchable = new Switchable();
+        this.root.render(
+            <SystemStatusComponent
+                switchable={this.switchable}
+                intervalSeconds={10}
+            />,
+        );
     }
+}
 
-    fetch() {
-        this.switchable.call_or_store("fetch", () => {
+interface SystemStatusComponentProps {
+    switchable: Switchable;
+    intervalSeconds: number;
+}
+
+function SystemStatusComponent({
+    switchable,
+    intervalSeconds,
+}: SystemStatusComponentProps) {
+    const [intervalSet, updateSetInterval] = React.useState<boolean>(false);
+    const [data, updateData] = React.useState<ServerSystemStatus | null>(null);
+
+    const updateProgress = () => {
+        switchable.call_or_store("fetch", () => {
             return pygallery_service.systemStatusGet().then((data) => {
-                this.root.render(<SystemStatusView status={data} />);
+                updateData(data);
             });
         });
+    };
+    if (!intervalSet) {
+        updateSetInterval(true);
+        setInterval(() => {
+            updateProgress();
+        }, intervalSeconds * 1000);
+        updateProgress();
     }
+    return <SystemStatusView status={data} />;
 }
 
 interface SystemStatusViewProps {
-    status: ServerSystemStatus;
+    status: ServerSystemStatus | null;
 }
 
 function SystemStatusView({ status }: SystemStatusViewProps) {
+    if (status === null) {
+        return <></>;
+    }
     const progress_rows = status.progress_bars.map((bar) => {
         const total = bar[1].total === 0 ? "" : bar[1].total.toString();
         const rate =
@@ -85,7 +115,7 @@ function SystemStatusView({ status }: SystemStatusViewProps) {
         );
     });
     return (
-        <div>
+        <div className="SystemStatusView">
             <h3>Progress of server queues</h3>
             <table>
                 <thead>
