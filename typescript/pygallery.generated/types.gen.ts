@@ -87,8 +87,6 @@ export type ImageSize = 'original' | 'medium' | 'preview';
 export type JobListRequest = unknown;
 
 export type JobProgressRequest = {
-    update_state_fn: string;
-    job_list_fn: string;
     state?: JobProgressState | null;
 };
 
@@ -99,6 +97,12 @@ export type JobProgressState = {
     j_total: number;
     j_finished: number;
     j_waiting: number;
+};
+
+export type JobProgressStateResponse = {
+    state: JobProgressState;
+    diff: JobProgressState | null;
+    eta_str: string | null;
 };
 
 export type LocClusterParams = {
@@ -287,11 +291,11 @@ export type MapSearchEndpointPostData = {
 
 export type MapSearchEndpointPostResponse = string;
 
-export type JobProgressEndpointPostData = {
+export type JobProgressStatePostData = {
     requestBody: JobProgressRequest;
 };
 
-export type JobProgressEndpointPostResponse = string;
+export type JobProgressStatePostResponse = JobProgressStateResponse;
 
 export type JobListEndpointPostData = {
     requestBody: JobListRequest;
@@ -433,14 +437,14 @@ export type $OpenApiTs = {
             };
         };
     };
-    '/internal/job_progress.html': {
+    '/api/job_progress_state': {
         post: {
-            req: JobProgressEndpointPostData;
+            req: JobProgressStatePostData;
             res: {
                 /**
                  * Successful Response
                  */
-                200: string;
+                200: JobProgressStateResponse;
                 /**
                  * Validation Error
                  */

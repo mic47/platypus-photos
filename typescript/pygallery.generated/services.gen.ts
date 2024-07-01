@@ -3,7 +3,7 @@
 import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
-import type { ImageEndpointGetData, ImageEndpointGetResponse, LocationClustersEndpointPostData, LocationClustersEndpointPostResponse, LocationBoundsEndpointPostData, LocationBoundsEndpointPostResponse, DateClustersEndpointPostData, DateClustersEndpointPostResponse, MassManualAnnotationEndpointPostData, MassManualAnnotationEndpointPostResponse, MapSearchEndpointPostData, MapSearchEndpointPostResponse, JobProgressEndpointPostData, JobProgressEndpointPostResponse, JobListEndpointPostData, JobListEndpointPostResponse, SystemStatusGetResponse, SubmitAnnotationOverlayFormEndpointPostData, SubmitAnnotationOverlayFormEndpointPostResponse, FetchLocationInfoEndpointPostData, FetchLocationInfoEndpointPostResponse, DirectoriesEndpointPostData, DirectoriesEndpointPostResponse, GalleryDivPostData, GalleryDivPostResponse, AggregateEndpointPostData, AggregateEndpointPostResponse, InputRequestPostData, InputRequestPostResponse, ReadIndexGetResponse, ReadIndexGet1Response } from './types.gen';
+import type { ImageEndpointGetData, ImageEndpointGetResponse, LocationClustersEndpointPostData, LocationClustersEndpointPostResponse, LocationBoundsEndpointPostData, LocationBoundsEndpointPostResponse, DateClustersEndpointPostData, DateClustersEndpointPostResponse, MassManualAnnotationEndpointPostData, MassManualAnnotationEndpointPostResponse, MapSearchEndpointPostData, MapSearchEndpointPostResponse, JobProgressStatePostData, JobProgressStatePostResponse, JobListEndpointPostData, JobListEndpointPostResponse, SystemStatusGetResponse, SubmitAnnotationOverlayFormEndpointPostData, SubmitAnnotationOverlayFormEndpointPostResponse, FetchLocationInfoEndpointPostData, FetchLocationInfoEndpointPostResponse, DirectoriesEndpointPostData, DirectoriesEndpointPostResponse, GalleryDivPostData, GalleryDivPostResponse, AggregateEndpointPostData, AggregateEndpointPostResponse, InputRequestPostData, InputRequestPostResponse, ReadIndexGetResponse, ReadIndexGet1Response } from './types.gen';
 
 /**
  * Image Endpoint
@@ -111,15 +111,15 @@ export const mapSearchEndpointPost = (data: MapSearchEndpointPostData): Cancelab
 }); };
 
 /**
- * Job Progress Endpoint
+ * Job Progress State
  * @param data The data for the request.
  * @param data.requestBody
- * @returns string Successful Response
+ * @returns JobProgressStateResponse Successful Response
  * @throws ApiError
  */
-export const jobProgressEndpointPost = (data: JobProgressEndpointPostData): CancelablePromise<JobProgressEndpointPostResponse> => { return __request(OpenAPI, {
+export const jobProgressStatePost = (data: JobProgressStatePostData): CancelablePromise<JobProgressStatePostResponse> => { return __request(OpenAPI, {
     method: 'POST',
-    url: '/internal/job_progress.html',
+    url: '/api/job_progress_state',
     body: data.requestBody,
     mediaType: 'application/json',
     errors: {

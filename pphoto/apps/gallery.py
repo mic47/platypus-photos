@@ -524,13 +524,19 @@ class JobProgressState(DataClassJsonMixin):
 
 @dataclass
 class JobProgressRequest:
-    update_state_fn: str
-    job_list_fn: str
     state: t.Optional[JobProgressState] = None
 
 
-@app.post("/internal/job_progress.html", response_class=HTMLResponse)
-def job_progress_endpoint(request: Request, req: JobProgressRequest) -> HTMLResponse:
+@dataclass
+class JobProgressStateResponse:
+    state: JobProgressState
+    # TODO: move these to server
+    diff: JobProgressState | None
+    eta_str: str | None
+
+
+@app.post("/api/job_progress_state")
+def job_progress_state(request: Request, req: JobProgressRequest) -> JobProgressStateResponse:
     jobs = DB.get().jobs.get_jobs(skip_finished=False)
     state = JobProgressState(datetime.now().timestamp(), 0, 0, 0, 0, 0)
     for job in jobs:
@@ -539,6 +545,7 @@ def job_progress_endpoint(request: Request, req: JobProgressRequest) -> HTMLResp
         state.j_total += 1
         state.j_finished += int(job.total == job.finished_tasks)
         state.j_waiting += int(job.finished_tasks == 0)
+    # TODO: diff should be computed in the typescript, to avoid sending of state here
     if req.state is not None and state.progressed(req.state):
         diff = state.diff(req.state)
         if state.t_total == state.t_finished or diff.ts < 1 or diff.t_finished == 0:
@@ -548,19 +555,7 @@ def job_progress_endpoint(request: Request, req: JobProgressRequest) -> HTMLResp
     else:
         diff = None
         eta = None
-
-    return templates.TemplateResponse(
-        request=request,
-        name="job_progress.html",
-        context={
-            "state": state,
-            "state_base64": base64.b64encode(state.to_json().encode("utf-8")).decode("utf-8"),
-            "diff": diff,
-            "update_state_fn": req.update_state_fn,
-            "job_list_fn": req.job_list_fn,
-            "eta": eta,
-        },
-    )
+    return JobProgressStateResponse(state, diff, eta)
 
 
 @dataclass

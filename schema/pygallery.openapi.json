@@ -275,10 +275,10 @@
         }
       }
     },
-    "/internal/job_progress.html": {
+    "/api/job_progress_state": {
       "post": {
-        "summary": "Job Progress Endpoint",
-        "operationId": "job_progress_endpoint-POST",
+        "summary": "Job Progress State",
+        "operationId": "job_progress_state-POST",
         "requestBody": {
           "content": {
             "application/json": {
@@ -293,9 +293,9 @@
           "200": {
             "description": "Successful Response",
             "content": {
-              "text/html": {
+              "application/json": {
                 "schema": {
-                  "type": "string"
+                  "$ref": "#/components/schemas/JobProgressStateResponse"
                 }
               }
             }
@@ -1021,14 +1021,6 @@
       },
       "JobProgressRequest": {
         "properties": {
-          "update_state_fn": {
-            "type": "string",
-            "title": "Update State Fn"
-          },
-          "job_list_fn": {
-            "type": "string",
-            "title": "Job List Fn"
-          },
           "state": {
             "anyOf": [
               {
@@ -1041,10 +1033,6 @@
           }
         },
         "type": "object",
-        "required": [
-          "update_state_fn",
-          "job_list_fn"
-        ],
         "title": "JobProgressRequest"
       },
       "JobProgressState": {
@@ -1084,6 +1072,41 @@
           "j_waiting"
         ],
         "title": "JobProgressState"
+      },
+      "JobProgressStateResponse": {
+        "properties": {
+          "state": {
+            "$ref": "#/components/schemas/JobProgressState"
+          },
+          "diff": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/JobProgressState"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "eta_str": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Eta Str"
+          }
+        },
+        "type": "object",
+        "required": [
+          "state",
+          "diff",
+          "eta_str"
+        ],
+        "title": "JobProgressStateResponse"
       },
       "LocClusterParams": {
         "properties": {

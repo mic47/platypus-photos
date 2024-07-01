@@ -33,7 +33,7 @@ import {
     parse_sort_params,
     update_search_query_value,
 } from "./state.ts";
-import { JobList, JobProgress } from "./jobs.ts";
+import { JobList, JobProgress } from "./jobs";
 import { Directories } from "./directories.ts";
 import { TabSwitch } from "./switchable.ts";
 import { SystemStatus } from "./system_status";
@@ -46,7 +46,6 @@ import {
     MassLocationAndTextAnnotation,
     TextAnnotationOverride,
     SearchQuery,
-    JobProgressState,
 } from "./pygallery.generated/types.gen.ts";
 import { LocationTypes } from "./annotations.ts";
 
@@ -463,10 +462,7 @@ function annotation_overlay_interpolated(location_encoded_base64: string) {
     });
 }
 
-let job_progress: JobProgress<JobProgressState>;
-function update_job_progress(state_base64: string) {
-    job_progress.add_state_base64(state_base64);
-}
+let job_progress: JobProgress;
 let job_list: JobList;
 function show_job_list() {
     job_list.show_or_close();
@@ -560,11 +556,7 @@ function init_fun() {
     ___map_search.fetch(null, ___checkbox_sync.get());
 
     /* Job progress / list UI */
-    job_progress = new JobProgress(
-        "JobProgress",
-        "update_job_progress",
-        "show_job_list",
-    );
+    job_progress = new JobProgress("JobProgress", show_job_list);
     job_progress.fetch();
     setInterval(() => {
         job_progress.fetch();
@@ -612,7 +604,6 @@ const app: object = {
     annotation_overlay,
     annotation_overlay_interpolated,
     annotation_overlay_no_location,
-    update_job_progress,
     show_job_list,
     delete_marker,
     submit_annotations,

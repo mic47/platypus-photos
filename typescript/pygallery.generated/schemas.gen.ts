@@ -328,14 +328,6 @@ export const $JobListRequest = {
 
 export const $JobProgressRequest = {
     properties: {
-        update_state_fn: {
-            type: 'string',
-            title: 'Update State Fn'
-        },
-        job_list_fn: {
-            type: 'string',
-            title: 'Job List Fn'
-        },
         state: {
             anyOf: [
                 {
@@ -348,7 +340,6 @@ export const $JobProgressRequest = {
         }
     },
     type: 'object',
-    required: ['update_state_fn', 'job_list_fn'],
     title: 'JobProgressRequest'
 } as const;
 
@@ -382,6 +373,38 @@ export const $JobProgressState = {
     type: 'object',
     required: ['ts', 't_total', 't_finished', 'j_total', 'j_finished', 'j_waiting'],
     title: 'JobProgressState'
+} as const;
+
+export const $JobProgressStateResponse = {
+    properties: {
+        state: {
+            '$ref': '#/components/schemas/JobProgressState'
+        },
+        diff: {
+            anyOf: [
+                {
+                    '$ref': '#/components/schemas/JobProgressState'
+                },
+                {
+                    type: 'null'
+                }
+            ]
+        },
+        eta_str: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Eta Str'
+        }
+    },
+    type: 'object',
+    required: ['state', 'diff', 'eta_str'],
+    title: 'JobProgressStateResponse'
 } as const;
 
 export const $LocClusterParams = {
