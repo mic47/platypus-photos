@@ -841,6 +841,52 @@ class DateWithLoc:
         return abs((self.date - other).total_seconds())
 
 
+@dataclass
+class ReferenceStats(DataClassJsonMixin):
+    distance_m: float
+    seconds: float
+
+
+@dataclass
+class PredictedLocation(DataClassJsonMixin):
+    loc: LocPoint
+    earlier: t.Optional[ReferenceStats]
+    later: t.Optional[ReferenceStats]
+
+
+@dataclass
+class ImageWithMeta(DataClassJsonMixin):
+    omg: ImageRow
+    predicted_location: t.Optional[PredictedLocation]
+
+
+@dataclass
+class ImageResponse(DataClassJsonMixin):
+    has_next: bool
+    omgs: t.List[ImageWithMeta]
+    some_location: ManualLocation | None
+
+
+@app.post("/api/images")
+async def image_page(params: GalleryRequest) -> ImageResponse:
+    images = []
+    omgs, has_next_page = DB.get().get_matching_images(params.query, params.sort, params.paging)
+    fwdbwd = forward_backward(omgs, DateWithLoc.from_image)
+
+    some_location = None
+    for index, omg in enumerate(omgs):
+        if omg.latitude is not None and omg.longitude is not None:
+            some_location = ManualLocation(
+                omg.latitude,
+                omg.longitude,
+                omg.address.name,
+                omg.address.country,
+            )
+        predicted_location = predict_location(omg, fwdbwd[index][0], fwdbwd[index][1])
+        images.append(ImageWithMeta(omg, predicted_location))
+    return ImageResponse(has_next_page, images, some_location)
+
+
 @app.post("/internal/gallery.html", response_class=HTMLResponse)
 async def gallery_div(request: Request, params: GalleryRequest, oi: t.Optional[int] = None) -> HTMLResponse:
     images = []
@@ -911,19 +957,6 @@ def forward_backward(
         forward.append((last, backward[-(index + 1)]))
         last = fun(omg) or last
     return forward
-
-
-@dataclass
-class ReferenceStats(DataClassJsonMixin):
-    distance_m: float
-    seconds: float
-
-
-@dataclass
-class PredictedLocation(DataClassJsonMixin):
-    loc: LocPoint
-    earlier: t.Optional[ReferenceStats]
-    later: t.Optional[ReferenceStats]
 
 
 def distance_m(p1: LocPoint, p2: LocPoint) -> float:

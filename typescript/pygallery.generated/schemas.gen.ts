@@ -314,10 +314,231 @@ export const $HTTPValidationError = {
     title: 'HTTPValidationError'
 } as const;
 
+export const $Image = {
+    properties: {
+        md5: {
+            type: 'string',
+            title: 'Md5'
+        },
+        date: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'date-time'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Date'
+        },
+        date_transformed: {
+            type: 'boolean',
+            title: 'Date Transformed'
+        },
+        tags: {
+            anyOf: [
+                {
+                    additionalProperties: {
+                        type: 'number'
+                    },
+                    type: 'object'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Tags'
+        },
+        classifications: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Classifications'
+        },
+        address: {
+            '$ref': '#/components/schemas/ImageAddress'
+        },
+        dependent_features_last_update: {
+            type: 'number',
+            title: 'Dependent Features Last Update'
+        },
+        latitude: {
+            anyOf: [
+                {
+                    type: 'number'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Latitude'
+        },
+        longitude: {
+            anyOf: [
+                {
+                    type: 'number'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Longitude'
+        },
+        altitude: {
+            anyOf: [
+                {
+                    type: 'number'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Altitude'
+        },
+        manual_features: {
+            items: {
+                type: 'string'
+            },
+            type: 'array',
+            title: 'Manual Features'
+        },
+        being_annotated: {
+            type: 'boolean',
+            title: 'Being Annotated'
+        },
+        camera: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Camera'
+        },
+        software: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Software'
+        },
+        version: {
+            type: 'integer',
+            title: 'Version'
+        }
+    },
+    type: 'object',
+    required: ['md5', 'date', 'date_transformed', 'tags', 'classifications', 'address', 'dependent_features_last_update', 'latitude', 'longitude', 'altitude', 'manual_features', 'being_annotated', 'camera', 'software', 'version'],
+    title: 'Image'
+} as const;
+
+export const $ImageAddress = {
+    properties: {
+        country: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Country'
+        },
+        name: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Name'
+        },
+        full: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Full'
+        }
+    },
+    type: 'object',
+    required: ['country', 'name', 'full'],
+    title: 'ImageAddress'
+} as const;
+
+export const $ImageResponse = {
+    properties: {
+        has_next: {
+            type: 'boolean',
+            title: 'Has Next'
+        },
+        omgs: {
+            items: {
+                '$ref': '#/components/schemas/ImageWithMeta'
+            },
+            type: 'array',
+            title: 'Omgs'
+        },
+        some_location: {
+            anyOf: [
+                {
+                    '$ref': '#/components/schemas/ManualLocation'
+                },
+                {
+                    type: 'null'
+                }
+            ]
+        }
+    },
+    type: 'object',
+    required: ['has_next', 'omgs', 'some_location'],
+    title: 'ImageResponse'
+} as const;
+
 export const $ImageSize = {
     type: 'string',
     enum: ['original', 'medium', 'preview'],
     title: 'ImageSize'
+} as const;
+
+export const $ImageWithMeta = {
+    properties: {
+        omg: {
+            '$ref': '#/components/schemas/Image'
+        },
+        predicted_location: {
+            anyOf: [
+                {
+                    '$ref': '#/components/schemas/PredictedLocation'
+                },
+                {
+                    type: 'null'
+                }
+            ]
+        }
+    },
+    type: 'object',
+    required: ['omg', 'predicted_location'],
+    title: 'ImageWithMeta'
 } as const;
 
 export const $JobDescription = {
@@ -786,6 +1007,37 @@ export const $MassLocationAndTextAnnotation_Output = {
     title: 'MassLocationAndTextAnnotation'
 } as const;
 
+export const $PredictedLocation = {
+    properties: {
+        loc: {
+            '$ref': '#/components/schemas/LocPoint'
+        },
+        earlier: {
+            anyOf: [
+                {
+                    '$ref': '#/components/schemas/ReferenceStats'
+                },
+                {
+                    type: 'null'
+                }
+            ]
+        },
+        later: {
+            anyOf: [
+                {
+                    '$ref': '#/components/schemas/ReferenceStats'
+                },
+                {
+                    type: 'null'
+                }
+            ]
+        }
+    },
+    type: 'object',
+    required: ['loc', 'earlier', 'later'],
+    title: 'PredictedLocation'
+} as const;
+
 export const $ProgressBarProgress = {
     properties: {
         desc: {
@@ -833,6 +1085,22 @@ export const $ProgressBarProgress = {
     type: 'object',
     required: ['desc', 'progress', 'total', 'rate', 'elapsed'],
     title: 'ProgressBarProgress'
+} as const;
+
+export const $ReferenceStats = {
+    properties: {
+        distance_m: {
+            type: 'number',
+            title: 'Distance M'
+        },
+        seconds: {
+            type: 'number',
+            title: 'Seconds'
+        }
+    },
+    type: 'object',
+    required: ['distance_m', 'seconds'],
+    title: 'ReferenceStats'
 } as const;
 
 export const $RemoteJobType = {

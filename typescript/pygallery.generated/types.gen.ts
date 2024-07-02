@@ -82,7 +82,44 @@ export type HTTPValidationError = {
     detail?: Array<ValidationError>;
 };
 
+export type Image = {
+    md5: string;
+    date: string | null;
+    date_transformed: boolean;
+    tags: {
+    [key: string]: (number);
+} | null;
+    classifications: string | null;
+    address: ImageAddress;
+    dependent_features_last_update: number;
+    latitude: number | null;
+    longitude: number | null;
+    altitude: number | null;
+    manual_features: Array<(string)>;
+    being_annotated: boolean;
+    camera: string | null;
+    software: string | null;
+    version: number;
+};
+
+export type ImageAddress = {
+    country: string | null;
+    name: string | null;
+    full: string | null;
+};
+
+export type ImageResponse = {
+    has_next: boolean;
+    omgs: Array<ImageWithMeta>;
+    some_location: ManualLocation | null;
+};
+
 export type ImageSize = 'original' | 'medium' | 'preview';
+
+export type ImageWithMeta = {
+    omg: Image;
+    predicted_location: PredictedLocation | null;
+};
 
 export type JobDescription = {
     icon: string;
@@ -193,12 +230,23 @@ export type MassLocationAndTextAnnotation_Output = {
     date: TransDate;
 };
 
+export type PredictedLocation = {
+    loc: LocPoint;
+    earlier: ReferenceStats | null;
+    later: ReferenceStats | null;
+};
+
 export type ProgressBarProgress = {
     desc: string | null;
     progress: number;
     total: number;
     rate: number | null;
     elapsed: number | null;
+};
+
+export type ReferenceStats = {
+    distance_m: number;
+    seconds: number;
 };
 
 export type RemoteJobType = 'mass_manual_annotation';
@@ -351,6 +399,12 @@ export type DirectoriesEndpointPostData = {
 };
 
 export type DirectoriesEndpointPostResponse = string;
+
+export type ImagePagePostData = {
+    requestBody: GalleryRequest;
+};
+
+export type ImagePagePostResponse = ImageResponse;
 
 export type GalleryDivPostData = {
     oi?: number | null;
@@ -533,6 +587,21 @@ export type $OpenApiTs = {
                  * Successful Response
                  */
                 200: string;
+                /**
+                 * Validation Error
+                 */
+                422: HTTPValidationError;
+            };
+        };
+    };
+    '/api/images': {
+        post: {
+            req: ImagePagePostData;
+            res: {
+                /**
+                 * Successful Response
+                 */
+                200: ImageResponse;
                 /**
                  * Validation Error
                  */
