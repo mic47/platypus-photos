@@ -3,7 +3,7 @@
 import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
-import type { ImageEndpointGetData, ImageEndpointGetResponse, LocationClustersEndpointPostData, LocationClustersEndpointPostResponse, LocationBoundsEndpointPostData, LocationBoundsEndpointPostResponse, DateClustersEndpointPostData, DateClustersEndpointPostResponse, MassManualAnnotationEndpointPostData, MassManualAnnotationEndpointPostResponse, MapSearchEndpointPostData, MapSearchEndpointPostResponse, JobProgressStatePostData, JobProgressStatePostResponse, RemoteJobsGetResponse, SystemStatusGetResponse, SubmitAnnotationOverlayFormEndpointPostData, SubmitAnnotationOverlayFormEndpointPostResponse, FetchLocationInfoEndpointPostData, FetchLocationInfoEndpointPostResponse, DirectoriesEndpointPostData, DirectoriesEndpointPostResponse, GalleryDivPostData, GalleryDivPostResponse, AggregateEndpointPostData, AggregateEndpointPostResponse, InputRequestPostData, InputRequestPostResponse, ReadIndexGetResponse, ReadIndexGet1Response } from './types.gen';
+import type { ImageEndpointGetData, ImageEndpointGetResponse, LocationClustersEndpointPostData, LocationClustersEndpointPostResponse, LocationBoundsEndpointPostData, LocationBoundsEndpointPostResponse, DateClustersEndpointPostData, DateClustersEndpointPostResponse, MassManualAnnotationEndpointPostData, MassManualAnnotationEndpointPostResponse, MapSearchEndpointPostData, MapSearchEndpointPostResponse, JobProgressStatePostData, JobProgressStatePostResponse, RemoteJobsGetResponse, SystemStatusGetResponse, SubmitAnnotationOverlayFormEndpointPostData, SubmitAnnotationOverlayFormEndpointPostResponse, FetchLocationInfoEndpointPostData, FetchLocationInfoEndpointPostResponse, DirectoriesEndpointPostData, DirectoriesEndpointPostResponse, GalleryDivPostData, GalleryDivPostResponse, AggregateEndpointPostData, AggregateEndpointPostResponse, ReadIndexGetResponse, ReadIndexGet1Response } from './types.gen';
 
 /**
  * Image Endpoint
@@ -229,23 +229,6 @@ export const galleryDivPost = (data: GalleryDivPostData): CancelablePromise<Gall
 export const aggregateEndpointPost = (data: AggregateEndpointPostData): CancelablePromise<AggregateEndpointPostResponse> => { return __request(OpenAPI, {
     method: 'POST',
     url: '/internal/aggregate.html',
-    body: data.requestBody,
-    mediaType: 'application/json',
-    errors: {
-        422: 'Validation Error'
-    }
-}); };
-
-/**
- * Input Request
- * @param data The data for the request.
- * @param data.requestBody
- * @returns string Successful Response
- * @throws ApiError
- */
-export const inputRequestPost = (data: InputRequestPostData): CancelablePromise<InputRequestPostResponse> => { return __request(OpenAPI, {
-    method: 'POST',
-    url: '/internal/input.html',
     body: data.requestBody,
     mediaType: 'application/json',
     errors: {

@@ -11,7 +11,7 @@ import {
     overlay_next,
     overlay_prev,
 } from "./gallery.ts";
-import { InputForm } from "./input.ts";
+import { InputForm, shift_float_params } from "./input";
 import {
     parse_float_or_null,
     error_box,
@@ -31,7 +31,6 @@ import {
     parse_gallery_paging,
     parse_search_query,
     parse_sort_params,
-    update_search_query_value,
 } from "./state.ts";
 import { JobProgress } from "./jobs";
 import { Directories } from "./directories.ts";
@@ -55,30 +54,6 @@ function update_dir(data: string) {
 }
 function update_url(data: SearchQuery) {
     ___state.search_query.update(data);
-}
-function reset_param(key: keyof SearchQuery | "__ALL__") {
-    if (key === "__ALL__") {
-        ___state.search_query.replace({});
-        return;
-    }
-    const state = ___state.search_query.get();
-    delete state[key];
-    ___state.search_query.replace(state);
-}
-function update_form(div_id: string) {
-    const formData = new FormData(
-        document.getElementById(div_id) as HTMLFormElement,
-    );
-    const values = ___state.search_query.get();
-    for (const [key_untyped, value] of formData) {
-        const key: keyof SearchQuery = key_untyped as keyof SearchQuery;
-        if (value !== null && value !== undefined && value !== "") {
-            update_search_query_value(values, key, value);
-        } else {
-            delete values[key];
-        }
-    }
-    ___state.search_query.replace(values);
 }
 let ___map_search: MapSearch;
 let ___map: PhotoMap;
@@ -255,49 +230,6 @@ function next_page() {
     const update = { page: page + 1 };
     ___state.paging.update(update);
 }
-function add_to_float_param(
-    param: "tsfrom" | "tsto",
-    other: "tsfrom" | "tsto",
-    new_value: number,
-) {
-    const query = ___state.search_query.get();
-    const value = query[param] || query[other];
-    if (value != value || value === null || value === undefined) {
-        return;
-    }
-    const update: { [key: string]: string } = {};
-    update[param] = (value + new_value).toString();
-    ___state.search_query.update(update);
-}
-function shift_float_params(
-    param_to_start: "tsto" | "tsfrom",
-    second_param: "tsto" | "tsfrom",
-    shift_by: number | null = null,
-) {
-    const query = ___state.search_query.get();
-    const start_value = query[param_to_start];
-    const end_value = query[second_param];
-    if (end_value === null || end_value === undefined) {
-        // This does not make sense, second param is empty
-        return;
-    }
-    const update: SearchQuery = {};
-    update[param_to_start] = end_value;
-    if (shift_by !== undefined && shift_by !== null) {
-        update[second_param] = end_value + shift_by;
-    } else {
-        if (
-            start_value != start_value ||
-            start_value === null ||
-            start_value === undefined
-        ) {
-            delete update[second_param];
-        } else {
-            update[second_param] = end_value + end_value - start_value;
-        }
-    }
-    ___state.search_query.update(update);
-}
 export function submit_annotations(
     div_id: string,
     form_id: string,
@@ -416,7 +348,12 @@ export function submit_annotations(
             .then(() => {
                 if (advance_in_time !== undefined && advance_in_time !== null) {
                     // TODO: resolve these imports
-                    shift_float_params("tsfrom", "tsto", advance_in_time);
+                    shift_float_params(
+                        ___state.search_query,
+                        "tsfrom",
+                        "tsto",
+                        advance_in_time,
+                    );
                     set_page(0);
                 }
                 const element = document.getElementById(div_id);
@@ -442,13 +379,6 @@ function annotation_overlay(latitude: number, longitude: number) {
         query: ___state.search_query.get(),
     });
 }
-function annotation_overlay_no_location() {
-    const overlay = new AnnotationOverlay("SubmitDataOverlay");
-    overlay.fetch({
-        request: { t: "NoLocation" },
-        query: ___state.search_query.get(),
-    });
-}
 function annotation_overlay_interpolated(location_encoded_base64: string) {
     const overlay = new AnnotationOverlay("SubmitDataOverlay");
     overlay.fetch({
@@ -463,7 +393,6 @@ function annotation_overlay_interpolated(location_encoded_base64: string) {
 }
 
 const ___checkbox_sync: CheckboxSync = new CheckboxSync();
-let system_status: SystemStatus;
 
 function init_fun() {
     if (___state !== undefined) {
@@ -482,8 +411,7 @@ function init_fun() {
     ___state.paging.register_hook((u) => paging_sync.update(u));
     const sort_sync = new UrlSync(sort_fields);
     ___state.sort.register_hook((u) => sort_sync.update(u));
-    const input_form = new InputForm("InputForm");
-    ___state.search_query.register_hook((u) => input_form.fetch(u));
+    new InputForm("InputForm", ___state.search_query);
     /* Gallery */
     const gallery = new Gallery("GalleryImages", prev_page, next_page);
     ___state.search_query.register_hook((search_query) => {
@@ -553,7 +481,7 @@ function init_fun() {
     /* Job progress / list UI */
     const job_progress = new JobProgress("JobProgress", map_zoom);
     /* System Status */
-    system_status = new SystemStatus("SystemStatus");
+    const system_status = new SystemStatus("SystemStatus");
     /* Tab */
     new TabSwitch("RootTabs", {
         TabDirectories: directories.switchable,
@@ -573,8 +501,6 @@ const app: object = {
     init_fun,
     update_dir,
     update_url,
-    reset_param,
-    update_form,
     map_zoom,
     map_bounds,
     map_refetch,
@@ -585,11 +511,8 @@ const app: object = {
     set_page,
     prev_page,
     next_page,
-    add_to_float_param,
-    shift_float_params,
     annotation_overlay,
     annotation_overlay_interpolated,
-    annotation_overlay_no_location,
     delete_marker,
     submit_annotations,
     update_sort,

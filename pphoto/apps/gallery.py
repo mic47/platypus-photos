@@ -533,11 +533,11 @@ class JobProgressStateResponse:
     state: JobProgressState
     # TODO: move these to server
     diff: JobProgressState | None
-    eta_str: str | None
+    eta_str: str | None  # noqa: F841
 
 
 @app.post("/api/job_progress_state")
-def job_progress_state(request: Request, req: JobProgressRequest) -> JobProgressStateResponse:
+def job_progress_state(req: JobProgressRequest) -> JobProgressStateResponse:
     jobs = DB.get().jobs.get_jobs(skip_finished=False)
     state = JobProgressState(datetime.now().timestamp(), 0, 0, 0, 0, 0)
     for job in jobs:
@@ -560,15 +560,10 @@ def job_progress_state(request: Request, req: JobProgressRequest) -> JobProgress
 
 
 @dataclass
-class JobListRequest:
-    pass
-
-
-@dataclass
 class JobDescription:
     icon: str
     total: str
-    id: int
+    id: int  # noqa: F841
     type: str
     replacements: str
     time: float
@@ -580,7 +575,7 @@ class JobDescription:
 
 
 @app.get("/api/remote_jobs")
-def remote_jobs(request: Request) -> t.List[JobDescription]:
+def remote_jobs() -> t.List[JobDescription]:
     jobs = []
     for job in sorted(DB.get().jobs.get_jobs(skip_finished=False), key=lambda x: x.created, reverse=True):
         total = f"{job.finished_tasks}/{job.total}"
@@ -621,7 +616,6 @@ def remote_jobs(request: Request) -> t.List[JobDescription]:
                     pass
                 else:
                     assert_never(og_req.location.t)
-                query = og_req.to_json(ensure_ascii=False, indent=2)
 
             # pylint: disable-next = broad-exception-caught
             except Exception as e:
@@ -1041,38 +1035,6 @@ def aggregate_endpoint(request: Request, param: AggregateQuery) -> HTMLResponse:
                     if v
                 ],
                 "show_links": True,
-            },
-        },
-    )
-
-
-@app.post("/internal/input.html", response_class=HTMLResponse)
-def input_request(request: Request, url: SearchQuery) -> HTMLResponse:
-    return templates.TemplateResponse(
-        request=request,
-        name="input.html",
-        context={
-            "input": {
-                "tag": url.tag,
-                "cls": url.cls,
-                "addr": url.addr,
-                "skip_with_location": url.skip_with_location,
-                "skip_being_annotated": url.skip_being_annotated,
-                "directory": url.directory,
-                "camera": url.camera,
-                "timestamp_trans": url.timestamp_trans or "",
-                "tsfrom": url.tsfrom or "",
-                "tsfrom_pretty": (
-                    datetime.fromtimestamp(url.tsfrom).strftime("%a %Y-%m-%d %H:%M:%S")
-                    if url.tsfrom is not None
-                    else "_" * 23
-                ),
-                "tsto": url.tsto or "",
-                "tsto_pretty": (
-                    datetime.fromtimestamp(url.tsto).strftime("%a %Y-%m-%d %H:%M:%S")
-                    if url.tsto is not None
-                    else "_" * 23
-                ),
             },
         },
     )

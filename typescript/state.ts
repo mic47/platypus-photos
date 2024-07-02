@@ -11,7 +11,7 @@ export type CheckboxesParams = { [key4: string]: boolean };
 
 type AppStateHook<T> = (data: T) => void;
 
-class StateWithHooks<T> {
+export class StateWithHooks<T> {
     private hooks: Array<AppStateHook<T>>;
     constructor(private data: T) {
         this.hooks = [];
@@ -103,6 +103,7 @@ export class UrlSync {
         }
     }
 }
+
 export function parse_search_query(data: {
     unparsed: { [key: string]: string };
 }): SearchQuery {

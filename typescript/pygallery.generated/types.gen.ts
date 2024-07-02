@@ -365,12 +365,6 @@ export type AggregateEndpointPostData = {
 
 export type AggregateEndpointPostResponse = string;
 
-export type InputRequestPostData = {
-    requestBody: SearchQuery;
-};
-
-export type InputRequestPostResponse = string;
-
 export type ReadIndexGetResponse = unknown;
 
 export type ReadIndexGet1Response = unknown;
@@ -564,21 +558,6 @@ export type $OpenApiTs = {
     '/internal/aggregate.html': {
         post: {
             req: AggregateEndpointPostData;
-            res: {
-                /**
-                 * Successful Response
-                 */
-                200: string;
-                /**
-                 * Validation Error
-                 */
-                422: HTTPValidationError;
-            };
-        };
-    };
-    '/internal/input.html': {
-        post: {
-            req: InputRequestPostData;
             res: {
                 /**
                  * Successful Response
