@@ -10,7 +10,7 @@ import {
     overlay_close,
     overlay_next,
     overlay_prev,
-} from "./gallery.ts";
+} from "./gallery";
 import { InputForm, shift_float_params } from "./input";
 import {
     parse_float_or_null,
