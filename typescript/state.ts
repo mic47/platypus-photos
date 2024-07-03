@@ -17,14 +17,12 @@ export class StateWithHooks<T> {
         this.hooks = {};
     }
     register_hook(key: string, hook: AppStateHook<T>) {
-        console.log("registering", key);
         if (this.hooks[key] !== undefined) {
             console.log(`Hook ${key} already exists, overriding`);
         }
         this.hooks[key] = hook;
     }
     unregister_hook(key: string) {
-        console.log("unregistering", key);
         if (this.hooks[key] === undefined) {
             console.log(`Hook ${key} is not registered`);
         }
@@ -35,7 +33,6 @@ export class StateWithHooks<T> {
     }
     call_hooks(): StateWithHooks<T> {
         const data = this.data;
-        console.log("calling hooks with", data);
         Object.values(this.hooks).forEach((x) => x(data));
         return this;
     }
