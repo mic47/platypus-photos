@@ -211,17 +211,6 @@ function update_url_add_tag(tag: string) {
 function set_page(page: number) {
     ___state.paging.update({ page });
 }
-function prev_page() {
-    const page = ___state.paging.get()["page"] || 0;
-    if (page > 0) {
-        ___state.paging.update({ page: page - 1 });
-    }
-}
-function next_page() {
-    const page = ___state.paging.get()["page"] || 0;
-    const update = { page: page + 1 };
-    ___state.paging.update(update);
-}
 export function submit_annotations(
     div_id: string,
     form_id: string,
@@ -471,8 +460,6 @@ const app: object = {
     fetch_map_search,
     update_url_add_tag,
     set_page,
-    prev_page,
-    next_page,
     annotation_overlay,
     delete_marker,
     submit_annotations,
