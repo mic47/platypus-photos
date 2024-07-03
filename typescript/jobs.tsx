@@ -177,24 +177,6 @@ function JobProgressComponent({
         response: JobProgressStateResponse;
         states: JobProgressState[];
     } | null>(null);
-    const [intervalSet, updateSetInterval] = React.useState<boolean>(false);
-
-    const update_progress = () => {
-        switchable.call_or_store("fetch", () => {
-            pygallery_service
-                .jobProgressStatePost({
-                    requestBody: { state: progress?.states[0] },
-                })
-                .then((response) => {
-                    const newStates =
-                        progress?.states.filter(
-                            (x) => response.state.ts - x.ts < 300.0,
-                        ) || [];
-                    newStates.push(response.state);
-                    updateProgress({ response, states: newStates });
-                });
-        });
-    };
 
     const show_or_close_job_list = () => {
         if (jobList === null) {
@@ -205,14 +187,32 @@ function JobProgressComponent({
             updateJobList(null);
         }
     };
+    React.useEffect(() => {
+        const update_progress = () => {
+            switchable.call_or_store("fetch", () => {
+                pygallery_service
+                    .jobProgressStatePost({
+                        requestBody: { state: progress?.states[0] },
+                    })
+                    .then((response) => {
+                        const newStates =
+                            progress?.states.filter(
+                                (x) => response.state.ts - x.ts < 300.0,
+                            ) || [];
+                        newStates.push(response.state);
+                        updateProgress({ response, states: newStates });
+                    });
+            });
+        };
 
-    if (!intervalSet) {
-        updateSetInterval(true);
-        setInterval(() => {
+        const interval = setInterval(() => {
             update_progress();
         }, interval_seconds * 1000);
         update_progress();
-    }
+        return () => {
+            clearInterval(interval);
+        };
+    }, []);
 
     return (
         <JobProgressView

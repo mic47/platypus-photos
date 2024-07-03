@@ -35,13 +35,12 @@ function InputFormComponent({ hooks }: InputFormComponentProps) {
         q: hooks.get(),
         ts: Date.now(),
     });
-    const [registered, updateRegistered] = React.useState<boolean>(false);
-    if (!registered) {
-        hooks.register_hook((newQuery) => {
+    React.useEffect(() => {
+        hooks.register_hook("InputForm", (newQuery) => {
             updateQuery({ q: newQuery, ts: Date.now() });
         });
-        updateRegistered(true);
-    }
+        return () => hooks.unregister_hook("InputForm");
+    });
     return (
         <InputFormView
             query={query}

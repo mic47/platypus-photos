@@ -375,11 +375,15 @@ function init_fun() {
     /* Initialize state and url syncs */
     ___state = new AppState({}, {}, {});
     const search_query_sync = new UrlSync(url_parameters_fields);
-    ___state.search_query.register_hook((u) => search_query_sync.update(u));
+    ___state.search_query.register_hook("SearchQueryUrlSync", (u) =>
+        search_query_sync.update(u),
+    );
     const paging_sync = new UrlSync(paging_fields);
-    ___state.paging.register_hook((u) => paging_sync.update(u));
+    ___state.paging.register_hook("PagingUrlSync", (u) =>
+        paging_sync.update(u),
+    );
     const sort_sync = new UrlSync(sort_fields);
-    ___state.sort.register_hook((u) => sort_sync.update(u));
+    ___state.sort.register_hook("SortUrlSync", (u) => sort_sync.update(u));
     new InputForm("InputForm", ___state.search_query);
     /* Gallery */
     new Gallery(
@@ -397,7 +401,7 @@ function init_fun() {
         location_preview,
     );
     ___map_search = new MapSearch("MapSearch");
-    ___state.search_query.register_hook((url_params) => {
+    ___state.search_query.register_hook("MasSearch", (url_params) => {
         ___map.update_markers(url_params, true);
     });
     /* Dates */
@@ -409,13 +413,15 @@ function init_fun() {
         "DateSelection",
         "DateChartGroupBy",
     );
-    ___state.search_query.register_hook((u) => dates.fetch(u));
+    ___state.search_query.register_hook("Dates", (u) => dates.fetch(u));
     /* Directories */
     const directories = new Directories("Directories");
-    ___state.search_query.register_hook((u) => directories.fetch(u));
+    ___state.search_query.register_hook("Directories", (u) =>
+        directories.fetch(u),
+    );
     /* Aggregate Info */
     const aggregate_info = new AggregateInfo("AggregateInfo");
-    ___state.search_query.register_hook((url_params) => {
+    ___state.search_query.register_hook("AggregateInfo", (url_params) => {
         aggregate_info.fetch(url_params, ___state.paging.get());
     });
 

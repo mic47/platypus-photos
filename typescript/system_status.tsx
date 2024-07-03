@@ -34,23 +34,24 @@ function SystemStatusComponent({
     switchable,
     intervalSeconds,
 }: SystemStatusComponentProps) {
-    const [intervalSet, updateSetInterval] = React.useState<boolean>(false);
     const [data, updateData] = React.useState<ServerSystemStatus | null>(null);
 
-    const updateProgress = () => {
-        switchable.call_or_store("fetch", () => {
-            return pygallery_service.systemStatusGet().then((data) => {
-                updateData(data);
+    React.useEffect(() => {
+        const updateProgress = () => {
+            switchable.call_or_store("fetch", () => {
+                return pygallery_service.systemStatusGet().then((data) => {
+                    updateData(data);
+                });
             });
-        });
-    };
-    if (!intervalSet) {
-        updateSetInterval(true);
-        setInterval(() => {
+        };
+        const interval = setInterval(() => {
             updateProgress();
         }, intervalSeconds * 1000);
         updateProgress();
-    }
+        return () => {
+            clearInterval(interval);
+        };
+    }, []);
     return <SystemStatusView status={data} />;
 }
 

@@ -16,4 +16,5 @@ export default [
   ]},
   ...tseslint.configs.recommended,
   ...fixupConfigRules(pluginReactConfig),
+  {settings: {react: {version: "detect"} } },
 ];

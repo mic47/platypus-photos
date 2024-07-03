@@ -84,54 +84,72 @@ function GalleryComponent({
     checkboxSync,
     urlSync,
 }: GalleryComponentProps) {
-    const [data, updateData] = React.useState<ImageResponse>({
-        omgs: [],
-        has_next_page: false,
-        some_location: null,
-    });
+    const [data, updateData] = React.useState<[SearchQuery, ImageResponse]>([
+        {},
+        {
+            omgs: [],
+            has_next_page: false,
+            some_location: null,
+        },
+    ]);
+    const [query, updateQuery] = React.useState<SearchQuery>(
+        searchQueryHook.get(),
+    );
     const [paging, updatePaging] = React.useState<GalleryPaging>(
         pagingHook.get(),
     );
-    // TODO: this is probably not the right way to do this
-    const oi = parseInt(urlSync.get().unparsed["oi"]);
     const [overlayIndex, updateOverlayIndex] = React.useState<null | number>(
-        oi === undefined || oi != oi ? null : oi,
+        () => {
+            const oi = parseInt(urlSync.get().unparsed["oi"]);
+            return oi === undefined || oi != oi ? null : oi;
+        },
     );
-    urlSync.update({ oi: overlayIndex });
+    React.useEffect(() => {
+        urlSync.update({ oi: overlayIndex });
+    }, [overlayIndex]);
     const [sort, updateSort] = React.useState<SortParams>(sortHook.get());
     const [checkboxes, updateCheckboxes] = React.useState<{
         [name: string]: boolean;
     }>(checkboxSync.get());
-    const [registered, updateRegistered] = React.useState<boolean>(false);
-    const refreshData = () => {
-        // TODO: the fact that I need to do this, means that I am doing something
-        // wrong. I probably should be using effects here?
-        const body = {
-            query: searchQueryHook.get(),
-            paging: pagingHook.get(),
-            sort: sortHook.get(),
+    React.useEffect(() => {
+        let ignore = false;
+        const requestBody = {
+            query,
+            paging,
+            sort,
         };
-
         pygallery_service
             .imagePagePost({
-                requestBody: body,
+                requestBody,
             })
-            .then(updateData);
-    };
-    if (!registered) {
-        searchQueryHook.register_hook(refreshData);
-        pagingHook.register_hook(updatePaging);
-        pagingHook.register_hook(refreshData);
-        sortHook.register_hook(updateSort);
-        sortHook.register_hook(refreshData);
-        updateRegistered(true);
-        refreshData();
-    }
+            .then((data) => {
+                if (!ignore) {
+                    updateData([query, data]);
+                }
+            });
+        return () => {
+            ignore = true;
+        };
+    }, [query, paging, sort]);
+    React.useEffect(() => {
+        searchQueryHook.register_hook("Gallery", (data) => {
+            updateQuery(data);
+        });
+        return () => searchQueryHook.unregister_hook("Gallery");
+    });
+    React.useEffect(() => {
+        pagingHook.register_hook("Gallery", updatePaging);
+        return () => pagingHook.unregister_hook("Gallery");
+    });
+    React.useEffect(() => {
+        sortHook.register_hook("Gallery", updateSort);
+        return () => sortHook.unregister_hook("Gallery");
+    });
     return (
         <GalleryView
             sort={sort}
             paging={paging}
-            data={data}
+            data={data[1]}
             checkboxes={checkboxes}
             overlay_index={overlayIndex}
             callbacks={{
