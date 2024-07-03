@@ -1,3 +1,26 @@
+import data_model from "./data_model.generated.json";
+export const FLAGS: { [key: string]: string } = data_model.unicode.flags;
+
+export function append_flag(country: string): string {
+    const flag = FLAGS[country.toLowerCase()] || "";
+    return `${country}${flag}`;
+}
+export function time_to_clock(value: Date | number): string {
+    if (typeof value === "number") {
+        value = new Date(value * 1000);
+    }
+    const minutes = Math.round(value.getMinutes());
+    const hours = Math.round(value.getHours());
+    if (minutes < 30) {
+        return data_model.unicode.clocks_oh[hours % 12];
+    }
+    return data_model.unicode.clocks_thirty[hours % 12];
+}
+export function round(n: number, digits: number = 0) {
+    const mul = Math.pow(10, digits);
+    return Math.round(mul * n) / mul;
+}
+
 const _PRETTY_DURATIONS: Array<[number, string]> = [
     [365 * 86400, "y"],
     [30 * 86400, " mon"],
@@ -107,4 +130,38 @@ export function error_box(div_id: string, value: object | number | string) {
 
 export function base64_decode_object(data: string): object {
     return JSON.parse(window.atob(data));
+}
+export function format_seconds_to_duration(
+    seconds: number,
+    none_threshold: number = -1,
+): string | null {
+    seconds = Math.round(seconds);
+    if (seconds < none_threshold) {
+        return null;
+    }
+    if (seconds < 60) {
+        return `${seconds}s`;
+    }
+    const minutes = Math.trunc(seconds / 60);
+    if (minutes < 100) {
+        return `${minutes}m`;
+    }
+    const hours = Math.trunc(seconds / 3600);
+    if (hours < 48) {
+        return `${hours}h`;
+    }
+    const days = Math.trunc(seconds / 86400);
+    if (days < 14) {
+        return `${days}d`;
+    }
+    const weeks = Math.trunc(seconds / (86400 * 7));
+    if (weeks < 6) {
+        return `${weeks}w`;
+    }
+    const months = Math.trunc(seconds / (86400 * 30));
+    if (months < 19) {
+        return `${months}mon`;
+    }
+    const years = Math.trunc(seconds / (86400 * 365.25));
+    return `${years}y`;
 }

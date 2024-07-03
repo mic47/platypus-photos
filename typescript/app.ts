@@ -3,14 +3,7 @@ import * as L from "leaflet";
 import data_model from "./data_model.generated.json";
 
 import { Dates } from "./dates_chart.ts";
-import {
-    AggregateInfo,
-    Gallery,
-    overlay,
-    overlay_close,
-    overlay_next,
-    overlay_prev,
-} from "./gallery";
+import { AggregateInfo, Gallery } from "./gallery";
 import { InputForm, shift_float_params } from "./input";
 import {
     parse_float_or_null,
@@ -40,7 +33,6 @@ import { SystemStatus } from "./system_status";
 import * as pygallery_service from "./pygallery.generated/services.gen.ts";
 import {
     SortParams,
-    ManualLocation,
     ManualLocationOverride,
     MassLocationAndTextAnnotation_Input,
     TextAnnotationOverride,
@@ -379,18 +371,6 @@ function annotation_overlay(latitude: number, longitude: number) {
         query: ___state.search_query.get(),
     });
 }
-function annotation_overlay_interpolated(location_encoded_base64: string) {
-    const overlay = new AnnotationOverlay("SubmitDataOverlay");
-    overlay.fetch({
-        request: {
-            t: "InterpolatedLocation",
-            location: base64_decode_object(
-                location_encoded_base64,
-            ) as ManualLocation,
-        },
-        query: ___state.search_query.get(),
-    });
-}
 
 const ___checkbox_sync: CheckboxSync = new CheckboxSync();
 
@@ -413,31 +393,13 @@ function init_fun() {
     ___state.sort.register_hook((u) => sort_sync.update(u));
     new InputForm("InputForm", ___state.search_query);
     /* Gallery */
-    const gallery = new Gallery("GalleryImages", prev_page, next_page);
-    ___state.search_query.register_hook((search_query) => {
-        gallery.fetch(
-            search_query,
-            ___state.paging.get(),
-            ___state.sort.get(),
-            ___checkbox_sync.get(),
-        );
-    });
-    ___state.paging.register_hook((paging) => {
-        gallery.fetch(
-            ___state.search_query.get(),
-            paging,
-            ___state.sort.get(),
-            ___checkbox_sync.get(),
-        );
-    });
-    ___state.sort.register_hook((sort) => {
-        gallery.fetch(
-            ___state.search_query.get(),
-            ___state.paging.get(),
-            sort,
-            ___checkbox_sync.get(),
-        );
-    });
+    new Gallery(
+        "GalleryImages",
+        ___state.search_query,
+        ___state.paging,
+        ___state.sort,
+        ___checkbox_sync,
+    );
     /* Map */
     ___map = new PhotoMap(
         "map",
@@ -512,13 +474,8 @@ const app: object = {
     prev_page,
     next_page,
     annotation_overlay,
-    annotation_overlay_interpolated,
     delete_marker,
     submit_annotations,
     update_sort,
-    overlay,
-    overlay_close,
-    overlay_next,
-    overlay_prev,
 };
 (window as unknown as { APP: object }).APP = app;

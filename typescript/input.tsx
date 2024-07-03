@@ -350,7 +350,11 @@ function timestampInput(
                 type="text"
                 id={id}
                 name={f}
-                value={query_value === null ? undefined : query_value}
+                value={
+                    query_value === null || query_value === undefined
+                        ? ""
+                        : query_value
+                }
                 hidden={true}
                 readOnly={true}
             />

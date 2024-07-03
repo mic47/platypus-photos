@@ -73,9 +73,6 @@ export type GalleryRequest = {
     query: SearchQuery;
     paging: GalleryPaging;
     sort: SortParams;
-    checkboxes: {
-        [key: string]: (boolean);
-    };
 };
 
 export type HTTPValidationError = {
@@ -109,7 +106,7 @@ export type ImageAddress = {
 };
 
 export type ImageResponse = {
-    has_next: boolean;
+    has_next_page: boolean;
     omgs: Array<ImageWithMeta>;
     some_location: ManualLocation | null;
 };
@@ -119,6 +116,7 @@ export type ImageSize = 'original' | 'medium' | 'preview';
 export type ImageWithMeta = {
     omg: Image;
     predicted_location: PredictedLocation | null;
+    paths: Array<PathSplit>;
 };
 
 export type JobDescription = {
@@ -228,6 +226,11 @@ export type MassLocationAndTextAnnotation_Output = {
     location: LocationQueryFixedLocation | AnnotationOverlayInterpolateLocation | AnnotationOverlayNoLocation;
     text: TextQueryFixedText;
     date: TransDate;
+};
+
+export type PathSplit = {
+    dir: string;
+    file: string;
 };
 
 export type PredictedLocation = {
@@ -405,13 +408,6 @@ export type ImagePagePostData = {
 };
 
 export type ImagePagePostResponse = ImageResponse;
-
-export type GalleryDivPostData = {
-    oi?: number | null;
-    requestBody: GalleryRequest;
-};
-
-export type GalleryDivPostResponse = string;
 
 export type AggregateEndpointPostData = {
     requestBody: AggregateQuery;
@@ -602,21 +598,6 @@ export type $OpenApiTs = {
                  * Successful Response
                  */
                 200: ImageResponse;
-                /**
-                 * Validation Error
-                 */
-                422: HTTPValidationError;
-            };
-        };
-    };
-    '/internal/gallery.html': {
-        post: {
-            req: GalleryDivPostData;
-            res: {
-                /**
-                 * Successful Response
-                 */
-                200: string;
                 /**
                  * Validation Error
                  */

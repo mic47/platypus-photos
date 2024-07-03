@@ -505,62 +505,6 @@
         }
       }
     },
-    "/internal/gallery.html": {
-      "post": {
-        "summary": "Gallery Div",
-        "operationId": "gallery_div-POST",
-        "parameters": [
-          {
-            "name": "oi",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "integer"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Oi"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/GalleryRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/internal/aggregate.html": {
       "post": {
         "summary": "Aggregate Endpoint",
@@ -958,21 +902,13 @@
           },
           "sort": {
             "$ref": "#/components/schemas/SortParams"
-          },
-          "checkboxes": {
-            "additionalProperties": {
-              "type": "boolean"
-            },
-            "type": "object",
-            "title": "Checkboxes"
           }
         },
         "type": "object",
         "required": [
           "query",
           "paging",
-          "sort",
-          "checkboxes"
+          "sort"
         ],
         "title": "GalleryRequest"
       },
@@ -1180,9 +1116,9 @@
       },
       "ImageResponse": {
         "properties": {
-          "has_next": {
+          "has_next_page": {
             "type": "boolean",
-            "title": "Has Next"
+            "title": "Has Next Page"
           },
           "omgs": {
             "items": {
@@ -1204,7 +1140,7 @@
         },
         "type": "object",
         "required": [
-          "has_next",
+          "has_next_page",
           "omgs",
           "some_location"
         ],
@@ -1233,12 +1169,20 @@
                 "type": "null"
               }
             ]
+          },
+          "paths": {
+            "items": {
+              "$ref": "#/components/schemas/PathSplit"
+            },
+            "type": "array",
+            "title": "Paths"
           }
         },
         "type": "object",
         "required": [
           "omg",
-          "predicted_location"
+          "predicted_location",
+          "paths"
         ],
         "title": "ImageWithMeta"
       },
@@ -1772,6 +1716,24 @@
           "date"
         ],
         "title": "MassLocationAndTextAnnotation"
+      },
+      "PathSplit": {
+        "properties": {
+          "dir": {
+            "type": "string",
+            "title": "Dir"
+          },
+          "file": {
+            "type": "string",
+            "title": "File"
+          }
+        },
+        "type": "object",
+        "required": [
+          "dir",
+          "file"
+        ],
+        "title": "PathSplit"
       },
       "PredictedLocation": {
         "properties": {

@@ -475,7 +475,7 @@ GEOLOCATOR = Geolocator()
 @dataclass
 class MapSearchRequest:
     query: t.Optional[str] = None
-    checkboxes: t.Dict[str, bool] = field(default_factory=dict)
+    checkboxes: t.Dict[str, bool] = field(default_factory=dict)  # noqa: F841
 
 
 @app.post("/internal/map_search.html", response_class=HTMLResponse)
@@ -774,7 +774,6 @@ class GalleryRequest:
     query: SearchQuery
     paging: GalleryPaging
     sort: SortParams
-    checkboxes: t.Dict[str, bool]
 
 
 def image_template_params(
@@ -851,18 +850,32 @@ class ReferenceStats(DataClassJsonMixin):
 class PredictedLocation(DataClassJsonMixin):
     loc: LocPoint
     earlier: t.Optional[ReferenceStats]
-    later: t.Optional[ReferenceStats]
+    later: t.Optional[ReferenceStats]  # noqa: F841
+
+
+@dataclass
+class PathSplit(DataClassJsonMixin):
+    dir: str  # noqa: F841
+    file: str
+
+    @staticmethod
+    def from_filename(filename: str) -> PathSplit:
+        return PathSplit(
+            dir=os.path.dirname(filename),
+            file=os.path.basename(filename),
+        )
 
 
 @dataclass
 class ImageWithMeta(DataClassJsonMixin):
     omg: ImageRow
     predicted_location: t.Optional[PredictedLocation]
+    paths: t.List[PathSplit]
 
 
 @dataclass
 class ImageResponse(DataClassJsonMixin):
-    has_next: bool
+    has_next_page: bool
     omgs: t.List[ImageWithMeta]
     some_location: ManualLocation | None
 
@@ -875,6 +888,11 @@ async def image_page(params: GalleryRequest) -> ImageResponse:
 
     some_location = None
     for index, omg in enumerate(omgs):
+        paths = []
+        for file in DB.get().files(omg.md5):
+            paths.append(PathSplit.from_filename(file.file))
+            if file.og_file is not None:
+                paths.append(PathSplit.from_filename(file.og_file))
         if omg.latitude is not None and omg.longitude is not None:
             some_location = ManualLocation(
                 omg.latitude,
@@ -883,60 +901,8 @@ async def image_page(params: GalleryRequest) -> ImageResponse:
                 omg.address.country,
             )
         predicted_location = predict_location(omg, fwdbwd[index][0], fwdbwd[index][1])
-        images.append(ImageWithMeta(omg, predicted_location))
+        images.append(ImageWithMeta(omg, predicted_location, paths))
     return ImageResponse(has_next_page, images, some_location)
-
-
-@app.post("/internal/gallery.html", response_class=HTMLResponse)
-async def gallery_div(request: Request, params: GalleryRequest, oi: t.Optional[int] = None) -> HTMLResponse:
-    images = []
-    omgs, has_next_page = DB.get().get_matching_images(params.query, params.sort, params.paging)
-    fwdbwd = forward_backward(omgs, DateWithLoc.from_image)
-
-    prev_date = None
-    some_location = None
-    for index, omg in enumerate(omgs):
-        if omg.latitude is not None and omg.longitude is not None:
-            some_location = ManualLocation(
-                omg.latitude,
-                omg.longitude,
-                omg.address.name,
-                omg.address.country,
-            )
-        predicted_location = predict_location(omg, fwdbwd[index][0], fwdbwd[index][1])
-        estimated_loc = predict_location_to_str(predicted_location)
-        estimated_loc_suspicious = suspicious(predicted_location)
-        images.append(
-            {
-                **image_template_params(omg, prev_date),
-                "estimated_loc": estimated_loc,
-                "estimated_loc_suspicious": estimated_loc_suspicious,
-                "estimated_loc_onesided": predicted_location is not None
-                and (predicted_location.earlier is None or predicted_location.later is None),
-                "predicted_loc": predicted_location,
-            }
-        )
-        prev_date = omg.date
-
-    return templates.TemplateResponse(
-        request=request,
-        name="gallery.html",
-        context={
-            "oi": oi,
-            "checkboxes": params.checkboxes,
-            "location_encoded_base64": (
-                base64.b64encode(some_location.to_json().encode("utf-8")).decode("utf-8")
-                if some_location is not None
-                else None
-            ),
-            "images": images,
-            "has_next_page": has_next_page,
-            "ascending": params.sort.order == SortOrder.ASC,
-            "input": {
-                "page": params.paging.page,
-            },
-        },
-    )
 
 
 T = t.TypeVar("T")
@@ -961,18 +927,6 @@ def forward_backward(
 
 def distance_m(p1: LocPoint, p2: LocPoint) -> float:
     return t.cast(float, distance((p1.latitude, p1.longitude), (p2.latitude, p2.longitude)).m)
-
-
-def suspicious(loc: t.Optional[PredictedLocation]) -> bool:
-    if loc is None:
-        return False
-    if loc.earlier is not None:
-        if loc.earlier.distance_m > 1000 or loc.earlier.seconds > 3600:
-            return True
-    if loc.later is not None:
-        if loc.later.distance_m > 1000 or loc.later.seconds > 3600:
-            return True
-    return False
 
 
 def predict_location(
@@ -1007,31 +961,6 @@ def predict_location(
             ReferenceStats(0.0, next_loc.timedist(omg.date)),
         )
     return None
-
-
-def predict_location_to_str(
-    predicted: t.Optional[PredictedLocation],
-) -> t.Optional[str]:
-    if predicted is None:
-        return None
-    parts = []
-    if predicted.earlier:
-        speed_str = ""
-        if predicted.earlier.seconds > 0.1:
-            speed = predicted.earlier.distance_m / predicted.earlier.seconds * 1000 / 3600
-            speed_str = f", {speed:.1f}km/h"
-        parts.append(
-            f"e: {predicted.earlier.distance_m:.0f}m, {format_seconds_to_duration(predicted.earlier.seconds)}{speed_str}"
-        )
-    if predicted.later:
-        speed_str = ""
-        if predicted.later.seconds > 0.1:
-            speed = predicted.later.distance_m / predicted.later.seconds * 1000 / 3600
-            speed_str = f", {speed:.1f}km/h"
-        parts.append(
-            f"l: {predicted.later.distance_m:.0f}m, {format_seconds_to_duration(predicted.later.seconds)}{speed_str}"
-        )
-    return ", ".join(parts)
 
 
 @dataclass

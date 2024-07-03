@@ -8,16 +8,12 @@ import {
     JobProgressState,
     JobProgressStateResponse,
 } from "./pygallery.generated/types.gen.ts";
+import { round } from "./utils.ts";
 
 interface JobListViewProps {
     jobs: JobDescription[];
     switch_job_list: () => void;
     map_zoom: (latitude: number, longitude: number) => void;
-}
-
-function round(n: number, digits: number = 0) {
-    const mul = Math.pow(10, digits);
-    return Math.round(mul * n) / n;
 }
 
 function JobListView({ jobs, switch_job_list, map_zoom }: JobListViewProps) {

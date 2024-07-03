@@ -286,17 +286,10 @@ export const $GalleryRequest = {
         },
         sort: {
             '$ref': '#/components/schemas/SortParams'
-        },
-        checkboxes: {
-            additionalProperties: {
-                type: 'boolean'
-            },
-            type: 'object',
-            title: 'Checkboxes'
         }
     },
     type: 'object',
-    required: ['query', 'paging', 'sort', 'checkboxes'],
+    required: ['query', 'paging', 'sort'],
     title: 'GalleryRequest'
 } as const;
 
@@ -487,9 +480,9 @@ export const $ImageAddress = {
 
 export const $ImageResponse = {
     properties: {
-        has_next: {
+        has_next_page: {
             type: 'boolean',
-            title: 'Has Next'
+            title: 'Has Next Page'
         },
         omgs: {
             items: {
@@ -510,7 +503,7 @@ export const $ImageResponse = {
         }
     },
     type: 'object',
-    required: ['has_next', 'omgs', 'some_location'],
+    required: ['has_next_page', 'omgs', 'some_location'],
     title: 'ImageResponse'
 } as const;
 
@@ -534,10 +527,17 @@ export const $ImageWithMeta = {
                     type: 'null'
                 }
             ]
+        },
+        paths: {
+            items: {
+                '$ref': '#/components/schemas/PathSplit'
+            },
+            type: 'array',
+            title: 'Paths'
         }
     },
     type: 'object',
-    required: ['omg', 'predicted_location'],
+    required: ['omg', 'predicted_location', 'paths'],
     title: 'ImageWithMeta'
 } as const;
 
@@ -1005,6 +1005,22 @@ export const $MassLocationAndTextAnnotation_Output = {
     type: 'object',
     required: ['t', 'query', 'location', 'text', 'date'],
     title: 'MassLocationAndTextAnnotation'
+} as const;
+
+export const $PathSplit = {
+    properties: {
+        dir: {
+            type: 'string',
+            title: 'Dir'
+        },
+        file: {
+            type: 'string',
+            title: 'File'
+        }
+    },
+    type: 'object',
+    required: ['dir', 'file'],
+    title: 'PathSplit'
 } as const;
 
 export const $PredictedLocation = {
