@@ -654,7 +654,8 @@ class AnnotationOverlayFixedLocation(DataClassJsonMixin):
     t: t.Literal["FixedLocation"]
     latitude: float
     longitude: float
-    # TODO: add here resolved address
+    address_name: str | None
+    address_country: str | None
 
 
 @dataclass
@@ -663,64 +664,6 @@ class AnnotationOverlayRequest(DataClassJsonMixin):
         AnnotationOverlayFixedLocation | AnnotationOverlayInterpolateLocation | AnnotationOverlayNoLocation
     )
     query: SearchQuery
-
-
-@app.post("/internal/submit_annotations_overlay.html", response_class=HTMLResponse)
-def submit_annotation_overlay_form_endpoint(request: Request, req: AnnotationOverlayRequest) -> HTMLResponse:
-    address = None
-    if req.request.t == "FixedLocation":
-        address = make_image_address(
-            GEOLOCATOR.address(PathWithMd5("", ""), req.request.latitude, req.request.longitude).p,
-            None,
-        )
-    elif req.request.t == "InterpolatedLocation":
-        # there is nothing to do.
-        address = ImageAddress(req.request.location.address_country, req.request.location.address_name, None)
-    elif req.request.t == "NoLocation":
-        # There is no location, so nothing to do
-        pass
-    else:
-        assert_never(req.request.t)
-    aggr = DB.get().get_aggregate_stats(req.query)
-    top_tags = sorted(aggr.tag.items(), key=lambda x: -x[1])
-    top_cls = sorted(aggr.classification.items(), key=lambda x: -x[1])
-    top_addr = sorted(aggr.address.items(), key=lambda x: -x[1])
-    top_cameras = sorted(((k or "unknown", v) for k, v in aggr.cameras.items()), key=lambda x: -x[1])
-
-    directories = sorted(DB.get().get_matching_directories(req.query), key=lambda x: x.directory)
-    omgs, _ = DB.get().get_matching_images(req.query, SortParams(sort_by=SortBy.RANDOM), GalleryPaging())
-    images = [image_template_params(omg) for omg in omgs]
-    return templates.TemplateResponse(
-        request=request,
-        name="submit_annotations_overlay.html",
-        context={
-            "total": aggr.total,
-            "request_type": req.request.t,
-            "top": {
-                "tag": top_tags[:15],
-                "cls": top_cls[:5],
-                "addr": top_addr[:15],
-                "cameras": [
-                    (k, v)
-                    for k, v in (
-                        top_cameras[:5]
-                        + [("other", sum([x for _, x in top_cameras[5:]], 0))]
-                        + [("distinct", len(set(x for x, _ in top_cameras[5:])))]
-                    )
-                    if v
-                ],
-                "show_links": False,
-            },
-            "address": address,
-            "req": req,
-            "query_json": json.dumps(
-                {k: v for k, v in req.query.to_dict(encode_json=True).items() if v}, indent=2
-            ),
-            "query_json_base64": jtob64(req.query),
-            "directories": directories,
-            "images": images,
-        },
-    )
 
 
 def jtob64(data: DataClassJsonMixin) -> str:
@@ -769,9 +712,11 @@ def directories_endpoint(request: Request, url: SearchQuery) -> HTMLResponse:
         },
     )
 
+
 @app.post("/api/directories")
 def matching_directories(url: SearchQuery) -> t.List[DirectoryStats]:
     return sorted(DB.get().get_matching_directories(url), key=lambda x: x.directory)
+
 
 @dataclass
 class GalleryRequest:

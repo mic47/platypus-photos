@@ -4,31 +4,18 @@ export type AggregateQuery = {
     query: SearchQuery;
 };
 
-export type AnnotationOverlayFixedLocation = {
-    t: 'FixedLocation';
-    latitude: number;
-    longitude: number;
-};
-
-export type t = 'FixedLocation';
-
 export type AnnotationOverlayInterpolateLocation = {
     t: 'InterpolatedLocation';
     location: ManualLocation;
 };
 
-export type t2 = 'InterpolatedLocation';
+export type t = 'InterpolatedLocation';
 
 export type AnnotationOverlayNoLocation = {
     t: 'NoLocation';
 };
 
-export type t3 = 'NoLocation';
-
-export type AnnotationOverlayRequest = {
-    request: AnnotationOverlayFixedLocation | AnnotationOverlayInterpolateLocation | AnnotationOverlayNoLocation;
-    query: SearchQuery;
-};
+export type t2 = 'NoLocation';
 
 export type DateCluster = {
     example_path_md5: string;
@@ -218,6 +205,8 @@ export type LocationQueryFixedLocation = {
     location: ManualLocation;
     override: ManualLocationOverride;
 };
+
+export type t3 = 'FixedLocation';
 
 export type ManualLocation = {
     latitude: number;
@@ -410,12 +399,6 @@ export type RemoteJobsGetResponse = Array<JobDescription>;
 
 export type SystemStatusGetResponse = SystemStatus;
 
-export type SubmitAnnotationOverlayFormEndpointPostData = {
-    requestBody: AnnotationOverlayRequest;
-};
-
-export type SubmitAnnotationOverlayFormEndpointPostResponse = string;
-
 export type FetchLocationInfoEndpointPostData = {
     requestBody: LocationInfoRequest;
 };
@@ -573,21 +556,6 @@ export type $OpenApiTs = {
                  * Successful Response
                  */
                 200: SystemStatus;
-            };
-        };
-    };
-    '/internal/submit_annotations_overlay.html': {
-        post: {
-            req: SubmitAnnotationOverlayFormEndpointPostData;
-            res: {
-                /**
-                 * Successful Response
-                 */
-                200: string;
-                /**
-                 * Validation Error
-                 */
-                422: HTTPValidationError;
             };
         };
     };

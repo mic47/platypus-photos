@@ -11,28 +11,6 @@ export const $AggregateQuery = {
     title: 'AggregateQuery'
 } as const;
 
-export const $AnnotationOverlayFixedLocation = {
-    properties: {
-        t: {
-            type: 'string',
-            enum: ['FixedLocation'],
-            const: 'FixedLocation',
-            title: 'T'
-        },
-        latitude: {
-            type: 'number',
-            title: 'Latitude'
-        },
-        longitude: {
-            type: 'number',
-            title: 'Longitude'
-        }
-    },
-    type: 'object',
-    required: ['t', 'latitude', 'longitude'],
-    title: 'AnnotationOverlayFixedLocation'
-} as const;
-
 export const $AnnotationOverlayInterpolateLocation = {
     properties: {
         t: {
@@ -62,31 +40,6 @@ export const $AnnotationOverlayNoLocation = {
     type: 'object',
     required: ['t'],
     title: 'AnnotationOverlayNoLocation'
-} as const;
-
-export const $AnnotationOverlayRequest = {
-    properties: {
-        request: {
-            anyOf: [
-                {
-                    '$ref': '#/components/schemas/AnnotationOverlayFixedLocation'
-                },
-                {
-                    '$ref': '#/components/schemas/AnnotationOverlayInterpolateLocation'
-                },
-                {
-                    '$ref': '#/components/schemas/AnnotationOverlayNoLocation'
-                }
-            ],
-            title: 'Request'
-        },
-        query: {
-            '$ref': '#/components/schemas/SearchQuery'
-        }
-    },
-    type: 'object',
-    required: ['request', 'query'],
-    title: 'AnnotationOverlayRequest'
 } as const;
 
 export const $DateCluster = {
