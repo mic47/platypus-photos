@@ -653,6 +653,7 @@ class AnnotationOverlayFixedLocation(DataClassJsonMixin):
     t: t.Literal["FixedLocation"]
     latitude: float
     longitude: float
+    # TODO: add here resolved address
 
 
 @dataclass
