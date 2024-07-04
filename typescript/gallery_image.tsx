@@ -22,7 +22,7 @@ interface GalleryImageProps {
     has_next_page: boolean;
     overlay_index: number | null;
     index: number;
-    callbacks: ImageCallbacks;
+    callbacks: ImageCallbacks | null;
 }
 
 export type ImageCallbacks = {
@@ -46,16 +46,10 @@ export function GalleryImage({
     has_next_page,
     overlay_index,
     index,
-    callbacks: {
-        update_url,
-        update_url_add_tag,
-        prev_item,
-        close_overlay,
-        next_item,
-        updateOverlayIndex,
-    },
+    callbacks: callbacksOG,
 }: GalleryImageProps) {
-    // GalleryItemFS -> len ak overlay --- mali by sme to len tak renderovat
+    const callbacks = callbacksOG === null ? null : { ...callbacksOG };
+
     const isOverlay = index === overlay_index;
     const className = isOverlay ? "gallery_item overlay" : "gallery_item";
 
@@ -70,18 +64,20 @@ export function GalleryImage({
     }
 
     let movementUx = null;
-    if (isOverlay) {
+    if (isOverlay && callbacks !== null) {
         const movement = (
             <>
-                <a href="#" onClick={() => prev_item(index, paging)}>
+                <a href="#" onClick={() => callbacks.prev_item(index, paging)}>
                     prev
                 </a>{" "}
-                <a href="#" onClick={() => close_overlay()}>
+                <a href="#" onClick={() => callbacks.close_overlay()}>
                     close
                 </a>{" "}
                 <a
                     href="#"
-                    onClick={() => next_item(index, has_next_page, paging)}
+                    onClick={() =>
+                        callbacks.next_item(index, has_next_page, paging)
+                    }
                 >
                     next
                 </a>
@@ -91,14 +87,16 @@ export function GalleryImage({
     }
 
     let timeUx = null;
-    if (timestamp !== null && !isOverlay) {
+    if (timestamp !== null && !isOverlay && callbacks !== null) {
         let prevLink = null;
         let nextLink = null;
         if (sort.order === "ASC") {
             prevLink = (
                 <a
                     href="#"
-                    onClick={() => update_url({ tsto: timestamp + 0.01 })}
+                    onClick={() =>
+                        callbacks.update_url({ tsto: timestamp + 0.01 })
+                    }
                 >
                     ⬅️ to
                 </a>
@@ -107,7 +105,9 @@ export function GalleryImage({
             prevLink = (
                 <a
                     href="#"
-                    onClick={() => update_url({ tsfrom: timestamp - 0.01 })}
+                    onClick={() =>
+                        callbacks.update_url({ tsfrom: timestamp - 0.01 })
+                    }
                 >
                     ⬅️ from
                 </a>
@@ -117,7 +117,9 @@ export function GalleryImage({
             nextLink = (
                 <a
                     href="#"
-                    onClick={() => update_url({ tsfrom: timestamp - 0.01 })}
+                    onClick={() =>
+                        callbacks.update_url({ tsfrom: timestamp - 0.01 })
+                    }
                 >
                     from ➡️
                 </a>
@@ -126,7 +128,9 @@ export function GalleryImage({
             nextLink = (
                 <a
                     href="#"
-                    onClick={() => update_url({ tsto: timestamp + 0.01 })}
+                    onClick={() =>
+                        callbacks.update_url({ tsto: timestamp + 0.01 })
+                    }
                 >
                     to ➡️
                 </a>
@@ -187,17 +191,19 @@ export function GalleryImage({
         const endOfDay = startOfDay + 86400;
         dateCrumb = (
             <span className="date">
-                <a
-                    onClick={() =>
-                        update_url({
-                            tsfrom: startOfDay,
-                            tsto: endOfDay,
-                        })
+                <MaybeA
+                    onClick={
+                        callbacks === null
+                            ? null
+                            : () =>
+                                  callbacks.update_url({
+                                      tsfrom: startOfDay,
+                                      tsto: endOfDay,
+                                  })
                     }
-                    href="#"
                 >
                     {date}
-                </a>
+                </MaybeA>
             </span>
         );
         timeCrumb = <span className="date">{time}</span>;
@@ -212,9 +218,15 @@ export function GalleryImage({
         }
         addressCrumb.push(
             <span className="location" key={key}>
-                <a onClick={() => update_url({ addr: address })} href="#">
+                <MaybeA
+                    onClick={
+                        callbacks === null
+                            ? null
+                            : () => callbacks.update_url({ addr: address })
+                    }
+                >
                     {append_flag(address)}
-                </a>
+                </MaybeA>
             </span>,
         );
     });
@@ -229,10 +241,16 @@ export function GalleryImage({
             // this means not rubish
             tagsCrumbs.push(
                 <span className="tag" key={tag}>
-                    <a onClick={() => update_url_add_tag(tag)} href="#">
+                    <MaybeA
+                        onClick={
+                            callbacks === null
+                                ? null
+                                : () => callbacks.update_url_add_tag(tag)
+                        }
+                    >
                         {score}
                         {tag}
-                    </a>
+                    </MaybeA>
                 </span>,
             );
         }
@@ -242,9 +260,15 @@ export function GalleryImage({
         const camera = omg.camera;
         cameraCrumb = (
             <span className="camera">
-                <a onClick={() => update_url({ camera })} href="#">
+                <MaybeA
+                    onClick={
+                        callbacks === null
+                            ? null
+                            : () => callbacks.update_url({ camera })
+                    }
+                >
                     {omg.camera}
-                </a>
+                </MaybeA>
             </span>
         );
     }
@@ -264,10 +288,16 @@ export function GalleryImage({
                 // this means rubish
                 extraImageJsx.push(
                     <span className="tag" key={`tag_${tag}`}>
-                        <a onClick={() => update_url_add_tag(tag)} href="#">
+                        <MaybeA
+                            onClick={
+                                callbacks === null
+                                    ? null
+                                    : () => callbacks.update_url_add_tag(tag)
+                            }
+                        >
                             {tag_class}
                             {tag}
-                        </a>
+                        </MaybeA>
                     </span>,
                 );
             }
@@ -275,12 +305,18 @@ export function GalleryImage({
         paths.forEach((path) => {
             extraImageJsx.push(
                 <span className="dir" key={`dir_${path.dir}`}>
-                    <a
-                        onClick={() => update_url({ directory: path.dir })}
-                        href="#"
+                    <MaybeA
+                        onClick={
+                            callbacks === null
+                                ? null
+                                : () =>
+                                      callbacks.update_url({
+                                          directory: path.dir,
+                                      })
+                        }
                     >
                         {path.dir}
-                    </a>
+                    </MaybeA>
                 </span>,
             );
         });
@@ -302,7 +338,11 @@ export function GalleryImage({
             {predictedLocation}
             <div
                 className="gallery_container"
-                onClick={() => updateOverlayIndex(index)}
+                onClick={() => {
+                    if (callbacks !== null) {
+                        callbacks.updateOverlayIndex(index);
+                    }
+                }}
             >
                 <img
                     loading="lazy"
@@ -322,6 +362,21 @@ export function GalleryImage({
             </div>
         </div>
     );
+}
+
+function MaybeA({
+    onClick,
+    children,
+}: React.PropsWithChildren<{ onClick: null | (() => void) }>) {
+    if (onClick === null) {
+        return <>{children}</>;
+    } else {
+        return (
+            <a href="#" onClick={onClick}>
+                {children}
+            </a>
+        );
+    }
 }
 
 function predicted_location_to_string(predicted: PredictedLocation): string {

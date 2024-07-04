@@ -3,7 +3,7 @@ import React, { FormEvent } from "react";
 
 import { SearchQuery } from "./pygallery.generated/types.gen";
 import { StateWithHooks, update_search_query_value } from "./state.ts";
-import { AnnotationOverlay } from "./photo_map.ts";
+import { submit_to_annotation_overlay } from "./annotations.tsx";
 
 export class InputForm {
     private root: Root;
@@ -237,8 +237,7 @@ export function shift_float_params(
     search_query.update(update);
 }
 function annotation_overlay_no_location(search_query: Hook) {
-    const overlay = new AnnotationOverlay("SubmitDataOverlay");
-    overlay.fetch({
+    submit_to_annotation_overlay("SubmitDataOverlay", {
         request: { t: "NoLocation" },
         query: search_query.get(),
     });

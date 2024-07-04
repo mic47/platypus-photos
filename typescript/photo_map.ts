@@ -3,10 +3,7 @@ import * as L from "leaflet";
 import { CheckboxesParams } from "./state.ts";
 import { pprange } from "./utils.ts";
 import { GenericFetch } from "./generic_fetch.ts";
-import {
-    AnnotationOverlayRequest,
-    SearchQuery,
-} from "./pygallery.generated/types.gen.ts";
+import { SearchQuery } from "./pygallery.generated/types.gen.ts";
 import * as pygallery_service from "./pygallery.generated/services.gen.ts";
 
 type Position = {
@@ -290,18 +287,6 @@ export class AddressInfo extends GenericFetch<{
     }
     fetch(latitude: number, longitude: number) {
         return this.fetch_impl({ latitude, longitude });
-    }
-}
-
-export class AnnotationOverlay extends GenericFetch<AnnotationOverlayRequest> {
-    constructor(div_id: string) {
-        super(
-            div_id,
-            pygallery_service.submitAnnotationOverlayFormEndpointPost,
-        );
-    }
-    fetch(request: AnnotationOverlayRequest) {
-        return this.fetch_impl(request);
     }
 }
 

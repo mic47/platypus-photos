@@ -16,9 +16,9 @@ import {
     UrlSync,
 } from "./state.ts";
 import * as pygallery_service from "./pygallery.generated/services.gen.ts";
-import { AnnotationOverlay } from "./photo_map.ts";
 import { GalleryImage, ImageCallbacks } from "./gallery_image.tsx";
 import { AggregateInfoView } from "./aggregate_info.tsx";
+import { submit_to_annotation_overlay } from "./annotations.tsx";
 
 export class Gallery {
     private root: Root;
@@ -172,8 +172,7 @@ function GalleryComponent({
             pagingHook.update({ page });
         },
         annotation_overlay_interpolated: (location: ManualLocation) => {
-            const overlay = new AnnotationOverlay("SubmitDataOverlay");
-            overlay.fetch({
+            submit_to_annotation_overlay("SubmitDataOverlay", {
                 request: {
                     t: "InterpolatedLocation",
                     location,

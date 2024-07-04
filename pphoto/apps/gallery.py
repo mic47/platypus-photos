@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import asyncio
-import base64
 import json
 import typing as t
 import os
@@ -44,16 +43,8 @@ from pphoto.remote_jobs.types import (
 from pphoto.gallery.db import ImageSqlDB, Image as ImageRow
 from pphoto.gallery.image import make_image_address
 from pphoto.gallery.url import SearchQuery, GalleryPaging, SortParams, SortBy, SortOrder
-from pphoto.gallery.utils import (
-    format_diff_date,
-    format_seconds_to_duration,
-    maybe_datetime_to_date,
-    maybe_datetime_to_time,
-    maybe_datetime_to_timestamp,
-    maybe_datetime_to_day_start,
-    maybe_datetime_to_next_day_start,
-)
-from pphoto.gallery.unicode import maybe_datetime_to_clock, append_flag, replace_with_flag, flag
+from pphoto.gallery.utils import format_seconds_to_duration
+from pphoto.gallery.unicode import append_flag, replace_with_flag, flag
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
@@ -650,24 +641,17 @@ async def system_status(_request: Request) -> SystemStatus:
 
 
 @dataclass
-class AnnotationOverlayFixedLocation(DataClassJsonMixin):
-    t: t.Literal["FixedLocation"]
+class GetAddressRequest(DataClassJsonMixin):
     latitude: float
     longitude: float
-    address_name: str | None
-    address_country: str | None
 
 
-@dataclass
-class AnnotationOverlayRequest(DataClassJsonMixin):
-    request: (
-        AnnotationOverlayFixedLocation | AnnotationOverlayInterpolateLocation | AnnotationOverlayNoLocation
+@app.post("/api/get_address")
+def get_address(req: GetAddressRequest) -> ImageAddress:
+    return make_image_address(
+        GEOLOCATOR.address(PathWithMd5("", ""), req.latitude, req.longitude).p,
+        None,
     )
-    query: SearchQuery
-
-
-def jtob64(data: DataClassJsonMixin) -> str:
-    return base64.b64encode(data.to_json(ensure_ascii=True).encode("utf-8")).decode("utf-8")
 
 
 @dataclass
@@ -723,49 +707,6 @@ class GalleryRequest:
     query: SearchQuery
     paging: GalleryPaging
     sort: SortParams
-
-
-def image_template_params(
-    omg: ImageRow,
-    prev_date: t.Optional[datetime] = None,
-) -> t.Dict[str, t.Any]:
-
-    max_tag = min(1, max((omg.tags or {}).values(), default=1.0))
-    loc = None
-    if omg.latitude is not None and omg.longitude is not None:
-        loc = {"lat": omg.latitude, "lon": omg.longitude}
-
-    paths = [
-        {
-            "filename": os.path.basename(file.file),
-            "dir": os.path.dirname(file.file),
-        }
-        for file in DB.get().files(omg.md5)
-    ]
-    diff_date = format_diff_date(omg.date, prev_date)
-    return {
-        "hsh": omg.md5,
-        "paths": paths,
-        "loc": loc,
-        "classifications": omg.classifications or "",
-        "tags": [
-            (tg, classify_tag(x / max_tag)) for tg, x in sorted((omg.tags or {}).items(), key=lambda x: -x[1])
-        ],
-        "addrs": [a for a in [omg.address.name, omg.address.country] if a],
-        "date": maybe_datetime_to_date(omg.date),
-        "time": maybe_datetime_to_time(omg.date),
-        "date_timestamp_start": maybe_datetime_to_day_start(omg.date),
-        "date_timestamp_end": maybe_datetime_to_next_day_start(omg.date),
-        "timeicon": maybe_datetime_to_clock(omg.date),
-        "timestamp": maybe_datetime_to_timestamp(omg.date),
-        "diff_date": diff_date,
-        "being_annotated": omg.being_annotated,
-        "camera": omg.camera,
-        "software": omg.software,
-        "raw_data": [
-            {"k": k, "v": json.dumps(v, ensure_ascii=True)} for k, v in omg.to_dict(encode_json=True).items()
-        ],
-    }
 
 
 @dataclass
@@ -927,11 +868,3 @@ def aggregate_images(param: AggregateQuery) -> ImageAggregation:
 @app.get("/")
 async def read_index() -> FileResponse:
     return FileResponse("static/index.html")
-
-
-def classify_tag(value: float) -> str:
-    if value >= 0.5:
-        return ""
-    if value >= 0.2:
-        return "🤷"
-    return "🗑️"

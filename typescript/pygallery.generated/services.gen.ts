@@ -3,7 +3,7 @@
 import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
-import type { ImageEndpointGetData, ImageEndpointGetResponse, LocationClustersEndpointPostData, LocationClustersEndpointPostResponse, LocationBoundsEndpointPostData, LocationBoundsEndpointPostResponse, DateClustersEndpointPostData, DateClustersEndpointPostResponse, MassManualAnnotationEndpointPostData, MassManualAnnotationEndpointPostResponse, MapSearchEndpointPostData, MapSearchEndpointPostResponse, JobProgressStatePostData, JobProgressStatePostResponse, RemoteJobsGetResponse, SystemStatusGetResponse, FetchLocationInfoEndpointPostData, FetchLocationInfoEndpointPostResponse, DirectoriesEndpointPostData, DirectoriesEndpointPostResponse, MatchingDirectoriesPostData, MatchingDirectoriesPostResponse, ImagePagePostData, ImagePagePostResponse, AggregateImagesPostData, AggregateImagesPostResponse, ReadIndexGetResponse, ReadIndexGet1Response } from './types.gen';
+import type { ImageEndpointGetData, ImageEndpointGetResponse, LocationClustersEndpointPostData, LocationClustersEndpointPostResponse, LocationBoundsEndpointPostData, LocationBoundsEndpointPostResponse, DateClustersEndpointPostData, DateClustersEndpointPostResponse, MassManualAnnotationEndpointPostData, MassManualAnnotationEndpointPostResponse, MapSearchEndpointPostData, MapSearchEndpointPostResponse, JobProgressStatePostData, JobProgressStatePostResponse, RemoteJobsGetResponse, SystemStatusGetResponse, GetAddressPostData, GetAddressPostResponse, FetchLocationInfoEndpointPostData, FetchLocationInfoEndpointPostResponse, DirectoriesEndpointPostData, DirectoriesEndpointPostResponse, MatchingDirectoriesPostData, MatchingDirectoriesPostResponse, ImagePagePostData, ImagePagePostResponse, AggregateImagesPostData, AggregateImagesPostResponse, ReadIndexGetResponse, ReadIndexGet1Response } from './types.gen';
 
 /**
  * Image Endpoint
@@ -145,6 +145,23 @@ export const remoteJobsGet = (): CancelablePromise<RemoteJobsGetResponse> => { r
 export const systemStatusGet = (): CancelablePromise<SystemStatusGetResponse> => { return __request(OpenAPI, {
     method: 'GET',
     url: '/api/system_status'
+}); };
+
+/**
+ * Get Address
+ * @param data The data for the request.
+ * @param data.requestBody
+ * @returns ImageAddress Successful Response
+ * @throws ApiError
+ */
+export const getAddressPost = (data: GetAddressPostData): CancelablePromise<GetAddressPostResponse> => { return __request(OpenAPI, {
+    method: 'POST',
+    url: '/api/get_address',
+    body: data.requestBody,
+    mediaType: 'application/json',
+    errors: {
+        422: 'Validation Error'
+    }
 }); };
 
 /**

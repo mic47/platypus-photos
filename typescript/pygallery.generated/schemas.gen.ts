@@ -293,6 +293,22 @@ export const $GalleryRequest = {
     title: 'GalleryRequest'
 } as const;
 
+export const $GetAddressRequest = {
+    properties: {
+        latitude: {
+            type: 'number',
+            title: 'Latitude'
+        },
+        longitude: {
+            type: 'number',
+            title: 'Longitude'
+        }
+    },
+    type: 'object',
+    required: ['latitude', 'longitude'],
+    title: 'GetAddressRequest'
+} as const;
+
 export const $HTTPValidationError = {
     properties: {
         detail: {

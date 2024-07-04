@@ -71,6 +71,11 @@ export type GalleryRequest = {
     sort: SortParams;
 };
 
+export type GetAddressRequest = {
+    latitude: number;
+    longitude: number;
+};
+
 export type HTTPValidationError = {
     detail?: Array<ValidationError>;
 };
@@ -399,6 +404,12 @@ export type RemoteJobsGetResponse = Array<JobDescription>;
 
 export type SystemStatusGetResponse = SystemStatus;
 
+export type GetAddressPostData = {
+    requestBody: GetAddressRequest;
+};
+
+export type GetAddressPostResponse = ImageAddress;
+
 export type FetchLocationInfoEndpointPostData = {
     requestBody: LocationInfoRequest;
 };
@@ -556,6 +567,21 @@ export type $OpenApiTs = {
                  * Successful Response
                  */
                 200: SystemStatus;
+            };
+        };
+    };
+    '/api/get_address': {
+        post: {
+            req: GetAddressPostData;
+            res: {
+                /**
+                 * Successful Response
+                 */
+                200: ImageAddress;
+                /**
+                 * Validation Error
+                 */
+                422: HTTPValidationError;
             };
         };
     };

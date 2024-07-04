@@ -4,19 +4,8 @@ import data_model from "./data_model.generated.json";
 
 import { Dates } from "./dates_chart.ts";
 import { Gallery } from "./gallery";
-import { InputForm, shift_float_params } from "./input";
-import {
-    parse_float_or_null,
-    error_box,
-    null_if_empty,
-    base64_decode_object,
-} from "./utils.ts";
-import {
-    AnnotationOverlay,
-    MapSearch,
-    PhotoMap,
-    location_preview,
-} from "./photo_map.ts";
+import { InputForm } from "./input";
+import { MapSearch, PhotoMap, location_preview } from "./photo_map.ts";
 import {
     AppState,
     CheckboxSync,
@@ -31,14 +20,11 @@ import { TabSwitch } from "./switchable.ts";
 import { SystemStatus } from "./system_status";
 
 import * as pygallery_service from "./pygallery.generated/services.gen.ts";
+import { SortParams, SearchQuery } from "./pygallery.generated/types.gen.ts";
 import {
-    SortParams,
-    ManualLocationOverride,
-    MassLocationAndTextAnnotation_Input,
-    TextAnnotationOverride,
-    SearchQuery,
-} from "./pygallery.generated/types.gen.ts";
-import { LocationTypes } from "./annotations.ts";
+    AnnotationOverlay,
+    submit_to_annotation_overlay,
+} from "./annotations.tsx";
 
 let ___state: AppState;
 function update_dir(data: string) {
@@ -200,165 +186,25 @@ function fetch_map_search() {
         ___map_search.fetch(values["query"] || null, ___checkbox_sync.get());
     }
 }
-function update_url_add_tag(tag: string) {
-    const old_tag = ___state.search_query.get()["tag"];
-    if (old_tag === undefined || old_tag === null) {
-        ___state.search_query.update({ tag: tag });
-    } else {
-        ___state.search_query.update({ tag: `${old_tag},${tag}` });
-    }
-}
-function set_page(page: number) {
-    ___state.paging.update({ page });
-}
-export function submit_annotations(
-    div_id: string,
-    form_id: string,
-    return_id: string,
-    advance_in_time: number | null,
-) {
-    const formElement = document.getElementById(form_id);
-    if (formElement === null) {
-        throw new Error(`Unable to find element ${form_id}`);
-    }
-    const formData = new FormData(formElement as HTMLFormElement);
-    const checkbox_value = formData.get("sanity_check");
-    [...formElement.getElementsByClassName("uncheck")].forEach((element) => {
-        // Prevent from accidentally submitting again
-        (element as HTMLInputElement).checked = false;
-    });
-    const query = base64_decode_object(
-        formData.get("query_json_base64") as string,
-    );
-    const request_type = formData.get("request_type");
-    let location: LocationTypes;
-    if (request_type == "NoLocation") {
-        location = {
-            t: request_type,
-        };
-    } else {
-        const latitude = parse_float_or_null(formData.get("latitude"));
-        if (latitude === null) {
-            return error_box(return_id, {
-                error: "Invalid request, latitude",
-                formData,
-            });
-        }
-        const longitude = parse_float_or_null(formData.get("longitude"));
-        if (longitude === null) {
-            return error_box(return_id, {
-                error: "Invalid request, longitude",
-                formData,
-            });
-        }
-        const location_override = formData.get("location_override");
-        let address_name = null_if_empty(formData.get("address_name"));
-        const address_name_original = null_if_empty(
-            formData.get("address_name_original"),
-        );
-        if (
-            address_name === null ||
-            address_name.trim() === address_name_original
-        ) {
-            address_name = address_name_original;
-        }
-        let address_country = null_if_empty(formData.get("address_country"));
-        const address_country_original = null_if_empty(
-            formData.get("address_country_original"),
-        );
-        if (
-            address_country === null ||
-            address_country.trim() === address_country_original
-        ) {
-            address_country = address_country_original;
-        }
-        const manualLocation = {
-            latitude,
-            longitude,
-            address_name,
-            address_country,
-        };
-        if (request_type == "FixedLocation") {
-            location = {
-                t: request_type,
-                location: manualLocation,
-                override: (location_override ??
-                    "NoLocNoMan") as ManualLocationOverride,
-            };
-        } else if (request_type == "InterpolatedLocation") {
-            location = {
-                t: request_type,
-                location: manualLocation,
-            };
-        } else {
-            throw new Error(`Unsupported request type ${request_type}`);
-        }
-    }
-    const extra_tags = null_if_empty(formData.get("extra_tags"));
-    const extra_description = null_if_empty(formData.get("extra_description"));
-    const text_override = formData.get("text_override");
-    const text_request = {
-        tags: extra_tags,
-        description: extra_description,
-    };
-    const loc_only = formData.get("text_loc_only") == "on";
-    const adjust_dates = formData.get("apply_timestamp_trans") == "on";
-    const request: MassLocationAndTextAnnotation_Input = {
-        t: "MassLocAndTxt",
-        query: query as SearchQuery,
-        location,
-        text: {
-            t: "FixedText",
-            text: text_request,
-            override: (text_override ?? "ExMan") as TextAnnotationOverride,
-            loc_only,
-        },
-        date: {
-            t: "TransDate",
-            adjust_dates,
-        },
-    };
-    if (checkbox_value !== "on") {
-        return error_box(return_id, {
-            error: "You have to check 'Check this box' box to prevent accidental submissions",
-        });
-    }
-    return (
-        pygallery_service
-            .massManualAnnotationEndpointPost({ requestBody: request })
-            .then(() => {
-                if (advance_in_time !== undefined && advance_in_time !== null) {
-                    // TODO: resolve these imports
-                    shift_float_params(
-                        ___state.search_query,
-                        "tsfrom",
-                        "tsto",
-                        advance_in_time,
-                    );
-                    set_page(0);
-                }
-                const element = document.getElementById(div_id);
-                if (element === null) {
-                    throw Error(`Unable to find element ${div_id}`);
-                }
-                element.remove();
-            })
-            // TODO: put error into stuff
-            .catch((err) => {
-                return error_box(return_id, {
-                    msg: "There was error while processing on the server.",
-                    error: err,
-                });
-            })
-    );
-}
-
 function annotation_overlay(latitude: number, longitude: number) {
-    const overlay = new AnnotationOverlay("SubmitDataOverlay");
-    overlay.fetch({
-        request: { t: "FixedLocation", latitude, longitude },
-        query: ___state.search_query.get(),
-    });
+    pygallery_service
+        .getAddressPost({ requestBody: { latitude, longitude } })
+        .catch((reason) => {
+            console.log(reason);
+            return { country: null, name: null, full: null };
+        })
+        .then((address) => {
+            submit_to_annotation_overlay("SubmitDataOverlay", {
+                request: {
+                    t: "FixedLocation",
+                    latitude,
+                    longitude,
+                    address_name: address.name,
+                    address_country: address.country,
+                },
+                query: ___state.search_query.get(),
+            });
+        });
 }
 
 const ___checkbox_sync: CheckboxSync = new CheckboxSync();
@@ -392,6 +238,12 @@ function init_fun() {
         ___state.paging,
         ___state.sort,
         ___checkbox_sync,
+    );
+    /* AnnotationOverlay */
+    new AnnotationOverlay(
+        "SubmitDataOverlay",
+        ___state.search_query,
+        ___state.paging,
     );
     /* Map */
     ___map = new PhotoMap(
@@ -459,11 +311,8 @@ const app: object = {
     map_add_point,
     map_close_popup,
     fetch_map_search,
-    update_url_add_tag,
-    set_page,
     annotation_overlay,
     delete_marker,
-    submit_annotations,
     update_sort,
 };
 (window as unknown as { APP: object }).APP = app;

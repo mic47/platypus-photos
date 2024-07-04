@@ -165,3 +165,17 @@ export function format_seconds_to_duration(
     const years = Math.trunc(seconds / (86400 * 365.25));
     return `${years}y`;
 }
+export function noop() {}
+const TIME_FORMAT = new Intl.DateTimeFormat("en-GB", {
+    hour12: false,
+    weekday: "short",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+});
+export function timestamp_to_pretty_datetime(timestamp: number): string {
+    return TIME_FORMAT.format(new Date(1000 * timestamp));
+}

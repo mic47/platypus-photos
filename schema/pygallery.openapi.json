@@ -353,15 +353,15 @@
         }
       }
     },
-    "/internal/submit_annotations_overlay.html": {
+    "/api/get_address": {
       "post": {
-        "summary": "Submit Annotation Overlay Form Endpoint",
-        "operationId": "submit_annotation_overlay_form_endpoint-POST",
+        "summary": "Get Address",
+        "operationId": "get_address-POST",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/AnnotationOverlayRequest"
+                "$ref": "#/components/schemas/GetAddressRequest"
               }
             }
           },
@@ -371,9 +371,9 @@
           "200": {
             "description": "Successful Response",
             "content": {
-              "text/html": {
+              "application/json": {
                 "schema": {
-                  "type": "string"
+                  "$ref": "#/components/schemas/ImageAddress"
                 }
               }
             }
@@ -450,6 +450,48 @@
               "text/html": {
                 "schema": {
                   "type": "string"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/directories": {
+      "post": {
+        "summary": "Matching Directories",
+        "operationId": "matching_directories-POST",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SearchQuery"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/DirectoryStats"
+                  },
+                  "type": "array",
+                  "title": "Response Matching Directories-Post"
                 }
               }
             }
@@ -590,33 +632,6 @@
         ],
         "title": "AggregateQuery"
       },
-      "AnnotationOverlayFixedLocation": {
-        "properties": {
-          "t": {
-            "type": "string",
-            "enum": [
-              "FixedLocation"
-            ],
-            "const": "FixedLocation",
-            "title": "T"
-          },
-          "latitude": {
-            "type": "number",
-            "title": "Latitude"
-          },
-          "longitude": {
-            "type": "number",
-            "title": "Longitude"
-          }
-        },
-        "type": "object",
-        "required": [
-          "t",
-          "latitude",
-          "longitude"
-        ],
-        "title": "AnnotationOverlayFixedLocation"
-      },
       "AnnotationOverlayInterpolateLocation": {
         "properties": {
           "t": {
@@ -654,33 +669,6 @@
           "t"
         ],
         "title": "AnnotationOverlayNoLocation"
-      },
-      "AnnotationOverlayRequest": {
-        "properties": {
-          "request": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/AnnotationOverlayFixedLocation"
-              },
-              {
-                "$ref": "#/components/schemas/AnnotationOverlayInterpolateLocation"
-              },
-              {
-                "$ref": "#/components/schemas/AnnotationOverlayNoLocation"
-              }
-            ],
-            "title": "Request"
-          },
-          "query": {
-            "$ref": "#/components/schemas/SearchQuery"
-          }
-        },
-        "type": "object",
-        "required": [
-          "request",
-          "query"
-        ],
-        "title": "AnnotationOverlayRequest"
       },
       "DateCluster": {
         "properties": {
@@ -825,6 +813,63 @@
         ],
         "title": "DateClusterParams"
       },
+      "DirectoryStats": {
+        "properties": {
+          "directory": {
+            "type": "string",
+            "title": "Directory"
+          },
+          "total_images": {
+            "type": "integer",
+            "title": "Total Images"
+          },
+          "has_location": {
+            "type": "integer",
+            "title": "Has Location"
+          },
+          "has_timestamp": {
+            "type": "integer",
+            "title": "Has Timestamp"
+          },
+          "being_annotated": {
+            "type": "integer",
+            "title": "Being Annotated"
+          },
+          "since": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Since"
+          },
+          "until": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Until"
+          }
+        },
+        "type": "object",
+        "required": [
+          "directory",
+          "total_images",
+          "has_location",
+          "has_timestamp",
+          "being_annotated",
+          "since",
+          "until"
+        ],
+        "title": "DirectoryStats"
+      },
       "ExceptionInfo": {
         "properties": {
           "exc_type": {
@@ -907,6 +952,24 @@
           "sort"
         ],
         "title": "GalleryRequest"
+      },
+      "GetAddressRequest": {
+        "properties": {
+          "latitude": {
+            "type": "number",
+            "title": "Latitude"
+          },
+          "longitude": {
+            "type": "number",
+            "title": "Longitude"
+          }
+        },
+        "type": "object",
+        "required": [
+          "latitude",
+          "longitude"
+        ],
+        "title": "GetAddressRequest"
       },
       "HTTPValidationError": {
         "properties": {
