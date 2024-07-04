@@ -164,10 +164,19 @@ function GalleryComponent({
     });
     const callbacks = {
         updateOverlayIndex,
-        // TODO
-        prev_page: () => {},
-        next_page: () => {},
-        set_page: () => {},
+        prev_page: (paging: GalleryPaging) => {
+            if (paging.page !== undefined && paging.page > 0) {
+                pagingHook.update({ page: paging.page - 1 });
+            }
+        },
+        next_page: (paging: GalleryPaging, has_next_page: boolean) => {
+            if (has_next_page) {
+                pagingHook.update({ page: (paging.page || 0) + 1 });
+            }
+        },
+        set_page: (page: number) => {
+            pagingHook.update({ page });
+        },
         annotation_overlay_interpolated: (location: ManualLocation) => {
             const overlay = new AnnotationOverlay("SubmitDataOverlay");
             overlay.fetch({
@@ -248,8 +257,8 @@ interface GalleryViewProps {
     checkboxes: CheckboxesParams;
     overlay_index: number | null;
     callbacks: ImageCallbacks & {
-        prev_page: () => void;
-        next_page: () => void;
+        prev_page: (paging: GalleryPaging) => void;
+        next_page: (paging: GalleryPaging, has_next_page: boolean) => void;
         annotation_overlay_interpolated: (location: ManualLocation) => void;
         update_checkbox_from_element: (element: HTMLInputElement) => void;
     };
@@ -301,14 +310,16 @@ function GalleryView({
                 <a
                     href="#"
                     className="prev-url"
-                    onClick={() => callbacks.prev_page()}
+                    onClick={() => callbacks.prev_page(paging)}
                 >
                     Prev Page
                 </a>{" "}
                 <a
                     href="#"
                     className="next-url"
-                    onClick={() => callbacks.next_page()}
+                    onClick={() =>
+                        callbacks.next_page(paging, data.has_next_page)
+                    }
                 >
                     Next Page
                 </a>
@@ -331,14 +342,16 @@ function GalleryView({
                 <a
                     href="#"
                     className="prev-url"
-                    onClick={() => callbacks.prev_page()}
+                    onClick={() => callbacks.prev_page(paging)}
                 >
                     Prev Page
                 </a>{" "}
                 <a
                     href="#"
                     className="next-url"
-                    onClick={() => callbacks.next_page()}
+                    onClick={() =>
+                        callbacks.next_page(paging, data.has_next_page)
+                    }
                 >
                     Next Page
                 </a>
@@ -775,13 +788,21 @@ function AggregateInfoView({
         .filter((page) => page <= 10 || page >= num_pages - 10)
         .map((page) => {
             if (page !== 10) {
-                return (
-                    <>
-                        <a key={page} href="#" onClick={() => set_page(page)}>
-                            {page}
-                        </a>{" "}
-                    </>
-                );
+                if (page === paging.page) {
+                    return <b key={page}> {page} </b>;
+                } else {
+                    return (
+                        <>
+                            <a
+                                key={page}
+                                href="#"
+                                onClick={() => set_page(page)}
+                            >
+                                {page}
+                            </a>{" "}
+                        </>
+                    );
+                }
             } else {
                 return <> ... </>;
             }
