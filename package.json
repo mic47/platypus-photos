@@ -29,7 +29,7 @@
     "parcel": "^2.12.0",
     "prettier": "^3.3.2",
     "typescript": "^5.5.2",
-    "typescript-eslint": "^7.13.1"
+    "typescript-eslint": "^7.15.0"
   },
   "dependencies": {
     "@hey-api/openapi-ts": "^0.48.0",
