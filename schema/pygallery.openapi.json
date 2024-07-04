@@ -505,10 +505,10 @@
         }
       }
     },
-    "/internal/aggregate.html": {
+    "/api/aggregate": {
       "post": {
-        "summary": "Aggregate Endpoint",
-        "operationId": "aggregate_endpoint-POST",
+        "summary": "Aggregate Images",
+        "operationId": "aggregate_images-POST",
         "requestBody": {
           "content": {
             "application/json": {
@@ -523,9 +523,9 @@
           "200": {
             "description": "Successful Response",
             "content": {
-              "text/html": {
+              "application/json": {
                 "schema": {
-                  "type": "string"
+                  "$ref": "#/components/schemas/ImageAggregation"
                 }
               }
             }
@@ -582,15 +582,11 @@
         "properties": {
           "query": {
             "$ref": "#/components/schemas/SearchQuery"
-          },
-          "paging": {
-            "$ref": "#/components/schemas/GalleryPaging"
           }
         },
         "type": "object",
         "required": [
-          "query",
-          "paging"
+          "query"
         ],
         "title": "AggregateQuery"
       },
@@ -1113,6 +1109,51 @@
           "full"
         ],
         "title": "ImageAddress"
+      },
+      "ImageAggregation": {
+        "properties": {
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "address": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Address"
+          },
+          "tag": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Tag"
+          },
+          "classification": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Classification"
+          },
+          "cameras": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Cameras"
+          }
+        },
+        "type": "object",
+        "required": [
+          "total",
+          "address",
+          "tag",
+          "classification",
+          "cameras"
+        ],
+        "title": "ImageAggregation"
       },
       "ImageResponse": {
         "properties": {

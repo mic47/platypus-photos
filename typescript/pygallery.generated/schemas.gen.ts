@@ -4,13 +4,10 @@ export const $AggregateQuery = {
     properties: {
         query: {
             '$ref': '#/components/schemas/SearchQuery'
-        },
-        paging: {
-            '$ref': '#/components/schemas/GalleryPaging'
         }
     },
     type: 'object',
-    required: ['query', 'paging'],
+    required: ['query'],
     title: 'AggregateQuery'
 } as const;
 
@@ -476,6 +473,46 @@ export const $ImageAddress = {
     type: 'object',
     required: ['country', 'name', 'full'],
     title: 'ImageAddress'
+} as const;
+
+export const $ImageAggregation = {
+    properties: {
+        total: {
+            type: 'integer',
+            title: 'Total'
+        },
+        address: {
+            additionalProperties: {
+                type: 'integer'
+            },
+            type: 'object',
+            title: 'Address'
+        },
+        tag: {
+            additionalProperties: {
+                type: 'integer'
+            },
+            type: 'object',
+            title: 'Tag'
+        },
+        classification: {
+            additionalProperties: {
+                type: 'integer'
+            },
+            type: 'object',
+            title: 'Classification'
+        },
+        cameras: {
+            additionalProperties: {
+                type: 'integer'
+            },
+            type: 'object',
+            title: 'Cameras'
+        }
+    },
+    type: 'object',
+    required: ['total', 'address', 'tag', 'classification', 'cameras'],
+    title: 'ImageAggregation'
 } as const;
 
 export const $ImageResponse = {

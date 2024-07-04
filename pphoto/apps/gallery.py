@@ -3,7 +3,6 @@ from __future__ import annotations
 import asyncio
 import base64
 import json
-import math
 import typing as t
 import os
 import sys
@@ -29,7 +28,7 @@ from pphoto.data_model.config import DBFilesConfig
 from pphoto.data_model.base import PathWithMd5
 from pphoto.db.types_location import LocationCluster, LocPoint, LocationBounds
 from pphoto.db.types_date import DateCluster, DateClusterGroupBy
-from pphoto.db.types_image import ImageAddress
+from pphoto.db.types_image import ImageAddress, ImageAggregation
 from pphoto.db.connection import PhotosConnection, GalleryConnection, JobsConnection
 from pphoto.utils import assert_never, Lazy
 from pphoto.remote_jobs.types import (
@@ -966,40 +965,12 @@ def predict_location(
 @dataclass
 class AggregateQuery:
     query: SearchQuery
-    paging: GalleryPaging
 
 
-@app.post("/internal/aggregate.html", response_class=HTMLResponse)
-def aggregate_endpoint(request: Request, param: AggregateQuery) -> HTMLResponse:
-    paging = param.paging.paging
+@app.post("/api/aggregate")
+def aggregate_images(param: AggregateQuery) -> ImageAggregation:
     aggr = DB.get().get_aggregate_stats(param.query)
-    top_tags = sorted(aggr.tag.items(), key=lambda x: -x[1])
-    top_cls = sorted(aggr.classification.items(), key=lambda x: -x[1])
-    top_addr = sorted(aggr.address.items(), key=lambda x: -x[1])
-    top_cameras = sorted(((k or "unknown", v) for k, v in aggr.cameras.items()), key=lambda x: -x[1])
-    return templates.TemplateResponse(
-        request=request,
-        name="aggregate.html",
-        context={
-            "total": aggr.total,
-            "num_pages": math.ceil(aggr.total / paging),
-            "top": {
-                "tag": top_tags[:15],
-                "cls": top_cls[:5],
-                "addr": top_addr[:15],
-                "cameras": [
-                    (k, v)
-                    for k, v in (
-                        top_cameras[:5]
-                        + [("other", sum([x for _, x in top_cameras[5:]], 0))]
-                        + [("distinct", len(set(x for x, _ in top_cameras[5:])))]
-                    )
-                    if v
-                ],
-                "show_links": True,
-            },
-        },
-    )
+    return aggr
 
 
 @app.get("/index.html")

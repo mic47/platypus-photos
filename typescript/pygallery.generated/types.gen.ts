@@ -2,7 +2,6 @@
 
 export type AggregateQuery = {
     query: SearchQuery;
-    paging: GalleryPaging;
 };
 
 export type AnnotationOverlayFixedLocation = {
@@ -103,6 +102,22 @@ export type ImageAddress = {
     country: string | null;
     name: string | null;
     full: string | null;
+};
+
+export type ImageAggregation = {
+    total: number;
+    address: {
+        [key: string]: (number);
+    };
+    tag: {
+        [key: string]: (number);
+    };
+    classification: {
+        [key: string]: (number);
+    };
+    cameras: {
+        [key: string]: (number);
+    };
 };
 
 export type ImageResponse = {
@@ -409,11 +424,11 @@ export type ImagePagePostData = {
 
 export type ImagePagePostResponse = ImageResponse;
 
-export type AggregateEndpointPostData = {
+export type AggregateImagesPostData = {
     requestBody: AggregateQuery;
 };
 
-export type AggregateEndpointPostResponse = string;
+export type AggregateImagesPostResponse = ImageAggregation;
 
 export type ReadIndexGetResponse = unknown;
 
@@ -605,14 +620,14 @@ export type $OpenApiTs = {
             };
         };
     };
-    '/internal/aggregate.html': {
+    '/api/aggregate': {
         post: {
-            req: AggregateEndpointPostData;
+            req: AggregateImagesPostData;
             res: {
                 /**
                  * Successful Response
                  */
-                200: string;
+                200: ImageAggregation;
                 /**
                  * Validation Error
                  */

@@ -3,7 +3,7 @@ import * as L from "leaflet";
 import data_model from "./data_model.generated.json";
 
 import { Dates } from "./dates_chart.ts";
-import { AggregateInfo, Gallery } from "./gallery";
+import { Gallery } from "./gallery";
 import { InputForm, shift_float_params } from "./input";
 import {
     parse_float_or_null,
@@ -419,11 +419,6 @@ function init_fun() {
     ___state.search_query.register_hook("Directories", (u) =>
         directories.fetch(u),
     );
-    /* Aggregate Info */
-    const aggregate_info = new AggregateInfo("AggregateInfo");
-    ___state.search_query.register_hook("AggregateInfo", (url_params) => {
-        aggregate_info.fetch(url_params, ___state.paging.get());
-    });
 
     /* Trigger redrawing of componentsl */
     // WARNING: here we assume that search_query will update everything

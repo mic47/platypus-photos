@@ -3,7 +3,7 @@
 import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
-import type { ImageEndpointGetData, ImageEndpointGetResponse, LocationClustersEndpointPostData, LocationClustersEndpointPostResponse, LocationBoundsEndpointPostData, LocationBoundsEndpointPostResponse, DateClustersEndpointPostData, DateClustersEndpointPostResponse, MassManualAnnotationEndpointPostData, MassManualAnnotationEndpointPostResponse, MapSearchEndpointPostData, MapSearchEndpointPostResponse, JobProgressStatePostData, JobProgressStatePostResponse, RemoteJobsGetResponse, SystemStatusGetResponse, SubmitAnnotationOverlayFormEndpointPostData, SubmitAnnotationOverlayFormEndpointPostResponse, FetchLocationInfoEndpointPostData, FetchLocationInfoEndpointPostResponse, DirectoriesEndpointPostData, DirectoriesEndpointPostResponse, ImagePagePostData, ImagePagePostResponse, AggregateEndpointPostData, AggregateEndpointPostResponse, ReadIndexGetResponse, ReadIndexGet1Response } from './types.gen';
+import type { ImageEndpointGetData, ImageEndpointGetResponse, LocationClustersEndpointPostData, LocationClustersEndpointPostResponse, LocationBoundsEndpointPostData, LocationBoundsEndpointPostResponse, DateClustersEndpointPostData, DateClustersEndpointPostResponse, MassManualAnnotationEndpointPostData, MassManualAnnotationEndpointPostResponse, MapSearchEndpointPostData, MapSearchEndpointPostResponse, JobProgressStatePostData, JobProgressStatePostResponse, RemoteJobsGetResponse, SystemStatusGetResponse, SubmitAnnotationOverlayFormEndpointPostData, SubmitAnnotationOverlayFormEndpointPostResponse, FetchLocationInfoEndpointPostData, FetchLocationInfoEndpointPostResponse, DirectoriesEndpointPostData, DirectoriesEndpointPostResponse, ImagePagePostData, ImagePagePostResponse, AggregateImagesPostData, AggregateImagesPostResponse, ReadIndexGetResponse, ReadIndexGet1Response } from './types.gen';
 
 /**
  * Image Endpoint
@@ -216,15 +216,15 @@ export const imagePagePost = (data: ImagePagePostData): CancelablePromise<ImageP
 }); };
 
 /**
- * Aggregate Endpoint
+ * Aggregate Images
  * @param data The data for the request.
  * @param data.requestBody
- * @returns string Successful Response
+ * @returns ImageAggregation Successful Response
  * @throws ApiError
  */
-export const aggregateEndpointPost = (data: AggregateEndpointPostData): CancelablePromise<AggregateEndpointPostResponse> => { return __request(OpenAPI, {
+export const aggregateImagesPost = (data: AggregateImagesPostData): CancelablePromise<AggregateImagesPostResponse> => { return __request(OpenAPI, {
     method: 'POST',
-    url: '/internal/aggregate.html',
+    url: '/api/aggregate',
     body: data.requestBody,
     mediaType: 'application/json',
     errors: {

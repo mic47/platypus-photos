@@ -3,6 +3,7 @@ import React from "react";
 
 import {
     GalleryPaging,
+    ImageAggregation,
     ImageResponse,
     ImageWithMeta,
     ManualLocation,
@@ -24,22 +25,6 @@ import {
     time_to_clock,
 } from "./utils.ts";
 import { AnnotationOverlay } from "./photo_map.ts";
-
-export class AggregateInfo {
-    constructor(private div_id: string) {}
-
-    fetch(url_data: SearchQuery, paging: GalleryPaging) {
-        pygallery_service
-            .aggregateEndpointPost({ requestBody: { query: url_data, paging } })
-            .then((text) => {
-                const element = document.getElementById(this.div_id);
-                if (element === null) {
-                    throw new Error(`Unable to find element ${this.div_id}`);
-                }
-                element.innerHTML = text;
-            });
-    }
-}
 
 export class Gallery {
     private root: Root;
@@ -92,6 +77,19 @@ function GalleryComponent({
             some_location: null,
         },
     ]);
+    const [aggr, updateAggr] = React.useState<{
+        aggr: ImageAggregation;
+        paging: GalleryPaging;
+    }>({
+        aggr: {
+            total: 0,
+            address: {},
+            tag: {},
+            classification: {},
+            cameras: {},
+        },
+        paging: pagingHook.get(),
+    });
     const [query, updateQuery] = React.useState<SearchQuery>(
         searchQueryHook.get(),
     );
@@ -132,6 +130,25 @@ function GalleryComponent({
         };
     }, [query, paging, sort]);
     React.useEffect(() => {
+        let ignore = false;
+        const requestBody = {
+            query,
+        };
+        const copiedPaging = { ...paging };
+        pygallery_service
+            .aggregateImagesPost({
+                requestBody,
+            })
+            .then((data) => {
+                if (!ignore) {
+                    updateAggr({ aggr: data, paging: copiedPaging });
+                }
+            });
+        return () => {
+            ignore = true;
+        };
+    }, [query, paging]);
+    React.useEffect(() => {
         searchQueryHook.register_hook("Gallery", (data) => {
             updateQuery(data);
         });
@@ -145,71 +162,82 @@ function GalleryComponent({
         sortHook.register_hook("Gallery", updateSort);
         return () => sortHook.unregister_hook("Gallery");
     });
+    const callbacks = {
+        updateOverlayIndex,
+        // TODO
+        prev_page: () => {},
+        next_page: () => {},
+        set_page: () => {},
+        annotation_overlay_interpolated: (location: ManualLocation) => {
+            const overlay = new AnnotationOverlay("SubmitDataOverlay");
+            overlay.fetch({
+                request: {
+                    t: "InterpolatedLocation",
+                    location,
+                },
+                query: searchQueryHook.get(),
+            });
+        },
+        update_checkbox_from_element: (element: HTMLInputElement) => {
+            checkboxSync.update_from_element(element);
+            updateCheckboxes(checkboxSync.get());
+        },
+        update_url: (update: SearchQuery) => {
+            searchQueryHook.update(update);
+        },
+        update_url_add_tag: (tag: string) => {
+            const old_tag = searchQueryHook.get()["tag"];
+            if (old_tag === undefined || old_tag === null) {
+                searchQueryHook.update({ tag: tag });
+            } else {
+                searchQueryHook.update({ tag: `${old_tag},${tag}` });
+            }
+        },
+        close_overlay: () => {
+            updateOverlayIndex(null);
+        },
+        prev_item: (index: number, paging: GalleryPaging) => {
+            const newIndex = index - 1;
+            if (newIndex >= 0) {
+                updateOverlayIndex(newIndex);
+            } else if (paging.page !== undefined && paging.page > 0) {
+                const newPage = paging.page - 1;
+                const newIndex = (paging.paging || 100) - 1;
+                pagingHook.update({ page: newPage });
+                updateOverlayIndex(newIndex);
+            }
+        },
+        next_item: (
+            index: number,
+            has_next_page: boolean,
+            paging: GalleryPaging,
+        ) => {
+            const newIndex = index + 1;
+            if (newIndex < (paging.paging || 100)) {
+                updateOverlayIndex(newIndex);
+            } else if (has_next_page) {
+                pagingHook.update({ page: (paging.page || 0) + 1 });
+                updateOverlayIndex(0);
+            }
+        },
+    };
     return (
-        <GalleryView
-            sort={sort}
-            paging={paging}
-            data={data[1]}
-            checkboxes={checkboxes}
-            overlay_index={overlayIndex}
-            callbacks={{
-                updateOverlayIndex,
-                prev_page: () => {},
-                next_page: () => {},
-                annotation_overlay_interpolated: (location: ManualLocation) => {
-                    const overlay = new AnnotationOverlay("SubmitDataOverlay");
-                    overlay.fetch({
-                        request: {
-                            t: "InterpolatedLocation",
-                            location,
-                        },
-                        query: searchQueryHook.get(),
-                    });
-                },
-                update_checkbox_from_element: (element: HTMLInputElement) => {
-                    checkboxSync.update_from_element(element);
-                    updateCheckboxes(checkboxSync.get());
-                },
-                update_url: (update: SearchQuery) => {
-                    searchQueryHook.update(update);
-                },
-                update_url_add_tag: (tag: string) => {
-                    const old_tag = searchQueryHook.get()["tag"];
-                    if (old_tag === undefined || old_tag === null) {
-                        searchQueryHook.update({ tag: tag });
-                    } else {
-                        searchQueryHook.update({ tag: `${old_tag},${tag}` });
-                    }
-                },
-                close_overlay: () => {
-                    updateOverlayIndex(null);
-                },
-                prev_item: (index: number, paging: GalleryPaging) => {
-                    const newIndex = index - 1;
-                    if (newIndex >= 0) {
-                        updateOverlayIndex(newIndex);
-                    } else if (paging.page !== undefined && paging.page > 0) {
-                        const newPage = paging.page - 1;
-                        const newIndex = (paging.paging || 100) - 1;
-                        pagingHook.update({ page: newPage });
-                        updateOverlayIndex(newIndex);
-                    }
-                },
-                next_item: (
-                    index: number,
-                    has_next_page: boolean,
-                    paging: GalleryPaging,
-                ) => {
-                    const newIndex = index + 1;
-                    if (newIndex < (paging.paging || 100)) {
-                        updateOverlayIndex(newIndex);
-                    } else if (has_next_page) {
-                        pagingHook.update({ page: (paging.page || 0) + 1 });
-                        updateOverlayIndex(0);
-                    }
-                },
-            }}
-        />
+        <>
+            <AggregateInfoView
+                aggr={aggr.aggr}
+                paging={aggr.paging}
+                show_links={true}
+                callbacks={callbacks}
+            />
+            <GalleryView
+                sort={sort}
+                paging={paging}
+                data={data[1]}
+                checkboxes={checkboxes}
+                overlay_index={overlayIndex}
+                callbacks={callbacks}
+            />
+        </>
     );
 }
 
@@ -625,6 +653,153 @@ function GalleryImage({
                 {cameraCrumb}
                 {extraImageJsx}
             </div>
+        </div>
+    );
+}
+
+interface AggregateInfoViewProps {
+    aggr: ImageAggregation;
+    paging: GalleryPaging;
+    show_links: boolean;
+    callbacks: {
+        update_url_add_tag: (tag: string) => void;
+        update_url: (update: SearchQuery) => void;
+        set_page: (page: number) => void;
+    };
+}
+
+function AggregateInfoView({
+    aggr,
+    paging,
+    show_links,
+    callbacks: { update_url_add_tag, update_url, set_page },
+}: AggregateInfoViewProps) {
+    const num_pages = Math.ceil(aggr.total / (paging.paging || 100));
+    const tags = Object.entries(aggr.tag)
+        .sort(([, a], [, b]) => b - a)
+        .slice(0, 15)
+        .map(([tag, num]) => {
+            if (show_links) {
+                return (
+                    <>
+                        <a
+                            key={tag}
+                            onClick={() => update_url_add_tag(tag)}
+                            href="#"
+                        >
+                            {tag} ({num})
+                        </a>{" "}
+                    </>
+                );
+            } else {
+                return (
+                    <>
+                        {tag} ({num}){" "}
+                    </>
+                );
+            }
+        });
+    const texts = Object.entries(aggr.classification)
+        .sort(([, a], [, b]) => b - a)
+        .slice(0, 5)
+        .map(([text, num]) => {
+            if (show_links) {
+                return (
+                    <>
+                        <a
+                            key={text}
+                            onClick={() => update_url({ cls: text })}
+                            href="#"
+                        >
+                            {text} ({num})
+                        </a>{" "}
+                    </>
+                );
+            } else {
+                return (
+                    <>
+                        {text} ({num}){" "}
+                    </>
+                );
+            }
+        });
+    const locs = Object.entries(aggr.address)
+        .sort(([, a], [, b]) => b - a)
+        .slice(0, 15)
+        .map(([loc, num]) => {
+            if (show_links) {
+                return (
+                    <>
+                        <a
+                            key={loc}
+                            onClick={() => update_url({ addr: loc })}
+                            href="#"
+                        >
+                            {append_flag(loc)} ({num})
+                        </a>{" "}
+                    </>
+                );
+            } else {
+                return (
+                    <>
+                        {append_flag(loc)} ({num}){" "}
+                    </>
+                );
+            }
+        });
+    const cameras = Object.entries(aggr.cameras)
+        .sort(([, a], [, b]) => b - a)
+        .splice(15)
+        .map(([camera, num]) => {
+            if (show_links || camera in ["unknown", "other", "distinct"]) {
+                return (
+                    <>
+                        <a
+                            key={camera}
+                            onClick={() => update_url({ camera: camera })}
+                            href="#"
+                        >
+                            {camera} ({num})
+                        </a>{" "}
+                    </>
+                );
+            } else {
+                return (
+                    <>
+                        {append_flag(camera)} ({num}){" "}
+                    </>
+                );
+            }
+        });
+    const pages = [...Array(num_pages).keys()]
+        .filter((page) => page <= 10 || page >= num_pages - 10)
+        .map((page) => {
+            if (page !== 10) {
+                return (
+                    <>
+                        <a key={page} href="#" onClick={() => set_page(page)}>
+                            {page}
+                        </a>{" "}
+                    </>
+                );
+            } else {
+                return <> ... </>;
+            }
+        });
+    return (
+        <div>
+            Found {aggr.total} matches.
+            <br />
+            Top tags: {tags}
+            <br />
+            Top texts: {texts}
+            <br />
+            Top locs: {locs}
+            <br />
+            Cameras: {cameras}
+            <br />
+            Go to page: {pages}
+            <br />
         </div>
     );
 }
