@@ -57,6 +57,16 @@ export type DateClusterParams = {
     buckets: number;
 };
 
+export type DirectoryStats = {
+    directory: string;
+    total_images: number;
+    has_location: number;
+    has_timestamp: number;
+    being_annotated: number;
+    since: number | null;
+    until: number | null;
+};
+
 export type ExceptionInfo = {
     exc_type: string | null;
     exc_val: string | null;
@@ -418,6 +428,12 @@ export type DirectoriesEndpointPostData = {
 
 export type DirectoriesEndpointPostResponse = string;
 
+export type MatchingDirectoriesPostData = {
+    requestBody: SearchQuery;
+};
+
+export type MatchingDirectoriesPostResponse = Array<DirectoryStats>;
+
 export type ImagePagePostData = {
     requestBody: GalleryRequest;
 };
@@ -598,6 +614,21 @@ export type $OpenApiTs = {
                  * Successful Response
                  */
                 200: string;
+                /**
+                 * Validation Error
+                 */
+                422: HTTPValidationError;
+            };
+        };
+    };
+    '/api/directories': {
+        post: {
+            req: MatchingDirectoriesPostData;
+            res: {
+                /**
+                 * Successful Response
+                 */
+                200: Array<DirectoryStats>;
                 /**
                  * Validation Error
                  */

@@ -212,6 +212,56 @@ export const $DateClusterParams = {
     title: 'DateClusterParams'
 } as const;
 
+export const $DirectoryStats = {
+    properties: {
+        directory: {
+            type: 'string',
+            title: 'Directory'
+        },
+        total_images: {
+            type: 'integer',
+            title: 'Total Images'
+        },
+        has_location: {
+            type: 'integer',
+            title: 'Has Location'
+        },
+        has_timestamp: {
+            type: 'integer',
+            title: 'Has Timestamp'
+        },
+        being_annotated: {
+            type: 'integer',
+            title: 'Being Annotated'
+        },
+        since: {
+            anyOf: [
+                {
+                    type: 'number'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Since'
+        },
+        until: {
+            anyOf: [
+                {
+                    type: 'number'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Until'
+        }
+    },
+    type: 'object',
+    required: ['directory', 'total_images', 'has_location', 'has_timestamp', 'being_annotated', 'since', 'until'],
+    title: 'DirectoryStats'
+} as const;
+
 export const $ExceptionInfo = {
     properties: {
         exc_type: {

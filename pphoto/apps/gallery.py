@@ -28,6 +28,7 @@ from pphoto.data_model.config import DBFilesConfig
 from pphoto.data_model.base import PathWithMd5
 from pphoto.db.types_location import LocationCluster, LocPoint, LocationBounds
 from pphoto.db.types_date import DateCluster, DateClusterGroupBy
+from pphoto.db.types_directory import DirectoryStats
 from pphoto.db.types_image import ImageAddress, ImageAggregation
 from pphoto.db.connection import PhotosConnection, GalleryConnection, JobsConnection
 from pphoto.utils import assert_never, Lazy
@@ -768,6 +769,9 @@ def directories_endpoint(request: Request, url: SearchQuery) -> HTMLResponse:
         },
     )
 
+@app.post("/api/directories")
+def matching_directories(url: SearchQuery) -> t.List[DirectoryStats]:
+    return sorted(DB.get().get_matching_directories(url), key=lambda x: x.directory)
 
 @dataclass
 class GalleryRequest:
