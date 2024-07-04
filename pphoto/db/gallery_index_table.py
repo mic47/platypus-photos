@@ -446,6 +446,10 @@ FROM (
     ) -> t.List[LocationCluster]:
         lats = [top_left.latitude, bottom_right.latitude]
         longs = [top_left.longitude, bottom_right.longitude]
+        if latitude_resolution == 0:
+            latitude_resolution = 0.01
+        if longitude_resolution == 0:
+            longitude_resolution = 0.01
         lat_scale = round_to_significant_digits((max(lats) - min(lats)) / latitude_resolution, 3)
         lon_scale = round_to_significant_digits((max(longs) - min(longs)) / longitude_resolution, 3)
         over_fetch_lat = (max(lats) - min(lats)) * over_fetch
