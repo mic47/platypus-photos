@@ -339,10 +339,14 @@ function AnnotationOverlayView({
                     </select>
                     <br />
                     <b>Extra tags:</b>
-                    <input type="text" name="extra_tags" value="" />
+                    <input type="text" name="extra_tags" defaultValue="" />
                     <br />
                     <b>Extra description:</b>
-                    <input type="text" name="extra_description" value="" />
+                    <input
+                        type="text"
+                        name="extra_description"
+                        defaultValue=""
+                    />
                     <br />
                     <input
                         type="checkbox"
@@ -446,16 +450,18 @@ function DirectoryTable({ directories }: DirectoryTableProps) {
     });
     return (
         <table>
-            <tr>
-                <th>Directory 📂</th>
-                <th>#Images 🖼️</th>
-                <th>% with location 🗺️</th>
-                <th>% with time 🕝</th>
-                <th>% being annotated 🏗️</th>
-                <th>Since</th>
-                <th>Until</th>
-            </tr>
-            {rows}
+            <thead>
+                <tr>
+                    <th>Directory 📂</th>
+                    <th>#Images 🖼️</th>
+                    <th>% with location 🗺️</th>
+                    <th>% with time 🕝</th>
+                    <th>% being annotated 🏗️</th>
+                    <th>Since</th>
+                    <th>Until</th>
+                </tr>
+            </thead>
+            <tbody>{rows}</tbody>
         </table>
     );
 }
@@ -495,14 +501,14 @@ function LocationFormPart({
                 <input
                     type="text"
                     name="address_name"
-                    value={request.address_name || ""}
+                    defaultValue={request.address_name || ""}
                 />
                 <br />
                 <b>Country:</b>
                 <input
                     type="text"
                     name="address_country"
-                    value={request.address_country || ""}
+                    defaultValue={request.address_country || ""}
                 />
                 <br />
                 <b>Latitude:</b> {request.latitude}
