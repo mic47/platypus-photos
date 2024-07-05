@@ -16,10 +16,9 @@ from geopy.distance import distance
 from PIL import Image, ImageFile
 
 from fastapi import FastAPI, Request, Response
-from fastapi.responses import HTMLResponse, FileResponse
+from fastapi.responses import FileResponse
 from fastapi.routing import APIRoute
 from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
 
 from pphoto.annots.geo import Geolocator
 from pphoto.communication.client import get_system_status, refresh_jobs, SystemStatus
@@ -43,8 +42,7 @@ from pphoto.remote_jobs.types import (
 from pphoto.gallery.db import ImageSqlDB, Image as ImageRow
 from pphoto.gallery.image import make_image_address
 from pphoto.gallery.url import SearchQuery, GalleryPaging, SortParams, SortBy, SortOrder
-from pphoto.gallery.utils import format_seconds_to_duration
-from pphoto.gallery.unicode import append_flag, replace_with_flag, flag
+from pphoto.gallery.unicode import flag
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
@@ -59,21 +57,7 @@ def custom_generate_unique_id(route: APIRoute) -> str:
 app = FastAPI(generate_unique_id_function=custom_generate_unique_id)
 app.mount("/static", StaticFiles(directory="static/"), name="static")
 app.mount("/css", StaticFiles(directory="css/"), name="static")
-templates = Jinja2Templates(directory="templates")
 
-
-def timestamp_to_pretty_datetime(value: float) -> str:
-    """
-    custom max calculation logic
-    """
-    return datetime.fromtimestamp(value).strftime("%Y-%m-%d %H:%M:%S")
-
-
-templates.env.filters["timestamp_to_pretty_datetime"] = timestamp_to_pretty_datetime
-templates.env.filters["append_flag"] = append_flag
-templates.env.filters["replace_with_flag"] = replace_with_flag
-templates.env.filters["dataclass_to_json_pretty"] = lambda x: x.to_json(indent=2, ensure_ascii=False)
-templates.env.filters["format_seconds_to_duration"] = lambda x: format_seconds_to_duration(float(x))
 
 DB = Lazy(
     lambda: ImageSqlDB(
@@ -656,24 +640,6 @@ def get_address(req: GetAddressRequest) -> ImageAddress:
     )
 
 
-@dataclass
-class LocationInfoRequest:
-    latitude: float
-    longitude: float
-
-
-@app.post("/internal/fetch_location_info.html", response_class=HTMLResponse)
-def fetch_location_info_endpoint(request: Request, location: LocationInfoRequest) -> HTMLResponse:
-    address = make_image_address(
-        GEOLOCATOR.address(PathWithMd5("", ""), location.latitude, location.longitude).p, None
-    )
-    return templates.TemplateResponse(
-        request=request,
-        name="fetch_location_info.html",
-        context={"address": address, "req": location},
-    )
-
-
 @app.post("/api/directories")
 def matching_directories(url: SearchQuery) -> t.List[DirectoryStats]:
     return sorted(DB.get().get_matching_directories(url), key=lambda x: x.directory)
@@ -710,7 +676,7 @@ class DateWithLoc:
 @dataclass
 class ReferenceStats(DataClassJsonMixin):
     distance_m: float
-    seconds: float
+    seconds: float  # noqa: F841
 
 
 @dataclass

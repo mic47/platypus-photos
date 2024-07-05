@@ -296,16 +296,5 @@ class UnicodeEmojiData(DataClassJsonMixin):
         )
 
 
-def append_flag(country: str) -> str:
-    flag_ = _FLAGS.get(country.lower())
-    if flag_ is not None:
-        return f"{country}{flag_}"
-    return country
-
-
-def replace_with_flag(country: str) -> str:
-    return _FLAGS.get(country.lower(), country)
-
-
 def flag(country: str) -> t.Optional[str]:
     return _FLAGS.get(country.lower())

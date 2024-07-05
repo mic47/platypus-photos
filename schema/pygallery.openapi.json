@@ -392,44 +392,6 @@
         }
       }
     },
-    "/internal/fetch_location_info.html": {
-      "post": {
-        "summary": "Fetch Location Info Endpoint",
-        "operationId": "fetch_location_info_endpoint-POST",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/LocationInfoRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/directories": {
       "post": {
         "summary": "Matching Directories",
@@ -1599,24 +1561,6 @@
           "position"
         ],
         "title": "LocationCluster"
-      },
-      "LocationInfoRequest": {
-        "properties": {
-          "latitude": {
-            "type": "number",
-            "title": "Latitude"
-          },
-          "longitude": {
-            "type": "number",
-            "title": "Longitude"
-          }
-        },
-        "type": "object",
-        "required": [
-          "latitude",
-          "longitude"
-        ],
-        "title": "LocationInfoRequest"
       },
       "LocationQueryFixedLocation": {
         "properties": {

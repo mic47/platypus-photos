@@ -206,11 +206,6 @@ export type LocationCluster = {
     position: LocPoint;
 };
 
-export type LocationInfoRequest = {
-    latitude: number;
-    longitude: number;
-};
-
 export type LocationQueryFixedLocation = {
     t: 'FixedLocation';
     location: ManualLocation;
@@ -414,12 +409,6 @@ export type GetAddressPostData = {
 
 export type GetAddressPostResponse = ImageAddress;
 
-export type FetchLocationInfoEndpointPostData = {
-    requestBody: LocationInfoRequest;
-};
-
-export type FetchLocationInfoEndpointPostResponse = string;
-
 export type MatchingDirectoriesPostData = {
     requestBody: SearchQuery;
 };
@@ -576,21 +565,6 @@ export type $OpenApiTs = {
                  * Successful Response
                  */
                 200: ImageAddress;
-                /**
-                 * Validation Error
-                 */
-                422: HTTPValidationError;
-            };
-        };
-    };
-    '/internal/fetch_location_info.html': {
-        post: {
-            req: FetchLocationInfoEndpointPostData;
-            res: {
-                /**
-                 * Successful Response
-                 */
-                200: string;
                 /**
                  * Validation Error
                  */

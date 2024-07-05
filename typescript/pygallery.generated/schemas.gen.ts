@@ -904,22 +904,6 @@ export const $LocationCluster = {
     title: 'LocationCluster'
 } as const;
 
-export const $LocationInfoRequest = {
-    properties: {
-        latitude: {
-            type: 'number',
-            title: 'Latitude'
-        },
-        longitude: {
-            type: 'number',
-            title: 'Longitude'
-        }
-    },
-    type: 'object',
-    required: ['latitude', 'longitude'],
-    title: 'LocationInfoRequest'
-} as const;
-
 export const $LocationQueryFixedLocation = {
     properties: {
         t: {
