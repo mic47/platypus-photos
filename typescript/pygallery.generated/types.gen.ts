@@ -60,6 +60,12 @@ export type ExceptionInfo = {
     exc_tb: Array<(string)> | null;
 };
 
+export type FoundLocation = {
+    latitude: number;
+    longitude: number;
+    address: string;
+};
+
 export type GalleryPaging = {
     page?: number;
     paging?: number;
@@ -229,6 +235,11 @@ export type MapSearchRequest = {
     };
 };
 
+export type MapSearchResponse = {
+    response: Array<FoundLocation> | null;
+    error: string | null;
+};
+
 export type MassLocationAndTextAnnotation_Input = {
     t: 'MassLocAndTxt';
     query: SearchQuery;
@@ -388,6 +399,12 @@ export type MassManualAnnotationEndpointPostData = {
 
 export type MassManualAnnotationEndpointPostResponse = number;
 
+export type FindLocationPostData = {
+    requestBody: MapSearchRequest;
+};
+
+export type FindLocationPostResponse = MapSearchResponse;
+
 export type MapSearchEndpointPostData = {
     requestBody: MapSearchRequest;
 };
@@ -507,6 +524,21 @@ export type $OpenApiTs = {
                  * Successful Response
                  */
                 200: number;
+                /**
+                 * Validation Error
+                 */
+                422: HTTPValidationError;
+            };
+        };
+    };
+    '/api/map_search': {
+        post: {
+            req: FindLocationPostData;
+            res: {
+                /**
+                 * Successful Response
+                 */
+                200: MapSearchResponse;
                 /**
                  * Validation Error
                  */

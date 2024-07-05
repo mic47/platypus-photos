@@ -259,6 +259,26 @@ export const $ExceptionInfo = {
     title: 'ExceptionInfo'
 } as const;
 
+export const $FoundLocation = {
+    properties: {
+        latitude: {
+            type: 'number',
+            title: 'Latitude'
+        },
+        longitude: {
+            type: 'number',
+            title: 'Longitude'
+        },
+        address: {
+            type: 'string',
+            title: 'Address'
+        }
+    },
+    type: 'object',
+    required: ['latitude', 'longitude', 'address'],
+    title: 'FoundLocation'
+} as const;
+
 export const $GalleryPaging = {
     properties: {
         page: {
@@ -987,6 +1007,39 @@ export const $MapSearchRequest = {
     },
     type: 'object',
     title: 'MapSearchRequest'
+} as const;
+
+export const $MapSearchResponse = {
+    properties: {
+        response: {
+            anyOf: [
+                {
+                    items: {
+                        '$ref': '#/components/schemas/FoundLocation'
+                    },
+                    type: 'array'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Response'
+        },
+        error: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Error'
+        }
+    },
+    type: 'object',
+    required: ['response', 'error'],
+    title: 'MapSearchResponse'
 } as const;
 
 export const $MassLocationAndTextAnnotation_Input = {

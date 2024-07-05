@@ -237,6 +237,44 @@
         }
       }
     },
+    "/api/map_search": {
+      "post": {
+        "summary": "Find Location",
+        "operationId": "find_location-POST",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MapSearchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MapSearchResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/internal/map_search.html": {
       "post": {
         "summary": "Map Search Endpoint",
@@ -878,6 +916,29 @@
           "exc_tb"
         ],
         "title": "ExceptionInfo"
+      },
+      "FoundLocation": {
+        "properties": {
+          "latitude": {
+            "type": "number",
+            "title": "Latitude"
+          },
+          "longitude": {
+            "type": "number",
+            "title": "Longitude"
+          },
+          "address": {
+            "type": "string",
+            "title": "Address"
+          }
+        },
+        "type": "object",
+        "required": [
+          "latitude",
+          "longitude",
+          "address"
+        ],
+        "title": "FoundLocation"
       },
       "GalleryPaging": {
         "properties": {
@@ -1694,6 +1755,41 @@
         },
         "type": "object",
         "title": "MapSearchRequest"
+      },
+      "MapSearchResponse": {
+        "properties": {
+          "response": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/FoundLocation"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Response"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "type": "object",
+        "required": [
+          "response",
+          "error"
+        ],
+        "title": "MapSearchResponse"
       },
       "MassLocationAndTextAnnotation-Input": {
         "properties": {

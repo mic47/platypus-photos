@@ -469,6 +469,30 @@ class MapSearchRequest:
     checkboxes: t.Dict[str, bool] = field(default_factory=dict)  # noqa: F841
 
 
+@dataclass
+class FoundLocation:
+    latitude: float
+    longitude: float
+    address: str
+
+
+@dataclass
+class MapSearchResponse:
+    response: None | t.List[FoundLocation]
+    error: None | str
+
+
+@app.post("/api/map_search")
+def find_location(req: MapSearchRequest) -> MapSearchResponse:
+    try:
+        result = GEOLOCATOR.search(req.query, limit=10) if req.query is not None else []
+        return MapSearchResponse([FoundLocation(r.latitude, r.longitude, r.address) for r in result], None)
+    # pylint: disable-next = broad-exception-caught
+    except Exception as e:
+        traceback.print_exc()
+        return MapSearchResponse(None, f"{e}\n{traceback.format_exc()}")
+
+
 @app.post("/internal/map_search.html", response_class=HTMLResponse)
 def map_search_endpoint(request: Request, req: MapSearchRequest) -> HTMLResponse:
     error = ""
