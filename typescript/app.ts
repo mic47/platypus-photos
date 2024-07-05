@@ -17,35 +17,13 @@ import { Directories } from "./directories";
 import { TabSwitch } from "./switchable";
 import { SystemStatus } from "./system_status";
 
-import * as pygallery_service from "./pygallery.generated/services.gen";
 import { SortParams, SearchQuery } from "./pygallery.generated/types.gen";
-import { AnnotationOverlay, submit_to_annotation_overlay } from "./annotations";
+import { AnnotationOverlay } from "./annotations";
 import { MapSearch } from "./map_search.tsx";
 
 let ___state: AppState;
 function update_url(data: SearchQuery) {
     ___state.search_query.update(data);
-}
-
-function annotation_overlay(latitude: number, longitude: number) {
-    pygallery_service
-        .getAddressPost({ requestBody: { latitude, longitude } })
-        .catch((reason) => {
-            console.log(reason);
-            return { country: null, name: null, full: null };
-        })
-        .then((address) => {
-            submit_to_annotation_overlay("SubmitDataOverlay", {
-                request: {
-                    t: "FixedLocation",
-                    latitude,
-                    longitude,
-                    address_name: address.name,
-                    address_country: address.country,
-                },
-                query: ___state.search_query.get(),
-            });
-        });
 }
 
 function init_fun() {
@@ -71,7 +49,14 @@ function init_fun() {
     ___state.sort.register_hook("SortUrlSync", (u) => sort_sync.update(u));
     const checkbox_sync = new CheckboxSync();
 
-    new InputForm("InputForm", ___state.search_query);
+    /* AnnotationOverlay */
+    const annotator = new AnnotationOverlay(
+        "SubmitDataOverlay",
+        ___state.search_query,
+        ___state.paging,
+    );
+    /* InputForm */
+    new InputForm("InputForm", ___state.search_query, annotator.submitter);
     /* Gallery */
     new Gallery(
         "GalleryImages",
@@ -79,23 +64,12 @@ function init_fun() {
         ___state.paging,
         ___state.sort,
         checkbox_sync,
-    );
-    /* AnnotationOverlay */
-    new AnnotationOverlay(
-        "SubmitDataOverlay",
-        ___state.search_query,
-        ___state.paging,
+        annotator.submitter,
     );
     /* Map */
-    const map = new PhotoMap(
-        "map",
-        "MapUseQuery",
-        () => ___state.search_query.get(),
-        {
-            annotation_overlay,
-            update_url,
-        },
-    );
+    const map = new PhotoMap("map", "MapUseQuery", ___state.search_query, {
+        annotation_overlay: annotator.fixed_location_submitter,
+    });
     new MapSearch("MapSearch", checkbox_sync, ___state.search_query, map);
     ___state.search_query.register_hook("MasSearch", (url_params) => {
         map.update_markers(url_params, true);

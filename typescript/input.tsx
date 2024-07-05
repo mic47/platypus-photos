@@ -3,13 +3,14 @@ import React, { FormEvent } from "react";
 
 import { SearchQuery } from "./pygallery.generated/types.gen";
 import { StateWithHooks, update_search_query_value } from "./state.ts";
-import { submit_to_annotation_overlay } from "./annotations.tsx";
+import { AnnotationOverlayRequest } from "./annotations.tsx";
 
 export class InputForm {
     private root: Root;
     constructor(
         private div_id: string,
         hooks: StateWithHooks<SearchQuery>,
+        submitAnnotations: (request: AnnotationOverlayRequest) => void,
     ) {
         this.div_id = div_id;
         const element = document.getElementById(this.div_id);
@@ -17,12 +18,18 @@ export class InputForm {
             throw new Error(`Unable to find element ${this.div_id}`);
         }
         this.root = createRoot(element);
-        this.root.render(<InputFormComponent hooks={hooks} />);
+        this.root.render(
+            <InputFormComponent
+                hooks={hooks}
+                submitAnnotations={submitAnnotations}
+            />,
+        );
     }
 }
 
 interface InputFormComponentProps {
     hooks: StateWithHooks<SearchQuery>;
+    submitAnnotations: (request: AnnotationOverlayRequest) => void;
 }
 
 type WithTs<T> = {
@@ -30,7 +37,10 @@ type WithTs<T> = {
     ts: number;
 };
 
-function InputFormComponent({ hooks }: InputFormComponentProps) {
+function InputFormComponent({
+    hooks,
+    submitAnnotations,
+}: InputFormComponentProps) {
     const [query, updateQuery] = React.useState<WithTs<SearchQuery>>({
         q: hooks.get(),
         ts: Date.now(),
@@ -59,6 +69,7 @@ function InputFormComponent({ hooks }: InputFormComponentProps) {
                 }
                 hooks.replace(values);
             }}
+            submitAnnotations={submitAnnotations}
         />
     );
 }
@@ -67,9 +78,15 @@ interface InputFormViewProps {
     query: WithTs<SearchQuery>;
     formSubmitted: (form: HTMLFormElement) => void;
     hook: Hook;
+    submitAnnotations: (request: AnnotationOverlayRequest) => void;
 }
 
-function InputFormView({ query, hook, formSubmitted }: InputFormViewProps) {
+function InputFormView({
+    query,
+    hook,
+    formSubmitted,
+    submitAnnotations,
+}: InputFormViewProps) {
     function update(form: FormEvent<HTMLFormElement>) {
         formSubmitted(form.currentTarget);
     }
@@ -132,7 +149,12 @@ function InputFormView({ query, hook, formSubmitted }: InputFormViewProps) {
                 <input
                     type="button"
                     value="Shift timestmap for selected photos"
-                    onClick={() => annotation_overlay_no_location(hook)}
+                    onClick={() => {
+                        submitAnnotations({
+                            request: { t: "NoLocation" },
+                            query: hook.get(),
+                        });
+                    }}
                 />
                 <br />
                 {timestampInput(
@@ -235,12 +257,6 @@ export function shift_float_params(
         }
     }
     search_query.update(update);
-}
-function annotation_overlay_no_location(search_query: Hook) {
-    submit_to_annotation_overlay("SubmitDataOverlay", {
-        request: { t: "NoLocation" },
-        query: search_query.get(),
-    });
 }
 
 const TIME_FORMAT = new Intl.DateTimeFormat("en-GB", {

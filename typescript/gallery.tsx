@@ -18,7 +18,7 @@ import {
 import * as pygallery_service from "./pygallery.generated/services.gen.ts";
 import { GalleryImage, ImageCallbacks } from "./gallery_image.tsx";
 import { AggregateInfoView } from "./aggregate_info.tsx";
-import { submit_to_annotation_overlay } from "./annotations.tsx";
+import { AnnotationOverlayRequest } from "./annotations.tsx";
 
 export class Gallery {
     private root: Root;
@@ -28,6 +28,7 @@ export class Gallery {
         pagingHook: StateWithHooks<GalleryPaging>,
         sortHook: StateWithHooks<SortParams>,
         checkboxSync: CheckboxSync,
+        submit_annotations: (request: AnnotationOverlayRequest) => void,
     ) {
         const element = document.getElementById(this.div_id);
         if (element === null) {
@@ -43,6 +44,7 @@ export class Gallery {
                     sortHook={sortHook}
                     checkboxSync={checkboxSync}
                     urlSync={galleryUrlSync}
+                    submit_annotations={submit_annotations}
                 />
             </React.StrictMode>,
         );
@@ -55,6 +57,7 @@ interface GalleryComponentProps {
     sortHook: StateWithHooks<SortParams>;
     checkboxSync: CheckboxSync;
     urlSync: UrlSync;
+    submit_annotations: (request: AnnotationOverlayRequest) => void;
 }
 function GalleryComponent({
     searchQueryHook,
@@ -62,6 +65,7 @@ function GalleryComponent({
     sortHook,
     checkboxSync,
     urlSync,
+    submit_annotations,
 }: GalleryComponentProps) {
     const [data, updateData] = React.useState<[SearchQuery, ImageResponse]>([
         {},
@@ -172,7 +176,7 @@ function GalleryComponent({
             pagingHook.update({ page });
         },
         annotation_overlay_interpolated: (location: ManualLocation) => {
-            submit_to_annotation_overlay("SubmitDataOverlay", {
+            submit_annotations({
                 request: {
                     t: "InterpolatedLocation",
                     location,

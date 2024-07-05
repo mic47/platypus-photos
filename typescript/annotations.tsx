@@ -55,7 +55,7 @@ export class AnnotationOverlay {
     private hub: HTMLElement;
     constructor(
         private div_id: string,
-        searchQueryHook: StateWithHooks<SearchQuery>,
+        private searchQueryHook: StateWithHooks<SearchQuery>,
         pagingHook: StateWithHooks<GalleryPaging>,
     ) {
         const element = document.getElementById(this.div_id);
@@ -72,23 +72,33 @@ export class AnnotationOverlay {
             />,
         );
     }
-    submit(request: AnnotationOverlayRequest) {
+    submitter(request: AnnotationOverlayRequest) {
         this.hub.dispatchEvent(
-            new CustomEvent("AnnotationOverlayRequest", { detail: request }),
+            new CustomEvent("AnnotationOverlayRequest", {
+                detail: request,
+            }),
         );
     }
-}
-export function submit_to_annotation_overlay(
-    divId: string,
-    request: AnnotationOverlayRequest,
-) {
-    const element = document.getElementById(divId);
-    if (element === null) {
-        throw new Error(`Unable to find element ${divId}`);
+    fixed_location_submitter(latitude: number, longitude: number) {
+        pygallery_service
+            .getAddressPost({ requestBody: { latitude, longitude } })
+            .catch((reason) => {
+                console.log(reason);
+                return { country: null, name: null, full: null };
+            })
+            .then((address) => {
+                this.submitter({
+                    request: {
+                        t: "FixedLocation",
+                        latitude,
+                        longitude,
+                        address_name: address.name,
+                        address_country: address.country,
+                    },
+                    query: this.searchQueryHook.get(),
+                });
+            });
     }
-    element.dispatchEvent(
-        new CustomEvent("AnnotationOverlayRequest", { detail: request }),
-    );
 }
 
 function AnnotationOverlayComponent({

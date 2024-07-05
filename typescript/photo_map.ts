@@ -11,6 +11,7 @@ import {
     LocationPopup,
 } from "./location_popup.tsx";
 import { LocalStorageState } from "./local_storage_state.ts";
+import { StateWithHooks } from "./state.ts";
 
 type Position = {
     latitude: number;
@@ -48,10 +49,9 @@ export class PhotoMap {
     constructor(
         div_id: string,
         private should_use_query_div: string,
-        get_url: () => SearchQuery,
+        private searchQueryHook: StateWithHooks<SearchQuery>,
         private callbacks: {
             annotation_overlay: (latitude: number, longitude: number) => void;
-            update_url: (query: SearchQuery) => void;
         },
     ) {
         this.map = L.map(div_id).fitWorld();
@@ -70,7 +70,7 @@ export class PhotoMap {
             if ((e as unknown as { flyTo: boolean }).flyTo) {
                 return;
             }
-            this.update_markers(get_url(), false);
+            this.update_markers(this.searchQueryHook.get(), false);
         };
         const context_menu: L.LeafletEventHandlerFn = (e) => {
             this.context_menu(e as L.LocationEvent);
@@ -88,7 +88,7 @@ export class PhotoMap {
             attribution:
                 '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
         }).addTo(this.map);
-        this.update_bounds(get_url(), true);
+        this.update_bounds(this.searchQueryHook.get(), true);
     }
 
     private delete_local_marker_callback(id: string) {
@@ -324,7 +324,7 @@ export class PhotoMap {
                             LocationClusterPopup({
                                 cluster,
                                 callbacks: {
-                                    update_url: this.callbacks.update_url,
+                                    update_url: this.searchQueryHook.update,
                                     annotation_overlay:
                                         this.callbacks.annotation_overlay,
                                 },
