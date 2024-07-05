@@ -233,7 +233,9 @@ function AnnotationOverlayComponent({
                             }
                             resetAll();
                         })
-                        .catch((error) => updateError(error));
+                        .catch((error) => {
+                            updateError(error);
+                        });
                 },
             }}
         />
@@ -313,14 +315,12 @@ function AnnotationOverlayView({
     return (
         <div className="submit_overlay" id="submit_overlay">
             <h2>Going to annotate {aggr?.total || "(loading)"} photos </h2>
-            <ErrorBox error={error} />
             {disabled ? <h3>Data is loading, submitting is disabled</h3> : null}
             <div className="annotation_scrollable_area">
+                <ErrorBox error={error} />
                 <form
-                    onSubmit={(event) => {
-                        if (disabled) return;
-                        submit(event.currentTarget, request, null);
-                    }}
+                    onSubmit={() => {}}
+                    method="dialog"
                     id="SubmitAnnotations"
                 >
                     <LocationFormPart request={request.request} />
@@ -355,9 +355,21 @@ function AnnotationOverlayView({
                     />
                     Check this box
                     <br />
-                    <input type="submit" value="Add" />
                     <input
-                        type="submit"
+                        type="button"
+                        value="Add"
+                        onClick={(event) => {
+                            if (disabled) return;
+                            submit(
+                                event.currentTarget
+                                    .parentElement as HTMLFormElement,
+                                request,
+                                null,
+                            );
+                        }}
+                    />
+                    <input
+                        type="button"
                         value="Add, fwd in time, end +1d"
                         onClick={(event) => {
                             if (disabled) return;
@@ -370,7 +382,7 @@ function AnnotationOverlayView({
                         }}
                     />
                     <input
-                        type="submit"
+                        type="button"
                         value="Add, fwd in time, end +1w"
                         onClick={(event) => {
                             if (disabled) return;
