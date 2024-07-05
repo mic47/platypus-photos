@@ -28,11 +28,18 @@ type LastUpdateMarkersCacheParam = {
     change_view: boolean;
 };
 
+export type Marker = {
+    latitude: number;
+    longitude: number;
+    text: string;
+};
+
 export class PhotoMap {
     public map: L.Map;
     private last_update_markers: LastUpdateMarkersCacheParam | null = null;
     private last_update_timestamp: number = 0;
     private markers: { [id: string]: L.Marker };
+    private local_markers: { [id: string]: L.Marker };
     constructor(
         div_id: string,
         private should_use_query_div: string,
@@ -49,6 +56,7 @@ export class PhotoMap {
         this.map = L.map(div_id).fitWorld();
         L.control.scale({ imperial: false }).addTo(this.map);
         this.markers = {};
+        this.local_markers = {};
         const update_markers: L.LeafletEventHandlerFn = (e) => {
             if ((e as unknown as { flyTo: boolean }).flyTo) {
                 return;
@@ -72,6 +80,33 @@ export class PhotoMap {
                 '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
         }).addTo(this.map);
         this.update_bounds(get_url(), true);
+    }
+
+    delete_local_marker(id: string) {
+        const marker = this.local_markers[id];
+        if (marker !== undefined && marker !== null) {
+            marker.remove();
+            delete this.local_markers[id];
+        }
+    }
+    add_local_marker(id: string, item: Marker) {
+        const marker = L.marker([item.latitude, item.longitude], {
+            alt: "Ad-hoc marker: " + item.text,
+            title: "Ad-hoc marker: " + item.text,
+            opacity: 0.7,
+        }).addTo(this.map);
+        marker.bindPopup(
+            [
+                item.text,
+                "<br/>",
+                '<input type="button" value="Use this location for selected photos" ',
+                `onclick="window.APP.annotation_overlay(${item.latitude}, ${item.longitude})">`,
+                "<br/>",
+                '<input type="button" value="Delete this marker" ',
+                `onclick="window.APP.delete_marker('${id}')">`,
+            ].join(""),
+        );
+        this.local_markers[id] = marker;
     }
 
     context_menu(e: L.LocationEvent) {

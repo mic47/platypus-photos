@@ -1,11 +1,9 @@
-import * as L from "leaflet";
-
 import data_model from "./data_model.generated.json";
 
 import { Dates } from "./dates_chart";
 import { Gallery } from "./gallery";
 import { InputForm } from "./input";
-import { PhotoMap } from "./photo_map";
+import { Marker, PhotoMap } from "./photo_map";
 import {
     AppState,
     CheckboxSync,
@@ -29,49 +27,12 @@ let ___state: AppState;
 function update_url(data: SearchQuery) {
     ___state.search_query.update(data);
 }
-let ___map: PhotoMap;
-const ___global_markers: { [id: string]: L.Marker } = {};
-type Marker = {
-    latitude: number;
-    longitude: number;
-    text: string;
-};
 let ___local_storage_markers: LocalStorageState<Marker>;
 
 function delete_marker(id: string) {
     ___local_storage_markers.remove(id);
 }
-function delete_marker_only(id: string) {
-    const marker = ___global_markers[id];
-    if (marker !== undefined && marker !== null) {
-        marker.remove();
-        delete ___global_markers[id];
-    }
-}
-function map_add_point_only(
-    id: string,
-    latitude: number,
-    longitude: number,
-    text: string,
-) {
-    const marker = L.marker([latitude, longitude], {
-        alt: "Ad-hoc marker: " + text,
-        title: "Ad-hoc marker: " + text,
-        opacity: 0.7,
-    }).addTo(___map.map);
-    marker.bindPopup(
-        [
-            text,
-            "<br/>",
-            '<input type="button" value="Use this location for selected photos" ',
-            `onclick="window.APP.annotation_overlay(${latitude}, ${longitude})">`,
-            "<br/>",
-            '<input type="button" value="Delete this marker" ',
-            `onclick="window.APP.delete_marker('${id}')">`,
-        ].join(""),
-    );
-    ___global_markers[id] = marker;
-}
+
 function map_add_point(latitude: number, longitude: number, text: string) {
     ___local_storage_markers.add({ latitude, longitude, text });
 }
@@ -136,15 +97,15 @@ function init_fun() {
         ___state.paging,
     );
     /* Map */
-    ___map = new PhotoMap(
+    const map = new PhotoMap(
         "map",
         "MapUseQuery",
         () => ___state.search_query.get(),
         { annotation_overlay, add_point_to_map: map_add_point },
     );
-    new MapSearch("MapSearch", ___checkbox_sync, ___state.search_query, ___map);
+    new MapSearch("MapSearch", ___checkbox_sync, ___state.search_query, map);
     ___state.search_query.register_hook("MasSearch", (url_params) => {
-        ___map.update_markers(url_params, true);
+        map.update_markers(url_params, true);
     });
     /* Dates */
     const dates = new Dates(
@@ -169,7 +130,7 @@ function init_fun() {
     ___state.search_query.replace(parse_search_query(search_query_sync.get()));
 
     /* Job progress / list UI */
-    const job_progress = new JobProgress("JobProgress", ___map.zoom_to);
+    const job_progress = new JobProgress("JobProgress", map.zoom_to);
     /* System Status */
     const system_status = new SystemStatus("SystemStatus");
     /* Tab */
@@ -182,10 +143,10 @@ function init_fun() {
 
     ___local_storage_markers = new LocalStorageState<Marker>("markers", {
         item_was_added: (id: string, item: Marker) => {
-            map_add_point_only(id, item.latitude, item.longitude, item.text);
+            map.add_local_marker(id, item);
         },
         item_was_removed: (id: string) => {
-            delete_marker_only(id);
+            map.delete_local_marker(id);
         },
     });
 }
