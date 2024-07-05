@@ -12,10 +12,9 @@ type Position = {
     latitude: number;
     longitude: number;
 };
-// TODO: rename to nw, se
 type Bounds = {
-    tl: Position;
-    br: Position;
+    nw: Position;
+    se: Position;
 };
 
 type LastUpdateMarkersCacheParam = {
@@ -159,19 +158,19 @@ export class PhotoMap {
             return false;
         }
         const lat_tolerance =
-            Math.abs(last_bounds.tl.latitude - last_bounds.br.latitude) *
+            Math.abs(last_bounds.nw.latitude - last_bounds.se.latitude) *
             tolerance;
         const lon_tolerance =
-            Math.abs(last_bounds.tl.longitude - last_bounds.br.longitude) *
+            Math.abs(last_bounds.nw.longitude - last_bounds.se.longitude) *
             tolerance;
         return (
-            Math.abs(last_bounds.tl.latitude - new_bounds.tl.latitude) <
+            Math.abs(last_bounds.nw.latitude - new_bounds.nw.latitude) <
                 lat_tolerance &&
-            Math.abs(last_bounds.tl.longitude - new_bounds.tl.longitude) <
+            Math.abs(last_bounds.nw.longitude - new_bounds.nw.longitude) <
                 lon_tolerance &&
-            Math.abs(last_bounds.br.latitude - new_bounds.br.latitude) <
+            Math.abs(last_bounds.se.latitude - new_bounds.se.latitude) <
                 lat_tolerance &&
-            Math.abs(last_bounds.br.longitude - new_bounds.br.longitude) <
+            Math.abs(last_bounds.se.longitude - new_bounds.se.longitude) <
                 lon_tolerance
         );
     }
@@ -212,11 +211,11 @@ export class PhotoMap {
         const cluster_pixel_size = 10;
         const timestamp = new Date().getTime();
         const bounds_query: Bounds = {
-            tl: {
+            nw: {
                 latitude: nw.lat,
                 longitude: nw.lng,
             },
-            br: {
+            se: {
                 latitude: se.lat,
                 longitude: se.lng,
             },
