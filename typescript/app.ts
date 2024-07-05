@@ -44,11 +44,6 @@ function get_markers_from_local_storage(): LocalStorageMarkers {
     let parsed = {};
     try {
         parsed = JSON.parse(current);
-        if (Array.isArray(parsed)) {
-            parsed = Object.fromEntries(
-                parsed.map((e, i) => [i.toString(), e]),
-            );
-        }
     } catch (error) {
         console.log("Error when getting data from local storage", error);
     }
