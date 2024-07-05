@@ -9,7 +9,7 @@ import time
 import enum
 import traceback
 from datetime import datetime, timedelta
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 from dataclasses_json import DataClassJsonMixin
 from geopy.distance import distance
@@ -464,12 +464,6 @@ GEOLOCATOR = Geolocator()
 
 
 @dataclass
-class MapSearchRequest:
-    query: t.Optional[str] = None
-    checkboxes: t.Dict[str, bool] = field(default_factory=dict)  # noqa: F841
-
-
-@dataclass
 class FoundLocation:
     latitude: float
     longitude: float
@@ -483,30 +477,14 @@ class MapSearchResponse:
 
 
 @app.post("/api/map_search")
-def find_location(req: MapSearchRequest) -> MapSearchResponse:
+def find_location(req: str) -> MapSearchResponse:
     try:
-        result = GEOLOCATOR.search(req.query, limit=10) if req.query is not None else []
+        result = GEOLOCATOR.search(req, limit=10) if req != "" else []
         return MapSearchResponse([FoundLocation(r.latitude, r.longitude, r.address) for r in result], None)
     # pylint: disable-next = broad-exception-caught
     except Exception as e:
         traceback.print_exc()
         return MapSearchResponse(None, f"{e}\n{traceback.format_exc()}")
-
-
-@app.post("/internal/map_search.html", response_class=HTMLResponse)
-def map_search_endpoint(request: Request, req: MapSearchRequest) -> HTMLResponse:
-    error = ""
-    try:
-        result = GEOLOCATOR.search(req.query, limit=10) if req.query is not None else []
-    # pylint: disable-next = broad-exception-caught
-    except Exception as e:
-        traceback.print_exc()
-        error = f"{e}\n{traceback.format_exc()}"
-    return templates.TemplateResponse(
-        request=request,
-        name="map_search.html",
-        context={"req": req, "result": result, "error": error},
-    )
 
 
 @dataclass

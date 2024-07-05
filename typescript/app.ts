@@ -5,7 +5,7 @@ import data_model from "./data_model.generated.json";
 import { Dates } from "./dates_chart";
 import { Gallery } from "./gallery";
 import { InputForm } from "./input";
-import { MapSearch, PhotoMap, location_preview } from "./photo_map";
+import { PhotoMap, location_preview } from "./photo_map";
 import {
     AppState,
     CheckboxSync,
@@ -22,24 +22,15 @@ import { SystemStatus } from "./system_status";
 import * as pygallery_service from "./pygallery.generated/services.gen";
 import { SortParams, SearchQuery } from "./pygallery.generated/types.gen";
 import { AnnotationOverlay, submit_to_annotation_overlay } from "./annotations";
+import { MapSearch } from "./map_search.tsx";
 
 let ___state: AppState;
-function update_dir(data: string) {
-    ___state.search_query.update({ directory: data });
-}
 function update_url(data: SearchQuery) {
     ___state.search_query.update(data);
 }
-let ___map_search: MapSearch;
 let ___map: PhotoMap;
 function map_zoom(latitude: number, longitude: number) {
     ___map.map.flyTo([latitude, longitude], 13, { duration: 1 });
-}
-function map_bounds() {
-    ___map.update_bounds(___state.search_query.get());
-}
-function map_refetch() {
-    ___map.update_markers(___state.search_query.get(), false);
 }
 const ___global_markers: { [id: string]: L.Marker } = {};
 type Marker = {
@@ -167,22 +158,6 @@ function map_add_point(latitude: number, longitude: number, text: string) {
 function map_close_popup() {
     ___map.map.closePopup();
 }
-function fetch_map_search() {
-    const formData = new FormData(
-        document.getElementById("MapSearchId") as HTMLFormElement,
-    );
-    const values: { [key: string]: string } = {};
-    for (const [key, value] of formData) {
-        if (value) {
-            if (typeof value === "string") {
-                values[key] = value;
-            }
-        }
-    }
-    if (___map_search !== null) {
-        ___map_search.fetch(values["query"] || null, ___checkbox_sync.get());
-    }
-}
 function annotation_overlay(latitude: number, longitude: number) {
     pygallery_service
         .getAddressPost({ requestBody: { latitude, longitude } })
@@ -249,7 +224,7 @@ function init_fun() {
         () => ___state.search_query.get(),
         location_preview,
     );
-    ___map_search = new MapSearch("MapSearch");
+    new MapSearch("MapSearch", ___checkbox_sync, ___state.search_query, ___map);
     ___state.search_query.register_hook("MasSearch", (url_params) => {
         ___map.update_markers(url_params, true);
     });
@@ -274,7 +249,6 @@ function init_fun() {
     // WARNING: here we assume that search_query will update everything
     ___state.sort.replace_no_hook_update(parse_sort_params(sort_sync.get()));
     ___state.search_query.replace(parse_search_query(search_query_sync.get()));
-    ___map_search.fetch(null, ___checkbox_sync.get());
 
     /* Job progress / list UI */
     const job_progress = new JobProgress("JobProgress", map_zoom);
@@ -297,14 +271,10 @@ function update_sort(params: SortParams) {
 const app: object = {
     checkbox_sync: ___checkbox_sync,
     init_fun,
-    update_dir,
     update_url,
     map_zoom,
-    map_bounds,
-    map_refetch,
     map_add_point,
     map_close_popup,
-    fetch_map_search,
     annotation_overlay,
     delete_marker,
     update_sort,

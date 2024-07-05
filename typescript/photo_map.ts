@@ -1,6 +1,5 @@
 import * as L from "leaflet";
 
-import { CheckboxesParams } from "./state.ts";
 import { pprange } from "./utils.ts";
 import { GenericFetch } from "./generic_fetch.ts";
 import { SearchQuery } from "./pygallery.generated/types.gen.ts";
@@ -263,18 +262,6 @@ export class PhotoMap {
                     (m) => (this.markers[m[0]] = m[1]),
                 );
             });
-    }
-}
-
-export class MapSearch extends GenericFetch<{
-    query: string | null;
-    checkboxes: CheckboxesParams;
-}> {
-    constructor(div_id: string) {
-        super(div_id, pygallery_service.mapSearchEndpointPost);
-    }
-    fetch(search_str: string | null, checkboxes: CheckboxesParams) {
-        return this.fetch_impl({ query: search_str, checkboxes });
     }
 }
 

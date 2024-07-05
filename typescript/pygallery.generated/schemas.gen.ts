@@ -984,31 +984,6 @@ export const $ManualLocationOverride = {
     title: 'ManualLocationOverride'
 } as const;
 
-export const $MapSearchRequest = {
-    properties: {
-        query: {
-            anyOf: [
-                {
-                    type: 'string'
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'Query'
-        },
-        checkboxes: {
-            additionalProperties: {
-                type: 'boolean'
-            },
-            type: 'object',
-            title: 'Checkboxes'
-        }
-    },
-    type: 'object',
-    title: 'MapSearchRequest'
-} as const;
-
 export const $MapSearchResponse = {
     properties: {
         response: {

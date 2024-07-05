@@ -241,16 +241,17 @@
       "post": {
         "summary": "Find Location",
         "operationId": "find_location-POST",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/MapSearchRequest"
-              }
+        "parameters": [
+          {
+            "name": "req",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Req"
             }
-          },
-          "required": true
-        },
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -258,44 +259,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/MapSearchResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/internal/map_search.html": {
-      "post": {
-        "summary": "Map Search Endpoint",
-        "operationId": "map_search_endpoint-POST",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/MapSearchRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "text/html": {
-                "schema": {
-                  "type": "string"
                 }
               }
             }
@@ -1731,30 +1694,6 @@
           "YeLocYeMan"
         ],
         "title": "ManualLocationOverride"
-      },
-      "MapSearchRequest": {
-        "properties": {
-          "query": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Query"
-          },
-          "checkboxes": {
-            "additionalProperties": {
-              "type": "boolean"
-            },
-            "type": "object",
-            "title": "Checkboxes"
-          }
-        },
-        "type": "object",
-        "title": "MapSearchRequest"
       },
       "MapSearchResponse": {
         "properties": {

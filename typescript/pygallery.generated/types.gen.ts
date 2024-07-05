@@ -228,13 +228,6 @@ export type ManualLocation = {
 
 export type ManualLocationOverride = 'NoLocNoMan' | 'NoLocYeMan' | 'YeLocNoMan' | 'YeLocYeMan';
 
-export type MapSearchRequest = {
-    query?: string | null;
-    checkboxes?: {
-        [key: string]: (boolean);
-    };
-};
-
 export type MapSearchResponse = {
     response: Array<FoundLocation> | null;
     error: string | null;
@@ -400,16 +393,10 @@ export type MassManualAnnotationEndpointPostData = {
 export type MassManualAnnotationEndpointPostResponse = number;
 
 export type FindLocationPostData = {
-    requestBody: MapSearchRequest;
+    req: string;
 };
 
 export type FindLocationPostResponse = MapSearchResponse;
-
-export type MapSearchEndpointPostData = {
-    requestBody: MapSearchRequest;
-};
-
-export type MapSearchEndpointPostResponse = string;
 
 export type JobProgressStatePostData = {
     requestBody: JobProgressRequest;
@@ -539,21 +526,6 @@ export type $OpenApiTs = {
                  * Successful Response
                  */
                 200: MapSearchResponse;
-                /**
-                 * Validation Error
-                 */
-                422: HTTPValidationError;
-            };
-        };
-    };
-    '/internal/map_search.html': {
-        post: {
-            req: MapSearchEndpointPostData;
-            res: {
-                /**
-                 * Successful Response
-                 */
-                200: string;
                 /**
                  * Validation Error
                  */

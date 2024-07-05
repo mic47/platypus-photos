@@ -3,7 +3,7 @@
 import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
-import type { ImageEndpointGetData, ImageEndpointGetResponse, LocationClustersEndpointPostData, LocationClustersEndpointPostResponse, LocationBoundsEndpointPostData, LocationBoundsEndpointPostResponse, DateClustersEndpointPostData, DateClustersEndpointPostResponse, MassManualAnnotationEndpointPostData, MassManualAnnotationEndpointPostResponse, FindLocationPostData, FindLocationPostResponse, MapSearchEndpointPostData, MapSearchEndpointPostResponse, JobProgressStatePostData, JobProgressStatePostResponse, RemoteJobsGetResponse, SystemStatusGetResponse, GetAddressPostData, GetAddressPostResponse, FetchLocationInfoEndpointPostData, FetchLocationInfoEndpointPostResponse, MatchingDirectoriesPostData, MatchingDirectoriesPostResponse, ImagePagePostData, ImagePagePostResponse, AggregateImagesPostData, AggregateImagesPostResponse, ReadIndexGetResponse, ReadIndexGet1Response } from './types.gen';
+import type { ImageEndpointGetData, ImageEndpointGetResponse, LocationClustersEndpointPostData, LocationClustersEndpointPostResponse, LocationBoundsEndpointPostData, LocationBoundsEndpointPostResponse, DateClustersEndpointPostData, DateClustersEndpointPostResponse, MassManualAnnotationEndpointPostData, MassManualAnnotationEndpointPostResponse, FindLocationPostData, FindLocationPostResponse, JobProgressStatePostData, JobProgressStatePostResponse, RemoteJobsGetResponse, SystemStatusGetResponse, GetAddressPostData, GetAddressPostResponse, FetchLocationInfoEndpointPostData, FetchLocationInfoEndpointPostResponse, MatchingDirectoriesPostData, MatchingDirectoriesPostResponse, ImagePagePostData, ImagePagePostResponse, AggregateImagesPostData, AggregateImagesPostResponse, ReadIndexGetResponse, ReadIndexGet1Response } from './types.gen';
 
 /**
  * Image Endpoint
@@ -96,32 +96,16 @@ export const massManualAnnotationEndpointPost = (data: MassManualAnnotationEndpo
 /**
  * Find Location
  * @param data The data for the request.
- * @param data.requestBody
+ * @param data.req
  * @returns MapSearchResponse Successful Response
  * @throws ApiError
  */
 export const findLocationPost = (data: FindLocationPostData): CancelablePromise<FindLocationPostResponse> => { return __request(OpenAPI, {
     method: 'POST',
     url: '/api/map_search',
-    body: data.requestBody,
-    mediaType: 'application/json',
-    errors: {
-        422: 'Validation Error'
-    }
-}); };
-
-/**
- * Map Search Endpoint
- * @param data The data for the request.
- * @param data.requestBody
- * @returns string Successful Response
- * @throws ApiError
- */
-export const mapSearchEndpointPost = (data: MapSearchEndpointPostData): CancelablePromise<MapSearchEndpointPostResponse> => { return __request(OpenAPI, {
-    method: 'POST',
-    url: '/internal/map_search.html',
-    body: data.requestBody,
-    mediaType: 'application/json',
+    query: {
+        req: data.req
+    },
     errors: {
         422: 'Validation Error'
     }
