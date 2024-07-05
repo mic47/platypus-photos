@@ -771,10 +771,10 @@ export const $JobProgressStateResponse = {
 
 export const $LocClusterParams = {
     properties: {
-        tl: {
+        nw: {
             '$ref': '#/components/schemas/LocPoint'
         },
-        br: {
+        se: {
             '$ref': '#/components/schemas/LocPoint'
         },
         url: {
@@ -790,7 +790,7 @@ export const $LocClusterParams = {
         }
     },
     type: 'object',
-    required: ['tl', 'br', 'url', 'res'],
+    required: ['nw', 'se', 'url', 'res'],
     title: 'LocClusterParams'
 } as const;
 

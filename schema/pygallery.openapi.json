@@ -1411,10 +1411,10 @@
       },
       "LocClusterParams": {
         "properties": {
-          "tl": {
+          "nw": {
             "$ref": "#/components/schemas/LocPoint"
           },
-          "br": {
+          "se": {
             "$ref": "#/components/schemas/LocPoint"
           },
           "url": {
@@ -1431,8 +1431,8 @@
         },
         "type": "object",
         "required": [
-          "tl",
-          "br",
+          "nw",
+          "se",
           "url",
           "res"
         ],

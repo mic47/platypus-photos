@@ -144,8 +144,8 @@ def image_endpoint(hsh: t.Union[int, str], size: ImageSize = ImageSize.ORIGINAL)
 
 @dataclass
 class LocClusterParams:
-    tl: LocPoint
-    br: LocPoint
+    nw: LocPoint
+    se: LocPoint
     url: SearchQuery
     res: LocPoint
     of: float = 0.5
@@ -155,8 +155,8 @@ class LocClusterParams:
 def location_clusters_endpoint(params: LocClusterParams) -> t.List[LocationCluster]:
     clusters = DB.get().get_image_clusters(
         params.url,
-        params.tl,
-        params.br,
+        params.nw,
+        params.se,
         params.res.latitude,
         params.res.longitude,
         params.of,

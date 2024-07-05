@@ -176,8 +176,8 @@ export type JobProgressStateResponse = {
 };
 
 export type LocClusterParams = {
-    tl: LocPoint;
-    br: LocPoint;
+    nw: LocPoint;
+    se: LocPoint;
     url: SearchQuery;
     res: LocPoint;
     of?: number;
