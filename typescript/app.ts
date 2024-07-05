@@ -17,7 +17,7 @@ import { Directories } from "./directories";
 import { TabSwitch } from "./switchable";
 import { SystemStatus } from "./system_status";
 
-import { SortParams, SearchQuery } from "./pygallery.generated/types.gen";
+import { SearchQuery } from "./pygallery.generated/types.gen";
 import { AnnotationOverlay } from "./annotations";
 import { MapSearch } from "./map_search.tsx";
 
@@ -56,7 +56,9 @@ function init_fun() {
         ___state.paging,
     );
     /* InputForm */
-    new InputForm("InputForm", ___state.search_query, annotator.submitter);
+    new InputForm("InputForm", ___state.search_query, (request) =>
+        annotator.submitter(request),
+    );
     /* Gallery */
     new Gallery(
         "GalleryImages",
@@ -64,7 +66,7 @@ function init_fun() {
         ___state.paging,
         ___state.sort,
         checkbox_sync,
-        annotator.submitter,
+        (request) => annotator.submitter(request),
     );
     /* Map */
     const map = new PhotoMap("map", "MapUseQuery", ___state.search_query, {
@@ -97,7 +99,11 @@ function init_fun() {
     ___state.search_query.replace(parse_search_query(search_query_sync.get()));
 
     /* Job progress / list UI */
-    const job_progress = new JobProgress("JobProgress", map.zoom_to);
+    const job_progress = new JobProgress(
+        "JobProgress",
+        (latitude: number, longitude: number) =>
+            map.zoom_to(latitude, longitude),
+    );
     /* System Status */
     const system_status = new SystemStatus("SystemStatus");
     /* Tab */
@@ -108,13 +114,9 @@ function init_fun() {
         TabDates: dates.switchable,
     });
 }
-function update_sort(params: SortParams) {
-    ___state.sort.update(params);
-}
 
 const app: object = {
     init_fun,
     update_url,
-    update_sort,
 };
 (window as unknown as { APP: object }).APP = app;
