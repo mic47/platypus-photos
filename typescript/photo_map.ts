@@ -112,8 +112,16 @@ export class PhotoMap {
                     id,
                     marker: item,
                     callbacks: {
-                        annotation_overlay: this.callbacks.annotation_overlay,
-                        delete_marker: this.localStorageMarkers.remove,
+                        annotation_overlay: (
+                            latitude: number,
+                            longitude: number,
+                        ) =>
+                            this.callbacks.annotation_overlay(
+                                latitude,
+                                longitude,
+                            ),
+                        delete_marker: (id: string) =>
+                            this.localStorageMarkers.remove(id),
                     },
                 }),
             );
@@ -324,9 +332,16 @@ export class PhotoMap {
                             LocationClusterPopup({
                                 cluster,
                                 callbacks: {
-                                    update_url: this.searchQueryHook.update,
-                                    annotation_overlay:
-                                        this.callbacks.annotation_overlay,
+                                    update_url: (update) =>
+                                        this.searchQueryHook.update(update),
+                                    annotation_overlay: (
+                                        latitude: number,
+                                        longitude: number,
+                                    ) =>
+                                        this.callbacks.annotation_overlay(
+                                            latitude,
+                                            longitude,
+                                        ),
                                 },
                             }),
                         );
