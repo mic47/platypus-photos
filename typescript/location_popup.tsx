@@ -1,6 +1,83 @@
 import React from "react";
 
-import { ImageAddress } from "./pygallery.generated/types.gen";
+import {
+    ImageAddress,
+    LocationCluster,
+    SearchQuery,
+} from "./pygallery.generated/types.gen";
+import { pprange } from "./utils";
+
+export function LocationClusterPopup({
+    cluster,
+    callbacks,
+}: {
+    cluster: LocationCluster;
+    callbacks: {
+        update_url: (url: SearchQuery) => void;
+        annotation_overlay: (latitude: number, longitude: number) => void;
+    };
+}) {
+    return (
+        <>
+            {`${cluster.example_classification}@${cluster.address_name}, ${cluster.address_country} (${cluster.size})`}
+            <br />
+            {pprange(cluster.tsfrom, cluster.tsto)}
+            <br />
+            <button
+                onClick={() =>
+                    callbacks.update_url({
+                        tsfrom:
+                            cluster.tsfrom === null
+                                ? null
+                                : cluster.tsfrom - 0.01,
+                        tsto:
+                            cluster.tsto === null ? null : cluster.tsto + 0.01,
+                    })
+                }
+            >
+                ➡️ from &amp; to ⬅️
+            </button>
+            <button
+                onClick={() =>
+                    callbacks.update_url({
+                        tsfrom:
+                            cluster.tsfrom === null
+                                ? null
+                                : cluster.tsfrom - 0.01,
+                    })
+                }
+            >
+                ➡️ from
+            </button>
+            <button
+                onClick={() =>
+                    callbacks.update_url({
+                        tsto:
+                            cluster.tsto === null ? null : cluster.tsto + 0.01,
+                    })
+                }
+            >
+                to ⬅️
+            </button>
+            <br />
+            <input
+                type="button"
+                value="Use this location for selected photos"
+                onClick={() =>
+                    callbacks.annotation_overlay(
+                        cluster.position.latitude,
+                        cluster.position.longitude,
+                    )
+                }
+            />
+            <br />
+            <img
+                src={`/img?hsh=${cluster.example_path_md5}&size=preview`}
+                className="popup"
+            />
+        </>
+    );
+}
 
 export function LocalMarkerLocationPopup({
     id,

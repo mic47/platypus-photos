@@ -58,8 +58,6 @@ function annotation_overlay(latitude: number, longitude: number) {
         });
 }
 
-const ___checkbox_sync: CheckboxSync = new CheckboxSync();
-
 function init_fun() {
     if (___state !== undefined) {
         throw new Error("State is already initialized!");
@@ -81,6 +79,8 @@ function init_fun() {
     );
     const sort_sync = new UrlSync(sort_fields);
     ___state.sort.register_hook("SortUrlSync", (u) => sort_sync.update(u));
+    const checkbox_sync = new CheckboxSync();
+
     new InputForm("InputForm", ___state.search_query);
     /* Gallery */
     new Gallery(
@@ -88,7 +88,7 @@ function init_fun() {
         ___state.search_query,
         ___state.paging,
         ___state.sort,
-        ___checkbox_sync,
+        checkbox_sync,
     );
     /* AnnotationOverlay */
     new AnnotationOverlay(
@@ -101,9 +101,14 @@ function init_fun() {
         "map",
         "MapUseQuery",
         () => ___state.search_query.get(),
-        { annotation_overlay, add_point_to_map: map_add_point, delete_marker },
+        {
+            annotation_overlay,
+            add_point_to_map: map_add_point,
+            delete_marker,
+            update_url,
+        },
     );
-    new MapSearch("MapSearch", ___checkbox_sync, ___state.search_query, map);
+    new MapSearch("MapSearch", checkbox_sync, ___state.search_query, map);
     ___state.search_query.register_hook("MasSearch", (url_params) => {
         map.update_markers(url_params, true);
     });
@@ -155,12 +160,8 @@ function update_sort(params: SortParams) {
 }
 
 const app: object = {
-    checkbox_sync: ___checkbox_sync,
     init_fun,
     update_url,
-    map_add_point,
-    annotation_overlay,
-    delete_marker,
     update_sort,
 };
 (window as unknown as { APP: object }).APP = app;

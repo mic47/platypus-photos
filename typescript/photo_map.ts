@@ -3,10 +3,13 @@ import { flushSync } from "react-dom";
 
 import * as L from "leaflet";
 
-import { pprange } from "./utils.ts";
 import { SearchQuery } from "./pygallery.generated/types.gen.ts";
 import * as pygallery_service from "./pygallery.generated/services.gen.ts";
-import { LocalMarkerLocationPopup, LocationPopup } from "./location_popup.tsx";
+import {
+    LocalMarkerLocationPopup,
+    LocationClusterPopup,
+    LocationPopup,
+} from "./location_popup.tsx";
 
 type Position = {
     latitude: number;
@@ -52,6 +55,7 @@ export class PhotoMap {
                 text: string,
             ) => void;
             delete_marker: (id: string) => void;
+            update_url: (query: SearchQuery) => void;
         },
     ) {
         this.map = L.map(div_id).fitWorld();
@@ -309,36 +313,21 @@ export class PhotoMap {
                         cluster.position.latitude,
                         cluster.position.longitude,
                     ]).addTo(this.map);
-                    const tsfromStr =
-                        cluster.tsfrom === null
-                            ? "undefined"
-                            : `${cluster.tsfrom - 0.01}`;
-                    const tstoStr =
-                        cluster.tsto === null
-                            ? "undefined"
-                            : `${cluster.tsto + 0.01}`;
-                    marker.bindPopup(
-                        [
-                            cluster.example_classification,
-                            "@ ",
-                            cluster.address_name,
-                            ", ",
-                            cluster.address_country,
-                            " (",
-                            cluster.size,
-                            ")<br/>",
-                            pprange(cluster.tsfrom, cluster.tsto),
-                            "<br/>",
-                            `<button onclick="window.APP.update_url({tsfrom: ${tsfromStr}, tsto: ${tstoStr}})">➡️ from &amp; to ⬅️ </button>
-                            <button onclick="window.APP.update_url({tsfrom: ${tsfromStr}})">➡️ from</button>
-                            <button onclick="window.APP.update_url({tsto: ${tstoStr}})">to ⬅️ </button><br/>`,
-                            '<input type="button" value="Use this location for selected photos" ',
-                            `onclick="window.APP.annotation_overlay(${cluster.position.latitude}, ${cluster.position.longitude})"><br/>`,
-                            "<img src='/img?hsh=",
-                            cluster.example_path_md5,
-                            "&size=preview' class='popup'>",
-                        ].join(""),
-                    );
+                    const element = document.createElement("div");
+                    const root = createRoot(element);
+                    flushSync(() => {
+                        root.render(
+                            LocationClusterPopup({
+                                cluster,
+                                callbacks: {
+                                    update_url: this.callbacks.update_url,
+                                    annotation_overlay:
+                                        this.callbacks.annotation_overlay,
+                                },
+                            }),
+                        );
+                    });
+                    marker.bindPopup(element);
                     new_markers[cluster.example_path_md5] = marker;
                 }
                 Object.values(this.markers).forEach((m) => m.remove());

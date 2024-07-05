@@ -120,7 +120,6 @@ export function MapSearchView({
                         data = "";
                     }
                     updateQuery(data.toString());
-                    console.log("search", data, event);
                 }}
             >
                 <input type="text" name="query" />
@@ -134,11 +133,6 @@ export function MapSearchView({
                     id="MapUseQuery"
                     defaultChecked={checkboxes["MapUseQuery"] || false}
                     onChange={(event) => {
-                        console.log(
-                            event,
-                            event.currentTarget,
-                            event.currentTarget.checked,
-                        );
                         callbacks.update_checkbox(event.currentTarget);
                         callbacks.map_refetch();
                     }}
