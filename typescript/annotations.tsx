@@ -416,7 +416,10 @@ function AnnotationOverlayView({
                 {directories === null ? (
                     "(loading)"
                 ) : (
-                    <DirectoryTable directories={directories} />
+                    <DirectoryTable
+                        directories={directories}
+                        callbacks={null}
+                    />
                 )}
                 <h3>Raw selection</h3>
                 <pre>{JSON.stringify(request.query)}</pre>

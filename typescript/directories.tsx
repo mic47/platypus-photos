@@ -7,6 +7,7 @@ import {
 import { Switchable } from "./switchable.ts";
 import * as pygallery_service from "./pygallery.generated/services.gen.ts";
 import { round, timestamp_to_pretty_datetime } from "./utils.ts";
+import { MaybeA } from "./jsx/maybea.tsx";
 
 export class Directories {
     public switchable: Switchable;
@@ -35,13 +36,50 @@ export class Directories {
 
 interface DirectoryTableProps {
     directories: DirectoryStats[];
+    callbacks: null | {
+        update_url: (update: SearchQuery) => void;
+    };
 }
 
-export function DirectoryTable({ directories }: DirectoryTableProps) {
+export function DirectoryTable({
+    directories,
+    callbacks,
+}: DirectoryTableProps) {
     const rows = directories.map((d, index) => {
+        const parts = [];
+        let currentIndex = 0;
+        while (true) {
+            const next = d.directory.indexOf("/", currentIndex);
+            if (next < 0) {
+                parts.push([d.directory, d.directory.substring(currentIndex)]);
+                break;
+            }
+            parts.push([
+                d.directory.substring(0, next + 1),
+                d.directory.substring(currentIndex, next + 1),
+            ]);
+            currentIndex = next + 1;
+        }
         return (
             <tr key={index}>
-                <td>{d.directory}</td>
+                <td>
+                    {parts.map(([dir, part]) => (
+                        <span key={dir} className="pdir">
+                            <MaybeA
+                                onClick={
+                                    callbacks === null
+                                        ? null
+                                        : () =>
+                                              callbacks.update_url({
+                                                  directory: dir,
+                                              })
+                                }
+                            >
+                                {part}
+                            </MaybeA>
+                        </span>
+                    ))}
+                </td>
                 <td>{d.total_images}</td>
                 <td>{round((d.has_location * 100.0) / d.total_images, 1)}%</td>
                 <td>{round((d.has_timestamp * 100.0) / d.total_images, 1)}%</td>
