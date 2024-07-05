@@ -52,8 +52,7 @@ export function DirectoryTable({ directories }: DirectoryTableProps) {
                     {d.since === null
                         ? ""
                         : timestamp_to_pretty_datetime(d.since)}
-                </td>
-                <td>
+                    {" - "}
                     {d.until === null
                         ? ""
                         : timestamp_to_pretty_datetime(d.until)}
@@ -66,12 +65,37 @@ export function DirectoryTable({ directories }: DirectoryTableProps) {
             <thead>
                 <tr>
                     <th>Directory 📂</th>
-                    <th>#Images 🖼️</th>
-                    <th>% with location 🗺️</th>
-                    <th>% with time 🕝</th>
-                    <th>% being annotated 🏗️</th>
-                    <th>Since</th>
-                    <th>Until</th>
+                    <th>
+                        <div className="hasTooltip">
+                            # 🖼️
+                            <div className="tooltipText">Number of images</div>
+                        </div>
+                    </th>
+                    <th>
+                        <div className="hasTooltip">
+                            % 🗺️
+                            <div className="tooltipText">
+                                Percentage of images with location
+                            </div>
+                        </div>
+                    </th>
+                    <th>
+                        <div className="hasTooltip">
+                            % 🕝
+                            <div className="tooltipText">
+                                Percentage of images with time
+                            </div>
+                        </div>
+                    </th>
+                    <th>
+                        <div className="hasTooltip">
+                            % 🏗️
+                            <div className="tooltipText">
+                                Percentage of images being annotated
+                            </div>
+                        </div>
+                    </th>
+                    <th>Time range</th>
                 </tr>
             </thead>
             <tbody>{rows}</tbody>

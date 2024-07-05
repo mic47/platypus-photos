@@ -285,3 +285,25 @@ td.center {
 .suspicious {
     color: red;
 }
+
+.hasTooltip {
+  position: relative;
+  display: inline-block;
+  border-bottom: 1px dotted black;
+}
+
+.hasTooltip .tooltipText {
+  visibility: hidden;
+  background-color: black;
+  color: #fff;
+  padding: 0.5em;
+  border-radius: 0.5em;
+  position: absolute;
+  z-index: 1;
+  bottom: 100%;
+  text-align: center;
+}
+
+.hasTooltip:hover .tooltipText{
+  visibility: visible;
+}
