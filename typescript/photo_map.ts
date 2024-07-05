@@ -10,6 +10,7 @@ import {
     LocationClusterPopup,
     LocationPopup,
 } from "./location_popup.tsx";
+import { LocalStorageState } from "./local_storage_state.ts";
 
 type Position = {
     latitude: number;
@@ -31,7 +32,7 @@ type LastUpdateMarkersCacheParam = {
     change_view: boolean;
 };
 
-export type Marker = {
+type Marker = {
     latitude: number;
     longitude: number;
     text: string;
@@ -43,18 +44,13 @@ export class PhotoMap {
     private last_update_timestamp: number = 0;
     private markers: { [id: string]: L.Marker };
     private local_markers: { [id: string]: L.Marker };
+    private localStorageMarkers: LocalStorageState<Marker>;
     constructor(
         div_id: string,
         private should_use_query_div: string,
         get_url: () => SearchQuery,
         private callbacks: {
             annotation_overlay: (latitude: number, longitude: number) => void;
-            add_point_to_map: (
-                latitude: number,
-                longitude: number,
-                text: string,
-            ) => void;
-            delete_marker: (id: string) => void;
             update_url: (query: SearchQuery) => void;
         },
     ) {
@@ -62,6 +58,14 @@ export class PhotoMap {
         L.control.scale({ imperial: false }).addTo(this.map);
         this.markers = {};
         this.local_markers = {};
+        this.localStorageMarkers = new LocalStorageState("markers", {
+            item_was_added: (id: string, item: Marker) => {
+                this.add_local_marker_callback(id, item);
+            },
+            item_was_removed: (id: string) => {
+                this.delete_local_marker_callback(id);
+            },
+        });
         const update_markers: L.LeafletEventHandlerFn = (e) => {
             if ((e as unknown as { flyTo: boolean }).flyTo) {
                 return;
@@ -87,14 +91,14 @@ export class PhotoMap {
         this.update_bounds(get_url(), true);
     }
 
-    delete_local_marker(id: string) {
+    private delete_local_marker_callback(id: string) {
         const marker = this.local_markers[id];
         if (marker !== undefined && marker !== null) {
             marker.remove();
             delete this.local_markers[id];
         }
     }
-    add_local_marker(id: string, item: Marker) {
+    private add_local_marker_callback(id: string, item: Marker) {
         const marker = L.marker([item.latitude, item.longitude], {
             alt: "Ad-hoc marker: " + item.text,
             title: "Ad-hoc marker: " + item.text,
@@ -109,7 +113,7 @@ export class PhotoMap {
                     marker: item,
                     callbacks: {
                         annotation_overlay: this.callbacks.annotation_overlay,
-                        delete_marker: this.callbacks.delete_marker,
+                        delete_marker: this.localStorageMarkers.remove,
                     },
                 }),
             );
@@ -151,11 +155,11 @@ export class PhotoMap {
                                     longitude: number,
                                     text: string | null,
                                 ) =>
-                                    this.callbacks.add_point_to_map(
+                                    this.localStorageMarkers.add({
                                         latitude,
                                         longitude,
-                                        text || "Unknown location",
-                                    ),
+                                        text: text || "Unknown location",
+                                    }),
                                 close_popup: () => {
                                     this.map.closePopup();
                                 },

@@ -3,7 +3,7 @@ import data_model from "./data_model.generated.json";
 import { Dates } from "./dates_chart";
 import { Gallery } from "./gallery";
 import { InputForm } from "./input";
-import { Marker, PhotoMap } from "./photo_map";
+import { PhotoMap } from "./photo_map";
 import {
     AppState,
     CheckboxSync,
@@ -21,20 +21,10 @@ import * as pygallery_service from "./pygallery.generated/services.gen";
 import { SortParams, SearchQuery } from "./pygallery.generated/types.gen";
 import { AnnotationOverlay, submit_to_annotation_overlay } from "./annotations";
 import { MapSearch } from "./map_search.tsx";
-import { LocalStorageState } from "./local_storage_state.ts";
 
 let ___state: AppState;
 function update_url(data: SearchQuery) {
     ___state.search_query.update(data);
-}
-let ___local_storage_markers: LocalStorageState<Marker>;
-
-function delete_marker(id: string) {
-    ___local_storage_markers.remove(id);
-}
-
-function map_add_point(latitude: number, longitude: number, text: string) {
-    ___local_storage_markers.add({ latitude, longitude, text });
 }
 
 function annotation_overlay(latitude: number, longitude: number) {
@@ -103,8 +93,6 @@ function init_fun() {
         () => ___state.search_query.get(),
         {
             annotation_overlay,
-            add_point_to_map: map_add_point,
-            delete_marker,
             update_url,
         },
     );
@@ -144,15 +132,6 @@ function init_fun() {
         TabJobProgress: job_progress.switchable,
         TabSystemStatus: system_status.switchable,
         TabDates: dates.switchable,
-    });
-
-    ___local_storage_markers = new LocalStorageState<Marker>("markers", {
-        item_was_added: (id: string, item: Marker) => {
-            map.add_local_marker(id, item);
-        },
-        item_was_removed: (id: string) => {
-            map.delete_local_marker(id);
-        },
     });
 }
 function update_sort(params: SortParams) {
