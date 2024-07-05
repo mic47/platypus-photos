@@ -1,9 +1,12 @@
+import { createRoot } from "react-dom/client";
+import { flushSync } from "react-dom";
+
 import * as L from "leaflet";
 
 import { pprange } from "./utils.ts";
-import { GenericFetch } from "./generic_fetch.ts";
 import { SearchQuery } from "./pygallery.generated/types.gen.ts";
 import * as pygallery_service from "./pygallery.generated/services.gen.ts";
+import { LocationPopup } from "./location_popup.tsx";
 
 type Position = {
     latitude: number;
@@ -35,10 +38,14 @@ export class PhotoMap {
         div_id: string,
         private should_use_query_div: string,
         get_url: () => SearchQuery,
-        private context_menu_callback: (
-            latlng: L.LatLng,
-            callback: (content: string) => L.Popup,
-        ) => void,
+        private callbacks: {
+            annotation_overlay: (latitude: number, longitude: number) => void;
+            add_point_to_map: (
+                latitude: number,
+                longitude: number,
+                text: string,
+            ) => void;
+        },
     ) {
         this.map = L.map(div_id).fitWorld();
         L.control.scale({ imperial: false }).addTo(this.map);
@@ -58,12 +65,7 @@ export class PhotoMap {
         this.map.on("zoom", update_markers);
         this.map.on("move", update_markers);
         this.map.on("resize", update_markers);
-        if (
-            this.context_menu_callback !== undefined &&
-            this.context_menu_callback !== null
-        ) {
-            this.map.on("contextmenu", context_menu);
-        }
+        this.map.on("contextmenu", context_menu);
 
         L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
             maxZoom: 19,
@@ -74,12 +76,58 @@ export class PhotoMap {
     }
 
     context_menu(e: L.LocationEvent) {
-        this.context_menu_callback(e.latlng, (content: string) => {
-            return L.popup()
-                .setLatLng(e.latlng)
-                .setContent(content)
-                .openOn(this.map);
-        });
+        const loc = e.latlng;
+        const existing = document.getElementById("LocPreview");
+        if (existing !== undefined && existing !== null) {
+            existing.remove();
+        }
+        pygallery_service
+            .getAddressPost({
+                requestBody: { latitude: loc.lat, longitude: loc.lng },
+            })
+            .then((address) => {
+                const element = document.createElement("div");
+                const root = createRoot(element);
+                flushSync(() => {
+                    root.render(
+                        LocationPopup({
+                            latitude: loc.lat,
+                            longitude: loc.lng,
+                            address,
+                            callbacks: {
+                                annotation_overlay: (
+                                    latitude: number,
+                                    longitude: number,
+                                ) =>
+                                    this.callbacks.annotation_overlay(
+                                        latitude,
+                                        longitude,
+                                    ),
+                                add_point_to_map: (
+                                    latitude: number,
+                                    longitude: number,
+                                    text: string | null,
+                                ) =>
+                                    this.callbacks.add_point_to_map(
+                                        latitude,
+                                        longitude,
+                                        text || "Unknown location",
+                                    ),
+                                close_popup: () => {
+                                    this.map.closePopup();
+                                },
+                            },
+                        }),
+                    );
+                });
+                const popup = L.popup()
+                    .setLatLng(loc)
+                    .setContent(element)
+                    .openOn(this.map) as unknown as {
+                    _updateLayout: () => void;
+                };
+                popup._updateLayout();
+            });
     }
 
     update_bounds(location_url_json: SearchQuery, fit_not_fly = false) {
@@ -266,35 +314,4 @@ export class PhotoMap {
     zoom_to(latitude: number, longitude: number) {
         this.map.flyTo([latitude, longitude], 13, { duration: 1 });
     }
-}
-
-export class AddressInfo extends GenericFetch<{
-    latitude: number;
-    longitude: number;
-}> {
-    constructor(div_id: string) {
-        super(div_id, pygallery_service.fetchLocationInfoEndpointPost);
-    }
-    fetch(latitude: number, longitude: number) {
-        return this.fetch_impl({ latitude, longitude });
-    }
-}
-
-type LeafPosition = {
-    lat: number;
-    lng: number;
-};
-export function location_preview(
-    loc: LeafPosition,
-    show_content_fn: (content: string) => L.Popup,
-) {
-    const existing = document.getElementById("LocPreview");
-    if (existing !== undefined && existing !== null) {
-        existing.remove();
-    }
-    const popup = show_content_fn('<div id="LocPreview"></div>');
-    const info = new AddressInfo("LocPreview");
-    info.fetch(loc.lat, loc.lng).then(() => {
-        (popup as unknown as { _updateLayout: () => void })._updateLayout();
-    });
 }

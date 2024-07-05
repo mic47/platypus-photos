@@ -5,7 +5,7 @@ import data_model from "./data_model.generated.json";
 import { Dates } from "./dates_chart";
 import { Gallery } from "./gallery";
 import { InputForm } from "./input";
-import { PhotoMap, location_preview } from "./photo_map";
+import { PhotoMap } from "./photo_map";
 import {
     AppState,
     CheckboxSync,
@@ -152,9 +152,6 @@ function map_add_point(latitude: number, longitude: number, text: string) {
     const id = add_marker_to_local_storage(latitude, longitude, text);
     map_add_point_only(id, latitude, longitude, text);
 }
-function map_close_popup() {
-    ___map.map.closePopup();
-}
 function annotation_overlay(latitude: number, longitude: number) {
     pygallery_service
         .getAddressPost({ requestBody: { latitude, longitude } })
@@ -219,7 +216,7 @@ function init_fun() {
         "map",
         "MapUseQuery",
         () => ___state.search_query.get(),
-        location_preview,
+        { annotation_overlay, add_point_to_map: map_add_point },
     );
     new MapSearch("MapSearch", ___checkbox_sync, ___state.search_query, ___map);
     ___state.search_query.register_hook("MasSearch", (url_params) => {
@@ -270,7 +267,6 @@ const app: object = {
     init_fun,
     update_url,
     map_add_point,
-    map_close_popup,
     annotation_overlay,
     delete_marker,
     update_sort,
