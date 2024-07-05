@@ -2,10 +2,10 @@ import * as L from "leaflet";
 
 import data_model from "./data_model.generated.json";
 
-import { Dates } from "./dates_chart.ts";
+import { Dates } from "./dates_chart";
 import { Gallery } from "./gallery";
 import { InputForm } from "./input";
-import { MapSearch, PhotoMap, location_preview } from "./photo_map.ts";
+import { MapSearch, PhotoMap, location_preview } from "./photo_map";
 import {
     AppState,
     CheckboxSync,
@@ -15,16 +15,13 @@ import {
     parse_sort_params,
 } from "./state.ts";
 import { JobProgress } from "./jobs";
-import { Directories } from "./directories.ts";
-import { TabSwitch } from "./switchable.ts";
+import { Directories } from "./directories";
+import { TabSwitch } from "./switchable";
 import { SystemStatus } from "./system_status";
 
-import * as pygallery_service from "./pygallery.generated/services.gen.ts";
-import { SortParams, SearchQuery } from "./pygallery.generated/types.gen.ts";
-import {
-    AnnotationOverlay,
-    submit_to_annotation_overlay,
-} from "./annotations.tsx";
+import * as pygallery_service from "./pygallery.generated/services.gen";
+import { SortParams, SearchQuery } from "./pygallery.generated/types.gen";
+import { AnnotationOverlay, submit_to_annotation_overlay } from "./annotations";
 
 let ___state: AppState;
 function update_dir(data: string) {
