@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import dataclasses
-import datetime
+import datetime as dt
 import enum
 import typing as t
 
@@ -31,14 +31,14 @@ class RemoteJob(t.Generic[T], DataClassJsonMixin):
     total: int
     finished_tasks: int
     original_request: T  # noqa: F841
-    created: datetime.datetime
-    last_update: t.Optional[datetime.datetime]
+    created: dt.datetime
+    last_update: t.Optional[dt.datetime]
     example_path_md5: t.Optional[str]
 
     def test_sanitize(self) -> RemoteJob[T]:
-        self.created = datetime.datetime(1, 1, 1)
+        self.created = dt.datetime(1, 1, 1)
         if self.last_update is not None:
-            self.last_update = datetime.datetime(1, 1, 1)
+            self.last_update = dt.datetime(1, 1, 1)
         return self
 
 
@@ -47,13 +47,13 @@ class RemoteTask(t.Generic[T]):
     id_: TaskId
     type_: RemoteJobType
     payload: T
-    created: datetime.datetime
-    finished_at: t.Optional[datetime.datetime]
+    created: dt.datetime
+    finished_at: t.Optional[dt.datetime]
 
     def test_sanitize(self) -> RemoteTask[T]:
-        self.created = datetime.datetime(1, 1, 1)
+        self.created = dt.datetime(1, 1, 1)
         if self.finished_at is not None:
-            self.finished_at = datetime.datetime(1, 1, 1)
+            self.finished_at = dt.datetime(1, 1, 1)
         return self
 
     def map(self, f: t.Callable[[T], R]) -> RemoteTask[R]:

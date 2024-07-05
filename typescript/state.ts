@@ -11,20 +11,29 @@ export type CheckboxesParams = { [key4: string]: boolean };
 
 type AppStateHook<T> = (data: T) => void;
 
-class StateWithHooks<T> {
-    private hooks: Array<AppStateHook<T>>;
+export class StateWithHooks<T> {
+    private hooks: { [key: string]: AppStateHook<T> };
     constructor(private data: T) {
-        this.hooks = [];
+        this.hooks = {};
     }
-    register_hook(hook: AppStateHook<T>) {
-        this.hooks.push(hook);
+    register_hook(key: string, hook: AppStateHook<T>) {
+        if (this.hooks[key] !== undefined) {
+            console.log(`Hook ${key} already exists, overriding`);
+        }
+        this.hooks[key] = hook;
+    }
+    unregister_hook(key: string) {
+        if (this.hooks[key] === undefined) {
+            console.log(`Hook ${key} is not registered`);
+        }
+        delete this.hooks[key];
     }
     get(): T {
         return this.data;
     }
     call_hooks(): StateWithHooks<T> {
         const data = this.data;
-        this.hooks.forEach((x) => x(data));
+        Object.values(this.hooks).forEach((x) => x(data));
         return this;
     }
     update(update: T): StateWithHooks<T> {
@@ -33,12 +42,12 @@ class StateWithHooks<T> {
         return this;
     }
     replace(newData: T): StateWithHooks<T> {
-        this.data = newData;
+        this.data = { ...newData };
         this.call_hooks();
         return this;
     }
     replace_no_hook_update(newData: T): StateWithHooks<T> {
-        this.data = newData;
+        this.data = { ...newData };
         return this;
     }
 }
@@ -103,6 +112,7 @@ export class UrlSync {
         }
     }
 }
+
 export function parse_search_query(data: {
     unparsed: { [key: string]: string };
 }): SearchQuery {

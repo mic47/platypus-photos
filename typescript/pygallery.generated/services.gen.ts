@@ -3,7 +3,7 @@
 import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
-import type { ImageEndpointGetData, ImageEndpointGetResponse, LocationClustersEndpointPostData, LocationClustersEndpointPostResponse, LocationBoundsEndpointPostData, LocationBoundsEndpointPostResponse, DateClustersEndpointPostData, DateClustersEndpointPostResponse, MassManualAnnotationEndpointPostData, MassManualAnnotationEndpointPostResponse, MapSearchEndpointPostData, MapSearchEndpointPostResponse, JobProgressEndpointPostData, JobProgressEndpointPostResponse, JobListEndpointPostData, JobListEndpointPostResponse, SystemStatusEndpointPostResponse, SubmitAnnotationOverlayFormEndpointPostData, SubmitAnnotationOverlayFormEndpointPostResponse, FetchLocationInfoEndpointPostData, FetchLocationInfoEndpointPostResponse, DirectoriesEndpointPostData, DirectoriesEndpointPostResponse, GalleryDivPostData, GalleryDivPostResponse, AggregateEndpointPostData, AggregateEndpointPostResponse, InputRequestPostData, InputRequestPostResponse, ReadIndexGetResponse, ReadIndexGet1Response } from './types.gen';
+import type { ImageEndpointGetData, ImageEndpointGetResponse, LocationClustersEndpointPostData, LocationClustersEndpointPostResponse, LocationBoundsEndpointPostData, LocationBoundsEndpointPostResponse, DateClustersEndpointPostData, DateClustersEndpointPostResponse, MassManualAnnotationEndpointPostData, MassManualAnnotationEndpointPostResponse, FindLocationPostData, FindLocationPostResponse, JobProgressStatePostData, JobProgressStatePostResponse, RemoteJobsGetResponse, SystemStatusGetResponse, GetAddressPostData, GetAddressPostResponse, MatchingDirectoriesPostData, MatchingDirectoriesPostResponse, ImagePagePostData, ImagePagePostResponse, AggregateImagesPostData, AggregateImagesPostResponse, ReadIndexGetResponse, ReadIndexGet1Response } from './types.gen';
 
 /**
  * Image Endpoint
@@ -94,131 +94,33 @@ export const massManualAnnotationEndpointPost = (data: MassManualAnnotationEndpo
 }); };
 
 /**
- * Map Search Endpoint
+ * Find Location
  * @param data The data for the request.
- * @param data.requestBody
- * @returns string Successful Response
+ * @param data.req
+ * @returns MapSearchResponse Successful Response
  * @throws ApiError
  */
-export const mapSearchEndpointPost = (data: MapSearchEndpointPostData): CancelablePromise<MapSearchEndpointPostResponse> => { return __request(OpenAPI, {
+export const findLocationPost = (data: FindLocationPostData): CancelablePromise<FindLocationPostResponse> => { return __request(OpenAPI, {
     method: 'POST',
-    url: '/internal/map_search.html',
-    body: data.requestBody,
-    mediaType: 'application/json',
-    errors: {
-        422: 'Validation Error'
-    }
-}); };
-
-/**
- * Job Progress Endpoint
- * @param data The data for the request.
- * @param data.requestBody
- * @returns string Successful Response
- * @throws ApiError
- */
-export const jobProgressEndpointPost = (data: JobProgressEndpointPostData): CancelablePromise<JobProgressEndpointPostResponse> => { return __request(OpenAPI, {
-    method: 'POST',
-    url: '/internal/job_progress.html',
-    body: data.requestBody,
-    mediaType: 'application/json',
-    errors: {
-        422: 'Validation Error'
-    }
-}); };
-
-/**
- * Job List Endpoint
- * @param data The data for the request.
- * @param data.requestBody
- * @returns string Successful Response
- * @throws ApiError
- */
-export const jobListEndpointPost = (data: JobListEndpointPostData): CancelablePromise<JobListEndpointPostResponse> => { return __request(OpenAPI, {
-    method: 'POST',
-    url: '/internal/job_list.html',
-    body: data.requestBody,
-    mediaType: 'application/json',
-    errors: {
-        422: 'Validation Error'
-    }
-}); };
-
-/**
- * System Status Endpoint
- * @returns string Successful Response
- * @throws ApiError
- */
-export const systemStatusEndpointPost = (): CancelablePromise<SystemStatusEndpointPostResponse> => { return __request(OpenAPI, {
-    method: 'POST',
-    url: '/internal/system_status.html'
-}); };
-
-/**
- * Submit Annotation Overlay Form Endpoint
- * @param data The data for the request.
- * @param data.requestBody
- * @returns string Successful Response
- * @throws ApiError
- */
-export const submitAnnotationOverlayFormEndpointPost = (data: SubmitAnnotationOverlayFormEndpointPostData): CancelablePromise<SubmitAnnotationOverlayFormEndpointPostResponse> => { return __request(OpenAPI, {
-    method: 'POST',
-    url: '/internal/submit_annotations_overlay.html',
-    body: data.requestBody,
-    mediaType: 'application/json',
-    errors: {
-        422: 'Validation Error'
-    }
-}); };
-
-/**
- * Fetch Location Info Endpoint
- * @param data The data for the request.
- * @param data.requestBody
- * @returns string Successful Response
- * @throws ApiError
- */
-export const fetchLocationInfoEndpointPost = (data: FetchLocationInfoEndpointPostData): CancelablePromise<FetchLocationInfoEndpointPostResponse> => { return __request(OpenAPI, {
-    method: 'POST',
-    url: '/internal/fetch_location_info.html',
-    body: data.requestBody,
-    mediaType: 'application/json',
-    errors: {
-        422: 'Validation Error'
-    }
-}); };
-
-/**
- * Directories Endpoint
- * @param data The data for the request.
- * @param data.requestBody
- * @returns string Successful Response
- * @throws ApiError
- */
-export const directoriesEndpointPost = (data: DirectoriesEndpointPostData): CancelablePromise<DirectoriesEndpointPostResponse> => { return __request(OpenAPI, {
-    method: 'POST',
-    url: '/internal/directories.html',
-    body: data.requestBody,
-    mediaType: 'application/json',
-    errors: {
-        422: 'Validation Error'
-    }
-}); };
-
-/**
- * Gallery Div
- * @param data The data for the request.
- * @param data.requestBody
- * @param data.oi
- * @returns string Successful Response
- * @throws ApiError
- */
-export const galleryDivPost = (data: GalleryDivPostData): CancelablePromise<GalleryDivPostResponse> => { return __request(OpenAPI, {
-    method: 'POST',
-    url: '/internal/gallery.html',
+    url: '/api/map_search',
     query: {
-        oi: data.oi
+        req: data.req
     },
+    errors: {
+        422: 'Validation Error'
+    }
+}); };
+
+/**
+ * Job Progress State
+ * @param data The data for the request.
+ * @param data.requestBody
+ * @returns JobProgressStateResponse Successful Response
+ * @throws ApiError
+ */
+export const jobProgressStatePost = (data: JobProgressStatePostData): CancelablePromise<JobProgressStatePostResponse> => { return __request(OpenAPI, {
+    method: 'POST',
+    url: '/api/job_progress_state',
     body: data.requestBody,
     mediaType: 'application/json',
     errors: {
@@ -227,15 +129,35 @@ export const galleryDivPost = (data: GalleryDivPostData): CancelablePromise<Gall
 }); };
 
 /**
- * Aggregate Endpoint
- * @param data The data for the request.
- * @param data.requestBody
- * @returns string Successful Response
+ * Remote Jobs
+ * @returns JobDescription Successful Response
  * @throws ApiError
  */
-export const aggregateEndpointPost = (data: AggregateEndpointPostData): CancelablePromise<AggregateEndpointPostResponse> => { return __request(OpenAPI, {
+export const remoteJobsGet = (): CancelablePromise<RemoteJobsGetResponse> => { return __request(OpenAPI, {
+    method: 'GET',
+    url: '/api/remote_jobs'
+}); };
+
+/**
+ * System Status
+ * @returns SystemStatus Successful Response
+ * @throws ApiError
+ */
+export const systemStatusGet = (): CancelablePromise<SystemStatusGetResponse> => { return __request(OpenAPI, {
+    method: 'GET',
+    url: '/api/system_status'
+}); };
+
+/**
+ * Get Address
+ * @param data The data for the request.
+ * @param data.requestBody
+ * @returns ImageAddress Successful Response
+ * @throws ApiError
+ */
+export const getAddressPost = (data: GetAddressPostData): CancelablePromise<GetAddressPostResponse> => { return __request(OpenAPI, {
     method: 'POST',
-    url: '/internal/aggregate.html',
+    url: '/api/get_address',
     body: data.requestBody,
     mediaType: 'application/json',
     errors: {
@@ -244,15 +166,49 @@ export const aggregateEndpointPost = (data: AggregateEndpointPostData): Cancelab
 }); };
 
 /**
- * Input Request
+ * Matching Directories
  * @param data The data for the request.
  * @param data.requestBody
- * @returns string Successful Response
+ * @returns DirectoryStats Successful Response
  * @throws ApiError
  */
-export const inputRequestPost = (data: InputRequestPostData): CancelablePromise<InputRequestPostResponse> => { return __request(OpenAPI, {
+export const matchingDirectoriesPost = (data: MatchingDirectoriesPostData): CancelablePromise<MatchingDirectoriesPostResponse> => { return __request(OpenAPI, {
     method: 'POST',
-    url: '/internal/input.html',
+    url: '/api/directories',
+    body: data.requestBody,
+    mediaType: 'application/json',
+    errors: {
+        422: 'Validation Error'
+    }
+}); };
+
+/**
+ * Image Page
+ * @param data The data for the request.
+ * @param data.requestBody
+ * @returns ImageResponse Successful Response
+ * @throws ApiError
+ */
+export const imagePagePost = (data: ImagePagePostData): CancelablePromise<ImagePagePostResponse> => { return __request(OpenAPI, {
+    method: 'POST',
+    url: '/api/images',
+    body: data.requestBody,
+    mediaType: 'application/json',
+    errors: {
+        422: 'Validation Error'
+    }
+}); };
+
+/**
+ * Aggregate Images
+ * @param data The data for the request.
+ * @param data.requestBody
+ * @returns ImageAggregation Successful Response
+ * @throws ApiError
+ */
+export const aggregateImagesPost = (data: AggregateImagesPostData): CancelablePromise<AggregateImagesPostResponse> => { return __request(OpenAPI, {
+    method: 'POST',
+    url: '/api/aggregate',
     body: data.requestBody,
     mediaType: 'application/json',
     errors: {

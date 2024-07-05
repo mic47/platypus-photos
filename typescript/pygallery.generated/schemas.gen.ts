@@ -4,36 +4,11 @@ export const $AggregateQuery = {
     properties: {
         query: {
             '$ref': '#/components/schemas/SearchQuery'
-        },
-        paging: {
-            '$ref': '#/components/schemas/GalleryPaging'
         }
     },
     type: 'object',
-    required: ['query', 'paging'],
+    required: ['query'],
     title: 'AggregateQuery'
-} as const;
-
-export const $AnnotationOverlayFixedLocation = {
-    properties: {
-        t: {
-            type: 'string',
-            enum: ['FixedLocation'],
-            const: 'FixedLocation',
-            title: 'T'
-        },
-        latitude: {
-            type: 'number',
-            title: 'Latitude'
-        },
-        longitude: {
-            type: 'number',
-            title: 'Longitude'
-        }
-    },
-    type: 'object',
-    required: ['t', 'latitude', 'longitude'],
-    title: 'AnnotationOverlayFixedLocation'
 } as const;
 
 export const $AnnotationOverlayInterpolateLocation = {
@@ -65,31 +40,6 @@ export const $AnnotationOverlayNoLocation = {
     type: 'object',
     required: ['t'],
     title: 'AnnotationOverlayNoLocation'
-} as const;
-
-export const $AnnotationOverlayRequest = {
-    properties: {
-        request: {
-            anyOf: [
-                {
-                    '$ref': '#/components/schemas/AnnotationOverlayFixedLocation'
-                },
-                {
-                    '$ref': '#/components/schemas/AnnotationOverlayInterpolateLocation'
-                },
-                {
-                    '$ref': '#/components/schemas/AnnotationOverlayNoLocation'
-                }
-            ],
-            title: 'Request'
-        },
-        query: {
-            '$ref': '#/components/schemas/SearchQuery'
-        }
-    },
-    type: 'object',
-    required: ['request', 'query'],
-    title: 'AnnotationOverlayRequest'
 } as const;
 
 export const $DateCluster = {
@@ -215,6 +165,120 @@ export const $DateClusterParams = {
     title: 'DateClusterParams'
 } as const;
 
+export const $DirectoryStats = {
+    properties: {
+        directory: {
+            type: 'string',
+            title: 'Directory'
+        },
+        total_images: {
+            type: 'integer',
+            title: 'Total Images'
+        },
+        has_location: {
+            type: 'integer',
+            title: 'Has Location'
+        },
+        has_timestamp: {
+            type: 'integer',
+            title: 'Has Timestamp'
+        },
+        being_annotated: {
+            type: 'integer',
+            title: 'Being Annotated'
+        },
+        since: {
+            anyOf: [
+                {
+                    type: 'number'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Since'
+        },
+        until: {
+            anyOf: [
+                {
+                    type: 'number'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Until'
+        }
+    },
+    type: 'object',
+    required: ['directory', 'total_images', 'has_location', 'has_timestamp', 'being_annotated', 'since', 'until'],
+    title: 'DirectoryStats'
+} as const;
+
+export const $ExceptionInfo = {
+    properties: {
+        exc_type: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Exc Type'
+        },
+        exc_val: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Exc Val'
+        },
+        exc_tb: {
+            anyOf: [
+                {
+                    items: {
+                        type: 'string'
+                    },
+                    type: 'array'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Exc Tb'
+        }
+    },
+    type: 'object',
+    required: ['exc_type', 'exc_val', 'exc_tb'],
+    title: 'ExceptionInfo'
+} as const;
+
+export const $FoundLocation = {
+    properties: {
+        latitude: {
+            type: 'number',
+            title: 'Latitude'
+        },
+        longitude: {
+            type: 'number',
+            title: 'Longitude'
+        },
+        address: {
+            type: 'string',
+            title: 'Address'
+        }
+    },
+    type: 'object',
+    required: ['latitude', 'longitude', 'address'],
+    title: 'FoundLocation'
+} as const;
+
 export const $GalleryPaging = {
     properties: {
         page: {
@@ -242,18 +306,27 @@ export const $GalleryRequest = {
         },
         sort: {
             '$ref': '#/components/schemas/SortParams'
-        },
-        checkboxes: {
-            additionalProperties: {
-                type: 'boolean'
-            },
-            type: 'object',
-            title: 'Checkboxes'
         }
     },
     type: 'object',
-    required: ['query', 'paging', 'sort', 'checkboxes'],
+    required: ['query', 'paging', 'sort'],
     title: 'GalleryRequest'
+} as const;
+
+export const $GetAddressRequest = {
+    properties: {
+        latitude: {
+            type: 'number',
+            title: 'Latitude'
+        },
+        longitude: {
+            type: 'number',
+            title: 'Longitude'
+        }
+    },
+    type: 'object',
+    required: ['latitude', 'longitude'],
+    title: 'GetAddressRequest'
 } as const;
 
 export const $HTTPValidationError = {
@@ -270,28 +343,353 @@ export const $HTTPValidationError = {
     title: 'HTTPValidationError'
 } as const;
 
+export const $Image = {
+    properties: {
+        md5: {
+            type: 'string',
+            title: 'Md5'
+        },
+        date: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'date-time'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Date'
+        },
+        date_transformed: {
+            type: 'boolean',
+            title: 'Date Transformed'
+        },
+        tags: {
+            anyOf: [
+                {
+                    additionalProperties: {
+                        type: 'number'
+                    },
+                    type: 'object'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Tags'
+        },
+        classifications: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Classifications'
+        },
+        address: {
+            '$ref': '#/components/schemas/ImageAddress'
+        },
+        dependent_features_last_update: {
+            type: 'number',
+            title: 'Dependent Features Last Update'
+        },
+        latitude: {
+            anyOf: [
+                {
+                    type: 'number'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Latitude'
+        },
+        longitude: {
+            anyOf: [
+                {
+                    type: 'number'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Longitude'
+        },
+        altitude: {
+            anyOf: [
+                {
+                    type: 'number'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Altitude'
+        },
+        manual_features: {
+            items: {
+                type: 'string'
+            },
+            type: 'array',
+            title: 'Manual Features'
+        },
+        being_annotated: {
+            type: 'boolean',
+            title: 'Being Annotated'
+        },
+        camera: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Camera'
+        },
+        software: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Software'
+        },
+        version: {
+            type: 'integer',
+            title: 'Version'
+        }
+    },
+    type: 'object',
+    required: ['md5', 'date', 'date_transformed', 'tags', 'classifications', 'address', 'dependent_features_last_update', 'latitude', 'longitude', 'altitude', 'manual_features', 'being_annotated', 'camera', 'software', 'version'],
+    title: 'Image'
+} as const;
+
+export const $ImageAddress = {
+    properties: {
+        country: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Country'
+        },
+        name: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Name'
+        },
+        full: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Full'
+        }
+    },
+    type: 'object',
+    required: ['country', 'name', 'full'],
+    title: 'ImageAddress'
+} as const;
+
+export const $ImageAggregation = {
+    properties: {
+        total: {
+            type: 'integer',
+            title: 'Total'
+        },
+        address: {
+            additionalProperties: {
+                type: 'integer'
+            },
+            type: 'object',
+            title: 'Address'
+        },
+        tag: {
+            additionalProperties: {
+                type: 'integer'
+            },
+            type: 'object',
+            title: 'Tag'
+        },
+        classification: {
+            additionalProperties: {
+                type: 'integer'
+            },
+            type: 'object',
+            title: 'Classification'
+        },
+        cameras: {
+            additionalProperties: {
+                type: 'integer'
+            },
+            type: 'object',
+            title: 'Cameras'
+        }
+    },
+    type: 'object',
+    required: ['total', 'address', 'tag', 'classification', 'cameras'],
+    title: 'ImageAggregation'
+} as const;
+
+export const $ImageResponse = {
+    properties: {
+        has_next_page: {
+            type: 'boolean',
+            title: 'Has Next Page'
+        },
+        omgs: {
+            items: {
+                '$ref': '#/components/schemas/ImageWithMeta'
+            },
+            type: 'array',
+            title: 'Omgs'
+        },
+        some_location: {
+            anyOf: [
+                {
+                    '$ref': '#/components/schemas/ManualLocation'
+                },
+                {
+                    type: 'null'
+                }
+            ]
+        }
+    },
+    type: 'object',
+    required: ['has_next_page', 'omgs', 'some_location'],
+    title: 'ImageResponse'
+} as const;
+
 export const $ImageSize = {
     type: 'string',
     enum: ['original', 'medium', 'preview'],
     title: 'ImageSize'
 } as const;
 
-export const $JobListRequest = {
-    properties: {},
+export const $ImageWithMeta = {
+    properties: {
+        omg: {
+            '$ref': '#/components/schemas/Image'
+        },
+        predicted_location: {
+            anyOf: [
+                {
+                    '$ref': '#/components/schemas/PredictedLocation'
+                },
+                {
+                    type: 'null'
+                }
+            ]
+        },
+        paths: {
+            items: {
+                '$ref': '#/components/schemas/PathSplit'
+            },
+            type: 'array',
+            title: 'Paths'
+        }
+    },
     type: 'object',
-    title: 'JobListRequest'
+    required: ['omg', 'predicted_location', 'paths'],
+    title: 'ImageWithMeta'
+} as const;
+
+export const $JobDescription = {
+    properties: {
+        icon: {
+            type: 'string',
+            title: 'Icon'
+        },
+        total: {
+            type: 'string',
+            title: 'Total'
+        },
+        id: {
+            type: 'integer',
+            title: 'Id'
+        },
+        type: {
+            type: 'string',
+            title: 'Type'
+        },
+        replacements: {
+            type: 'string',
+            title: 'Replacements'
+        },
+        time: {
+            type: 'number',
+            title: 'Time'
+        },
+        latitude: {
+            anyOf: [
+                {
+                    type: 'number'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Latitude'
+        },
+        longitude: {
+            anyOf: [
+                {
+                    type: 'number'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Longitude'
+        },
+        query: {
+            '$ref': '#/components/schemas/MassLocationAndTextAnnotation-Output'
+        },
+        job: {
+            '$ref': '#/components/schemas/RemoteJob_bytes_'
+        },
+        example_path_md5: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Example Path Md5'
+        }
+    },
+    type: 'object',
+    required: ['icon', 'total', 'id', 'type', 'replacements', 'time', 'latitude', 'longitude', 'query', 'job', 'example_path_md5'],
+    title: 'JobDescription'
 } as const;
 
 export const $JobProgressRequest = {
     properties: {
-        update_state_fn: {
-            type: 'string',
-            title: 'Update State Fn'
-        },
-        job_list_fn: {
-            type: 'string',
-            title: 'Job List Fn'
-        },
         state: {
             anyOf: [
                 {
@@ -304,7 +702,6 @@ export const $JobProgressRequest = {
         }
     },
     type: 'object',
-    required: ['update_state_fn', 'job_list_fn'],
     title: 'JobProgressRequest'
 } as const;
 
@@ -338,6 +735,38 @@ export const $JobProgressState = {
     type: 'object',
     required: ['ts', 't_total', 't_finished', 'j_total', 'j_finished', 'j_waiting'],
     title: 'JobProgressState'
+} as const;
+
+export const $JobProgressStateResponse = {
+    properties: {
+        state: {
+            '$ref': '#/components/schemas/JobProgressState'
+        },
+        diff: {
+            anyOf: [
+                {
+                    '$ref': '#/components/schemas/JobProgressState'
+                },
+                {
+                    type: 'null'
+                }
+            ]
+        },
+        eta_str: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Eta Str'
+        }
+    },
+    type: 'object',
+    required: ['state', 'diff', 'eta_str'],
+    title: 'JobProgressStateResponse'
 } as const;
 
 export const $LocClusterParams = {
@@ -475,22 +904,6 @@ export const $LocationCluster = {
     title: 'LocationCluster'
 } as const;
 
-export const $LocationInfoRequest = {
-    properties: {
-        latitude: {
-            type: 'number',
-            title: 'Latitude'
-        },
-        longitude: {
-            type: 'number',
-            title: 'Longitude'
-        }
-    },
-    type: 'object',
-    required: ['latitude', 'longitude'],
-    title: 'LocationInfoRequest'
-} as const;
-
 export const $LocationQueryFixedLocation = {
     properties: {
         t: {
@@ -555,9 +968,23 @@ export const $ManualLocationOverride = {
     title: 'ManualLocationOverride'
 } as const;
 
-export const $MapSearchRequest = {
+export const $MapSearchResponse = {
     properties: {
-        query: {
+        response: {
+            anyOf: [
+                {
+                    items: {
+                        '$ref': '#/components/schemas/FoundLocation'
+                    },
+                    type: 'array'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Response'
+        },
+        error: {
             anyOf: [
                 {
                     type: 'string'
@@ -566,21 +993,15 @@ export const $MapSearchRequest = {
                     type: 'null'
                 }
             ],
-            title: 'Query'
-        },
-        checkboxes: {
-            additionalProperties: {
-                type: 'boolean'
-            },
-            type: 'object',
-            title: 'Checkboxes'
+            title: 'Error'
         }
     },
     type: 'object',
-    title: 'MapSearchRequest'
+    required: ['response', 'error'],
+    title: 'MapSearchResponse'
 } as const;
 
-export const $MassLocationAndTextAnnotation = {
+export const $MassLocationAndTextAnnotation_Input = {
     properties: {
         t: {
             type: 'string',
@@ -615,6 +1036,218 @@ export const $MassLocationAndTextAnnotation = {
     type: 'object',
     required: ['t', 'query', 'location', 'text', 'date'],
     title: 'MassLocationAndTextAnnotation'
+} as const;
+
+export const $MassLocationAndTextAnnotation_Output = {
+    properties: {
+        t: {
+            type: 'string',
+            enum: ['MassLocAndTxt'],
+            const: 'MassLocAndTxt',
+            title: 'T'
+        },
+        query: {
+            '$ref': '#/components/schemas/SearchQuery'
+        },
+        location: {
+            anyOf: [
+                {
+                    '$ref': '#/components/schemas/LocationQueryFixedLocation'
+                },
+                {
+                    '$ref': '#/components/schemas/AnnotationOverlayInterpolateLocation'
+                },
+                {
+                    '$ref': '#/components/schemas/AnnotationOverlayNoLocation'
+                }
+            ],
+            title: 'Location'
+        },
+        text: {
+            '$ref': '#/components/schemas/TextQueryFixedText'
+        },
+        date: {
+            '$ref': '#/components/schemas/TransDate'
+        }
+    },
+    type: 'object',
+    required: ['t', 'query', 'location', 'text', 'date'],
+    title: 'MassLocationAndTextAnnotation'
+} as const;
+
+export const $PathSplit = {
+    properties: {
+        dir: {
+            type: 'string',
+            title: 'Dir'
+        },
+        file: {
+            type: 'string',
+            title: 'File'
+        }
+    },
+    type: 'object',
+    required: ['dir', 'file'],
+    title: 'PathSplit'
+} as const;
+
+export const $PredictedLocation = {
+    properties: {
+        loc: {
+            '$ref': '#/components/schemas/LocPoint'
+        },
+        earlier: {
+            anyOf: [
+                {
+                    '$ref': '#/components/schemas/ReferenceStats'
+                },
+                {
+                    type: 'null'
+                }
+            ]
+        },
+        later: {
+            anyOf: [
+                {
+                    '$ref': '#/components/schemas/ReferenceStats'
+                },
+                {
+                    type: 'null'
+                }
+            ]
+        }
+    },
+    type: 'object',
+    required: ['loc', 'earlier', 'later'],
+    title: 'PredictedLocation'
+} as const;
+
+export const $ProgressBarProgress = {
+    properties: {
+        desc: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Desc'
+        },
+        progress: {
+            type: 'integer',
+            title: 'Progress'
+        },
+        total: {
+            type: 'integer',
+            title: 'Total'
+        },
+        rate: {
+            anyOf: [
+                {
+                    type: 'number'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Rate'
+        },
+        elapsed: {
+            anyOf: [
+                {
+                    type: 'number'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Elapsed'
+        }
+    },
+    type: 'object',
+    required: ['desc', 'progress', 'total', 'rate', 'elapsed'],
+    title: 'ProgressBarProgress'
+} as const;
+
+export const $ReferenceStats = {
+    properties: {
+        distance_m: {
+            type: 'number',
+            title: 'Distance M'
+        },
+        seconds: {
+            type: 'number',
+            title: 'Seconds'
+        }
+    },
+    type: 'object',
+    required: ['distance_m', 'seconds'],
+    title: 'ReferenceStats'
+} as const;
+
+export const $RemoteJobType = {
+    type: 'string',
+    enum: ['mass_manual_annotation'],
+    const: 'mass_manual_annotation',
+    title: 'RemoteJobType'
+} as const;
+
+export const $RemoteJob_bytes_ = {
+    properties: {
+        id_: {
+            type: 'integer',
+            title: 'Id '
+        },
+        type_: {
+            '$ref': '#/components/schemas/RemoteJobType'
+        },
+        total: {
+            type: 'integer',
+            title: 'Total'
+        },
+        finished_tasks: {
+            type: 'integer',
+            title: 'Finished Tasks'
+        },
+        original_request: {
+            type: 'string',
+            format: 'binary',
+            title: 'Original Request'
+        },
+        created: {
+            type: 'string',
+            format: 'date-time',
+            title: 'Created'
+        },
+        last_update: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'date-time'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Last Update'
+        },
+        example_path_md5: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Example Path Md5'
+        }
+    },
+    type: 'object',
+    required: ['id_', 'type_', 'total', 'finished_tasks', 'original_request', 'created', 'last_update', 'example_path_md5'],
+    title: 'RemoteJob'
 } as const;
 
 export const $SearchQuery = {
@@ -725,6 +1358,80 @@ export const $SortParams = {
     },
     type: 'object',
     title: 'SortParams'
+} as const;
+
+export const $State = {
+    properties: {
+        name: {
+            type: 'string',
+            title: 'Name'
+        },
+        state: {
+            '$ref': '#/components/schemas/StateEnum'
+        },
+        when: {
+            type: 'number',
+            title: 'When'
+        },
+        exception: {
+            anyOf: [
+                {
+                    '$ref': '#/components/schemas/ExceptionInfo'
+                },
+                {
+                    type: 'null'
+                }
+            ]
+        }
+    },
+    type: 'object',
+    required: ['name', 'state', 'when', 'exception'],
+    title: 'State'
+} as const;
+
+export const $StateEnum = {
+    type: 'string',
+    enum: ['initialized', 'running', 'finished', 'unexpected finish', 'error'],
+    title: 'StateEnum'
+} as const;
+
+export const $SystemStatus = {
+    properties: {
+        progress_bars: {
+            items: {
+                prefixItems: [
+                    {
+                        type: 'integer'
+                    },
+                    {
+                        '$ref': '#/components/schemas/ProgressBarProgress'
+                    }
+                ],
+                type: 'array',
+                maxItems: 2,
+                minItems: 2
+            },
+            type: 'array',
+            title: 'Progress Bars'
+        },
+        current_state: {
+            additionalProperties: {
+                '$ref': '#/components/schemas/State'
+            },
+            type: 'object',
+            title: 'Current State'
+        },
+        t: {
+            type: 'string',
+            enum: ['SystemStatus'],
+            const: 'SystemStatus',
+            title: 'T',
+            default: 'SystemStatus'
+        }
+    },
+    type: 'object',
+    required: ['progress_bars', 'current_state'],
+    title: 'SystemStatus'
 } as const;
 
 export const $TextAnnotation = {

@@ -12,7 +12,9 @@ export default [
   pluginJs.configs.recommended,
   {ignores: [
       "typescript/*.generated/**/*.ts",
+      "typescript/*.generated/**/*.tsx",
   ]},
   ...tseslint.configs.recommended,
   ...fixupConfigRules(pluginReactConfig),
+  {settings: {react: {version: "detect"} } },
 ];

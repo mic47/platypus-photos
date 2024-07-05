@@ -206,7 +206,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/MassLocationAndTextAnnotation"
+                "$ref": "#/components/schemas/MassLocationAndTextAnnotation-Input"
               }
             }
           },
@@ -237,27 +237,28 @@
         }
       }
     },
-    "/internal/map_search.html": {
+    "/api/map_search": {
       "post": {
-        "summary": "Map Search Endpoint",
-        "operationId": "map_search_endpoint-POST",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/MapSearchRequest"
-              }
+        "summary": "Find Location",
+        "operationId": "find_location-POST",
+        "parameters": [
+          {
+            "name": "req",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Req"
             }
-          },
-          "required": true
-        },
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
-              "text/html": {
+              "application/json": {
                 "schema": {
-                  "type": "string"
+                  "$ref": "#/components/schemas/MapSearchResponse"
                 }
               }
             }
@@ -275,10 +276,10 @@
         }
       }
     },
-    "/internal/job_progress.html": {
+    "/api/job_progress_state": {
       "post": {
-        "summary": "Job Progress Endpoint",
-        "operationId": "job_progress_endpoint-POST",
+        "summary": "Job Progress State",
+        "operationId": "job_progress_state-POST",
         "requestBody": {
           "content": {
             "application/json": {
@@ -293,9 +294,9 @@
           "200": {
             "description": "Successful Response",
             "content": {
-              "text/html": {
+              "application/json": {
                 "schema": {
-                  "type": "string"
+                  "$ref": "#/components/schemas/JobProgressStateResponse"
                 }
               }
             }
@@ -313,15 +314,55 @@
         }
       }
     },
-    "/internal/job_list.html": {
+    "/api/remote_jobs": {
+      "get": {
+        "summary": "Remote Jobs",
+        "operationId": "remote_jobs-GET",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/JobDescription"
+                  },
+                  "type": "array",
+                  "title": "Response Remote Jobs-Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/system_status": {
+      "get": {
+        "summary": "System Status",
+        "operationId": "system_status-GET",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SystemStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/get_address": {
       "post": {
-        "summary": "Job List Endpoint",
-        "operationId": "job_list_endpoint-POST",
+        "summary": "Get Address",
+        "operationId": "get_address-POST",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/JobListRequest"
+                "$ref": "#/components/schemas/GetAddressRequest"
               }
             }
           },
@@ -331,9 +372,9 @@
           "200": {
             "description": "Successful Response",
             "content": {
-              "text/html": {
+              "application/json": {
                 "schema": {
-                  "type": "string"
+                  "$ref": "#/components/schemas/ImageAddress"
                 }
               }
             }
@@ -351,104 +392,10 @@
         }
       }
     },
-    "/internal/system_status.html": {
+    "/api/directories": {
       "post": {
-        "summary": "System Status Endpoint",
-        "operationId": "system_status_endpoint-POST",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/internal/submit_annotations_overlay.html": {
-      "post": {
-        "summary": "Submit Annotation Overlay Form Endpoint",
-        "operationId": "submit_annotation_overlay_form_endpoint-POST",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AnnotationOverlayRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/internal/fetch_location_info.html": {
-      "post": {
-        "summary": "Fetch Location Info Endpoint",
-        "operationId": "fetch_location_info_endpoint-POST",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/LocationInfoRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/internal/directories.html": {
-      "post": {
-        "summary": "Directories Endpoint",
-        "operationId": "directories_endpoint-POST",
+        "summary": "Matching Directories",
+        "operationId": "matching_directories-POST",
         "requestBody": {
           "content": {
             "application/json": {
@@ -463,9 +410,13 @@
           "200": {
             "description": "Successful Response",
             "content": {
-              "text/html": {
+              "application/json": {
                 "schema": {
-                  "type": "string"
+                  "items": {
+                    "$ref": "#/components/schemas/DirectoryStats"
+                  },
+                  "type": "array",
+                  "title": "Response Matching Directories-Post"
                 }
               }
             }
@@ -483,45 +434,27 @@
         }
       }
     },
-    "/internal/gallery.html": {
+    "/api/images": {
       "post": {
-        "summary": "Gallery Div",
-        "operationId": "gallery_div-POST",
-        "parameters": [
-          {
-            "name": "oi",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "integer"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Oi"
-            }
-          }
-        ],
+        "summary": "Image Page",
+        "operationId": "image_page-POST",
         "requestBody": {
-          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/GalleryRequest"
               }
             }
-          }
+          },
+          "required": true
         },
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
-              "text/html": {
+              "application/json": {
                 "schema": {
-                  "type": "string"
+                  "$ref": "#/components/schemas/ImageResponse"
                 }
               }
             }
@@ -539,10 +472,10 @@
         }
       }
     },
-    "/internal/aggregate.html": {
+    "/api/aggregate": {
       "post": {
-        "summary": "Aggregate Endpoint",
-        "operationId": "aggregate_endpoint-POST",
+        "summary": "Aggregate Images",
+        "operationId": "aggregate_images-POST",
         "requestBody": {
           "content": {
             "application/json": {
@@ -557,47 +490,9 @@
           "200": {
             "description": "Successful Response",
             "content": {
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/internal/input.html": {
-      "post": {
-        "summary": "Input Request",
-        "operationId": "input_request-POST",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/SearchQuery"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "text/html": {
-                "schema": {
-                  "type": "string"
+                  "$ref": "#/components/schemas/ImageAggregation"
                 }
               }
             }
@@ -654,44 +549,13 @@
         "properties": {
           "query": {
             "$ref": "#/components/schemas/SearchQuery"
-          },
-          "paging": {
-            "$ref": "#/components/schemas/GalleryPaging"
           }
         },
         "type": "object",
         "required": [
-          "query",
-          "paging"
+          "query"
         ],
         "title": "AggregateQuery"
-      },
-      "AnnotationOverlayFixedLocation": {
-        "properties": {
-          "t": {
-            "type": "string",
-            "enum": [
-              "FixedLocation"
-            ],
-            "const": "FixedLocation",
-            "title": "T"
-          },
-          "latitude": {
-            "type": "number",
-            "title": "Latitude"
-          },
-          "longitude": {
-            "type": "number",
-            "title": "Longitude"
-          }
-        },
-        "type": "object",
-        "required": [
-          "t",
-          "latitude",
-          "longitude"
-        ],
-        "title": "AnnotationOverlayFixedLocation"
       },
       "AnnotationOverlayInterpolateLocation": {
         "properties": {
@@ -730,33 +594,6 @@
           "t"
         ],
         "title": "AnnotationOverlayNoLocation"
-      },
-      "AnnotationOverlayRequest": {
-        "properties": {
-          "request": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/AnnotationOverlayFixedLocation"
-              },
-              {
-                "$ref": "#/components/schemas/AnnotationOverlayInterpolateLocation"
-              },
-              {
-                "$ref": "#/components/schemas/AnnotationOverlayNoLocation"
-              }
-            ],
-            "title": "Request"
-          },
-          "query": {
-            "$ref": "#/components/schemas/SearchQuery"
-          }
-        },
-        "type": "object",
-        "required": [
-          "request",
-          "query"
-        ],
-        "title": "AnnotationOverlayRequest"
       },
       "DateCluster": {
         "properties": {
@@ -901,6 +738,133 @@
         ],
         "title": "DateClusterParams"
       },
+      "DirectoryStats": {
+        "properties": {
+          "directory": {
+            "type": "string",
+            "title": "Directory"
+          },
+          "total_images": {
+            "type": "integer",
+            "title": "Total Images"
+          },
+          "has_location": {
+            "type": "integer",
+            "title": "Has Location"
+          },
+          "has_timestamp": {
+            "type": "integer",
+            "title": "Has Timestamp"
+          },
+          "being_annotated": {
+            "type": "integer",
+            "title": "Being Annotated"
+          },
+          "since": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Since"
+          },
+          "until": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Until"
+          }
+        },
+        "type": "object",
+        "required": [
+          "directory",
+          "total_images",
+          "has_location",
+          "has_timestamp",
+          "being_annotated",
+          "since",
+          "until"
+        ],
+        "title": "DirectoryStats"
+      },
+      "ExceptionInfo": {
+        "properties": {
+          "exc_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Exc Type"
+          },
+          "exc_val": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Exc Val"
+          },
+          "exc_tb": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Exc Tb"
+          }
+        },
+        "type": "object",
+        "required": [
+          "exc_type",
+          "exc_val",
+          "exc_tb"
+        ],
+        "title": "ExceptionInfo"
+      },
+      "FoundLocation": {
+        "properties": {
+          "latitude": {
+            "type": "number",
+            "title": "Latitude"
+          },
+          "longitude": {
+            "type": "number",
+            "title": "Longitude"
+          },
+          "address": {
+            "type": "string",
+            "title": "Address"
+          }
+        },
+        "type": "object",
+        "required": [
+          "latitude",
+          "longitude",
+          "address"
+        ],
+        "title": "FoundLocation"
+      },
       "GalleryPaging": {
         "properties": {
           "page": {
@@ -927,23 +891,33 @@
           },
           "sort": {
             "$ref": "#/components/schemas/SortParams"
-          },
-          "checkboxes": {
-            "additionalProperties": {
-              "type": "boolean"
-            },
-            "type": "object",
-            "title": "Checkboxes"
           }
         },
         "type": "object",
         "required": [
           "query",
           "paging",
-          "sort",
-          "checkboxes"
+          "sort"
         ],
         "title": "GalleryRequest"
+      },
+      "GetAddressRequest": {
+        "properties": {
+          "latitude": {
+            "type": "number",
+            "title": "Latitude"
+          },
+          "longitude": {
+            "type": "number",
+            "title": "Longitude"
+          }
+        },
+        "type": "object",
+        "required": [
+          "latitude",
+          "longitude"
+        ],
+        "title": "GetAddressRequest"
       },
       "HTTPValidationError": {
         "properties": {
@@ -958,6 +932,272 @@
         "type": "object",
         "title": "HTTPValidationError"
       },
+      "Image": {
+        "properties": {
+          "md5": {
+            "type": "string",
+            "title": "Md5"
+          },
+          "date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Date"
+          },
+          "date_transformed": {
+            "type": "boolean",
+            "title": "Date Transformed"
+          },
+          "tags": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "number"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tags"
+          },
+          "classifications": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Classifications"
+          },
+          "address": {
+            "$ref": "#/components/schemas/ImageAddress"
+          },
+          "dependent_features_last_update": {
+            "type": "number",
+            "title": "Dependent Features Last Update"
+          },
+          "latitude": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latitude"
+          },
+          "longitude": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Longitude"
+          },
+          "altitude": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Altitude"
+          },
+          "manual_features": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Manual Features"
+          },
+          "being_annotated": {
+            "type": "boolean",
+            "title": "Being Annotated"
+          },
+          "camera": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Camera"
+          },
+          "software": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Software"
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          }
+        },
+        "type": "object",
+        "required": [
+          "md5",
+          "date",
+          "date_transformed",
+          "tags",
+          "classifications",
+          "address",
+          "dependent_features_last_update",
+          "latitude",
+          "longitude",
+          "altitude",
+          "manual_features",
+          "being_annotated",
+          "camera",
+          "software",
+          "version"
+        ],
+        "title": "Image"
+      },
+      "ImageAddress": {
+        "properties": {
+          "country": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Country"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "full": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Full"
+          }
+        },
+        "type": "object",
+        "required": [
+          "country",
+          "name",
+          "full"
+        ],
+        "title": "ImageAddress"
+      },
+      "ImageAggregation": {
+        "properties": {
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "address": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Address"
+          },
+          "tag": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Tag"
+          },
+          "classification": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Classification"
+          },
+          "cameras": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Cameras"
+          }
+        },
+        "type": "object",
+        "required": [
+          "total",
+          "address",
+          "tag",
+          "classification",
+          "cameras"
+        ],
+        "title": "ImageAggregation"
+      },
+      "ImageResponse": {
+        "properties": {
+          "has_next_page": {
+            "type": "boolean",
+            "title": "Has Next Page"
+          },
+          "omgs": {
+            "items": {
+              "$ref": "#/components/schemas/ImageWithMeta"
+            },
+            "type": "array",
+            "title": "Omgs"
+          },
+          "some_location": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ManualLocation"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "has_next_page",
+          "omgs",
+          "some_location"
+        ],
+        "title": "ImageResponse"
+      },
       "ImageSize": {
         "type": "string",
         "enum": [
@@ -967,21 +1207,121 @@
         ],
         "title": "ImageSize"
       },
-      "JobListRequest": {
-        "properties": {},
+      "ImageWithMeta": {
+        "properties": {
+          "omg": {
+            "$ref": "#/components/schemas/Image"
+          },
+          "predicted_location": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PredictedLocation"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "paths": {
+            "items": {
+              "$ref": "#/components/schemas/PathSplit"
+            },
+            "type": "array",
+            "title": "Paths"
+          }
+        },
         "type": "object",
-        "title": "JobListRequest"
+        "required": [
+          "omg",
+          "predicted_location",
+          "paths"
+        ],
+        "title": "ImageWithMeta"
+      },
+      "JobDescription": {
+        "properties": {
+          "icon": {
+            "type": "string",
+            "title": "Icon"
+          },
+          "total": {
+            "type": "string",
+            "title": "Total"
+          },
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "type": {
+            "type": "string",
+            "title": "Type"
+          },
+          "replacements": {
+            "type": "string",
+            "title": "Replacements"
+          },
+          "time": {
+            "type": "number",
+            "title": "Time"
+          },
+          "latitude": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latitude"
+          },
+          "longitude": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Longitude"
+          },
+          "query": {
+            "$ref": "#/components/schemas/MassLocationAndTextAnnotation-Output"
+          },
+          "job": {
+            "$ref": "#/components/schemas/RemoteJob_bytes_"
+          },
+          "example_path_md5": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Example Path Md5"
+          }
+        },
+        "type": "object",
+        "required": [
+          "icon",
+          "total",
+          "id",
+          "type",
+          "replacements",
+          "time",
+          "latitude",
+          "longitude",
+          "query",
+          "job",
+          "example_path_md5"
+        ],
+        "title": "JobDescription"
       },
       "JobProgressRequest": {
         "properties": {
-          "update_state_fn": {
-            "type": "string",
-            "title": "Update State Fn"
-          },
-          "job_list_fn": {
-            "type": "string",
-            "title": "Job List Fn"
-          },
           "state": {
             "anyOf": [
               {
@@ -994,10 +1334,6 @@
           }
         },
         "type": "object",
-        "required": [
-          "update_state_fn",
-          "job_list_fn"
-        ],
         "title": "JobProgressRequest"
       },
       "JobProgressState": {
@@ -1037,6 +1373,41 @@
           "j_waiting"
         ],
         "title": "JobProgressState"
+      },
+      "JobProgressStateResponse": {
+        "properties": {
+          "state": {
+            "$ref": "#/components/schemas/JobProgressState"
+          },
+          "diff": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/JobProgressState"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "eta_str": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Eta Str"
+          }
+        },
+        "type": "object",
+        "required": [
+          "state",
+          "diff",
+          "eta_str"
+        ],
+        "title": "JobProgressStateResponse"
       },
       "LocClusterParams": {
         "properties": {
@@ -1191,24 +1562,6 @@
         ],
         "title": "LocationCluster"
       },
-      "LocationInfoRequest": {
-        "properties": {
-          "latitude": {
-            "type": "number",
-            "title": "Latitude"
-          },
-          "longitude": {
-            "type": "number",
-            "title": "Longitude"
-          }
-        },
-        "type": "object",
-        "required": [
-          "latitude",
-          "longitude"
-        ],
-        "title": "LocationInfoRequest"
-      },
       "LocationQueryFixedLocation": {
         "properties": {
           "t": {
@@ -1286,9 +1639,23 @@
         ],
         "title": "ManualLocationOverride"
       },
-      "MapSearchRequest": {
+      "MapSearchResponse": {
         "properties": {
-          "query": {
+          "response": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/FoundLocation"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Response"
+          },
+          "error": {
             "anyOf": [
               {
                 "type": "string"
@@ -1297,20 +1664,17 @@
                 "type": "null"
               }
             ],
-            "title": "Query"
-          },
-          "checkboxes": {
-            "additionalProperties": {
-              "type": "boolean"
-            },
-            "type": "object",
-            "title": "Checkboxes"
+            "title": "Error"
           }
         },
         "type": "object",
-        "title": "MapSearchRequest"
+        "required": [
+          "response",
+          "error"
+        ],
+        "title": "MapSearchResponse"
       },
-      "MassLocationAndTextAnnotation": {
+      "MassLocationAndTextAnnotation-Input": {
         "properties": {
           "t": {
             "type": "string",
@@ -1353,6 +1717,246 @@
           "date"
         ],
         "title": "MassLocationAndTextAnnotation"
+      },
+      "MassLocationAndTextAnnotation-Output": {
+        "properties": {
+          "t": {
+            "type": "string",
+            "enum": [
+              "MassLocAndTxt"
+            ],
+            "const": "MassLocAndTxt",
+            "title": "T"
+          },
+          "query": {
+            "$ref": "#/components/schemas/SearchQuery"
+          },
+          "location": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LocationQueryFixedLocation"
+              },
+              {
+                "$ref": "#/components/schemas/AnnotationOverlayInterpolateLocation"
+              },
+              {
+                "$ref": "#/components/schemas/AnnotationOverlayNoLocation"
+              }
+            ],
+            "title": "Location"
+          },
+          "text": {
+            "$ref": "#/components/schemas/TextQueryFixedText"
+          },
+          "date": {
+            "$ref": "#/components/schemas/TransDate"
+          }
+        },
+        "type": "object",
+        "required": [
+          "t",
+          "query",
+          "location",
+          "text",
+          "date"
+        ],
+        "title": "MassLocationAndTextAnnotation"
+      },
+      "PathSplit": {
+        "properties": {
+          "dir": {
+            "type": "string",
+            "title": "Dir"
+          },
+          "file": {
+            "type": "string",
+            "title": "File"
+          }
+        },
+        "type": "object",
+        "required": [
+          "dir",
+          "file"
+        ],
+        "title": "PathSplit"
+      },
+      "PredictedLocation": {
+        "properties": {
+          "loc": {
+            "$ref": "#/components/schemas/LocPoint"
+          },
+          "earlier": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReferenceStats"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "later": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReferenceStats"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "earlier",
+          "later"
+        ],
+        "title": "PredictedLocation"
+      },
+      "ProgressBarProgress": {
+        "properties": {
+          "desc": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Desc"
+          },
+          "progress": {
+            "type": "integer",
+            "title": "Progress"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "rate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rate"
+          },
+          "elapsed": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Elapsed"
+          }
+        },
+        "type": "object",
+        "required": [
+          "desc",
+          "progress",
+          "total",
+          "rate",
+          "elapsed"
+        ],
+        "title": "ProgressBarProgress"
+      },
+      "ReferenceStats": {
+        "properties": {
+          "distance_m": {
+            "type": "number",
+            "title": "Distance M"
+          },
+          "seconds": {
+            "type": "number",
+            "title": "Seconds"
+          }
+        },
+        "type": "object",
+        "required": [
+          "distance_m",
+          "seconds"
+        ],
+        "title": "ReferenceStats"
+      },
+      "RemoteJobType": {
+        "type": "string",
+        "enum": [
+          "mass_manual_annotation"
+        ],
+        "const": "mass_manual_annotation",
+        "title": "RemoteJobType"
+      },
+      "RemoteJob_bytes_": {
+        "properties": {
+          "id_": {
+            "type": "integer",
+            "title": "Id "
+          },
+          "type_": {
+            "$ref": "#/components/schemas/RemoteJobType"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "finished_tasks": {
+            "type": "integer",
+            "title": "Finished Tasks"
+          },
+          "original_request": {
+            "type": "string",
+            "format": "binary",
+            "title": "Original Request"
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created"
+          },
+          "last_update": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Update"
+          },
+          "example_path_md5": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Example Path Md5"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id_",
+          "type_",
+          "total",
+          "finished_tasks",
+          "original_request",
+          "created",
+          "last_update",
+          "example_path_md5"
+        ],
+        "title": "RemoteJob"
       },
       "SearchQuery": {
         "properties": {
@@ -1465,6 +2069,93 @@
         },
         "type": "object",
         "title": "SortParams"
+      },
+      "State": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "state": {
+            "$ref": "#/components/schemas/StateEnum"
+          },
+          "when": {
+            "type": "number",
+            "title": "When"
+          },
+          "exception": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ExceptionInfo"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "state",
+          "when",
+          "exception"
+        ],
+        "title": "State"
+      },
+      "StateEnum": {
+        "type": "string",
+        "enum": [
+          "initialized",
+          "running",
+          "finished",
+          "unexpected finish",
+          "error"
+        ],
+        "title": "StateEnum"
+      },
+      "SystemStatus": {
+        "properties": {
+          "progress_bars": {
+            "items": {
+              "prefixItems": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "$ref": "#/components/schemas/ProgressBarProgress"
+                }
+              ],
+              "type": "array",
+              "maxItems": 2,
+              "minItems": 2
+            },
+            "type": "array",
+            "title": "Progress Bars"
+          },
+          "current_state": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/State"
+            },
+            "type": "object",
+            "title": "Current State"
+          },
+          "t": {
+            "type": "string",
+            "enum": [
+              "SystemStatus"
+            ],
+            "const": "SystemStatus",
+            "title": "T",
+            "default": "SystemStatus"
+          }
+        },
+        "type": "object",
+        "required": [
+          "progress_bars",
+          "current_state"
+        ],
+        "title": "SystemStatus"
       },
       "TextAnnotation": {
         "properties": {

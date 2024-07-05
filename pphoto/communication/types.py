@@ -40,11 +40,14 @@ class ImportDirectory(dj.DataClassJsonMixin):
     t: t.Literal["ImportDirectory"] = "ImportDirectory"
 
 
+_t = t
+
+
 @dc.dataclass
 class SystemStatus(dj.DataClassJsonMixin):
-    progress_bars: t.List[t.Tuple[int, ProgressBarProgress]]  # noqa: F841
-    current_state: t.Dict[str, State]
-    t: t.Literal["SystemStatus"] = "SystemStatus"
+    progress_bars: _t.List[_t.Tuple[int, ProgressBarProgress]]  # noqa: F841
+    current_state: _t.Dict[str, State]
+    t: _t.Literal["SystemStatus"] = "SystemStatus"
 
 
 @dc.dataclass

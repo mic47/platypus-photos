@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import dataclasses as dc
-import datetime as dt
 import typing as t
 
 from dataclasses_json import DataClassJsonMixin
@@ -297,26 +296,5 @@ class UnicodeEmojiData(DataClassJsonMixin):
         )
 
 
-def append_flag(country: str) -> str:
-    flag_ = _FLAGS.get(country.lower())
-    if flag_ is not None:
-        return f"{country}{flag_}"
-    return country
-
-
-def replace_with_flag(country: str) -> str:
-    return _FLAGS.get(country.lower(), country)
-
-
 def flag(country: str) -> t.Optional[str]:
     return _FLAGS.get(country.lower())
-
-
-def maybe_datetime_to_clock(value: t.Optional[dt.datetime]) -> t.Optional[str]:
-    if value is None:
-        return None
-    if value.minute < 30:
-        mapping = _OCLOCK
-    else:
-        mapping = _THIRTY
-    return mapping[value.hour % 12]

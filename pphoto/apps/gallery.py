@@ -1,9 +1,7 @@
 from __future__ import annotations
 
 import asyncio
-import base64
 import json
-import math
 import typing as t
 import os
 import sys
@@ -11,28 +9,29 @@ import time
 import enum
 import traceback
 from datetime import datetime, timedelta
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 from dataclasses_json import DataClassJsonMixin
 from geopy.distance import distance
 from PIL import Image, ImageFile
 
 from fastapi import FastAPI, Request, Response
-from fastapi.responses import HTMLResponse, FileResponse
+from fastapi.responses import FileResponse
 from fastapi.routing import APIRoute
 from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
 
 from pphoto.annots.geo import Geolocator
-from pphoto.communication.client import get_system_status, refresh_jobs
+from pphoto.communication.client import get_system_status, refresh_jobs, SystemStatus
 from pphoto.data_model.config import DBFilesConfig
 from pphoto.data_model.base import PathWithMd5
 from pphoto.db.types_location import LocationCluster, LocPoint, LocationBounds
 from pphoto.db.types_date import DateCluster, DateClusterGroupBy
-from pphoto.db.types_image import ImageAddress
+from pphoto.db.types_directory import DirectoryStats
+from pphoto.db.types_image import ImageAddress, ImageAggregation
 from pphoto.db.connection import PhotosConnection, GalleryConnection, JobsConnection
 from pphoto.utils import assert_never, Lazy
 from pphoto.remote_jobs.types import (
+    RemoteJob,
     RemoteJobType,
     ManualLocation,
     TextAnnotation,
@@ -43,16 +42,7 @@ from pphoto.remote_jobs.types import (
 from pphoto.gallery.db import ImageSqlDB, Image as ImageRow
 from pphoto.gallery.image import make_image_address
 from pphoto.gallery.url import SearchQuery, GalleryPaging, SortParams, SortBy, SortOrder
-from pphoto.gallery.utils import (
-    format_diff_date,
-    format_seconds_to_duration,
-    maybe_datetime_to_date,
-    maybe_datetime_to_time,
-    maybe_datetime_to_timestamp,
-    maybe_datetime_to_day_start,
-    maybe_datetime_to_next_day_start,
-)
-from pphoto.gallery.unicode import maybe_datetime_to_clock, append_flag, replace_with_flag, flag
+from pphoto.gallery.unicode import flag
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
@@ -67,21 +57,7 @@ def custom_generate_unique_id(route: APIRoute) -> str:
 app = FastAPI(generate_unique_id_function=custom_generate_unique_id)
 app.mount("/static", StaticFiles(directory="static/"), name="static")
 app.mount("/css", StaticFiles(directory="css/"), name="static")
-templates = Jinja2Templates(directory="templates")
 
-
-def timestamp_to_pretty_datetime(value: float) -> str:
-    """
-    custom max calculation logic
-    """
-    return datetime.fromtimestamp(value).strftime("%Y-%m-%d %H:%M:%S")
-
-
-templates.env.filters["timestamp_to_pretty_datetime"] = timestamp_to_pretty_datetime
-templates.env.filters["append_flag"] = append_flag
-templates.env.filters["replace_with_flag"] = replace_with_flag
-templates.env.filters["dataclass_to_json_pretty"] = lambda x: x.to_json(indent=2, ensure_ascii=False)
-templates.env.filters["format_seconds_to_duration"] = lambda x: format_seconds_to_duration(float(x))
 
 DB = Lazy(
     lambda: ImageSqlDB(
@@ -472,25 +448,27 @@ GEOLOCATOR = Geolocator()
 
 
 @dataclass
-class MapSearchRequest:
-    query: t.Optional[str] = None
-    checkboxes: t.Dict[str, bool] = field(default_factory=dict)
+class FoundLocation:
+    latitude: float
+    longitude: float
+    address: str
 
 
-@app.post("/internal/map_search.html", response_class=HTMLResponse)
-def map_search_endpoint(request: Request, req: MapSearchRequest) -> HTMLResponse:
-    error = ""
+@dataclass
+class MapSearchResponse:
+    response: None | t.List[FoundLocation]
+    error: None | str
+
+
+@app.post("/api/map_search")
+def find_location(req: str) -> MapSearchResponse:
     try:
-        result = GEOLOCATOR.search(req.query, limit=10) if req.query is not None else []
+        result = GEOLOCATOR.search(req, limit=10) if req != "" else []
+        return MapSearchResponse([FoundLocation(r.latitude, r.longitude, r.address) for r in result], None)
     # pylint: disable-next = broad-exception-caught
     except Exception as e:
         traceback.print_exc()
-        error = f"{e}\n{traceback.format_exc()}"
-    return templates.TemplateResponse(
-        request=request,
-        name="map_search.html",
-        context={"req": req, "result": result, "error": error},
-    )
+        return MapSearchResponse(None, f"{e}\n{traceback.format_exc()}")
 
 
 @dataclass
@@ -524,13 +502,19 @@ class JobProgressState(DataClassJsonMixin):
 
 @dataclass
 class JobProgressRequest:
-    update_state_fn: str
-    job_list_fn: str
     state: t.Optional[JobProgressState] = None
 
 
-@app.post("/internal/job_progress.html", response_class=HTMLResponse)
-def job_progress_endpoint(request: Request, req: JobProgressRequest) -> HTMLResponse:
+@dataclass
+class JobProgressStateResponse:
+    state: JobProgressState
+    # TODO: move these to server
+    diff: JobProgressState | None
+    eta_str: str | None  # noqa: F841
+
+
+@app.post("/api/job_progress_state")
+def job_progress_state(req: JobProgressRequest) -> JobProgressStateResponse:
     jobs = DB.get().jobs.get_jobs(skip_finished=False)
     state = JobProgressState(datetime.now().timestamp(), 0, 0, 0, 0, 0)
     for job in jobs:
@@ -539,6 +523,7 @@ def job_progress_endpoint(request: Request, req: JobProgressRequest) -> HTMLResp
         state.j_total += 1
         state.j_finished += int(job.total == job.finished_tasks)
         state.j_waiting += int(job.finished_tasks == 0)
+    # TODO: diff should be computed in the typescript, to avoid sending of state here
     if req.state is not None and state.progressed(req.state):
         diff = state.diff(req.state)
         if state.t_total == state.t_finished or diff.ts < 1 or diff.t_finished == 0:
@@ -548,28 +533,26 @@ def job_progress_endpoint(request: Request, req: JobProgressRequest) -> HTMLResp
     else:
         diff = None
         eta = None
-
-    return templates.TemplateResponse(
-        request=request,
-        name="job_progress.html",
-        context={
-            "state": state,
-            "state_base64": base64.b64encode(state.to_json().encode("utf-8")).decode("utf-8"),
-            "diff": diff,
-            "update_state_fn": req.update_state_fn,
-            "job_list_fn": req.job_list_fn,
-            "eta": eta,
-        },
-    )
+    return JobProgressStateResponse(state, diff, eta)
 
 
 @dataclass
-class JobListRequest:
-    pass
+class JobDescription:
+    icon: str
+    total: str
+    id: int  # noqa: F841
+    type: str
+    replacements: str
+    time: float
+    latitude: float | None
+    longitude: float | None
+    query: MassLocationAndTextAnnotation
+    job: RemoteJob[bytes]
+    example_path_md5: str | None
 
 
-@app.post("/internal/job_list.html", response_class=HTMLResponse)
-def job_list_endpoint(request: Request, _req: JobListRequest) -> HTMLResponse:
+@app.get("/api/remote_jobs")
+def remote_jobs() -> t.List[JobDescription]:
     jobs = []
     for job in sorted(DB.get().jobs.get_jobs(skip_finished=False), key=lambda x: x.created, reverse=True):
         total = f"{job.finished_tasks}/{job.total}"
@@ -582,7 +565,6 @@ def job_list_endpoint(request: Request, _req: JobListRequest) -> HTMLResponse:
             icon = "🏗️"
         type_ = ["🗺️"]
         replacements = []
-        query = ""
         latitude = None
         longitude = None
         if job.type_ == RemoteJobType.MASS_MANUAL_ANNOTATION:
@@ -611,7 +593,6 @@ def job_list_endpoint(request: Request, _req: JobListRequest) -> HTMLResponse:
                     pass
                 else:
                     assert_never(og_req.location.t)
-                query = og_req.to_json(ensure_ascii=False, indent=2)
 
             # pylint: disable-next = broad-exception-caught
             except Exception as e:
@@ -623,159 +604,45 @@ def job_list_endpoint(request: Request, _req: JobListRequest) -> HTMLResponse:
         if "original_request" in job_dict:
             job_dict.pop("original_request")
         jobs.append(
-            {
-                "icon": icon,
-                "total": total,
-                "id_": job.id_,
-                "type_": "".join(type_),
-                "repls": repls,
-                "time": (job.last_update or job.created).timestamp(),
-                "latitude": latitude,
-                "longitude": longitude,
-                "query_json": query,
-                "job_json": json.dumps(job_dict, ensure_ascii=False, indent=2),
-                "example_path_md5": job.example_path_md5,
-            }
+            JobDescription(
+                icon,
+                total,
+                job.id_,
+                "".join(type_),
+                repls,
+                (job.last_update or job.created).timestamp(),
+                latitude,
+                longitude,
+                og_req,
+                job,
+                job.example_path_md5,
+            )
         )
-    return templates.TemplateResponse(
-        request=request,
-        name="job_list.html",
-        context={"jobs": jobs},
-    )
+    return jobs
 
 
-@app.post("/internal/system_status.html", response_class=HTMLResponse)
-async def system_status_endpoint(request: Request) -> HTMLResponse:
-    system_status = await get_system_status()
-
-    return templates.TemplateResponse(
-        request=request,
-        name="system_status.html",
-        context={
-            "status": system_status,
-            "now": datetime.now().timestamp(),
-        },
-    )
+@app.get("/api/system_status")
+async def system_status(_request: Request) -> SystemStatus:
+    return await get_system_status()
 
 
 @dataclass
-class AnnotationOverlayFixedLocation(DataClassJsonMixin):
-    t: t.Literal["FixedLocation"]
+class GetAddressRequest(DataClassJsonMixin):
     latitude: float
     longitude: float
 
 
-@dataclass
-class AnnotationOverlayRequest(DataClassJsonMixin):
-    request: (
-        AnnotationOverlayFixedLocation | AnnotationOverlayInterpolateLocation | AnnotationOverlayNoLocation
-    )
-    query: SearchQuery
-
-
-@app.post("/internal/submit_annotations_overlay.html", response_class=HTMLResponse)
-def submit_annotation_overlay_form_endpoint(request: Request, req: AnnotationOverlayRequest) -> HTMLResponse:
-    address = None
-    if req.request.t == "FixedLocation":
-        address = make_image_address(
-            GEOLOCATOR.address(PathWithMd5("", ""), req.request.latitude, req.request.longitude).p,
-            None,
-        )
-    elif req.request.t == "InterpolatedLocation":
-        # there is nothing to do.
-        address = ImageAddress(req.request.location.address_country, req.request.location.address_name, None)
-    elif req.request.t == "NoLocation":
-        # There is no location, so nothing to do
-        pass
-    else:
-        assert_never(req.request.t)
-    aggr = DB.get().get_aggregate_stats(req.query)
-    top_tags = sorted(aggr.tag.items(), key=lambda x: -x[1])
-    top_cls = sorted(aggr.classification.items(), key=lambda x: -x[1])
-    top_addr = sorted(aggr.address.items(), key=lambda x: -x[1])
-    top_cameras = sorted(((k or "unknown", v) for k, v in aggr.cameras.items()), key=lambda x: -x[1])
-
-    directories = sorted(DB.get().get_matching_directories(req.query), key=lambda x: x.directory)
-    omgs, _ = DB.get().get_matching_images(req.query, SortParams(sort_by=SortBy.RANDOM), GalleryPaging())
-    images = [image_template_params(omg) for omg in omgs]
-    return templates.TemplateResponse(
-        request=request,
-        name="submit_annotations_overlay.html",
-        context={
-            "total": aggr.total,
-            "request_type": req.request.t,
-            "top": {
-                "tag": top_tags[:15],
-                "cls": top_cls[:5],
-                "addr": top_addr[:15],
-                "cameras": [
-                    (k, v)
-                    for k, v in (
-                        top_cameras[:5]
-                        + [("other", sum([x for _, x in top_cameras[5:]], 0))]
-                        + [("distinct", len(set(x for x, _ in top_cameras[5:])))]
-                    )
-                    if v
-                ],
-                "show_links": False,
-            },
-            "address": address,
-            "req": req,
-            "query_json": json.dumps(
-                {k: v for k, v in req.query.to_dict(encode_json=True).items() if v}, indent=2
-            ),
-            "query_json_base64": jtob64(req.query),
-            "directories": directories,
-            "images": images,
-        },
+@app.post("/api/get_address")
+def get_address(req: GetAddressRequest) -> ImageAddress:
+    return make_image_address(
+        GEOLOCATOR.address(PathWithMd5("", ""), req.latitude, req.longitude).p,
+        None,
     )
 
 
-def jtob64(data: DataClassJsonMixin) -> str:
-    return base64.b64encode(data.to_json(ensure_ascii=True).encode("utf-8")).decode("utf-8")
-
-
-@dataclass
-class LocationInfoRequest:
-    latitude: float
-    longitude: float
-
-
-@app.post("/internal/fetch_location_info.html", response_class=HTMLResponse)
-def fetch_location_info_endpoint(request: Request, location: LocationInfoRequest) -> HTMLResponse:
-    address = make_image_address(
-        GEOLOCATOR.address(PathWithMd5("", ""), location.latitude, location.longitude).p, None
-    )
-    return templates.TemplateResponse(
-        request=request,
-        name="fetch_location_info.html",
-        context={"address": address, "req": location},
-    )
-
-
-@app.post("/internal/directories.html", response_class=HTMLResponse)
-def directories_endpoint(request: Request, url: SearchQuery) -> HTMLResponse:
-    directories = sorted(DB.get().get_matching_directories(url), key=lambda x: x.directory)
-    dirs = []
-    for directory in directories:
-        parts = directory.directory.split("/")
-        prefixes = []
-        prefix = ""
-        for part in parts:
-            if part:
-                prefix = f"{prefix}/{part}"
-                prefixes.append((part, prefix))
-            else:
-                prefix = ""
-                prefixes.append((part, ""))
-        dirs.append((prefixes, directory))
-    return templates.TemplateResponse(
-        request=request,
-        name="directories.html",
-        context={
-            "dirs": sorted(dirs, key=lambda x: [x[1].since or 0, x[1].total_images, x[0]], reverse=True),
-        },
-    )
+@app.post("/api/directories")
+def matching_directories(url: SearchQuery) -> t.List[DirectoryStats]:
+    return sorted(DB.get().get_matching_directories(url), key=lambda x: x.directory)
 
 
 @dataclass
@@ -783,50 +650,6 @@ class GalleryRequest:
     query: SearchQuery
     paging: GalleryPaging
     sort: SortParams
-    checkboxes: t.Dict[str, bool]
-
-
-def image_template_params(
-    omg: ImageRow,
-    prev_date: t.Optional[datetime] = None,
-) -> t.Dict[str, t.Any]:
-
-    max_tag = min(1, max((omg.tags or {}).values(), default=1.0))
-    loc = None
-    if omg.latitude is not None and omg.longitude is not None:
-        loc = {"lat": omg.latitude, "lon": omg.longitude}
-
-    paths = [
-        {
-            "filename": os.path.basename(file.file),
-            "dir": os.path.dirname(file.file),
-        }
-        for file in DB.get().files(omg.md5)
-    ]
-    diff_date = format_diff_date(omg.date, prev_date)
-    return {
-        "hsh": omg.md5,
-        "paths": paths,
-        "loc": loc,
-        "classifications": omg.classifications or "",
-        "tags": [
-            (tg, classify_tag(x / max_tag)) for tg, x in sorted((omg.tags or {}).items(), key=lambda x: -x[1])
-        ],
-        "addrs": [a for a in [omg.address.name, omg.address.country] if a],
-        "date": maybe_datetime_to_date(omg.date),
-        "time": maybe_datetime_to_time(omg.date),
-        "date_timestamp_start": maybe_datetime_to_day_start(omg.date),
-        "date_timestamp_end": maybe_datetime_to_next_day_start(omg.date),
-        "timeicon": maybe_datetime_to_clock(omg.date),
-        "timestamp": maybe_datetime_to_timestamp(omg.date),
-        "diff_date": diff_date,
-        "being_annotated": omg.being_annotated,
-        "camera": omg.camera,
-        "software": omg.software,
-        "raw_data": [
-            {"k": k, "v": json.dumps(v, ensure_ascii=True)} for k, v in omg.to_dict(encode_json=True).items()
-        ],
-    }
 
 
 @dataclass
@@ -850,15 +673,59 @@ class DateWithLoc:
         return abs((self.date - other).total_seconds())
 
 
-@app.post("/internal/gallery.html", response_class=HTMLResponse)
-async def gallery_div(request: Request, params: GalleryRequest, oi: t.Optional[int] = None) -> HTMLResponse:
+@dataclass
+class ReferenceStats(DataClassJsonMixin):
+    distance_m: float
+    seconds: float  # noqa: F841
+
+
+@dataclass
+class PredictedLocation(DataClassJsonMixin):
+    loc: LocPoint
+    earlier: t.Optional[ReferenceStats]
+    later: t.Optional[ReferenceStats]  # noqa: F841
+
+
+@dataclass
+class PathSplit(DataClassJsonMixin):
+    dir: str  # noqa: F841
+    file: str
+
+    @staticmethod
+    def from_filename(filename: str) -> PathSplit:
+        return PathSplit(
+            dir=os.path.dirname(filename),
+            file=os.path.basename(filename),
+        )
+
+
+@dataclass
+class ImageWithMeta(DataClassJsonMixin):
+    omg: ImageRow
+    predicted_location: t.Optional[PredictedLocation]
+    paths: t.List[PathSplit]
+
+
+@dataclass
+class ImageResponse(DataClassJsonMixin):
+    has_next_page: bool
+    omgs: t.List[ImageWithMeta]
+    some_location: ManualLocation | None
+
+
+@app.post("/api/images")
+async def image_page(params: GalleryRequest) -> ImageResponse:
     images = []
     omgs, has_next_page = DB.get().get_matching_images(params.query, params.sort, params.paging)
     fwdbwd = forward_backward(omgs, DateWithLoc.from_image)
 
-    prev_date = None
     some_location = None
     for index, omg in enumerate(omgs):
+        paths = []
+        for file in DB.get().files(omg.md5):
+            paths.append(PathSplit.from_filename(file.file))
+            if file.og_file is not None:
+                paths.append(PathSplit.from_filename(file.og_file))
         if omg.latitude is not None and omg.longitude is not None:
             some_location = ManualLocation(
                 omg.latitude,
@@ -867,39 +734,8 @@ async def gallery_div(request: Request, params: GalleryRequest, oi: t.Optional[i
                 omg.address.country,
             )
         predicted_location = predict_location(omg, fwdbwd[index][0], fwdbwd[index][1])
-        estimated_loc = predict_location_to_str(predicted_location)
-        estimated_loc_suspicious = suspicious(predicted_location)
-        images.append(
-            {
-                **image_template_params(omg, prev_date),
-                "estimated_loc": estimated_loc,
-                "estimated_loc_suspicious": estimated_loc_suspicious,
-                "estimated_loc_onesided": predicted_location is not None
-                and (predicted_location.earlier is None or predicted_location.later is None),
-                "predicted_loc": predicted_location,
-            }
-        )
-        prev_date = omg.date
-
-    return templates.TemplateResponse(
-        request=request,
-        name="gallery.html",
-        context={
-            "oi": oi,
-            "checkboxes": params.checkboxes,
-            "location_encoded_base64": (
-                base64.b64encode(some_location.to_json().encode("utf-8")).decode("utf-8")
-                if some_location is not None
-                else None
-            ),
-            "images": images,
-            "has_next_page": has_next_page,
-            "ascending": params.sort.order == SortOrder.ASC,
-            "input": {
-                "page": params.paging.page,
-            },
-        },
-    )
+        images.append(ImageWithMeta(omg, predicted_location, paths))
+    return ImageResponse(has_next_page, images, some_location)
 
 
 T = t.TypeVar("T")
@@ -922,33 +758,8 @@ def forward_backward(
     return forward
 
 
-@dataclass
-class ReferenceStats(DataClassJsonMixin):
-    distance_m: float
-    seconds: float
-
-
-@dataclass
-class PredictedLocation(DataClassJsonMixin):
-    loc: LocPoint
-    earlier: t.Optional[ReferenceStats]
-    later: t.Optional[ReferenceStats]
-
-
 def distance_m(p1: LocPoint, p2: LocPoint) -> float:
     return t.cast(float, distance((p1.latitude, p1.longitude), (p2.latitude, p2.longitude)).m)
-
-
-def suspicious(loc: t.Optional[PredictedLocation]) -> bool:
-    if loc is None:
-        return False
-    if loc.earlier is not None:
-        if loc.earlier.distance_m > 1000 or loc.earlier.seconds > 3600:
-            return True
-    if loc.later is not None:
-        if loc.later.distance_m > 1000 or loc.later.seconds > 3600:
-            return True
-    return False
 
 
 def predict_location(
@@ -985,111 +796,18 @@ def predict_location(
     return None
 
 
-def predict_location_to_str(
-    predicted: t.Optional[PredictedLocation],
-) -> t.Optional[str]:
-    if predicted is None:
-        return None
-    parts = []
-    if predicted.earlier:
-        speed_str = ""
-        if predicted.earlier.seconds > 0.1:
-            speed = predicted.earlier.distance_m / predicted.earlier.seconds * 1000 / 3600
-            speed_str = f", {speed:.1f}km/h"
-        parts.append(
-            f"e: {predicted.earlier.distance_m:.0f}m, {format_seconds_to_duration(predicted.earlier.seconds)}{speed_str}"
-        )
-    if predicted.later:
-        speed_str = ""
-        if predicted.later.seconds > 0.1:
-            speed = predicted.later.distance_m / predicted.later.seconds * 1000 / 3600
-            speed_str = f", {speed:.1f}km/h"
-        parts.append(
-            f"l: {predicted.later.distance_m:.0f}m, {format_seconds_to_duration(predicted.later.seconds)}{speed_str}"
-        )
-    return ", ".join(parts)
-
-
 @dataclass
 class AggregateQuery:
     query: SearchQuery
-    paging: GalleryPaging
 
 
-@app.post("/internal/aggregate.html", response_class=HTMLResponse)
-def aggregate_endpoint(request: Request, param: AggregateQuery) -> HTMLResponse:
-    paging = param.paging.paging
+@app.post("/api/aggregate")
+def aggregate_images(param: AggregateQuery) -> ImageAggregation:
     aggr = DB.get().get_aggregate_stats(param.query)
-    top_tags = sorted(aggr.tag.items(), key=lambda x: -x[1])
-    top_cls = sorted(aggr.classification.items(), key=lambda x: -x[1])
-    top_addr = sorted(aggr.address.items(), key=lambda x: -x[1])
-    top_cameras = sorted(((k or "unknown", v) for k, v in aggr.cameras.items()), key=lambda x: -x[1])
-    return templates.TemplateResponse(
-        request=request,
-        name="aggregate.html",
-        context={
-            "total": aggr.total,
-            "num_pages": math.ceil(aggr.total / paging),
-            "top": {
-                "tag": top_tags[:15],
-                "cls": top_cls[:5],
-                "addr": top_addr[:15],
-                "cameras": [
-                    (k, v)
-                    for k, v in (
-                        top_cameras[:5]
-                        + [("other", sum([x for _, x in top_cameras[5:]], 0))]
-                        + [("distinct", len(set(x for x, _ in top_cameras[5:])))]
-                    )
-                    if v
-                ],
-                "show_links": True,
-            },
-        },
-    )
-
-
-@app.post("/internal/input.html", response_class=HTMLResponse)
-def input_request(request: Request, url: SearchQuery) -> HTMLResponse:
-    return templates.TemplateResponse(
-        request=request,
-        name="input.html",
-        context={
-            "input": {
-                "tag": url.tag,
-                "cls": url.cls,
-                "addr": url.addr,
-                "skip_with_location": url.skip_with_location,
-                "skip_being_annotated": url.skip_being_annotated,
-                "directory": url.directory,
-                "camera": url.camera,
-                "timestamp_trans": url.timestamp_trans or "",
-                "tsfrom": url.tsfrom or "",
-                "tsfrom_pretty": (
-                    datetime.fromtimestamp(url.tsfrom).strftime("%a %Y-%m-%d %H:%M:%S")
-                    if url.tsfrom is not None
-                    else "_" * 23
-                ),
-                "tsto": url.tsto or "",
-                "tsto_pretty": (
-                    datetime.fromtimestamp(url.tsto).strftime("%a %Y-%m-%d %H:%M:%S")
-                    if url.tsto is not None
-                    else "_" * 23
-                ),
-            },
-        },
-    )
+    return aggr
 
 
 @app.get("/index.html")
 @app.get("/")
 async def read_index() -> FileResponse:
     return FileResponse("static/index.html")
-
-
-def classify_tag(value: float) -> str:
-    if value >= 0.5:
-        return ""
-    if value >= 0.2:
-        return "🤷"
-    return "🗑️"

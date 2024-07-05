@@ -2,8 +2,7 @@ import { Chart, ChartEvent, TooltipItem } from "chart.js/auto";
 import { getRelativePosition } from "chart.js/helpers";
 import "chartjs-adapter-date-fns";
 import { ColorAssigner } from "./color_assigner.ts";
-import data_model from "./data_model.generated.json";
-import { pprange, pretty_print_duration } from "./utils.ts";
+import { FLAGS, pprange, pretty_print_duration } from "./utils.ts";
 import { Switchable } from "./switchable.ts";
 import {
     DateCluster,
@@ -240,7 +239,6 @@ type DatasetPoints = {
         backgroundColor?: string;
     };
 };
-const FLAGS: { [key: string]: string } = data_model.unicode.flags;
 function clusters_to_datasets(clusters: DateCluster[]): DatasetPoints {
     const data_points: DatasetPoints = {};
     function to_datapoint(c: DateCluster) {

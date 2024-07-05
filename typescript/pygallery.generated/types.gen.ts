@@ -2,34 +2,20 @@
 
 export type AggregateQuery = {
     query: SearchQuery;
-    paging: GalleryPaging;
 };
-
-export type AnnotationOverlayFixedLocation = {
-    t: 'FixedLocation';
-    latitude: number;
-    longitude: number;
-};
-
-export type t = 'FixedLocation';
 
 export type AnnotationOverlayInterpolateLocation = {
     t: 'InterpolatedLocation';
     location: ManualLocation;
 };
 
-export type t2 = 'InterpolatedLocation';
+export type t = 'InterpolatedLocation';
 
 export type AnnotationOverlayNoLocation = {
     t: 'NoLocation';
 };
 
-export type t3 = 'NoLocation';
-
-export type AnnotationOverlayRequest = {
-    request: AnnotationOverlayFixedLocation | AnnotationOverlayInterpolateLocation | AnnotationOverlayNoLocation;
-    query: SearchQuery;
-};
+export type t2 = 'NoLocation';
 
 export type DateCluster = {
     example_path_md5: string;
@@ -58,6 +44,28 @@ export type DateClusterParams = {
     buckets: number;
 };
 
+export type DirectoryStats = {
+    directory: string;
+    total_images: number;
+    has_location: number;
+    has_timestamp: number;
+    being_annotated: number;
+    since: number | null;
+    until: number | null;
+};
+
+export type ExceptionInfo = {
+    exc_type: string | null;
+    exc_val: string | null;
+    exc_tb: Array<(string)> | null;
+};
+
+export type FoundLocation = {
+    latitude: number;
+    longitude: number;
+    address: string;
+};
+
 export type GalleryPaging = {
     page?: number;
     paging?: number;
@@ -67,22 +75,88 @@ export type GalleryRequest = {
     query: SearchQuery;
     paging: GalleryPaging;
     sort: SortParams;
-    checkboxes: {
-        [key: string]: (boolean);
-    };
+};
+
+export type GetAddressRequest = {
+    latitude: number;
+    longitude: number;
 };
 
 export type HTTPValidationError = {
     detail?: Array<ValidationError>;
 };
 
+export type Image = {
+    md5: string;
+    date: string | null;
+    date_transformed: boolean;
+    tags: {
+    [key: string]: (number);
+} | null;
+    classifications: string | null;
+    address: ImageAddress;
+    dependent_features_last_update: number;
+    latitude: number | null;
+    longitude: number | null;
+    altitude: number | null;
+    manual_features: Array<(string)>;
+    being_annotated: boolean;
+    camera: string | null;
+    software: string | null;
+    version: number;
+};
+
+export type ImageAddress = {
+    country: string | null;
+    name: string | null;
+    full: string | null;
+};
+
+export type ImageAggregation = {
+    total: number;
+    address: {
+        [key: string]: (number);
+    };
+    tag: {
+        [key: string]: (number);
+    };
+    classification: {
+        [key: string]: (number);
+    };
+    cameras: {
+        [key: string]: (number);
+    };
+};
+
+export type ImageResponse = {
+    has_next_page: boolean;
+    omgs: Array<ImageWithMeta>;
+    some_location: ManualLocation | null;
+};
+
 export type ImageSize = 'original' | 'medium' | 'preview';
 
-export type JobListRequest = unknown;
+export type ImageWithMeta = {
+    omg: Image;
+    predicted_location: PredictedLocation | null;
+    paths: Array<PathSplit>;
+};
+
+export type JobDescription = {
+    icon: string;
+    total: string;
+    id: number;
+    type: string;
+    replacements: string;
+    time: number;
+    latitude: number | null;
+    longitude: number | null;
+    query: MassLocationAndTextAnnotation_Output;
+    job: RemoteJob_bytes_;
+    example_path_md5: string | null;
+};
 
 export type JobProgressRequest = {
-    update_state_fn: string;
-    job_list_fn: string;
     state?: JobProgressState | null;
 };
 
@@ -93,6 +167,12 @@ export type JobProgressState = {
     j_total: number;
     j_finished: number;
     j_waiting: number;
+};
+
+export type JobProgressStateResponse = {
+    state: JobProgressState;
+    diff: JobProgressState | null;
+    eta_str: string | null;
 };
 
 export type LocClusterParams = {
@@ -126,16 +206,13 @@ export type LocationCluster = {
     position: LocPoint;
 };
 
-export type LocationInfoRequest = {
-    latitude: number;
-    longitude: number;
-};
-
 export type LocationQueryFixedLocation = {
     t: 'FixedLocation';
     location: ManualLocation;
     override: ManualLocationOverride;
 };
+
+export type t3 = 'FixedLocation';
 
 export type ManualLocation = {
     latitude: number;
@@ -146,14 +223,12 @@ export type ManualLocation = {
 
 export type ManualLocationOverride = 'NoLocNoMan' | 'NoLocYeMan' | 'YeLocNoMan' | 'YeLocYeMan';
 
-export type MapSearchRequest = {
-    query?: string | null;
-    checkboxes?: {
-        [key: string]: (boolean);
-    };
+export type MapSearchResponse = {
+    response: Array<FoundLocation> | null;
+    error: string | null;
 };
 
-export type MassLocationAndTextAnnotation = {
+export type MassLocationAndTextAnnotation_Input = {
     t: 'MassLocAndTxt';
     query: SearchQuery;
     location: LocationQueryFixedLocation | AnnotationOverlayInterpolateLocation | AnnotationOverlayNoLocation;
@@ -162,6 +237,51 @@ export type MassLocationAndTextAnnotation = {
 };
 
 export type t4 = 'MassLocAndTxt';
+
+export type MassLocationAndTextAnnotation_Output = {
+    t: 'MassLocAndTxt';
+    query: SearchQuery;
+    location: LocationQueryFixedLocation | AnnotationOverlayInterpolateLocation | AnnotationOverlayNoLocation;
+    text: TextQueryFixedText;
+    date: TransDate;
+};
+
+export type PathSplit = {
+    dir: string;
+    file: string;
+};
+
+export type PredictedLocation = {
+    loc: LocPoint;
+    earlier: ReferenceStats | null;
+    later: ReferenceStats | null;
+};
+
+export type ProgressBarProgress = {
+    desc: string | null;
+    progress: number;
+    total: number;
+    rate: number | null;
+    elapsed: number | null;
+};
+
+export type ReferenceStats = {
+    distance_m: number;
+    seconds: number;
+};
+
+export type RemoteJobType = 'mass_manual_annotation';
+
+export type RemoteJob_bytes_ = {
+    id_: number;
+    type_: RemoteJobType;
+    total: number;
+    finished_tasks: number;
+    original_request: (Blob | File);
+    created: string;
+    last_update: string | null;
+    example_path_md5: string | null;
+};
 
 export type SearchQuery = {
     tag?: string;
@@ -185,6 +305,28 @@ export type SortParams = {
     order?: SortOrder;
 };
 
+export type State = {
+    name: string;
+    state: StateEnum;
+    when: number;
+    exception: ExceptionInfo | null;
+};
+
+export type StateEnum = 'initialized' | 'running' | 'finished' | 'unexpected finish' | 'error';
+
+export type SystemStatus = {
+    progress_bars: Array<[
+        number,
+        ProgressBarProgress
+    ]>;
+    current_state: {
+        [key: string]: State;
+    };
+    t?: 'SystemStatus';
+};
+
+export type t5 = 'SystemStatus';
+
 export type TextAnnotation = {
     description: string | null;
     tags: string | null;
@@ -199,14 +341,14 @@ export type TextQueryFixedText = {
     loc_only: boolean;
 };
 
-export type t5 = 'FixedText';
+export type t6 = 'FixedText';
 
 export type TransDate = {
     t: 'TransDate';
     adjust_dates: boolean;
 };
 
-export type t6 = 'TransDate';
+export type t7 = 'TransDate';
 
 export type ValidationError = {
     loc: Array<(string | number)>;
@@ -240,67 +382,50 @@ export type DateClustersEndpointPostData = {
 export type DateClustersEndpointPostResponse = Array<DateCluster>;
 
 export type MassManualAnnotationEndpointPostData = {
-    requestBody: MassLocationAndTextAnnotation;
+    requestBody: MassLocationAndTextAnnotation_Input;
 };
 
 export type MassManualAnnotationEndpointPostResponse = number;
 
-export type MapSearchEndpointPostData = {
-    requestBody: MapSearchRequest;
+export type FindLocationPostData = {
+    req: string;
 };
 
-export type MapSearchEndpointPostResponse = string;
+export type FindLocationPostResponse = MapSearchResponse;
 
-export type JobProgressEndpointPostData = {
+export type JobProgressStatePostData = {
     requestBody: JobProgressRequest;
 };
 
-export type JobProgressEndpointPostResponse = string;
+export type JobProgressStatePostResponse = JobProgressStateResponse;
 
-export type JobListEndpointPostData = {
-    requestBody: JobListRequest;
+export type RemoteJobsGetResponse = Array<JobDescription>;
+
+export type SystemStatusGetResponse = SystemStatus;
+
+export type GetAddressPostData = {
+    requestBody: GetAddressRequest;
 };
 
-export type JobListEndpointPostResponse = string;
+export type GetAddressPostResponse = ImageAddress;
 
-export type SystemStatusEndpointPostResponse = string;
-
-export type SubmitAnnotationOverlayFormEndpointPostData = {
-    requestBody: AnnotationOverlayRequest;
-};
-
-export type SubmitAnnotationOverlayFormEndpointPostResponse = string;
-
-export type FetchLocationInfoEndpointPostData = {
-    requestBody: LocationInfoRequest;
-};
-
-export type FetchLocationInfoEndpointPostResponse = string;
-
-export type DirectoriesEndpointPostData = {
+export type MatchingDirectoriesPostData = {
     requestBody: SearchQuery;
 };
 
-export type DirectoriesEndpointPostResponse = string;
+export type MatchingDirectoriesPostResponse = Array<DirectoryStats>;
 
-export type GalleryDivPostData = {
-    oi?: number | null;
+export type ImagePagePostData = {
     requestBody: GalleryRequest;
 };
 
-export type GalleryDivPostResponse = string;
+export type ImagePagePostResponse = ImageResponse;
 
-export type AggregateEndpointPostData = {
+export type AggregateImagesPostData = {
     requestBody: AggregateQuery;
 };
 
-export type AggregateEndpointPostResponse = string;
-
-export type InputRequestPostData = {
-    requestBody: SearchQuery;
-};
-
-export type InputRequestPostResponse = string;
+export type AggregateImagesPostResponse = ImageAggregation;
 
 export type ReadIndexGetResponse = unknown;
 
@@ -382,14 +507,14 @@ export type $OpenApiTs = {
             };
         };
     };
-    '/internal/map_search.html': {
+    '/api/map_search': {
         post: {
-            req: MapSearchEndpointPostData;
+            req: FindLocationPostData;
             res: {
                 /**
                  * Successful Response
                  */
-                200: string;
+                200: MapSearchResponse;
                 /**
                  * Validation Error
                  */
@@ -397,14 +522,14 @@ export type $OpenApiTs = {
             };
         };
     };
-    '/internal/job_progress.html': {
+    '/api/job_progress_state': {
         post: {
-            req: JobProgressEndpointPostData;
+            req: JobProgressStatePostData;
             res: {
                 /**
                  * Successful Response
                  */
-                200: string;
+                200: JobProgressStateResponse;
                 /**
                  * Validation Error
                  */
@@ -412,14 +537,34 @@ export type $OpenApiTs = {
             };
         };
     };
-    '/internal/job_list.html': {
-        post: {
-            req: JobListEndpointPostData;
+    '/api/remote_jobs': {
+        get: {
             res: {
                 /**
                  * Successful Response
                  */
-                200: string;
+                200: Array<JobDescription>;
+            };
+        };
+    };
+    '/api/system_status': {
+        get: {
+            res: {
+                /**
+                 * Successful Response
+                 */
+                200: SystemStatus;
+            };
+        };
+    };
+    '/api/get_address': {
+        post: {
+            req: GetAddressPostData;
+            res: {
+                /**
+                 * Successful Response
+                 */
+                200: ImageAddress;
                 /**
                  * Validation Error
                  */
@@ -427,24 +572,14 @@ export type $OpenApiTs = {
             };
         };
     };
-    '/internal/system_status.html': {
+    '/api/directories': {
         post: {
+            req: MatchingDirectoriesPostData;
             res: {
                 /**
                  * Successful Response
                  */
-                200: string;
-            };
-        };
-    };
-    '/internal/submit_annotations_overlay.html': {
-        post: {
-            req: SubmitAnnotationOverlayFormEndpointPostData;
-            res: {
-                /**
-                 * Successful Response
-                 */
-                200: string;
+                200: Array<DirectoryStats>;
                 /**
                  * Validation Error
                  */
@@ -452,14 +587,14 @@ export type $OpenApiTs = {
             };
         };
     };
-    '/internal/fetch_location_info.html': {
+    '/api/images': {
         post: {
-            req: FetchLocationInfoEndpointPostData;
+            req: ImagePagePostData;
             res: {
                 /**
                  * Successful Response
                  */
-                200: string;
+                200: ImageResponse;
                 /**
                  * Validation Error
                  */
@@ -467,59 +602,14 @@ export type $OpenApiTs = {
             };
         };
     };
-    '/internal/directories.html': {
+    '/api/aggregate': {
         post: {
-            req: DirectoriesEndpointPostData;
+            req: AggregateImagesPostData;
             res: {
                 /**
                  * Successful Response
                  */
-                200: string;
-                /**
-                 * Validation Error
-                 */
-                422: HTTPValidationError;
-            };
-        };
-    };
-    '/internal/gallery.html': {
-        post: {
-            req: GalleryDivPostData;
-            res: {
-                /**
-                 * Successful Response
-                 */
-                200: string;
-                /**
-                 * Validation Error
-                 */
-                422: HTTPValidationError;
-            };
-        };
-    };
-    '/internal/aggregate.html': {
-        post: {
-            req: AggregateEndpointPostData;
-            res: {
-                /**
-                 * Successful Response
-                 */
-                200: string;
-                /**
-                 * Validation Error
-                 */
-                422: HTTPValidationError;
-            };
-        };
-    };
-    '/internal/input.html': {
-        post: {
-            req: InputRequestPostData;
-            res: {
-                /**
-                 * Successful Response
-                 */
-                200: string;
+                200: ImageAggregation;
                 /**
                  * Validation Error
                  */
