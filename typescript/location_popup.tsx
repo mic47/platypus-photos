@@ -2,6 +2,46 @@ import React from "react";
 
 import { ImageAddress } from "./pygallery.generated/types.gen";
 
+export function LocalMarkerLocationPopup({
+    id,
+    marker,
+    callbacks,
+}: {
+    id: string;
+    marker: {
+        latitude: number;
+        longitude: number;
+        text: string;
+    };
+    callbacks: {
+        annotation_overlay: (latitude: number, longitude: number) => void;
+        delete_marker: (id: string) => void;
+    };
+}) {
+    return (
+        <>
+            {marker.text}
+            <br />
+            <input
+                type="button"
+                value="Use this location for selected photos"
+                onClick={() =>
+                    callbacks.annotation_overlay(
+                        marker.latitude,
+                        marker.longitude,
+                    )
+                }
+            />
+            <br />
+            <input
+                type="button"
+                value="Delete this marker"
+                onClick={() => callbacks.delete_marker(id)}
+            />
+        </>
+    );
+}
+
 export function LocationPopup({
     latitude,
     longitude,

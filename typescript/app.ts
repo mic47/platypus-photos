@@ -101,7 +101,7 @@ function init_fun() {
         "map",
         "MapUseQuery",
         () => ___state.search_query.get(),
-        { annotation_overlay, add_point_to_map: map_add_point },
+        { annotation_overlay, add_point_to_map: map_add_point, delete_marker },
     );
     new MapSearch("MapSearch", ___checkbox_sync, ___state.search_query, map);
     ___state.search_query.register_hook("MasSearch", (url_params) => {

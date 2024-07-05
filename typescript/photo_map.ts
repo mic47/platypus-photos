@@ -6,7 +6,7 @@ import * as L from "leaflet";
 import { pprange } from "./utils.ts";
 import { SearchQuery } from "./pygallery.generated/types.gen.ts";
 import * as pygallery_service from "./pygallery.generated/services.gen.ts";
-import { LocationPopup } from "./location_popup.tsx";
+import { LocalMarkerLocationPopup, LocationPopup } from "./location_popup.tsx";
 
 type Position = {
     latitude: number;
@@ -51,6 +51,7 @@ export class PhotoMap {
                 longitude: number,
                 text: string,
             ) => void;
+            delete_marker: (id: string) => void;
         },
     ) {
         this.map = L.map(div_id).fitWorld();
@@ -95,17 +96,21 @@ export class PhotoMap {
             title: "Ad-hoc marker: " + item.text,
             opacity: 0.7,
         }).addTo(this.map);
-        marker.bindPopup(
-            [
-                item.text,
-                "<br/>",
-                '<input type="button" value="Use this location for selected photos" ',
-                `onclick="window.APP.annotation_overlay(${item.latitude}, ${item.longitude})">`,
-                "<br/>",
-                '<input type="button" value="Delete this marker" ',
-                `onclick="window.APP.delete_marker('${id}')">`,
-            ].join(""),
-        );
+        const element = document.createElement("div");
+        const root = createRoot(element);
+        flushSync(() => {
+            root.render(
+                LocalMarkerLocationPopup({
+                    id,
+                    marker: item,
+                    callbacks: {
+                        annotation_overlay: this.callbacks.annotation_overlay,
+                        delete_marker: this.callbacks.delete_marker,
+                    },
+                }),
+            );
+        });
+        marker.bindPopup(element);
         this.local_markers[id] = marker;
     }
 
