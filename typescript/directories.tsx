@@ -1,3 +1,4 @@
+import { createRoot, Root } from "react-dom/client";
 import React from "react";
 
 import {
@@ -8,29 +9,82 @@ import { Switchable } from "./switchable.ts";
 import * as pygallery_service from "./pygallery.generated/services.gen.ts";
 import { round, timestamp_to_pretty_datetime } from "./utils.ts";
 import { MaybeA } from "./jsx/maybea.tsx";
+import { StateWithHooks } from "./state.ts";
 
 export class Directories {
     public switchable: Switchable;
-    constructor(private div_id: string) {
+    private root: Root;
+    constructor(
+        private div_id: string,
+        searchQueryHook: StateWithHooks<SearchQuery>,
+    ) {
+        const element = document.getElementById(this.div_id);
+        if (element === null) {
+            throw new Error(`Unable to find element ${this.div_id}`);
+        }
+        this.root = createRoot(element);
         this.switchable = new Switchable();
-    }
-
-    fetch(url_data: SearchQuery) {
-        return this.switchable.call_or_store("fetch", () =>
-            this.fetch_impl(url_data),
+        this.root.render(
+            <DirectoryTableComponent
+                id={this.div_id}
+                searchQueryHook={searchQueryHook}
+            />,
         );
     }
+}
 
-    fetch_impl(url_data: SearchQuery) {
+interface DirectoryTableComponentProps {
+    id: string;
+    searchQueryHook: StateWithHooks<SearchQuery>;
+}
+export function DirectoryTableComponent({
+    id,
+    searchQueryHook,
+}: DirectoryTableComponentProps) {
+    const [query, updateQuery] = React.useState<SearchQuery>(
+        searchQueryHook.get(),
+    );
+    const [pending, updatePending] = React.useState<boolean>(true);
+    const [directories, updateDirectories] = React.useState<
+        null | DirectoryStats[]
+    >([]);
+    React.useEffect(() => {
+        searchQueryHook.register_hook(id, (data) => {
+            updateQuery(data);
+        });
+        return () => searchQueryHook.unregister_hook(id);
+    });
+    React.useEffect(() => {
+        let ignore = false;
+        updatePending(true);
         pygallery_service
-            .directoriesEndpointPost({ requestBody: url_data })
-            .then((text) => {
-                const element = document.getElementById(this.div_id);
-                if (element === null) {
-                    throw new Error(`Unable to find element ${this.div_id}`);
+            .matchingDirectoriesPost({
+                requestBody: query,
+            })
+            .then((data) => {
+                if (!ignore) {
+                    updateDirectories(data);
+                    updatePending(false);
                 }
-                element.innerHTML = text;
             });
+        return () => {
+            ignore = true;
+        };
+    }, [query]);
+    if (directories !== null) {
+        return (
+            <>
+                {pending ? "(pending)" : null}
+                <DirectoryTable
+                    directories={directories}
+                    callbacks={{
+                        update_url: (update) => searchQueryHook.update(update),
+                    }}
+                />
+            </>
+        );
+    } else {
+        return <div>(pending)</div>;
     }
 }
 

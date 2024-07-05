@@ -5,7 +5,7 @@ import typing as t
 @dataclass
 class DirectoryStats:
     directory: str
-    total_images: int
+    total_images: int  # noqa: F841
     has_location: int
     has_timestamp: int
     being_annotated: int

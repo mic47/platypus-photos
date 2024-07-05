@@ -416,12 +416,6 @@ export type FetchLocationInfoEndpointPostData = {
 
 export type FetchLocationInfoEndpointPostResponse = string;
 
-export type DirectoriesEndpointPostData = {
-    requestBody: SearchQuery;
-};
-
-export type DirectoriesEndpointPostResponse = string;
-
 export type MatchingDirectoriesPostData = {
     requestBody: SearchQuery;
 };
@@ -588,21 +582,6 @@ export type $OpenApiTs = {
     '/internal/fetch_location_info.html': {
         post: {
             req: FetchLocationInfoEndpointPostData;
-            res: {
-                /**
-                 * Successful Response
-                 */
-                200: string;
-                /**
-                 * Validation Error
-                 */
-                422: HTTPValidationError;
-            };
-        };
-    };
-    '/internal/directories.html': {
-        post: {
-            req: DirectoriesEndpointPostData;
             res: {
                 /**
                  * Successful Response

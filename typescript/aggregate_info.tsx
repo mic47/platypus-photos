@@ -96,7 +96,7 @@ export function AggregateInfoView({
         });
     const cameras = Object.entries(aggr.cameras)
         .sort(([, a], [, b]) => b - a)
-        .splice(15)
+        .slice(0, 15)
         .flatMap(([camera, num]) => {
             if (show_links || camera in ["unknown", "other", "distinct"]) {
                 return [
@@ -112,7 +112,7 @@ export function AggregateInfoView({
             } else {
                 return [
                     <>
-                        {append_flag(camera)} ({num}){" "}
+                        {camera} ({num}){" "}
                     </>,
                 ];
             }
@@ -147,8 +147,12 @@ export function AggregateInfoView({
             <br />
             Cameras: {cameras}
             <br />
-            Go to page: {pages}
-            <br />
+            {show_links === false ? null : (
+                <>
+                    Go to page: {pages}
+                    <br />
+                </>
+            )}
         </div>
     );
 }

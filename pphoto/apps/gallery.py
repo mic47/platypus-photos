@@ -672,31 +672,6 @@ def fetch_location_info_endpoint(request: Request, location: LocationInfoRequest
     )
 
 
-@app.post("/internal/directories.html", response_class=HTMLResponse)
-def directories_endpoint(request: Request, url: SearchQuery) -> HTMLResponse:
-    directories = sorted(DB.get().get_matching_directories(url), key=lambda x: x.directory)
-    dirs = []
-    for directory in directories:
-        parts = directory.directory.split("/")
-        prefixes = []
-        prefix = ""
-        for part in parts:
-            if part:
-                prefix = f"{prefix}/{part}"
-                prefixes.append((part, prefix))
-            else:
-                prefix = ""
-                prefixes.append((part, ""))
-        dirs.append((prefixes, directory))
-    return templates.TemplateResponse(
-        request=request,
-        name="directories.html",
-        context={
-            "dirs": sorted(dirs, key=lambda x: [x[1].since or 0, x[1].total_images, x[0]], reverse=True),
-        },
-    )
-
-
 @app.post("/api/directories")
 def matching_directories(url: SearchQuery) -> t.List[DirectoryStats]:
     return sorted(DB.get().get_matching_directories(url), key=lambda x: x.directory)

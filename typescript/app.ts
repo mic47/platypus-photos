@@ -264,10 +264,7 @@ function init_fun() {
     );
     ___state.search_query.register_hook("Dates", (u) => dates.fetch(u));
     /* Directories */
-    const directories = new Directories("Directories");
-    ___state.search_query.register_hook("Directories", (u) =>
-        directories.fetch(u),
-    );
+    const directories = new Directories("Directories", ___state.search_query);
 
     /* Trigger redrawing of componentsl */
     // WARNING: here we assume that search_query will update everything
