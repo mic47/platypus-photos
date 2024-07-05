@@ -70,7 +70,8 @@ function init_fun() {
     );
     /* Map */
     const map = new PhotoMap("map", "MapUseQuery", ___state.search_query, {
-        annotation_overlay: annotator.fixed_location_submitter,
+        annotation_overlay: (latitude, longitude) =>
+            annotator.fixed_location_submitter(latitude, longitude),
     });
     new MapSearch("MapSearch", checkbox_sync, ___state.search_query, map);
     ___state.search_query.register_hook("MasSearch", (url_params) => {
