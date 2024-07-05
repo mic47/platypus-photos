@@ -300,7 +300,6 @@ td.center {
   border-radius: 0.5em;
   position: absolute;
   z-index: 1;
-  bottom: 100%;
   text-align: center;
 }
 
