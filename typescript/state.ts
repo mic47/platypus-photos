@@ -170,7 +170,7 @@ export function parse_gallery_paging(data: {
     }
     return q;
 }
-export function update_gallery_paging_value(
+function update_gallery_paging_value(
     query: GalleryPaging,
     key: keyof GalleryPaging,
     value: string | null | undefined | File,
@@ -196,7 +196,7 @@ export function parse_sort_params(data: {
     }
     return q;
 }
-export function update_sort_params_value(
+function update_sort_params_value(
     query: SortParams,
     key: keyof SortParams,
     value: string | null | undefined | File,
