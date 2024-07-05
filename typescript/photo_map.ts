@@ -263,6 +263,9 @@ export class PhotoMap {
                 );
             });
     }
+    zoom_to(latitude: number, longitude: number) {
+        this.map.flyTo([latitude, longitude], 13, { duration: 1 });
+    }
 }
 
 export class AddressInfo extends GenericFetch<{

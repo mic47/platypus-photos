@@ -30,9 +30,7 @@ export class MapSearch {
                         map.update_markers(searchQueryHook.get(), false);
                     },
                     map_zoom: (latitude: number, longitude: number) => {
-                        map.map.flyTo([latitude, longitude], 13, {
-                            duration: 1,
-                        });
+                        map.zoom_to(latitude, longitude);
                     },
                     update_checkbox: (element: HTMLInputElement) => {
                         checkboxes.update_from_element(element);

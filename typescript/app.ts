@@ -29,9 +29,6 @@ function update_url(data: SearchQuery) {
     ___state.search_query.update(data);
 }
 let ___map: PhotoMap;
-function map_zoom(latitude: number, longitude: number) {
-    ___map.map.flyTo([latitude, longitude], 13, { duration: 1 });
-}
 const ___global_markers: { [id: string]: L.Marker } = {};
 type Marker = {
     latitude: number;
@@ -251,7 +248,7 @@ function init_fun() {
     ___state.search_query.replace(parse_search_query(search_query_sync.get()));
 
     /* Job progress / list UI */
-    const job_progress = new JobProgress("JobProgress", map_zoom);
+    const job_progress = new JobProgress("JobProgress", ___map.zoom_to);
     /* System Status */
     const system_status = new SystemStatus("SystemStatus");
     /* Tab */
@@ -272,7 +269,6 @@ const app: object = {
     checkbox_sync: ___checkbox_sync,
     init_fun,
     update_url,
-    map_zoom,
     map_add_point,
     map_close_popup,
     annotation_overlay,
