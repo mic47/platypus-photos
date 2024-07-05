@@ -66,6 +66,9 @@ export class PhotoMap {
                 this.delete_local_marker_callback(id);
             },
         });
+        this.searchQueryHook.register_hook("PhotoMap", (update) => {
+            this.update_markers(update, true);
+        });
         const update_markers: L.LeafletEventHandlerFn = (e) => {
             if ((e as unknown as { flyTo: boolean }).flyTo) {
                 return;

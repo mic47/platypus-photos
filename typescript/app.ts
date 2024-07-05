@@ -74,9 +74,6 @@ function init_fun() {
             annotator.fixed_location_submitter(latitude, longitude),
     });
     new MapSearch("MapSearch", checkbox_sync, ___state.search_query, map);
-    ___state.search_query.register_hook("MasSearch", (url_params) => {
-        map.update_markers(url_params, true);
-    });
     /* Dates */
     const dates = new Dates(
         "DateChart",
