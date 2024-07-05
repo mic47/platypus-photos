@@ -19,6 +19,7 @@ import * as pygallery_service from "./pygallery.generated/services.gen.ts";
 import { GalleryImage, ImageCallbacks } from "./gallery_image.tsx";
 import { AggregateInfoView } from "./aggregate_info.tsx";
 import { AnnotationOverlayRequest } from "./annotations.tsx";
+import { SortFormView } from "./sort_form.tsx";
 
 export class Gallery {
     private root: Root;
@@ -229,6 +230,10 @@ function GalleryComponent({
     };
     return (
         <>
+            <SortFormView
+                sort={sort}
+                update_sort={(update) => sortHook.update(update)}
+            />
             <AggregateInfoView
                 aggr={aggr.aggr}
                 paging={aggr.paging}
