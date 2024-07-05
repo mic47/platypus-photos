@@ -23,6 +23,7 @@ import * as pygallery_service from "./pygallery.generated/services.gen";
 import { SortParams, SearchQuery } from "./pygallery.generated/types.gen";
 import { AnnotationOverlay, submit_to_annotation_overlay } from "./annotations";
 import { MapSearch } from "./map_search.tsx";
+import { LocalStorageState } from "./local_storage_state.ts";
 
 let ___state: AppState;
 function update_url(data: SearchQuery) {
@@ -35,36 +36,10 @@ type Marker = {
     longitude: number;
     text: string;
 };
-type LocalStorageMarkers = { [id: string]: Marker | null };
-function get_markers_from_local_storage(): LocalStorageMarkers {
-    let current = window.localStorage.getItem("markers");
-    if (current === undefined || current === null) {
-        current = "{}";
-    }
-    let parsed = {};
-    try {
-        parsed = JSON.parse(current);
-    } catch (error) {
-        console.log("Error when getting data from local storage", error);
-    }
-    return parsed;
-}
-function add_marker_to_local_storage(
-    latitude: number,
-    longitude: number,
-    text: string,
-) {
-    const markers = get_markers_from_local_storage();
-    const id = Math.random().toString().replace("0.", "");
-    markers[id] = { latitude, longitude, text };
-    window.localStorage.setItem("markers", JSON.stringify(markers));
-    return id;
-}
+let ___local_storage_markers: LocalStorageState<Marker>;
+
 function delete_marker(id: string) {
-    const markers = get_markers_from_local_storage();
-    markers[id] = null;
-    window.localStorage.setItem("markers", JSON.stringify(markers));
-    delete_marker_only(id);
+    ___local_storage_markers.remove(id);
 }
 function delete_marker_only(id: string) {
     const marker = ___global_markers[id];
@@ -72,52 +47,6 @@ function delete_marker_only(id: string) {
         marker.remove();
         delete ___global_markers[id];
     }
-}
-function load_markers_initially() {
-    Object.entries(get_markers_from_local_storage()).forEach(([id, m]) => {
-        if (m !== undefined && m !== null) {
-            map_add_point_only(id, m.latitude, m.longitude, m.text);
-        }
-    });
-    window.addEventListener("storage", (e) => {
-        if (e.key !== "markers") {
-            return;
-        }
-        const oldValue: LocalStorageMarkers = JSON.parse(e.oldValue || "{}");
-        const newValue: LocalStorageMarkers = JSON.parse(e.newValue || "{}");
-        const actions: Array<[string, null | Marker]> = [];
-        Object.entries(newValue).forEach(([id, value]) => {
-            const old = oldValue[id];
-            if (old === undefined || old === null) {
-                if (value !== undefined && value !== null) {
-                    // Something was added
-                    actions.push([id, value]);
-                }
-            } else if (value === undefined || value === null) {
-                // Old is something, this is empty
-                actions.push([id, null]);
-            }
-        });
-        if (actions.length === 0) {
-            // Nothing to do
-            return;
-        }
-        const markers = get_markers_from_local_storage();
-        actions.forEach(([id, value]) => {
-            markers[id] = value;
-            if (value === undefined || value === null) {
-                delete_marker_only(id);
-            } else {
-                map_add_point_only(
-                    id,
-                    value.latitude,
-                    value.longitude,
-                    value.text,
-                );
-            }
-        });
-        window.localStorage.setItem("markers", JSON.stringify(markers));
-    });
 }
 function map_add_point_only(
     id: string,
@@ -144,9 +73,9 @@ function map_add_point_only(
     ___global_markers[id] = marker;
 }
 function map_add_point(latitude: number, longitude: number, text: string) {
-    const id = add_marker_to_local_storage(latitude, longitude, text);
-    map_add_point_only(id, latitude, longitude, text);
+    ___local_storage_markers.add({ latitude, longitude, text });
 }
+
 function annotation_overlay(latitude: number, longitude: number) {
     pygallery_service
         .getAddressPost({ requestBody: { latitude, longitude } })
@@ -251,7 +180,14 @@ function init_fun() {
         TabDates: dates.switchable,
     });
 
-    load_markers_initially();
+    ___local_storage_markers = new LocalStorageState<Marker>("markers", {
+        item_was_added: (id: string, item: Marker) => {
+            map_add_point_only(id, item.latitude, item.longitude, item.text);
+        },
+        item_was_removed: (id: string) => {
+            delete_marker_only(id);
+        },
+    });
 }
 function update_sort(params: SortParams) {
     ___state.sort.update(params);
