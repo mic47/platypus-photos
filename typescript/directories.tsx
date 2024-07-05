@@ -1,6 +1,12 @@
-import { SearchQuery } from "./pygallery.generated/types.gen.ts";
+import React from "react";
+
+import {
+    DirectoryStats,
+    SearchQuery,
+} from "./pygallery.generated/types.gen.ts";
 import { Switchable } from "./switchable.ts";
 import * as pygallery_service from "./pygallery.generated/services.gen.ts";
+import { round, timestamp_to_pretty_datetime } from "./utils.ts";
 
 export class Directories {
     public switchable: Switchable;
@@ -25,4 +31,50 @@ export class Directories {
                 element.innerHTML = text;
             });
     }
+}
+
+interface DirectoryTableProps {
+    directories: DirectoryStats[];
+}
+
+export function DirectoryTable({ directories }: DirectoryTableProps) {
+    const rows = directories.map((d, index) => {
+        return (
+            <tr key={index}>
+                <td>{d.directory}</td>
+                <td>{d.total_images}</td>
+                <td>{round((d.has_location * 100.0) / d.total_images, 1)}%</td>
+                <td>{round((d.has_timestamp * 100.0) / d.total_images, 1)}%</td>
+                <td>
+                    {round((d.being_annotated * 100.0) / d.total_images, 1)}%
+                </td>
+                <td>
+                    {d.since === null
+                        ? ""
+                        : timestamp_to_pretty_datetime(d.since)}
+                </td>
+                <td>
+                    {d.until === null
+                        ? ""
+                        : timestamp_to_pretty_datetime(d.until)}
+                </td>
+            </tr>
+        );
+    });
+    return (
+        <table>
+            <thead>
+                <tr>
+                    <th>Directory 📂</th>
+                    <th>#Images 🖼️</th>
+                    <th>% with location 🗺️</th>
+                    <th>% with time 🕝</th>
+                    <th>% being annotated 🏗️</th>
+                    <th>Since</th>
+                    <th>Until</th>
+                </tr>
+            </thead>
+            <tbody>{rows}</tbody>
+        </table>
+    );
 }

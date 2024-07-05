@@ -17,16 +17,11 @@ import {
     SearchQuery,
     TextAnnotationOverride,
 } from "./pygallery.generated/types.gen.ts";
-import {
-    impissible,
-    noop,
-    null_if_empty,
-    round,
-    timestamp_to_pretty_datetime,
-} from "./utils.ts";
+import { impissible, noop, null_if_empty } from "./utils.ts";
 import * as pygallery_service from "./pygallery.generated/services.gen.ts";
 import { shift_float_params } from "./input.tsx";
 import { StateWithHooks } from "./state.ts";
+import { DirectoryTable } from "./directories.tsx";
 
 export type AnnotationOverlayFixedLocation = {
     t: "FixedLocation";
@@ -429,52 +424,6 @@ function AnnotationOverlayView({
                 {exampleImages}
             </div>
         </div>
-    );
-}
-
-interface DirectoryTableProps {
-    directories: DirectoryStats[];
-}
-
-function DirectoryTable({ directories }: DirectoryTableProps) {
-    const rows = directories.map((d, index) => {
-        return (
-            <tr key={index}>
-                <td>{d.directory}</td>
-                <td>{d.total_images}</td>
-                <td>{round((d.has_location * 100.0) / d.total_images, 1)}%</td>
-                <td>{round((d.has_timestamp * 100.0) / d.total_images, 1)}%</td>
-                <td>
-                    {round((d.being_annotated * 100.0) / d.total_images, 1)}%
-                </td>
-                <td>
-                    {d.since === null
-                        ? ""
-                        : timestamp_to_pretty_datetime(d.since)}
-                </td>
-                <td>
-                    {d.until === null
-                        ? ""
-                        : timestamp_to_pretty_datetime(d.until)}
-                </td>
-            </tr>
-        );
-    });
-    return (
-        <table>
-            <thead>
-                <tr>
-                    <th>Directory 📂</th>
-                    <th>#Images 🖼️</th>
-                    <th>% with location 🗺️</th>
-                    <th>% with time 🕝</th>
-                    <th>% being annotated 🏗️</th>
-                    <th>Since</th>
-                    <th>Until</th>
-                </tr>
-            </thead>
-            <tbody>{rows}</tbody>
-        </table>
     );
 }
 
