@@ -1,10 +1,8 @@
 import data_model from "./data_model.generated.json";
 
 import { Dates } from "./dates_chart";
-import { PhotoMap } from "./photo_map";
 import {
     AppState,
-    CheckboxSync,
     UrlSync,
     parse_gallery_paging,
     parse_search_query,
@@ -13,8 +11,6 @@ import {
 import { TabSwitch } from "./switchable";
 
 import { SearchQuery } from "./pygallery.generated/types.gen";
-import { AnnotationOverlay } from "./annotations";
-import { MapSearch } from "./map_search.tsx";
 
 import { init_fun as react_init_fun } from "./Application";
 
@@ -44,19 +40,7 @@ function init_fun() {
     );
     const sort_sync = new UrlSync(sort_fields);
     ___state.sort.register_hook("SortUrlSync", (u) => sort_sync.update(u));
-    const checkbox_sync = new CheckboxSync();
 
-    /* AnnotationOverlay */
-    const annotator = new AnnotationOverlay(
-        "SubmitDataOverlay",
-        ___state.search_query,
-    );
-    /* Map */
-    const map = new PhotoMap("map", false, ___state.search_query, {
-        annotation_overlay: (latitude, longitude) =>
-            annotator.fixed_location_submitter(latitude, longitude),
-    });
-    new MapSearch("MapSearch", checkbox_sync, ___state.search_query, map);
     /* Dates */
     const dates = new Dates(
         "DateChart",

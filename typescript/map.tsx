@@ -3,35 +3,28 @@ import React from "react";
 import { PhotoMap } from "./photo_map";
 import { MapSearchView } from "./map_search";
 import { SearchQuery } from "./pygallery.generated/types.gen";
-import { StateWithHooks } from "./state";
+import { UpdateCallbacks } from "./types";
 
 interface MapViewProps {
     searchQuery: SearchQuery;
     zoom_to: null | { latitude: number; longitude: number };
     oneTime: {
-        searchQueryHook: StateWithHooks<SearchQuery>;
+        searchQueryCallbacks: UpdateCallbacks<SearchQuery>;
         annotation_overlay: (latitude: number, longitude: number) => void;
     };
 }
 
-// Dependencies from react
-// searchQueryHook -> input, output
-// should_use_query_div -> input
-// annotation overlay -> output
-// map.zoomto -> input from jobProgress -- event
-// map -> update bounds, markers, zoom_to, -- input like event from MapSearch
 export function MapView({ searchQuery, zoom_to, oneTime }: MapViewProps) {
     const mapContainerElementRef = React.useRef<null | HTMLDivElement>(null);
     const mapRef = React.useRef<null | PhotoMap>(null);
-    const [mapUseQuery, updateMapUseQuery] = React.useState<boolean>(false);
 
     const getMap = (): PhotoMap => {
         if (mapRef.current === null) {
-            console.log(mapContainerElementRef.current);
             mapRef.current = new PhotoMap(
                 mapContainerElementRef.current as HTMLElement,
                 false,
-                oneTime.searchQueryHook,
+                searchQuery,
+                oneTime.searchQueryCallbacks,
                 {
                     annotation_overlay: oneTime.annotation_overlay,
                 },
@@ -39,9 +32,9 @@ export function MapView({ searchQuery, zoom_to, oneTime }: MapViewProps) {
         }
         return mapRef.current;
     };
-    getMap(); // It's ok to initialize map on first render
+    // Note it's not ok to call get map here, use it only on callbacks, effects
     React.useEffect(() => {
-        // It would be cleaner to have setSearchQuery interface, instead of hooks fetching
+        getMap().setSearchQuery(searchQuery);
         getMap().update_markers(searchQuery, true);
     }, [searchQuery]);
     React.useEffect(() => {
@@ -49,6 +42,7 @@ export function MapView({ searchQuery, zoom_to, oneTime }: MapViewProps) {
             getMap().zoom_to(zoom_to.latitude, zoom_to.longitude);
         }
     }, [zoom_to]);
+    const [mapUseQuery, updateMapUseQuery] = React.useState<boolean>(false);
     return (
         <div className="TabTargetMap">
             <MapSearchView
@@ -69,7 +63,7 @@ export function MapView({ searchQuery, zoom_to, oneTime }: MapViewProps) {
                     },
                 }}
             />
-            <div ref={mapContainerElementRef} />
+            <div className="map" ref={mapContainerElementRef} />
         </div>
     );
 }

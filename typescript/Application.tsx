@@ -20,11 +20,13 @@ import {
 import {
     AnnotationOverlayComponent,
     AnnotationOverlayRequest,
+    getFixedLocationAnnotationOverlayRequest,
 } from "./annotations";
 import { DirectoryTableComponent } from "./directories";
 import { Switchable, TabBar } from "./jsx/switchable";
 import { JobProgressComponent } from "./jobs";
 import { SystemStatusComponent } from "./system_status";
+import { MapView } from "./map";
 
 interface ApplicationProps {
     searchQuerySync: TypedUrlSync<SearchQuery>;
@@ -109,7 +111,11 @@ export function Application({
         jobs: { active: false, text: "Job Progress" },
         system_status: { active: false, text: "System Status" },
     });
-
+    /* Map related */
+    const [zoomTo, updateZoomTo] = React.useState<null | {
+        latitude: number;
+        longitude: number;
+    }>(null);
     return (
         <>
             <TabBar
@@ -127,7 +133,9 @@ export function Application({
             <Switchable switchedOn={activeTabs.jobs.active}>
                 <JobProgressComponent
                     interval_seconds={10}
-                    map_zoom={() => {}}
+                    map_zoom={(latitude, longitude) =>
+                        updateZoomTo({ latitude, longitude })
+                    }
                 />
             </Switchable>
             <Switchable switchedOn={activeTabs.system_status.active}>
@@ -155,6 +163,24 @@ export function Application({
                         queryCallbacks={queryCallbacks}
                     />
                 </div>
+            </Switchable>
+            <Switchable switchedOn={activeTabs.map.active}>
+                <MapView
+                    searchQuery={searchQueryWithTs.q}
+                    zoom_to={zoomTo}
+                    oneTime={{
+                        searchQueryCallbacks: queryCallbacks,
+                        annotation_overlay: (latitude, longitude) => {
+                            getFixedLocationAnnotationOverlayRequest(
+                                searchQueryWithTs.q,
+                                latitude,
+                                longitude,
+                            ).then((request) => {
+                                updateAnnotationRequest(request);
+                            });
+                        },
+                    }}
+                />
             </Switchable>
             <Switchable switchedOn={activeTabs.gallery.active}>
                 <GalleryComponent

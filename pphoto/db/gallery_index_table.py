@@ -748,4 +748,6 @@ GROUP BY directory
 
 
 def round_to_significant_digits(value: float, significant_digits: int) -> float:
+    if value == 0:
+        return value
     return round(value, significant_digits - int(math.floor(math.log10(abs(value)))) - 1)

@@ -1,4 +1,3 @@
-import { createRoot, Root } from "react-dom/client";
 import React from "react";
 
 import { AggregateInfoView } from "./aggregate_info.tsx";
@@ -20,7 +19,6 @@ import {
 import { impissible, noop, null_if_empty } from "./utils.ts";
 import * as pygallery_service from "./pygallery.generated/services.gen.ts";
 import { shift_float_params } from "./input.tsx";
-import { StateWithHooks } from "./state.ts";
 import { DirectoryTable } from "./directories.tsx";
 import { UpdateCallbacks } from "./types.ts";
 
@@ -45,50 +43,30 @@ export type LocationTypes =
     | AnnotationOverlayInterpolateLocation
     | AnnotationOverlayNoLocation;
 
-export class AnnotationOverlay {
-    private root: Root;
-    private hub: HTMLElement;
-    constructor(
-        private div_id: string,
-        private searchQueryHook: StateWithHooks<SearchQuery>,
-    ) {
-        const element = document.getElementById(this.div_id);
-        if (element === null) {
-            throw new Error(`Unable to find element ${this.div_id}`);
-        }
-        this.hub = element;
-        this.root = createRoot(element);
-    }
-    submitter(request: AnnotationOverlayRequest) {
-        this.hub.dispatchEvent(
-            new CustomEvent("AnnotationOverlayRequest", {
-                detail: request,
-            }),
-        );
-    }
-    // TODO: keeping just for this function
-    fixed_location_submitter(latitude: number, longitude: number) {
-        pygallery_service
-            .getAddressPost({ requestBody: { latitude, longitude } })
-            .catch((reason) => {
-                console.log(reason);
-                return { country: null, name: null, full: null };
-            })
-            .then((address) => {
-                this.submitter({
-                    request: {
-                        t: "FixedLocation",
-                        latitude,
-                        longitude,
-                        address_name: address.name,
-                        address_country: address.country,
-                    },
-                    query: this.searchQueryHook.get(),
-                });
-            });
-    }
+export function getFixedLocationAnnotationOverlayRequest(
+    query: SearchQuery,
+    latitude: number,
+    longitude: number,
+): Promise<AnnotationOverlayRequest> {
+    return pygallery_service
+        .getAddressPost({ requestBody: { latitude, longitude } })
+        .catch((reason) => {
+            console.log(reason);
+            return { country: null, name: null, full: null };
+        })
+        .then((address) => {
+            return {
+                request: {
+                    t: "FixedLocation",
+                    latitude,
+                    longitude,
+                    address_name: address.name,
+                    address_country: address.country,
+                },
+                query,
+            };
+        });
 }
-
 interface AnnotationOverlayComponentProps {
     request: null | AnnotationOverlayRequest;
     queryCallbacks: UpdateCallbacks<SearchQuery>;

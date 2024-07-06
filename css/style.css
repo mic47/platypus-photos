@@ -113,6 +113,10 @@ div.gallery_item:hover {
   height: 380px;
   z-index: 0;
 }
+.map {
+  height: 380px;
+  z-index: 0;
+}
 
 .directories {
   max-height: 20em;

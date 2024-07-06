@@ -11,7 +11,7 @@ import {
     LocationPopup,
 } from "./location_popup.tsx";
 import { LocalStorageState } from "./local_storage_state.ts";
-import { StateWithHooks } from "./state.ts";
+import { UpdateCallbacks } from "./types.ts";
 
 type Position = {
     latitude: number;
@@ -49,7 +49,8 @@ export class PhotoMap {
     constructor(
         div_id: string | HTMLElement,
         private should_use_query: boolean,
-        private searchQueryHook: StateWithHooks<SearchQuery>,
+        private searchQuery: SearchQuery,
+        private searchQueryCallbacks: UpdateCallbacks<SearchQuery>,
         private callbacks: {
             annotation_overlay: (latitude: number, longitude: number) => void;
         },
@@ -66,15 +67,11 @@ export class PhotoMap {
                 this.delete_local_marker_callback(id);
             },
         });
-        // TODO: this should be removed once this is in react
-        this.searchQueryHook.register_hook("PhotoMap", (update) => {
-            this.update_markers(update, true);
-        });
         const update_markers: L.LeafletEventHandlerFn = (e) => {
             if ((e as unknown as { flyTo: boolean }).flyTo) {
                 return;
             }
-            this.update_markers(this.searchQueryHook.get(), false);
+            this.update_markers(this.searchQuery, false);
         };
         const context_menu: L.LeafletEventHandlerFn = (e) => {
             this.context_menu(e as L.LocationEvent);
@@ -92,7 +89,10 @@ export class PhotoMap {
             attribution:
                 '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
         }).addTo(this.map);
-        this.update_bounds(this.searchQueryHook.get(), true);
+        this.update_bounds(this.searchQuery, true);
+    }
+    setSearchQuery(query: SearchQuery) {
+        this.searchQuery = query;
     }
     set_should_use_query(should_use: boolean) {
         this.should_use_query = should_use;
@@ -339,7 +339,9 @@ export class PhotoMap {
                                 cluster,
                                 callbacks: {
                                     update_url: (update) =>
-                                        this.searchQueryHook.update(update),
+                                        this.searchQueryCallbacks.update(
+                                            update,
+                                        ),
                                     annotation_overlay: (
                                         latitude: number,
                                         longitude: number,
