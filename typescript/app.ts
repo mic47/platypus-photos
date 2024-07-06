@@ -1,7 +1,6 @@
 import data_model from "./data_model.generated.json";
 
 import { Dates } from "./dates_chart";
-import { Gallery } from "./gallery";
 import { InputForm } from "./input";
 import { PhotoMap } from "./photo_map";
 import {
@@ -60,15 +59,6 @@ function init_fun() {
     /* InputForm */
     new InputForm("InputForm", ___state.search_query, (request) =>
         annotator.submitter(request),
-    );
-    /* Gallery */
-    new Gallery(
-        "GalleryImages",
-        ___state.search_query,
-        ___state.paging,
-        ___state.sort,
-        checkbox_sync,
-        (request) => annotator.submitter(request),
     );
     /* Map */
     const map = new PhotoMap("map", false, ___state.search_query, {
