@@ -9,64 +9,6 @@ import { impissible, parse_float_or_null, parse_string_or_null } from "./utils";
 
 export type CheckboxesParams = { [key4: string]: boolean };
 
-type AppStateHook<T> = (data: T) => void;
-
-export class StateWithHooks<T> {
-    private hooks: { [key: string]: AppStateHook<T> };
-    constructor(private data: T) {
-        this.hooks = {};
-    }
-    register_hook(key: string, hook: AppStateHook<T>) {
-        if (this.hooks[key] !== undefined) {
-            console.log(`Hook ${key} already exists, overriding`);
-        }
-        this.hooks[key] = hook;
-    }
-    unregister_hook(key: string) {
-        if (this.hooks[key] === undefined) {
-            console.log(`Hook ${key} is not registered`);
-        }
-        delete this.hooks[key];
-    }
-    get(): T {
-        return this.data;
-    }
-    call_hooks(): StateWithHooks<T> {
-        const data = this.data;
-        Object.values(this.hooks).forEach((x) => x(data));
-        return this;
-    }
-    update(update: T): StateWithHooks<T> {
-        this.data = { ...this.data, ...update };
-        this.call_hooks();
-        return this;
-    }
-    replace(newData: T): StateWithHooks<T> {
-        this.data = { ...newData };
-        this.call_hooks();
-        return this;
-    }
-    replace_no_hook_update(newData: T): StateWithHooks<T> {
-        this.data = { ...newData };
-        return this;
-    }
-}
-
-export class AppState {
-    public search_query: StateWithHooks<SearchQuery>;
-    public paging: StateWithHooks<GalleryPaging>;
-    public sort: StateWithHooks<SortParams>;
-    constructor(
-        search_query: SearchQuery,
-        paging: GalleryPaging,
-        sort: SortParams,
-    ) {
-        this.search_query = new StateWithHooks(search_query);
-        this.paging = new StateWithHooks(paging);
-        this.sort = new StateWithHooks(sort);
-    }
-}
-
 export class CheckboxSync {
     private state: { [id: string]: boolean };
     constructor() {
