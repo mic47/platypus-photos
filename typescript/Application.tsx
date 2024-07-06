@@ -22,6 +22,7 @@ import {
     AnnotationOverlayRequest,
 } from "./annotations";
 import { DirectoryTableComponent } from "./directories";
+import { Switchable, TabBar } from "./jsx/switchable";
 
 interface ApplicationProps {
     searchQuerySync: TypedUrlSync<SearchQuery>;
@@ -95,42 +96,71 @@ export function Application({
     /* Annotation Overlay State */
     const [annotationRequest, updateAnnotationRequest] =
         React.useState<null | AnnotationOverlayRequest>(null);
+    /* Tabs */
+    // TODO: make it in sync with url
+    const [activeTabs, updateActiveTabsInternal] = React.useState({
+        query: { active: true, text: "Query" },
+        dates: { active: false, text: "Dates Chart" },
+        directories: { active: false, text: "Directories" },
+        map: { active: true, text: "Map" },
+        gallery: { active: true, text: "Gallery" },
+        jobs: { active: false, text: "Job Progress" },
+        system_status: { active: false, text: "System Status" },
+    });
 
     return (
         <>
-            <InputFormView
-                query={searchQueryWithTs}
-                callbacks={queryCallbacks}
-                submitAnnotations={(request) =>
-                    updateAnnotationRequest(request)
+            <TabBar
+                items={activeTabs}
+                setActive={
+                    ((key: keyof typeof activeTabs, active: boolean) => {
+                        const newTabs = { ...activeTabs };
+                        if (newTabs[key] !== undefined) {
+                            newTabs[key].active = active;
+                        }
+                        updateActiveTabsInternal(newTabs);
+                    }) as (key: string, active: boolean) => void
                 }
             />
+            <Switchable switchedOn={activeTabs.query.active}>
+                <InputFormView
+                    query={searchQueryWithTs}
+                    callbacks={queryCallbacks}
+                    submitAnnotations={(request) =>
+                        updateAnnotationRequest(request)
+                    }
+                />
+            </Switchable>
             <AnnotationOverlayComponent
                 request={annotationRequest}
                 queryCallbacks={queryCallbacks}
                 pagingCallbacks={pagingCallbacks}
                 reset={() => updateAnnotationRequest(null)}
             />
-            <div className="directories">
-                <DirectoryTableComponent
+            <Switchable switchedOn={activeTabs.directories.active}>
+                <div className="directories">
+                    <DirectoryTableComponent
+                        query={searchQueryWithTs.q}
+                        queryCallbacks={queryCallbacks}
+                    />
+                </div>
+            </Switchable>
+            <Switchable switchedOn={activeTabs.gallery.active}>
+                <GalleryComponent
                     query={searchQueryWithTs.q}
+                    paging={paging}
+                    sort={sort}
                     queryCallbacks={queryCallbacks}
+                    pagingCallbacks={pagingCallbacks}
+                    sortCallbacks={sortCallbacks}
+                    checkboxSync={checkboxSync}
+                    galleryUrl={galleryUrl}
+                    galleryUrlCallbacks={galleryUrlCallbacks}
+                    submit_annotations={(request) => {
+                        updateAnnotationRequest(request);
+                    }}
                 />
-            </div>
-            <GalleryComponent
-                query={searchQueryWithTs.q}
-                paging={paging}
-                sort={sort}
-                queryCallbacks={queryCallbacks}
-                pagingCallbacks={pagingCallbacks}
-                sortCallbacks={sortCallbacks}
-                checkboxSync={checkboxSync}
-                galleryUrl={galleryUrl}
-                galleryUrlCallbacks={galleryUrlCallbacks}
-                submit_annotations={(request) => {
-                    updateAnnotationRequest(request);
-                }}
-            />
+            </Switchable>
         </>
     );
 }
