@@ -110,7 +110,7 @@ export function MapSearchView({
         );
     }
     return (
-        <>
+        <div>
             <form
                 id="MapSearchId"
                 method="dialog"
@@ -141,6 +141,6 @@ export function MapSearchView({
             </form>
             {searchResult}
             {error === null ? null : <pre>{error}</pre>}
-        </>
+        </div>
     );
 }

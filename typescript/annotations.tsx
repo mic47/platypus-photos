@@ -229,6 +229,7 @@ function AnnotationOverlayComponent({
                                 advance_in_time !== null
                             ) {
                                 shift_float_params(
+                                    searchQueryHook.get(),
                                     searchQueryHook,
                                     "tsfrom",
                                     "tsto",

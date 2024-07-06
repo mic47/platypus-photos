@@ -21,6 +21,8 @@ import { SearchQuery } from "./pygallery.generated/types.gen";
 import { AnnotationOverlay } from "./annotations";
 import { MapSearch } from "./map_search.tsx";
 
+import { init_fun as react_init_fun } from "./Application";
+
 let ___state: AppState;
 function update_url(data: SearchQuery) {
     ___state.search_query.update(data);
@@ -69,7 +71,7 @@ function init_fun() {
         (request) => annotator.submitter(request),
     );
     /* Map */
-    const map = new PhotoMap("map", "MapUseQuery", ___state.search_query, {
+    const map = new PhotoMap("map", false, ___state.search_query, {
         annotation_overlay: (latitude, longitude) =>
             annotator.fixed_location_submitter(latitude, longitude),
     });
@@ -115,6 +117,7 @@ function init_fun() {
 
 const app: object = {
     init_fun,
+    react_init_fun,
     update_url,
 };
 (window as unknown as { APP: object }).APP = app;

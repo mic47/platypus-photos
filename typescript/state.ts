@@ -113,6 +113,18 @@ export class UrlSync {
     }
 }
 
+export class TypedUrlSync<T> extends UrlSync {
+    constructor(
+        registered_fields: string[],
+        private parser: (data: { unparsed: { [key: string]: string } }) => T,
+    ) {
+        super(registered_fields);
+    }
+    get_parsed(): T {
+        return this.parser(this.get());
+    }
+}
+
 export function parse_search_query(data: {
     unparsed: { [key: string]: string };
 }): SearchQuery {
