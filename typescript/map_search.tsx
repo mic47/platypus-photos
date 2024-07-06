@@ -1,45 +1,8 @@
-import { createRoot, Root } from "react-dom/client";
 import React from "react";
 
-import { FoundLocation, SearchQuery } from "./pygallery.generated/types.gen";
+import { FoundLocation } from "./pygallery.generated/types.gen";
 import * as pygallery_service from "./pygallery.generated/services.gen.ts";
-import { CheckboxSync, StateWithHooks } from "./state.ts";
-import { PhotoMap } from "./photo_map.ts";
 
-export class MapSearch {
-    private root: Root;
-    constructor(
-        private div_id: string,
-        checkboxes: CheckboxSync,
-        searchQueryHook: StateWithHooks<SearchQuery>,
-        map: PhotoMap,
-    ) {
-        const element = document.getElementById(this.div_id);
-        if (element === null) {
-            throw new Error(`Unable to find element ${this.div_id}`);
-        }
-        this.root = createRoot(element);
-        this.root.render(
-            <MapSearchView
-                checkboxes={checkboxes.get()}
-                callbacks={{
-                    map_bounds: () => {
-                        map.update_bounds(searchQueryHook.get());
-                    },
-                    map_refetch: () => {
-                        map.update_markers(searchQueryHook.get(), false);
-                    },
-                    map_zoom: (latitude: number, longitude: number) => {
-                        map.zoom_to(latitude, longitude);
-                    },
-                    update_checkbox: (element: HTMLInputElement) => {
-                        checkboxes.update_from_element(element);
-                    },
-                }}
-            />,
-        );
-    }
-}
 export function MapSearchView({
     checkboxes,
     callbacks,
@@ -110,7 +73,7 @@ export function MapSearchView({
         );
     }
     return (
-        <>
+        <div>
             <form
                 id="MapSearchId"
                 method="dialog"
@@ -141,6 +104,6 @@ export function MapSearchView({
             </form>
             {searchResult}
             {error === null ? null : <pre>{error}</pre>}
-        </>
+        </div>
     );
 }

@@ -11,7 +11,7 @@ import {
     LocationPopup,
 } from "./location_popup.tsx";
 import { LocalStorageState } from "./local_storage_state.ts";
-import { StateWithHooks } from "./state.ts";
+import { UpdateCallbacks } from "./types.ts";
 
 type Position = {
     latitude: number;
@@ -47,9 +47,10 @@ export class PhotoMap {
     private local_markers: { [id: string]: L.Marker };
     private localStorageMarkers: LocalStorageState<Marker>;
     constructor(
-        div_id: string,
-        private should_use_query_div: string,
-        private searchQueryHook: StateWithHooks<SearchQuery>,
+        div_id: string | HTMLElement,
+        private should_use_query: boolean,
+        private searchQuery: SearchQuery,
+        private searchQueryCallbacks: UpdateCallbacks<SearchQuery>,
         private callbacks: {
             annotation_overlay: (latitude: number, longitude: number) => void;
         },
@@ -70,7 +71,7 @@ export class PhotoMap {
             if ((e as unknown as { flyTo: boolean }).flyTo) {
                 return;
             }
-            this.update_markers(this.searchQueryHook.get(), false);
+            this.update_markers(this.searchQuery, false);
         };
         const context_menu: L.LeafletEventHandlerFn = (e) => {
             this.context_menu(e as L.LocationEvent);
@@ -88,7 +89,13 @@ export class PhotoMap {
             attribution:
                 '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
         }).addTo(this.map);
-        this.update_bounds(this.searchQueryHook.get(), true);
+        this.update_bounds(this.searchQuery, true);
+    }
+    setSearchQuery(query: SearchQuery) {
+        this.searchQuery = query;
+    }
+    set_should_use_query(should_use: boolean) {
+        this.should_use_query = should_use;
     }
 
     private delete_local_marker_callback(id: string) {
@@ -130,7 +137,7 @@ export class PhotoMap {
         this.local_markers[id] = marker;
     }
 
-    context_menu(e: L.LocationEvent) {
+    private context_menu(e: L.LocationEvent) {
         const loc = e.latlng;
         const existing = document.getElementById("LocPreview");
         if (existing !== undefined && existing !== null) {
@@ -209,7 +216,11 @@ export class PhotoMap {
             });
     }
 
-    _similar(last_bounds: Bounds, new_bounds: Bounds, tolerance: number) {
+    private _similar(
+        last_bounds: Bounds,
+        new_bounds: Bounds,
+        tolerance: number,
+    ) {
         if (last_bounds === undefined || last_bounds === null) {
             return false;
         }
@@ -230,7 +241,7 @@ export class PhotoMap {
                 lon_tolerance
         );
     }
-    _should_skip(params: LastUpdateMarkersCacheParam) {
+    private _should_skip(params: LastUpdateMarkersCacheParam) {
         const non_bounds_str = JSON.stringify(params.non_bounds);
         if (
             this.last_update_markers !== null &&
@@ -253,12 +264,7 @@ export class PhotoMap {
 
     update_markers(location_url_json: SearchQuery, change_view = false) {
         // TODO: wrapped maps: shift from 0 + wrap around
-        const should_use_query =
-            (
-                document.getElementById(
-                    this.should_use_query_div,
-                ) as HTMLInputElement | null
-            )?.checked || false;
+        const should_use_query = this.should_use_query;
 
         const bounds = this.map.getBounds();
         const nw = bounds.getNorthWest();
@@ -333,7 +339,9 @@ export class PhotoMap {
                                 cluster,
                                 callbacks: {
                                     update_url: (update) =>
-                                        this.searchQueryHook.update(update),
+                                        this.searchQueryCallbacks.update(
+                                            update,
+                                        ),
                                     annotation_overlay: (
                                         latitude: number,
                                         longitude: number,

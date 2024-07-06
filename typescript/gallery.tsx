@@ -1,4 +1,3 @@
-import { createRoot, Root } from "react-dom/client";
 import React from "react";
 
 import {
@@ -9,63 +8,46 @@ import {
     SearchQuery,
     SortParams,
 } from "./pygallery.generated/types.gen.ts";
-import {
-    CheckboxesParams,
-    CheckboxSync,
-    StateWithHooks,
-    UrlSync,
-} from "./state.ts";
+import { CheckboxesParams, CheckboxSync } from "./state.ts";
 import * as pygallery_service from "./pygallery.generated/services.gen.ts";
 import { GalleryImage, ImageCallbacks } from "./gallery_image.tsx";
 import { AggregateInfoView } from "./aggregate_info.tsx";
 import { AnnotationOverlayRequest } from "./annotations.tsx";
 import { SortFormView } from "./sort_form.tsx";
+import { UpdateCallbacks } from "./types.ts";
 
-export class Gallery {
-    private root: Root;
-    constructor(
-        private div_id: string,
-        searchQueryHook: StateWithHooks<SearchQuery>,
-        pagingHook: StateWithHooks<GalleryPaging>,
-        sortHook: StateWithHooks<SortParams>,
-        checkboxSync: CheckboxSync,
-        submit_annotations: (request: AnnotationOverlayRequest) => void,
-    ) {
-        const element = document.getElementById(this.div_id);
-        if (element === null) {
-            throw new Error(`Unable to find element ${this.div_id}`);
-        }
-        this.root = createRoot(element);
-        const galleryUrlSync = new UrlSync(["oi"]);
-        this.root.render(
-            <React.StrictMode>
-                <GalleryComponent
-                    searchQueryHook={searchQueryHook}
-                    pagingHook={pagingHook}
-                    sortHook={sortHook}
-                    checkboxSync={checkboxSync}
-                    urlSync={galleryUrlSync}
-                    submit_annotations={submit_annotations}
-                />
-            </React.StrictMode>,
-        );
-    }
+export type GalleryUrlParams = {
+    oi: null | number;
+};
+export function parse_gallery_url(data: {
+    unparsed: { [key: string]: string };
+}): GalleryUrlParams {
+    const oi = parseInt(data.unparsed["oi"]);
+    return { oi: oi === undefined || oi != oi ? null : oi };
 }
-
 interface GalleryComponentProps {
-    searchQueryHook: StateWithHooks<SearchQuery>;
-    pagingHook: StateWithHooks<GalleryPaging>;
-    sortHook: StateWithHooks<SortParams>;
-    checkboxSync: CheckboxSync;
-    urlSync: UrlSync;
+    query: SearchQuery;
+    queryCallbacks: UpdateCallbacks<SearchQuery>;
+    paging: GalleryPaging;
+    pagingCallbacks: UpdateCallbacks<GalleryPaging>;
+    sort: SortParams;
+    sortCallbacks: UpdateCallbacks<SortParams>;
+    galleryUrl: GalleryUrlParams;
+    galleryUrlCallbacks: UpdateCallbacks<GalleryUrlParams>;
     submit_annotations: (request: AnnotationOverlayRequest) => void;
+    // TODO: remove folllowing 2, they are not done in react way
+    checkboxSync: CheckboxSync;
 }
-function GalleryComponent({
-    searchQueryHook,
-    pagingHook,
-    sortHook,
+export function GalleryComponent({
+    query,
+    paging,
+    sort,
+    queryCallbacks,
+    pagingCallbacks,
+    sortCallbacks,
+    galleryUrl,
+    galleryUrlCallbacks,
     checkboxSync,
-    urlSync,
     submit_annotations,
 }: GalleryComponentProps) {
     const [data, updateData] = React.useState<[SearchQuery, ImageResponse]>([
@@ -87,24 +69,17 @@ function GalleryComponent({
             classification: {},
             cameras: {},
         },
-        paging: pagingHook.get(),
+        paging,
     });
-    const [query, updateQuery] = React.useState<SearchQuery>(
-        searchQueryHook.get(),
-    );
-    const [paging, updatePaging] = React.useState<GalleryPaging>(
-        pagingHook.get(),
-    );
+
+    // OI should go outside?
     const [overlayIndex, updateOverlayIndex] = React.useState<null | number>(
-        () => {
-            const oi = parseInt(urlSync.get().unparsed["oi"]);
-            return oi === undefined || oi != oi ? null : oi;
-        },
+        galleryUrl["oi"],
     );
     React.useEffect(() => {
-        urlSync.update({ oi: overlayIndex });
+        galleryUrlCallbacks.update({ oi: overlayIndex });
     }, [overlayIndex]);
-    const [sort, updateSort] = React.useState<SortParams>(sortHook.get());
+
     const [checkboxes, updateCheckboxes] = React.useState<{
         [name: string]: boolean;
     }>(checkboxSync.get());
@@ -147,34 +122,20 @@ function GalleryComponent({
             ignore = true;
         };
     }, [query, paging]);
-    React.useEffect(() => {
-        searchQueryHook.register_hook("Gallery", (data) => {
-            updateQuery(data);
-        });
-        return () => searchQueryHook.unregister_hook("Gallery");
-    });
-    React.useEffect(() => {
-        pagingHook.register_hook("Gallery", updatePaging);
-        return () => pagingHook.unregister_hook("Gallery");
-    });
-    React.useEffect(() => {
-        sortHook.register_hook("Gallery", updateSort);
-        return () => sortHook.unregister_hook("Gallery");
-    });
     const callbacks = {
         updateOverlayIndex,
         prev_page: (paging: GalleryPaging) => {
             if (paging.page !== undefined && paging.page > 0) {
-                pagingHook.update({ page: paging.page - 1 });
+                pagingCallbacks.update({ page: paging.page - 1 });
             }
         },
         next_page: (paging: GalleryPaging, has_next_page: boolean) => {
             if (has_next_page) {
-                pagingHook.update({ page: (paging.page || 0) + 1 });
+                pagingCallbacks.update({ page: (paging.page || 0) + 1 });
             }
         },
         set_page: (page: number) => {
-            pagingHook.update({ page });
+            pagingCallbacks.update({ page });
         },
         annotation_overlay_interpolated: (location: ManualLocation) => {
             submit_annotations({
@@ -182,7 +143,7 @@ function GalleryComponent({
                     t: "InterpolatedLocation",
                     location,
                 },
-                query: searchQueryHook.get(),
+                query,
             });
         },
         update_checkbox_from_element: (element: HTMLInputElement) => {
@@ -190,14 +151,14 @@ function GalleryComponent({
             updateCheckboxes(checkboxSync.get());
         },
         update_url: (update: SearchQuery) => {
-            searchQueryHook.update(update);
+            queryCallbacks.update(update);
         },
         update_url_add_tag: (tag: string) => {
-            const old_tag = searchQueryHook.get()["tag"];
+            const old_tag = query["tag"];
             if (old_tag === undefined || old_tag === null) {
-                searchQueryHook.update({ tag: tag });
+                queryCallbacks.update({ tag: tag });
             } else {
-                searchQueryHook.update({ tag: `${old_tag},${tag}` });
+                queryCallbacks.update({ tag: `${old_tag},${tag}` });
             }
         },
         close_overlay: () => {
@@ -210,7 +171,7 @@ function GalleryComponent({
             } else if (paging.page !== undefined && paging.page > 0) {
                 const newPage = paging.page - 1;
                 const newIndex = (paging.paging || 100) - 1;
-                pagingHook.update({ page: newPage });
+                pagingCallbacks.update({ page: newPage });
                 updateOverlayIndex(newIndex);
             }
         },
@@ -223,7 +184,7 @@ function GalleryComponent({
             if (newIndex < (paging.paging || 100)) {
                 updateOverlayIndex(newIndex);
             } else if (has_next_page) {
-                pagingHook.update({ page: (paging.page || 0) + 1 });
+                pagingCallbacks.update({ page: (paging.page || 0) + 1 });
                 updateOverlayIndex(0);
             }
         },
@@ -232,7 +193,7 @@ function GalleryComponent({
         <>
             <SortFormView
                 sort={sort}
-                update_sort={(update) => sortHook.update(update)}
+                update_sort={(update) => sortCallbacks.update(update)}
             />
             <AggregateInfoView
                 aggr={aggr.aggr}

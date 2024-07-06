@@ -1,4 +1,3 @@
-import { createRoot, Root } from "react-dom/client";
 import React from "react";
 
 import { AggregateInfoView } from "./aggregate_info.tsx";
@@ -20,8 +19,8 @@ import {
 import { impissible, noop, null_if_empty } from "./utils.ts";
 import * as pygallery_service from "./pygallery.generated/services.gen.ts";
 import { shift_float_params } from "./input.tsx";
-import { StateWithHooks } from "./state.ts";
 import { DirectoryTable } from "./directories.tsx";
+import { UpdateCallbacks } from "./types.ts";
 
 export type AnnotationOverlayFixedLocation = {
     t: "FixedLocation";
@@ -44,70 +43,43 @@ export type LocationTypes =
     | AnnotationOverlayInterpolateLocation
     | AnnotationOverlayNoLocation;
 
+export function getFixedLocationAnnotationOverlayRequest(
+    query: SearchQuery,
+    latitude: number,
+    longitude: number,
+): Promise<AnnotationOverlayRequest> {
+    return pygallery_service
+        .getAddressPost({ requestBody: { latitude, longitude } })
+        .catch((reason) => {
+            console.log(reason);
+            return { country: null, name: null, full: null };
+        })
+        .then((address) => {
+            return {
+                request: {
+                    t: "FixedLocation",
+                    latitude,
+                    longitude,
+                    address_name: address.name,
+                    address_country: address.country,
+                },
+                query,
+            };
+        });
+}
 interface AnnotationOverlayComponentProps {
-    hub: HTMLElement;
-    searchQueryHook: StateWithHooks<SearchQuery>;
-    pagingHook: StateWithHooks<GalleryPaging>;
+    request: null | AnnotationOverlayRequest;
+    queryCallbacks: UpdateCallbacks<SearchQuery>;
+    pagingCallbacks: UpdateCallbacks<GalleryPaging>;
+    reset: () => void;
 }
 
-export class AnnotationOverlay {
-    private root: Root;
-    private hub: HTMLElement;
-    constructor(
-        private div_id: string,
-        private searchQueryHook: StateWithHooks<SearchQuery>,
-        pagingHook: StateWithHooks<GalleryPaging>,
-    ) {
-        const element = document.getElementById(this.div_id);
-        if (element === null) {
-            throw new Error(`Unable to find element ${this.div_id}`);
-        }
-        this.hub = element;
-        this.root = createRoot(element);
-        this.root.render(
-            <AnnotationOverlayComponent
-                hub={this.hub}
-                searchQueryHook={searchQueryHook}
-                pagingHook={pagingHook}
-            />,
-        );
-    }
-    submitter(request: AnnotationOverlayRequest) {
-        this.hub.dispatchEvent(
-            new CustomEvent("AnnotationOverlayRequest", {
-                detail: request,
-            }),
-        );
-    }
-    fixed_location_submitter(latitude: number, longitude: number) {
-        pygallery_service
-            .getAddressPost({ requestBody: { latitude, longitude } })
-            .catch((reason) => {
-                console.log(reason);
-                return { country: null, name: null, full: null };
-            })
-            .then((address) => {
-                this.submitter({
-                    request: {
-                        t: "FixedLocation",
-                        latitude,
-                        longitude,
-                        address_name: address.name,
-                        address_country: address.country,
-                    },
-                    query: this.searchQueryHook.get(),
-                });
-            });
-    }
-}
-
-function AnnotationOverlayComponent({
-    hub,
-    searchQueryHook,
-    pagingHook,
+export function AnnotationOverlayComponent({
+    request,
+    queryCallbacks,
+    pagingCallbacks,
+    reset,
 }: AnnotationOverlayComponentProps) {
-    const [request, updateRequest] =
-        React.useState<null | AnnotationOverlayRequest>(null);
     const [images, updateImages] = React.useState<null | ImageResponse>(null);
     const [aggr, updateAggr] = React.useState<null | ImageAggregation>(null);
     const [directories, updateDirectories] = React.useState<
@@ -123,25 +95,9 @@ function AnnotationOverlayComponent({
         updateError(null);
     };
     const resetAll = () => {
-        updateRequest(null);
         resetData();
+        reset();
     };
-    React.useEffect(() => {
-        function registerRequest(event: Event) {
-            if (!isCustomEvent(event)) {
-                console.log("Received weird event", event);
-                return;
-            }
-            const data = event.detail as AnnotationOverlayRequest;
-            updateRequest(data);
-        }
-        hub.addEventListener("AnnotationOverlayRequest", registerRequest);
-        return () =>
-            hub.removeEventListener(
-                "AnnotationOverlayRequest",
-                registerRequest,
-            );
-    });
     // TODO: solve out of date info -- maybe some incremental counter for version
     React.useEffect(() => {
         let ignore = false;
@@ -229,12 +185,13 @@ function AnnotationOverlayComponent({
                                 advance_in_time !== null
                             ) {
                                 shift_float_params(
-                                    searchQueryHook,
+                                    request.query,
+                                    queryCallbacks,
                                     "tsfrom",
                                     "tsto",
                                     advance_in_time,
                                 );
-                                pagingHook.update({ page: 0 });
+                                pagingCallbacks.update({ page: 0 });
                             }
                             resetAll();
                         })
@@ -642,7 +599,4 @@ function ErrorBox({ error }: { error: ERROR | null }) {
             <pre>{content}</pre>
         </div>
     );
-}
-function isCustomEvent(event: Event): event is CustomEvent {
-    return "detail" in event;
 }

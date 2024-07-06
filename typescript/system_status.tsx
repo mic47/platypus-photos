@@ -1,47 +1,22 @@
-import { createRoot, Root } from "react-dom/client";
 import React from "react";
 
-import { Switchable } from "./switchable.ts";
 import * as pygallery_service from "./pygallery.generated/services.gen.ts";
 import { pretty_print_duration } from "./utils.ts";
 import { SystemStatus as ServerSystemStatus } from "./pygallery.generated/types.gen.ts";
 
-export class SystemStatus {
-    public switchable: Switchable;
-    private root: Root;
-    constructor(private div_id: string) {
-        const element = document.getElementById(this.div_id);
-        if (element === null) {
-            throw new Error(`Unable to find element ${this.div_id}`);
-        }
-        this.root = createRoot(element);
-        this.switchable = new Switchable();
-        this.root.render(
-            <SystemStatusComponent
-                switchable={this.switchable}
-                intervalSeconds={10}
-            />,
-        );
-    }
-}
-
 interface SystemStatusComponentProps {
-    switchable: Switchable;
     intervalSeconds: number;
 }
 
-function SystemStatusComponent({
-    switchable,
+export function SystemStatusComponent({
     intervalSeconds,
 }: SystemStatusComponentProps) {
     const [data, updateData] = React.useState<ServerSystemStatus | null>(null);
 
     React.useEffect(() => {
         const updateProgress = () => {
-            switchable.call_or_store("fetch", () => {
-                return pygallery_service.systemStatusGet().then((data) => {
-                    updateData(data);
-                });
+            return pygallery_service.systemStatusGet().then((data) => {
+                updateData(data);
             });
         };
         const interval = setInterval(() => {

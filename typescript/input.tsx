@@ -1,100 +1,34 @@
-import { createRoot, Root } from "react-dom/client";
 import React, { FormEvent } from "react";
 
 import { SearchQuery } from "./pygallery.generated/types.gen";
-import { StateWithHooks, update_search_query_value } from "./state.ts";
+import { update_search_query_value } from "./state.ts";
 import { AnnotationOverlayRequest } from "./annotations.tsx";
 
-export class InputForm {
-    private root: Root;
-    constructor(
-        private div_id: string,
-        hooks: StateWithHooks<SearchQuery>,
-        submitAnnotations: (request: AnnotationOverlayRequest) => void,
-    ) {
-        this.div_id = div_id;
-        const element = document.getElementById(this.div_id);
-        if (element === null) {
-            throw new Error(`Unable to find element ${this.div_id}`);
-        }
-        this.root = createRoot(element);
-        this.root.render(
-            <InputFormComponent
-                hooks={hooks}
-                submitAnnotations={submitAnnotations}
-            />,
-        );
-    }
-}
-
-interface InputFormComponentProps {
-    hooks: StateWithHooks<SearchQuery>;
-    submitAnnotations: (request: AnnotationOverlayRequest) => void;
-}
-
-type WithTs<T> = {
+export type WithTs<T> = {
     q: T;
     ts: number;
 };
 
-function InputFormComponent({
-    hooks,
-    submitAnnotations,
-}: InputFormComponentProps) {
-    const [query, updateQuery] = React.useState<WithTs<SearchQuery>>({
-        q: hooks.get(),
-        ts: Date.now(),
-    });
-    React.useEffect(() => {
-        hooks.register_hook("InputForm", (newQuery) => {
-            updateQuery({ q: newQuery, ts: Date.now() });
-        });
-        return () => hooks.unregister_hook("InputForm");
-    });
-    return (
-        <InputFormView
-            query={query}
-            hook={hooks}
-            formSubmitted={(form) => {
-                const formData = new FormData(form);
-                const values = hooks.get();
-                for (const [key_untyped, value] of formData) {
-                    const key: keyof SearchQuery =
-                        key_untyped as keyof SearchQuery;
-                    if (value !== null && value !== undefined && value !== "") {
-                        update_search_query_value(values, key, value);
-                    } else {
-                        delete values[key];
-                    }
-                }
-                hooks.replace(values);
-            }}
-            submitAnnotations={submitAnnotations}
-        />
-    );
-}
-
 interface InputFormViewProps {
     query: WithTs<SearchQuery>;
-    formSubmitted: (form: HTMLFormElement) => void;
-    hook: Hook;
+    callbacks: Callbacks;
     submitAnnotations: (request: AnnotationOverlayRequest) => void;
 }
 
-function InputFormView({
+export function InputFormView({
     query,
-    hook,
-    formSubmitted,
+    callbacks,
     submitAnnotations,
 }: InputFormViewProps) {
     function update(form: FormEvent<HTMLFormElement>) {
-        formSubmitted(form.currentTarget);
+        process_submitted_form(query.q, callbacks, form.currentTarget);
     }
     return (
         <>
             <form onSubmit={update} id="input" method="dialog">
                 {formInputTextElement(
-                    hook,
+                    query.q,
+                    callbacks,
                     "tag",
                     query.ts,
                     query.q.tag,
@@ -103,7 +37,8 @@ function InputFormView({
                 )}
                 <br />
                 {formInputTextElement(
-                    hook,
+                    query.q,
+                    callbacks,
                     "cls",
                     query.ts,
                     query.q.cls,
@@ -112,7 +47,8 @@ function InputFormView({
                 )}
                 <br />
                 {formInputTextElement(
-                    hook,
+                    query.q,
+                    callbacks,
                     "addr",
                     query.ts,
                     query.q.addr,
@@ -121,7 +57,8 @@ function InputFormView({
                 )}
                 <br />
                 {formInputTextElement(
-                    hook,
+                    query.q,
+                    callbacks,
                     "directory",
                     query.ts,
                     query.q.directory,
@@ -130,7 +67,8 @@ function InputFormView({
                 )}
                 <br />
                 {formInputTextElement(
-                    hook,
+                    query.q,
+                    callbacks,
                     "camera",
                     query.ts,
                     query.q.camera,
@@ -139,7 +77,8 @@ function InputFormView({
                 )}
                 <br />
                 {formInputTextElement(
-                    hook,
+                    query.q,
+                    callbacks,
                     "timestamp_trans",
                     query.ts,
                     query.q.timestamp_trans,
@@ -152,13 +91,14 @@ function InputFormView({
                     onClick={() => {
                         submitAnnotations({
                             request: { t: "NoLocation" },
-                            query: hook.get(),
+                            query: query.q,
                         });
                     }}
                 />
                 <br />
                 {timestampInput(
-                    hook,
+                    query.q,
+                    callbacks,
                     "tsfrom",
                     "tsto",
                     "Time from",
@@ -167,7 +107,8 @@ function InputFormView({
                 )}
                 <br />
                 {timestampInput(
-                    hook,
+                    query.q,
+                    callbacks,
                     "tsto",
                     "tsfrom",
                     "Time to:  ",
@@ -179,14 +120,16 @@ function InputFormView({
                 <input
                     type="button"
                     value="Reset All"
-                    onClick={() => reset_param(hook, "__ALL__")}
+                    onClick={() => reset_param(query.q, callbacks, "__ALL__")}
                 />
             </form>
             <input
                 type="checkbox"
                 checked={query.q.skip_with_location}
                 onChange={(event) =>
-                    hook.update({ skip_with_location: event.target.checked })
+                    callbacks.update({
+                        skip_with_location: event.target.checked,
+                    })
                 }
             />{" "}
             Skip photos with location 🗺️.
@@ -195,7 +138,9 @@ function InputFormView({
                 type="checkbox"
                 checked={query.q.skip_being_annotated}
                 onChange={(event) =>
-                    hook.update({ skip_being_annotated: event.target.checked })
+                    callbacks.update({
+                        skip_being_annotated: event.target.checked,
+                    })
                 }
             />{" "}
             Skip photos being annoted 🏗️.
@@ -203,38 +148,65 @@ function InputFormView({
         </>
     );
 }
-type Hook = StateWithHooks<SearchQuery>;
-function reset_param(search_query: Hook, key: keyof SearchQuery | "__ALL__") {
+
+type Callbacks = {
+    update: (update: SearchQuery) => void;
+    replace: (newState: SearchQuery) => void;
+};
+function process_submitted_form(
+    searchQuery: SearchQuery,
+    callbacks: Callbacks,
+    form: HTMLFormElement,
+) {
+    const formData = new FormData(form);
+    const values = { ...searchQuery };
+    for (const [key_untyped, value] of formData) {
+        const key: keyof SearchQuery = key_untyped as keyof SearchQuery;
+        if (value !== null && value !== undefined && value !== "") {
+            update_search_query_value(values, key, value);
+        } else {
+            delete values[key];
+        }
+    }
+    callbacks.replace(values);
+}
+function reset_param(
+    search_query: SearchQuery,
+    callbacks: Callbacks,
+    key: keyof SearchQuery | "__ALL__",
+) {
     if (key === "__ALL__") {
-        search_query.replace({});
+        callbacks.replace({});
         return;
     }
-    const state = search_query.get();
+    const state = search_query;
     delete state[key];
-    search_query.replace(state);
+    callbacks.replace(state);
 }
 function add_to_float_param(
-    search_query: Hook,
+    search_query: SearchQuery,
+    callbacks: Callbacks,
     param: "tsfrom" | "tsto",
     other: "tsfrom" | "tsto",
     new_value: number,
 ) {
-    const query = search_query.get();
+    const query = search_query;
     const value = query[param] || query[other];
     if (value != value || value === null || value === undefined) {
         return;
     }
     const update: { [key: string]: string } = {};
     update[param] = (value + new_value).toString();
-    search_query.update(update);
+    callbacks.update(update);
 }
 export function shift_float_params(
-    search_query: Hook,
+    search_query: SearchQuery,
+    callbacks: Callbacks,
     param_to_start: "tsto" | "tsfrom",
     second_param: "tsto" | "tsfrom",
     shift_by: number | null = null,
 ) {
-    const query = search_query.get();
+    const query = search_query;
     const start_value = query[param_to_start];
     const end_value = query[second_param];
     if (end_value === null || end_value === undefined) {
@@ -256,7 +228,7 @@ export function shift_float_params(
             update[second_param] = end_value + end_value - start_value;
         }
     }
-    search_query.update(update);
+    callbacks.update(update);
 }
 
 const TIME_FORMAT = new Intl.DateTimeFormat("en-GB", {
@@ -284,7 +256,8 @@ function maybeTsToString(timestamp: number | null | undefined): string {
 }
 
 function formInputTextElement(
-    hook: Hook,
+    searchQuery: SearchQuery,
+    callbacks: Callbacks,
     name: keyof SearchQuery,
     ts: number,
     value: string | number | null | undefined,
@@ -306,7 +279,7 @@ function formInputTextElement(
                 value="reset"
                 onClick={() => {
                     updateVal({ q: "", ts: Date.now() });
-                    reset_param(hook, name);
+                    reset_param(searchQuery, callbacks, name);
                 }}
             />
             <label htmlFor={id}>{icon}:</label>
@@ -325,7 +298,8 @@ function formInputTextElement(
 }
 
 function timestampInput(
-    search_query: Hook,
+    searchQuery: SearchQuery,
+    callbacks: Callbacks,
     f: "tsfrom" | "tsto",
     t: "tsfrom" | "tsto",
     label_text: string,
@@ -352,7 +326,9 @@ function timestampInput(
                 key={index}
                 type="button"
                 value={text}
-                onClick={() => add_to_float_param(search_query, f, t, shift)}
+                onClick={() =>
+                    add_to_float_param(searchQuery, callbacks, f, t, shift)
+                }
             />
         );
     });
@@ -377,12 +353,12 @@ function timestampInput(
             <input
                 type="button"
                 value="reset"
-                onClick={() => reset_param(search_query, f)}
+                onClick={() => reset_param(searchQuery, callbacks, f)}
             />
             <input
                 type="button"
                 value={timeshift_text}
-                onClick={() => shift_float_params(search_query, f, t)}
+                onClick={() => shift_float_params(searchQuery, callbacks, f, t)}
             />
         </>
     );
