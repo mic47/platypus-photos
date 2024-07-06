@@ -1,7 +1,5 @@
-import { createRoot, Root } from "react-dom/client";
 import React from "react";
 
-import { Switchable } from "./switchable.ts";
 import * as pygallery_service from "./pygallery.generated/services.gen.ts";
 import {
     JobDescription,
@@ -160,13 +158,11 @@ function JobProgressView({
 }
 
 interface JobProgressComponentProps {
-    switchable: Switchable;
     interval_seconds: number;
     map_zoom: (latitude: number, longitude: number) => void;
 }
 
-function JobProgressComponent({
-    switchable,
+export function JobProgressComponent({
     interval_seconds,
     map_zoom,
 }: JobProgressComponentProps) {
@@ -189,20 +185,18 @@ function JobProgressComponent({
     };
     React.useEffect(() => {
         const update_progress = () => {
-            switchable.call_or_store("fetch", () => {
-                pygallery_service
-                    .jobProgressStatePost({
-                        requestBody: { state: progress?.states[0] },
-                    })
-                    .then((response) => {
-                        const newStates =
-                            progress?.states.filter(
-                                (x) => response.state.ts - x.ts < 300.0,
-                            ) || [];
-                        newStates.push(response.state);
-                        updateProgress({ response, states: newStates });
-                    });
-            });
+            pygallery_service
+                .jobProgressStatePost({
+                    requestBody: { state: progress?.states[0] },
+                })
+                .then((response) => {
+                    const newStates =
+                        progress?.states.filter(
+                            (x) => response.state.ts - x.ts < 300.0,
+                        ) || [];
+                    newStates.push(response.state);
+                    updateProgress({ response, states: newStates });
+                });
         };
 
         const interval = setInterval(() => {
@@ -224,27 +218,4 @@ function JobProgressComponent({
             map_zoom={map_zoom}
         />
     );
-}
-
-export class JobProgress {
-    public switchable: Switchable;
-    private root: Root;
-    constructor(
-        private div_id: string,
-        map_zoom: (latitude: number, longitude: number) => void,
-    ) {
-        this.switchable = new Switchable();
-        const element = document.getElementById(this.div_id);
-        if (element === null) {
-            throw new Error(`Unable to find element ${this.div_id}`);
-        }
-        this.root = createRoot(element);
-        this.root.render(
-            <JobProgressComponent
-                switchable={this.switchable}
-                interval_seconds={10}
-                map_zoom={map_zoom}
-            />,
-        );
-    }
 }
