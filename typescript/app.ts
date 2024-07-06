@@ -11,7 +11,6 @@ import {
     parse_sort_params,
 } from "./state.ts";
 import { JobProgress } from "./jobs";
-import { Directories } from "./directories";
 import { TabSwitch } from "./switchable";
 import { SystemStatus } from "./system_status";
 
@@ -70,8 +69,6 @@ function init_fun() {
         "DateChartGroupBy",
     );
     ___state.search_query.register_hook("Dates", (u) => dates.fetch(u));
-    /* Directories */
-    const directories = new Directories("Directories", ___state.search_query);
 
     /* Trigger redrawing of componentsl */
     // WARNING: here we assume that search_query will update everything
@@ -92,7 +89,7 @@ function init_fun() {
     const system_status = new SystemStatus("SystemStatus");
     /* Tab */
     new TabSwitch("RootTabs", {
-        TabDirectories: directories.switchable,
+        //TabDirectories: directories.switchable,
         TabJobProgress: job_progress.switchable,
         TabSystemStatus: system_status.switchable,
         TabDates: dates.switchable,

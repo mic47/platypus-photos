@@ -118,7 +118,7 @@ export function AnnotationOverlayComponent({
     };
     const resetAll = () => {
         resetData();
-        reset()
+        reset();
     };
     // TODO: solve out of date info -- maybe some incremental counter for version
     React.useEffect(() => {
@@ -621,7 +621,4 @@ function ErrorBox({ error }: { error: ERROR | null }) {
             <pre>{content}</pre>
         </div>
     );
-}
-function isCustomEvent(event: Event): event is CustomEvent {
-    return "detail" in event;
 }

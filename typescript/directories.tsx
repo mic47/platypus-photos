@@ -1,59 +1,26 @@
-import { createRoot, Root } from "react-dom/client";
 import React from "react";
 
 import {
     DirectoryStats,
     SearchQuery,
 } from "./pygallery.generated/types.gen.ts";
-import { Switchable } from "./switchable.ts";
 import * as pygallery_service from "./pygallery.generated/services.gen.ts";
 import { round, timestamp_to_pretty_datetime } from "./utils.ts";
 import { MaybeA } from "./jsx/maybea.tsx";
-import { StateWithHooks } from "./state.ts";
-
-export class Directories {
-    public switchable: Switchable;
-    private root: Root;
-    constructor(
-        private div_id: string,
-        searchQueryHook: StateWithHooks<SearchQuery>,
-    ) {
-        const element = document.getElementById(this.div_id);
-        if (element === null) {
-            throw new Error(`Unable to find element ${this.div_id}`);
-        }
-        this.root = createRoot(element);
-        this.switchable = new Switchable();
-        this.root.render(
-            <DirectoryTableComponent
-                id={this.div_id}
-                searchQueryHook={searchQueryHook}
-            />,
-        );
-    }
-}
+import { UpdateCallbacks } from "./types.ts";
 
 interface DirectoryTableComponentProps {
-    id: string;
-    searchQueryHook: StateWithHooks<SearchQuery>;
+    query: SearchQuery;
+    queryCallbacks: UpdateCallbacks<SearchQuery>;
 }
 export function DirectoryTableComponent({
-    id,
-    searchQueryHook,
+    query,
+    queryCallbacks,
 }: DirectoryTableComponentProps) {
-    const [query, updateQuery] = React.useState<SearchQuery>(
-        searchQueryHook.get(),
-    );
     const [pending, updatePending] = React.useState<boolean>(true);
     const [directories, updateDirectories] = React.useState<
         null | DirectoryStats[]
     >([]);
-    React.useEffect(() => {
-        searchQueryHook.register_hook(id, (data) => {
-            updateQuery(data);
-        });
-        return () => searchQueryHook.unregister_hook(id);
-    });
     React.useEffect(() => {
         let ignore = false;
         updatePending(true);
@@ -78,7 +45,7 @@ export function DirectoryTableComponent({
                 <DirectoryTable
                     directories={directories}
                     callbacks={{
-                        update_url: (update) => searchQueryHook.update(update),
+                        update_url: (update) => queryCallbacks.update(update),
                     }}
                 />
             </>

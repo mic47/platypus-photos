@@ -21,6 +21,7 @@ import {
     AnnotationOverlayComponent,
     AnnotationOverlayRequest,
 } from "./annotations";
+import { DirectoryTableComponent } from "./directories";
 
 interface ApplicationProps {
     searchQuerySync: TypedUrlSync<SearchQuery>;
@@ -110,6 +111,12 @@ export function Application({
                 pagingCallbacks={pagingCallbacks}
                 reset={() => updateAnnotationRequest(null)}
             />
+            <div className="directories">
+                <DirectoryTableComponent
+                    query={searchQueryWithTs.q}
+                    queryCallbacks={queryCallbacks}
+                />
+            </div>
             <GalleryComponent
                 query={searchQueryWithTs.q}
                 paging={paging}
