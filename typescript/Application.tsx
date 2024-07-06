@@ -24,6 +24,7 @@ import {
 import { DirectoryTableComponent } from "./directories";
 import { Switchable, TabBar } from "./jsx/switchable";
 import { JobProgressComponent } from "./jobs";
+import { SystemStatusComponent } from "./system_status";
 
 interface ApplicationProps {
     searchQuerySync: TypedUrlSync<SearchQuery>;
@@ -128,6 +129,9 @@ export function Application({
                     interval_seconds={10}
                     map_zoom={() => {}}
                 />
+            </Switchable>
+            <Switchable switchedOn={activeTabs.system_status.active}>
+                <SystemStatusComponent intervalSeconds={10} />
             </Switchable>
             <Switchable switchedOn={activeTabs.query.active}>
                 <InputFormView

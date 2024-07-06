@@ -11,7 +11,6 @@ import {
     parse_sort_params,
 } from "./state.ts";
 import { TabSwitch } from "./switchable";
-import { SystemStatus } from "./system_status";
 
 import { SearchQuery } from "./pygallery.generated/types.gen";
 import { AnnotationOverlay } from "./annotations";
@@ -78,13 +77,8 @@ function init_fun() {
     ___state.sort.replace_no_hook_update(parse_sort_params(sort_sync.get()));
     ___state.search_query.replace(parse_search_query(search_query_sync.get()));
 
-    /* System Status */
-    const system_status = new SystemStatus("SystemStatus");
     /* Tab */
     new TabSwitch("RootTabs", {
-        //TabDirectories: directories.switchable,
-        //TabJobProgress: job_progress.switchable,
-        TabSystemStatus: system_status.switchable,
         TabDates: dates.switchable,
     });
 }
