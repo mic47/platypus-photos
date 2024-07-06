@@ -14,6 +14,7 @@ import { GalleryImage, ImageCallbacks } from "./gallery_image.tsx";
 import { AggregateInfoView } from "./aggregate_info.tsx";
 import { AnnotationOverlayRequest } from "./annotations.tsx";
 import { SortFormView } from "./sort_form.tsx";
+import { UpdateCallbacks } from "./types.ts";
 
 export type GalleryUrlParams = {
     oi: null | number;
@@ -24,10 +25,6 @@ export function parse_gallery_url(data: {
     const oi = parseInt(data.unparsed["oi"]);
     return { oi: oi === undefined || oi != oi ? null : oi };
 }
-type UpdateCallbacks<T> = {
-    update: (update: T) => void;
-    replace: (newData: T) => void;
-};
 interface GalleryComponentProps {
     query: SearchQuery;
     queryCallbacks: UpdateCallbacks<SearchQuery>;

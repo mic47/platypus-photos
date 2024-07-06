@@ -53,7 +53,6 @@ function init_fun() {
     const annotator = new AnnotationOverlay(
         "SubmitDataOverlay",
         ___state.search_query,
-        ___state.paging,
     );
     /* Map */
     const map = new PhotoMap("map", false, ___state.search_query, {

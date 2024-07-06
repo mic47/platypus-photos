@@ -17,6 +17,10 @@ import {
     GalleryUrlParams,
     parse_gallery_url,
 } from "./gallery";
+import {
+    AnnotationOverlayComponent,
+    AnnotationOverlayRequest,
+} from "./annotations";
 
 interface ApplicationProps {
     searchQuerySync: TypedUrlSync<SearchQuery>;
@@ -33,6 +37,7 @@ export function Application({
     galleryUrlSync,
     checkboxSync,
 }: ApplicationProps) {
+    /* URL Params State */
     const [searchQueryWithTs, updateSearchQueryWithTs] = React.useState<
         WithTs<SearchQuery>
     >({ q: searchQuerySync.get_parsed(), ts: Date.now() });
@@ -86,12 +91,24 @@ export function Application({
             updateGalleryUrl({ ...newData });
         },
     };
+    /* Annotation Overlay State */
+    const [annotationRequest, updateAnnotationRequest] =
+        React.useState<null | AnnotationOverlayRequest>(null);
+
     return (
         <>
             <InputFormView
                 query={searchQueryWithTs}
                 callbacks={queryCallbacks}
-                submitAnnotations={() => {}}
+                submitAnnotations={(request) =>
+                    updateAnnotationRequest(request)
+                }
+            />
+            <AnnotationOverlayComponent
+                request={annotationRequest}
+                queryCallbacks={queryCallbacks}
+                pagingCallbacks={pagingCallbacks}
+                reset={() => updateAnnotationRequest(null)}
             />
             <GalleryComponent
                 query={searchQueryWithTs.q}
@@ -103,7 +120,9 @@ export function Application({
                 checkboxSync={checkboxSync}
                 galleryUrl={galleryUrl}
                 galleryUrlCallbacks={galleryUrlCallbacks}
-                submit_annotations={() => {}}
+                submit_annotations={(request) => {
+                    updateAnnotationRequest(request);
+                }}
             />
         </>
     );
