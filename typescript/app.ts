@@ -1,7 +1,6 @@
 import data_model from "./data_model.generated.json";
 
 import { Dates } from "./dates_chart";
-import { InputForm } from "./input";
 import { PhotoMap } from "./photo_map";
 import {
     AppState,
@@ -55,10 +54,6 @@ function init_fun() {
         "SubmitDataOverlay",
         ___state.search_query,
         ___state.paging,
-    );
-    /* InputForm */
-    new InputForm("InputForm", ___state.search_query, (request) =>
-        annotator.submitter(request),
     );
     /* Map */
     const map = new PhotoMap("map", false, ___state.search_query, {

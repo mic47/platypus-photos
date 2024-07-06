@@ -1,67 +1,13 @@
-import { createRoot, Root } from "react-dom/client";
 import React, { FormEvent } from "react";
 
 import { SearchQuery } from "./pygallery.generated/types.gen";
-import { StateWithHooks, update_search_query_value } from "./state.ts";
+import { update_search_query_value } from "./state.ts";
 import { AnnotationOverlayRequest } from "./annotations.tsx";
-
-export class InputForm {
-    private root: Root;
-    constructor(
-        private div_id: string,
-        hooks: StateWithHooks<SearchQuery>,
-        submitAnnotations: (request: AnnotationOverlayRequest) => void,
-    ) {
-        this.div_id = div_id;
-        const element = document.getElementById(this.div_id);
-        if (element === null) {
-            throw new Error(`Unable to find element ${this.div_id}`);
-        }
-        this.root = createRoot(element);
-        this.root.render(
-            <InputFormComponent
-                hooks={hooks}
-                submitAnnotations={submitAnnotations}
-            />,
-        );
-    }
-}
-
-interface InputFormComponentProps {
-    hooks: StateWithHooks<SearchQuery>;
-    submitAnnotations: (request: AnnotationOverlayRequest) => void;
-}
 
 export type WithTs<T> = {
     q: T;
     ts: number;
 };
-
-function InputFormComponent({
-    hooks,
-    submitAnnotations,
-}: InputFormComponentProps) {
-    const [query, updateQuery] = React.useState<WithTs<SearchQuery>>({
-        q: hooks.get(),
-        ts: Date.now(),
-    });
-    React.useEffect(() => {
-        hooks.register_hook("InputForm", (newQuery) => {
-            updateQuery({ q: newQuery, ts: Date.now() });
-        });
-        return () => hooks.unregister_hook("InputForm");
-    });
-    return (
-        <InputFormView
-            query={query}
-            callbacks={{
-                update: (update: SearchQuery) => hooks.update(update),
-                replace: (newState: SearchQuery) => hooks.replace(newState),
-            }}
-            submitAnnotations={submitAnnotations}
-        />
-    );
-}
 
 interface InputFormViewProps {
     query: WithTs<SearchQuery>;
