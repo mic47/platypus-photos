@@ -6,19 +6,23 @@ import data_model from "./data_model.generated.json";
 import {
     CheckboxSync,
     TypedUrlSync,
-    UrlSync,
     parse_gallery_paging,
     parse_search_query,
     parse_sort_params,
 } from "./state";
 import { GalleryPaging, SearchQuery, SortParams } from "./pygallery.generated";
 import { InputFormView, WithTs } from "./input";
-import { GalleryComponent } from "./gallery";
+import {
+    GalleryComponent,
+    GalleryUrlParams,
+    parse_gallery_url,
+} from "./gallery";
 
 interface ApplicationProps {
     searchQuerySync: TypedUrlSync<SearchQuery>;
     pagingSync: TypedUrlSync<GalleryPaging>;
     sortSync: TypedUrlSync<SortParams>;
+    galleryUrlSync: TypedUrlSync<GalleryUrlParams>;
     checkboxSync: CheckboxSync;
 }
 
@@ -26,6 +30,7 @@ export function Application({
     searchQuerySync,
     pagingSync,
     sortSync,
+    galleryUrlSync,
     checkboxSync,
 }: ApplicationProps) {
     const [searchQueryWithTs, updateSearchQueryWithTs] = React.useState<
@@ -43,6 +48,10 @@ export function Application({
         sortSync.get_parsed(),
     );
     React.useEffect(() => sortSync.update(paging), [paging]);
+    const [galleryUrl, updateGalleryUrl] = React.useState<GalleryUrlParams>(
+        galleryUrlSync.get_parsed(),
+    );
+    React.useEffect(() => galleryUrlSync.update(galleryUrl), [galleryUrl]);
     const queryCallbacks = {
         update: (update: SearchQuery) => {
             updateSearchQueryWithTs({
@@ -69,7 +78,14 @@ export function Application({
             updateSort({ ...newData });
         },
     };
-    const galleryUrlSync = new UrlSync(["oi"]);
+    const galleryUrlCallbacks = {
+        update: (update: GalleryUrlParams) => {
+            updateGalleryUrl({ ...galleryUrl, ...update });
+        },
+        replace: (newData: GalleryUrlParams) => {
+            updateGalleryUrl({ ...newData });
+        },
+    };
     return (
         <>
             <InputFormView
@@ -85,7 +101,8 @@ export function Application({
                 pagingCallbacks={pagingCallbacks}
                 sortCallbacks={sortCallbacks}
                 checkboxSync={checkboxSync}
-                urlSync={galleryUrlSync}
+                galleryUrl={galleryUrl}
+                galleryUrlCallbacks={galleryUrlCallbacks}
                 submit_annotations={() => {}}
             />
         </>
@@ -103,6 +120,7 @@ export function init_fun(divId: string) {
     );
     const pagingSync = new TypedUrlSync(paging_fields, parse_gallery_paging);
     const sortSync = new TypedUrlSync(sort_fields, parse_sort_params);
+    const galleryUrlSync = new TypedUrlSync(["oi"], parse_gallery_url);
 
     const element = document.getElementById(divId);
     if (element === null) {
@@ -115,6 +133,8 @@ export function init_fun(divId: string) {
                 searchQuerySync={searchQuerySync}
                 pagingSync={pagingSync}
                 sortSync={sortSync}
+                galleryUrlSync={galleryUrlSync}
+                // TODO: remove checkbox sync passing
                 checkboxSync={new CheckboxSync()}
             />
         </React.StrictMode>,

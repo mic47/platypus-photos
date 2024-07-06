@@ -8,13 +8,22 @@ import {
     SearchQuery,
     SortParams,
 } from "./pygallery.generated/types.gen.ts";
-import { CheckboxesParams, CheckboxSync, UrlSync } from "./state.ts";
+import { CheckboxesParams, CheckboxSync } from "./state.ts";
 import * as pygallery_service from "./pygallery.generated/services.gen.ts";
 import { GalleryImage, ImageCallbacks } from "./gallery_image.tsx";
 import { AggregateInfoView } from "./aggregate_info.tsx";
 import { AnnotationOverlayRequest } from "./annotations.tsx";
 import { SortFormView } from "./sort_form.tsx";
 
+export type GalleryUrlParams = {
+    oi: null | number;
+};
+export function parse_gallery_url(data: {
+    unparsed: { [key: string]: string };
+}): GalleryUrlParams {
+    const oi = parseInt(data.unparsed["oi"]);
+    return { oi: oi === undefined || oi != oi ? null : oi };
+}
 type UpdateCallbacks<T> = {
     update: (update: T) => void;
     replace: (newData: T) => void;
@@ -26,10 +35,11 @@ interface GalleryComponentProps {
     pagingCallbacks: UpdateCallbacks<GalleryPaging>;
     sort: SortParams;
     sortCallbacks: UpdateCallbacks<SortParams>;
+    galleryUrl: GalleryUrlParams;
+    galleryUrlCallbacks: UpdateCallbacks<GalleryUrlParams>;
     submit_annotations: (request: AnnotationOverlayRequest) => void;
     // TODO: remove folllowing 2, they are not done in react way
     checkboxSync: CheckboxSync;
-    urlSync: UrlSync;
 }
 export function GalleryComponent({
     query,
@@ -38,8 +48,9 @@ export function GalleryComponent({
     queryCallbacks,
     pagingCallbacks,
     sortCallbacks,
+    galleryUrl,
+    galleryUrlCallbacks,
     checkboxSync,
-    urlSync,
     submit_annotations,
 }: GalleryComponentProps) {
     const [data, updateData] = React.useState<[SearchQuery, ImageResponse]>([
@@ -66,13 +77,10 @@ export function GalleryComponent({
 
     // OI should go outside?
     const [overlayIndex, updateOverlayIndex] = React.useState<null | number>(
-        () => {
-            const oi = parseInt(urlSync.get().unparsed["oi"]);
-            return oi === undefined || oi != oi ? null : oi;
-        },
+        galleryUrl["oi"],
     );
     React.useEffect(() => {
-        urlSync.update({ oi: overlayIndex });
+        galleryUrlCallbacks.update({ oi: overlayIndex });
     }, [overlayIndex]);
 
     const [checkboxes, updateCheckboxes] = React.useState<{
