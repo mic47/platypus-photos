@@ -13,33 +13,5 @@ Gallery
 </head>
 <body onload='window.APP.react_init_fun("Application")'>
 <div id="Application"></div>
-REST OF THE APP
-
-<div id="JobProgress" class="TabTargetJobProgress"></div>
-<div id="SystemStatus" class="TabTargetSystemStatus"></div>
-<div class="TabTargetQuery">
-  <div id="InputForm"></div>
-</div>
-<a href="#GalleryImageSection" class="TabTargetGallery">Go to images</a>
-<div id="SubmitDataOverlay"></div>
-<div class="TabTargetDates">
-  Group by: <input type="checkbox" class="DateChartGroupBy" value="country" onchange="window.APP.update_url({})"/>Country
-  <input type="checkbox" class="DateChartGroupBy" value="camera" onchange="window.APP.update_url({})"/>Camera
-  <input type="checkbox" class="DateChartGroupBy" value="has_location" onchange="window.APP.update_url({})"/>Has Location
-  <input type="checkbox" class="DateChartGroupBy" value="address_name" onchange="window.APP.update_url({})"/>Name of the Place
-  <div class="row">
-    <div class="column">
-      <div class="date_chart"><canvas id="DateChart"></canvas></div>
-    </div>
-    <div class="column">
-      <div id="DateSelection"></div>
-    </div>
-  </div>
-</div>
-<div class="directories TabTargetDirectories" id="Directories"></div>
-<div id="MapSearch" class="TabTargetMap"></div>
-<div id="map" class="TabTargetMap"></div>
-<section id="GalleryImageSection"></section>
-<div id="GalleryImages" class="TabTargetGallery"></div>
 </body>
 </html>

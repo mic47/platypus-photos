@@ -27,6 +27,7 @@ import { Switchable, TabBar } from "./jsx/switchable";
 import { JobProgressComponent } from "./jobs";
 import { SystemStatusComponent } from "./system_status";
 import { MapView } from "./map";
+import { DatesComponent } from "./dates_chart";
 
 interface ApplicationProps {
     searchQuerySync: TypedUrlSync<SearchQuery>;
@@ -156,6 +157,12 @@ export function Application({
                 pagingCallbacks={pagingCallbacks}
                 reset={() => updateAnnotationRequest(null)}
             />
+            <Switchable switchedOn={activeTabs.dates.active}>
+                <DatesComponent
+                    query={searchQueryWithTs.q}
+                    queryCallbacks={queryCallbacks}
+                />
+            </Switchable>
             <Switchable switchedOn={activeTabs.directories.active}>
                 <div className="directories">
                     <DirectoryTableComponent
