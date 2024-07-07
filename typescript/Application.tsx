@@ -132,30 +132,10 @@ export function Application({
             <TabBar
                 items={activeTabs}
                 setActive={
-                    ((key: keyof typeof activeTabs, active: boolean) => {
-                        const newTabs = Object.fromEntries(
-                            Object.entries(activeTabs).map(
-                                ([key, settings]) => [key, { ...settings }],
-                            ),
-                        ) as typeof activeTabs;
-                        if (newTabs[key] !== undefined) {
-                            newTabs[key].active = active;
-                        }
+                    ((key: string, active: boolean) => {
+                        const newTabs = setActiveTab(activeTabs, key, active);
                         updateActiveTabsInternal(newTabs);
-                        tabBarSync.update(
-                            new Set(
-                                Object.entries(newTabs)
-                                    .map(([key, value]) => {
-                                        if (value.active) {
-                                            return key;
-                                        }
-                                        return null;
-                                    })
-                                    .filter(
-                                        (value) => value !== null,
-                                    ) as string[],
-                            ),
-                        );
+                        tabBarSync.update(getActiveTabs(newTabs));
                     }) as (key: string, active: boolean) => void
                 }
             />
@@ -271,4 +251,30 @@ export function init_fun(divId: string) {
             />
         </React.StrictMode>,
     );
+}
+
+type ActiveTabs = { [key: string]: { active: boolean; text: string } };
+function getActiveTabs(tabs: ActiveTabs): Set<string> {
+    return new Set(
+        Object.entries(tabs)
+            .map(([key, value]) => {
+                if (value.active) {
+                    return key;
+                }
+                return null;
+            })
+            .filter((value) => value !== null) as string[],
+    );
+}
+function setActiveTab(current: ActiveTabs, key: string, active: boolean) {
+    const newTabs = Object.fromEntries(
+        Object.entries(current).map(([key, settings]) => [
+            key,
+            { ...settings },
+        ]),
+    );
+    if (newTabs[key] !== undefined) {
+        newTabs[key].active = active;
+    }
+    return newTabs;
 }
