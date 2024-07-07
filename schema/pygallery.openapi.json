@@ -5,14 +5,14 @@
     "version": "0.1.0"
   },
   "paths": {
-    "/img": {
+    "/img/{size}/{hsh}.{extension}": {
       "get": {
         "summary": "Image Endpoint",
         "operationId": "image_endpoint-GET",
         "parameters": [
           {
             "name": "hsh",
-            "in": "query",
+            "in": "path",
             "required": true,
             "schema": {
               "anyOf": [
@@ -28,16 +28,19 @@
           },
           {
             "name": "size",
-            "in": "query",
-            "required": false,
+            "in": "path",
+            "required": true,
             "schema": {
-              "allOf": [
-                {
-                  "$ref": "#/components/schemas/ImageSize"
-                }
-              ],
-              "default": "original",
-              "title": "Size"
+              "$ref": "#/components/schemas/ImageSize"
+            }
+          },
+          {
+            "name": "extension",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Extension"
             }
           }
         ],
@@ -601,6 +604,10 @@
             "type": "string",
             "title": "Example Path Md5"
           },
+          "example_path_extension": {
+            "type": "string",
+            "title": "Example Path Extension"
+          },
           "bucket_min": {
             "type": "number",
             "title": "Bucket Min"
@@ -636,6 +643,7 @@
         "type": "object",
         "required": [
           "example_path_md5",
+          "example_path_extension",
           "bucket_min",
           "bucket_max",
           "overfetched",
@@ -938,6 +946,10 @@
             "type": "string",
             "title": "Md5"
           },
+          "extension": {
+            "type": "string",
+            "title": "Extension"
+          },
           "date": {
             "anyOf": [
               {
@@ -1060,6 +1072,7 @@
         "type": "object",
         "required": [
           "md5",
+          "extension",
           "date",
           "date_transformed",
           "tags",
@@ -1302,6 +1315,17 @@
               }
             ],
             "title": "Example Path Md5"
+          },
+          "example_path_extension": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Example Path Extension"
           }
         },
         "type": "object",
@@ -1316,7 +1340,8 @@
           "longitude",
           "query",
           "job",
-          "example_path_md5"
+          "example_path_md5",
+          "example_path_extension"
         ],
         "title": "JobDescription"
       },
@@ -1478,6 +1503,10 @@
             "type": "string",
             "title": "Example Path Md5"
           },
+          "example_path_extension": {
+            "type": "string",
+            "title": "Example Path Extension"
+          },
           "example_classification": {
             "anyOf": [
               {
@@ -1550,6 +1579,7 @@
         "type": "object",
         "required": [
           "example_path_md5",
+          "example_path_extension",
           "example_classification",
           "size",
           "address_name",
@@ -1943,6 +1973,17 @@
               }
             ],
             "title": "Example Path Md5"
+          },
+          "example_path_extension": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Example Path Extension"
           }
         },
         "type": "object",
@@ -1954,7 +1995,8 @@
           "original_request",
           "created",
           "last_update",
-          "example_path_md5"
+          "example_path_md5",
+          "example_path_extension"
         ],
         "title": "RemoteJob"
       },

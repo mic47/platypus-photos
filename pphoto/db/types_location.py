@@ -46,6 +46,7 @@ class LocationBounds(DataClassJsonMixin):
 @dataclass
 class LocationCluster:
     example_path_md5: str
+    example_path_extension: str
     example_classification: t.Optional[str]
     size: int
     address_name: t.Optional[str]

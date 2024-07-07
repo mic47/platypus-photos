@@ -19,6 +19,7 @@ export type t2 = 'NoLocation';
 
 export type DateCluster = {
     example_path_md5: string;
+    example_path_extension: string;
     bucket_min: number;
     bucket_max: number;
     overfetched: boolean;
@@ -88,6 +89,7 @@ export type HTTPValidationError = {
 
 export type Image = {
     md5: string;
+    extension: string;
     date: string | null;
     date_transformed: boolean;
     tags: {
@@ -154,6 +156,7 @@ export type JobDescription = {
     query: MassLocationAndTextAnnotation_Output;
     job: RemoteJob_bytes_;
     example_path_md5: string | null;
+    example_path_extension: string | null;
 };
 
 export type JobProgressRequest = {
@@ -195,6 +198,7 @@ export type LocationBounds = {
 
 export type LocationCluster = {
     example_path_md5: string;
+    example_path_extension: string;
     example_classification: string | null;
     size: number;
     address_name: string | null;
@@ -281,6 +285,7 @@ export type RemoteJob_bytes_ = {
     created: string;
     last_update: string | null;
     example_path_md5: string | null;
+    example_path_extension: string | null;
 };
 
 export type SearchQuery = {
@@ -357,8 +362,9 @@ export type ValidationError = {
 };
 
 export type ImageEndpointGetData = {
+    extension: string;
     hsh: number | string;
-    size?: ImageSize;
+    size: ImageSize;
 };
 
 export type ImageEndpointGetResponse = unknown;
@@ -432,7 +438,7 @@ export type ReadIndexGetResponse = unknown;
 export type ReadIndexGet1Response = unknown;
 
 export type $OpenApiTs = {
-    '/img': {
+    '/img/{size}/{hsh}.{extension}': {
         get: {
             req: ImageEndpointGetData;
             res: {

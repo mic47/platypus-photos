@@ -114,15 +114,23 @@ class Reindexer:
         files = self._files_table.by_md5(md5)
         directories = set()
         max_dir_last_update = 0.0
+        extensions: t.Dict[str, int] = {}
         for file in files:
             max_dir_last_update = max(max_dir_last_update, file.last_update)
+            ext: str = os.path.splitext(file.file)[1].lstrip(".")
+            extensions[ext] = extensions.get(ext, 0) + 1
             for path in [file.file, file.og_file]:
                 if path is not None:
                     directories.add(os.path.dirname(path))
+        if not extensions:
+            top_extension = "jpg"
+        else:
+            top_extension = sorted(extensions.items(), key=lambda x: x[1])[-1][0]
 
         effective_max_last_update = max(max_last_update, max_dir_last_update)
         omg = make_image(
             md5,
+            top_extension,
             exif,
             addr,
             text_cls,

@@ -103,6 +103,11 @@ ALTER TABLE gallery_index ADD COLUMN camera TEXT
 ALTER TABLE gallery_index ADD COLUMN software TEXT
         """
         )
+        self._con.execute_add_column(
+            """
+ALTER TABLE gallery_index ADD COLUMN extension TEXT NOT NULL DEFAULT "jpg"
+        """
+        )
         for columns in [
             ["md5"],
             ["feature_last_update"],
@@ -130,7 +135,7 @@ ALTER TABLE gallery_index ADD COLUMN software TEXT
         tags = sorted(list((omg.tags or {}).items()))
         self._con.execute(
             """
-INSERT INTO gallery_index VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)
+INSERT INTO gallery_index VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?)
 ON CONFLICT(md5) DO UPDATE SET
   feature_last_update=excluded.feature_last_update,
   timestamp=excluded.timestamp,
@@ -147,7 +152,8 @@ ON CONFLICT(md5) DO UPDATE SET
   manual_features=excluded.manual_features,
   being_annotated=excluded.being_annotated,
   camera=excluded.camera,
-  software=excluded.software
+  software=excluded.software,
+  extension=excluded.extension
 WHERE
   excluded.version > gallery_index.version
   OR (
@@ -172,6 +178,7 @@ WHERE
                 f',{",".join(omg.manual_features)},',
                 omg.camera,
                 omg.software,
+                omg.extension,
             ),
         )
         self._con.commit()
@@ -357,7 +364,7 @@ WHERE
                 assert_never(g)
 
         final_subselect_query = self._matching_query(
-            f"#as#timestamp#, md5, {country_col}, {camera_col}, {has_loc_col}, {address_name_col}, #timestamp# < ? OR #timestamp# > ? as overfetched",
+            f"#as#timestamp#, md5, extension, {country_col}, {camera_col}, {has_loc_col}, {address_name_col}, #timestamp# < ? OR #timestamp# > ? as overfetched",
             url,
         )
         final_params = tuple(
@@ -375,7 +382,7 @@ SELECT
   max_timestamp,
   avg_timestamp,
   total,
-  example_md5,
+  example_md5_with_extension,
   address_country,
   camera,
   has_location,
@@ -388,7 +395,7 @@ FROM (
     MAX(timestamp) AS max_timestamp,
     AVG(timestamp) AS avg_timestamp,
     COUNT(1) as total,
-    MIN(md5) as example_md5,
+    MIN(md5 || "." || extension) as example_md5_with_extension,
     IIF(overfetched, NULL, address_country) AS address_country,
     IIF(overfetched, NULL, camera) AS camera,
     IIF(overfetched, NULL, has_location) AS has_location,
@@ -404,7 +411,8 @@ FROM (
         )
         return [
             DateCluster(
-                example_path_md5,
+                example_path_md5_with_extension.split(".", maxsplit=1)[0],
+                example_path_md5_with_extension.split(".", maxsplit=1)[1],
                 bucket_min,
                 bucket_max,
                 bool(overfetched),
@@ -427,7 +435,7 @@ FROM (
                 max_timestamp,
                 avg_timestamp,
                 total,
-                example_path_md5,
+                example_path_md5_with_extension,
                 address_country,
                 camera,
                 has_location,
@@ -457,7 +465,7 @@ FROM (
         select_items, variables = self._matching_query(
             f"""
             address_name, address_country, latitude, longitude,
-            md5, classifications, #as#timestamp#,
+            md5, extension, classifications, #as#timestamp#,
             round(latitude/{lat_scale})*{lat_scale} as cluster_lat,
             round(longitude/{lon_scale})*{lon_scale} as cluster_lon
         """,
@@ -480,7 +488,7 @@ SELECT
   min(longitude), max(longitude),
   avg(latitude), avg(longitude),
   count(1),
-  min(md5),
+  MIN(md5 || "." || extension) as example_md5_with_extension,
   min(timestamp),
   max(timestamp),
   max(classifications)
@@ -505,14 +513,18 @@ GROUP BY
             avg_latitude,
             avg_longitude,
             total,
-            example_file_md5,
+            example_file_md5_with_extension,
             min_timestamp,
             max_timestamp,
             example_classification,
         ) in res:
+            (example_file_md5, example_file_extension) = example_file_md5_with_extension.split(
+                ".", maxsplit=1
+            )
             out.append(
                 LocationCluster(
                     example_file_md5,
+                    example_file_extension,
                     example_classification,
                     total,
                     address_name,
@@ -643,7 +655,7 @@ SELECT "cam", camera, COUNT(1) FROM matched_images GROUP BY camera
             query,
             variables,
         ) = self._matching_query(
-            "md5, #as#timestamp#, #timestamp_transformed#, tags, tags_probs, classifications, address_country, address_name, address_full, feature_last_update, latitude, longitude, altitude, version, manual_features, being_annotated, camera, software",
+            "md5, extension, #as#timestamp#, #timestamp_transformed#, tags, tags_probs, classifications, address_country, address_name, address_full, feature_last_update, latitude, longitude, altitude, version, manual_features, being_annotated, camera, software",
             url,
         )
         sort_by = None
@@ -665,6 +677,7 @@ SELECT "cam", camera, COUNT(1) FROM matched_images GROUP BY camera
         output = []
         for (
             md5,
+            extension,
             timestamp,
             timestamp_transformed,
             tags,
@@ -686,6 +699,7 @@ SELECT "cam", camera, COUNT(1) FROM matched_images GROUP BY camera
             output.append(
                 Image(
                     md5,
+                    extension,
                     None if timestamp is None else datetime.fromtimestamp(timestamp),  # TODO convert
                     bool(timestamp_transformed),
                     (

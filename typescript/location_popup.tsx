@@ -72,7 +72,7 @@ export function LocationClusterPopup({
             />
             <br />
             <img
-                src={`/img?hsh=${cluster.example_path_md5}&size=preview`}
+                src={`/img/preview/${cluster.example_path_md5}.${cluster.example_path_extension}`}
                 className="popup"
             />
         </>

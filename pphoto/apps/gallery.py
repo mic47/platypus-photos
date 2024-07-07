@@ -106,39 +106,40 @@ def sz_to_resolution(size: ImageSize) -> t.Optional[int]:
     assert_never(size)
 
 
-def get_cache_file(size: int, hsh: str) -> str:
-    return f".cache/{size}/{hsh[0]}/{hsh[1]}/{hsh[2]}/{hsh[3:]}.jpg"
+def get_cache_file(size: int, hsh: str, extension: str) -> str:
+    return f".cache/{size}/{hsh[0]}/{hsh[1]}/{hsh[2]}/{hsh[3:]}.{extension}"
 
 
 @app.get(
-    "/img",
+    "/img/{size}/{hsh}.{extension}",
     responses={
         200: {"description": "photo", "content": {"image/jpeg": {"example": "No example available."}}}
     },
 )
-def image_endpoint(hsh: t.Union[int, str], size: ImageSize = ImageSize.ORIGINAL) -> t.Any:
+def image_endpoint(hsh: t.Union[int, str], size: ImageSize, extension: str) -> t.Any:
     sz = sz_to_resolution(size)
     if sz is not None and isinstance(hsh, str):
-        cache_file = get_cache_file(sz, hsh)
+        cache_file = get_cache_file(sz, hsh, extension)
         if not os.path.exists(cache_file):
             file_path = DB.get().get_path_from_hash(hsh)
             if file_path is None:
                 return {"error": "File not found!"}
             img = Image.open(file_path)
+            print(img.format)
             img.thumbnail((sz, sz))
             dirname = os.path.dirname(cache_file)
             if not os.path.exists(dirname):
                 os.makedirs(dirname, exist_ok=True)
             if "exif" in img.info:
                 exif = img.info["exif"]
-                img.save(cache_file, exif=exif)
+                img.save(cache_file, format=img.format, exif=exif)
             else:
-                img.save(cache_file)
-        return FileResponse(cache_file, media_type="image/jpeg", filename=cache_file.split("/")[-1])
+                img.save(cache_file, format=img.format)
+        return FileResponse(cache_file, filename=cache_file.split("/")[-1])
     file_path = DB.get().get_path_from_hash(hsh)
     if file_path is not None and os.path.exists(file_path):
         # TODO: fix media type
-        return FileResponse(file_path, media_type="image/jpeg", filename=file_path.split("/")[-1])
+        return FileResponse(file_path, filename=file_path.split("/")[-1])
     return {"error": "File not found!"}
 
 
@@ -172,6 +173,7 @@ def location_clusters_endpoint(params: LocClusterParams) -> t.List[LocationClust
                     clusters.append(
                         LocationCluster(
                             job.example_path_md5 or "missing",
+                            job.example_path_extension or "jpg",
                             og_req.text.text.description,
                             job.total,
                             og_req.location.location.address_name,
@@ -401,6 +403,7 @@ async def mass_manual_annotation_endpoint(params: MassManualAnnotation) -> int:
             params.query, SortParams(sort_by=SortBy.TIMESTAMP, order=SortOrder.ASC), GalleryPaging(0, 1000000)
         )
     )
+    extensions = {img.md5: img.extension for img in all_images.get()[0]}
 
     transformed_date_recipe = date_tasks_recipes(params.date, all_images)
 
@@ -426,6 +429,7 @@ async def mass_manual_annotation_endpoint(params: MassManualAnnotation) -> int:
         tasks.append(
             (
                 md5,
+                extensions.get(md5) or "jpg",
                 ManualAnnotationTask(
                     location_tasks_recipe.get(md5),
                     params.text.text if md5 in text_md5s else None,
@@ -439,7 +443,7 @@ async def mass_manual_annotation_endpoint(params: MassManualAnnotation) -> int:
     job_id = db.jobs.submit_job(
         RemoteJobType.MASS_MANUAL_ANNOTATION, params.to_json(ensure_ascii=False).encode("utf-8"), tasks
     )
-    db.mark_annotated([t for t, _ in tasks])
+    db.mark_annotated([t for t, _, _ in tasks])
     await refresh_jobs(job_id)
     return job_id
 
@@ -549,6 +553,7 @@ class JobDescription:
     query: MassLocationAndTextAnnotation
     job: RemoteJob[bytes]
     example_path_md5: str | None
+    example_path_extension: str | None
 
 
 @app.get("/api/remote_jobs")
@@ -616,6 +621,7 @@ def remote_jobs() -> t.List[JobDescription]:
                 og_req,
                 job,
                 job.example_path_md5,
+                job.example_path_extension,
             )
         )
     return jobs

@@ -33,6 +33,7 @@ def make_image_address(
 
 def make_image(
     md5: str,
+    extension: str,
     exif: t.Optional[ImageExif],
     address: t.Optional[GeoAddress],
     text_classification: t.Optional[ImageClassification],
@@ -107,6 +108,7 @@ def make_image(
 
     return Image(
         md5,
+        extension,
         date,
         False,  # This is not real column, just derived from query
         tags,

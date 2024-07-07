@@ -10,15 +10,17 @@ import type { ImageEndpointGetData, ImageEndpointGetResponse, LocationClustersEn
  * @param data The data for the request.
  * @param data.hsh
  * @param data.size
+ * @param data.extension
  * @returns unknown photo
  * @throws ApiError
  */
 export const imageEndpointGet = (data: ImageEndpointGetData): CancelablePromise<ImageEndpointGetResponse> => { return __request(OpenAPI, {
     method: 'GET',
-    url: '/img',
-    query: {
+    url: '/img/{size}/{hsh}.{extension}',
+    path: {
         hsh: data.hsh,
-        size: data.size
+        size: data.size,
+        extension: data.extension
     },
     errors: {
         422: 'Validation Error'

@@ -47,7 +47,7 @@ Stats: ${JSON.stringify({ ...job.job, original_request: "(redacted)" }, null, 2)
                     <div className="left_algn hover_show">
                         <img
                             loading="lazy"
-                            src={`/img?hsh=${job.example_path_md5}&size=preview`}
+                            src={`/img/preview/${job.example_path_md5}.${job.example_path_extension}`}
                             className="gallery_image"
                         />
                         <pre>{formattedText}</pre>

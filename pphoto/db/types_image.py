@@ -24,6 +24,7 @@ class ImageAddress(DataClassJsonMixin):
 @dataclass
 class Image(DataClassJsonMixin):
     md5: str
+    extension: str
     date: t.Optional[datetime]
     date_transformed: bool
     tags: t.Optional[t.Dict[str, float]]
@@ -41,4 +42,4 @@ class Image(DataClassJsonMixin):
 
     @staticmethod
     def current_version() -> int:
-        return 3
+        return 4

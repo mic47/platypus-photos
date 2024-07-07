@@ -29,11 +29,13 @@ def _image(
     lon: t.Optional[float] = 12.0,
     alt: t.Optional[float] = 13.0,
     camera: t.Optional[str] = "olympus e-510",
+    extension: str = "jpg",
 ) -> Image:
     if tags is None:
         tags = {"foo": 0.3, "bar": 1.457}
     return Image(
         md5,
+        extension,
         datetm,
         False,
         tags,
@@ -149,6 +151,7 @@ class TestGalleryIndexTable(unittest.TestCase):
             [
                 LocationCluster(
                     "M2",
+                    "jpg",
                     "This is ridiculous",
                     1,
                     "Portlandia",
@@ -161,6 +164,7 @@ class TestGalleryIndexTable(unittest.TestCase):
                 ),
                 LocationCluster(
                     "M3",
+                    "jpg",
                     "There is something fishy here",
                     1,
                     "Foudlekf",
@@ -183,6 +187,7 @@ class TestGalleryIndexTable(unittest.TestCase):
             [
                 LocationCluster(
                     example_path_md5="M1",
+                    example_path_extension="jpg",
                     example_classification="This is ridiculous",
                     size=3,
                     address_name="Portlandia",
@@ -195,6 +200,7 @@ class TestGalleryIndexTable(unittest.TestCase):
                 ),
                 LocationCluster(
                     example_path_md5="M3",
+                    example_path_extension="jpg",
                     example_classification="There is something fishy here",
                     size=1,
                     address_name="Foudlekf",

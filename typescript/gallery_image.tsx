@@ -349,7 +349,7 @@ export function GalleryImage({
             >
                 <img
                     loading="lazy"
-                    src={`/img?hsh=${omg.md5}&size=${isOverlay ? "original" : "preview"}`}
+                    src={`/img/${isOverlay ? "original" : "preview"}/${omg.md5}.${omg.extension}`}
                     className="gallery_image"
                     alt={omg.classifications || ""}
                     title={omg.classifications || ""}

@@ -104,6 +104,7 @@ function DateClusterTooltip({
     );
     const start = pprange(cluster.min_timestamp, cluster.max_timestamp);
     const image_md5 = cluster.example_path_md5;
+    const image_extension = cluster.example_path_extension;
     const selections =
         Object.entries(cluster.group_by)
             .filter(([, x]) => x !== null && x !== undefined)
@@ -162,7 +163,7 @@ function DateClusterTooltip({
             <br />
             <img
                 loading="lazy"
-                src={`/img?hsh=${image_md5}&size=preview`}
+                src={`/img/preview/${image_md5}.${image_extension}`}
                 className="gallery_image"
             />
         </div>

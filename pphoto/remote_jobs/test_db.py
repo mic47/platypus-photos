@@ -20,21 +20,23 @@ class TestJobsTable(unittest.TestCase):
     def test_submit_job(self) -> None:
         table = RemoteJobsTable(connection())
         job_a = table.submit_job(
-            RemoteJobType.MASS_MANUAL_ANNOTATION, b"WAT", [("lol", b"foo"), ("goo", b"bar")]
+            RemoteJobType.MASS_MANUAL_ANNOTATION, b"WAT", [("lol", "jpg", b"foo"), ("goo", "jpg", b"bar")]
         )
 
         with self.assertRaises(ValidationError, msg="Should fail to validate with duplicate md5s"):
-            table.submit_job(RemoteJobType.MASS_MANUAL_ANNOTATION, b"WAT", [("lol", b"foo"), ("lol", b"bar")])
+            table.submit_job(
+                RemoteJobType.MASS_MANUAL_ANNOTATION, b"WAT", [("lol", "jpg", b"foo"), ("lol", "jpg", b"bar")]
+            )
 
         job_b = table.submit_job(
-            RemoteJobType.MASS_MANUAL_ANNOTATION, b"WAT", [("lol", b"foo"), ("goo", b"bar")]
+            RemoteJobType.MASS_MANUAL_ANNOTATION, b"WAT", [("lol", "jpg", b"foo"), ("goo", "jpg", b"bar")]
         )
         self.assertNotEqual(job_a, job_b, "Same ID for different jobs")
 
     def test_finish_task(self) -> None:
         table = RemoteJobsTable(connection())
         job_id = table.submit_job(
-            RemoteJobType.MASS_MANUAL_ANNOTATION, b"WAT", [("lol", b"foo"), ("goo", b"bar")]
+            RemoteJobType.MASS_MANUAL_ANNOTATION, b"WAT", [("lol", "jpg", b"foo"), ("goo", "jpg", b"bar")]
         )
         unfinished = table.unfinished_tasks()
         self.assertListEqual(
@@ -69,6 +71,7 @@ class TestJobsTable(unittest.TestCase):
                 datetime.datetime(1, 1, 1),
                 None,
                 "lol",
+                "jpg",
             ),
             "Job should have 0 finished tasks",
         )
@@ -114,6 +117,7 @@ class TestJobsTable(unittest.TestCase):
                     datetime.datetime(1, 1, 1),
                     datetime.datetime(1, 1, 1),
                     "lol",
+                    "jpg",
                 ),
                 "Job should have finished 1 task",
             )
@@ -158,6 +162,7 @@ class TestJobsTable(unittest.TestCase):
                 datetime.datetime(1, 1, 1),
                 datetime.datetime(1, 1, 1),
                 "lol",
+                "jpg",
             ),
             "Job should have finished 2 task",
         )
@@ -177,7 +182,7 @@ class TestJobsTable(unittest.TestCase):
     def test_fetching_non_existent_data(self) -> None:
         table = RemoteJobsTable(connection())
         job_id = table.submit_job(
-            RemoteJobType.MASS_MANUAL_ANNOTATION, b"WAT", [("lol", b"foo"), ("goo", b"bar")]
+            RemoteJobType.MASS_MANUAL_ANNOTATION, b"WAT", [("lol", "jpg", b"foo"), ("goo", "jpg", b"bar")]
         )
         self.assertIsNone(table.get_job(job_id + 1))
         self.assertIsNone(table.get_task(TaskId("lol", job_id + 1)))
@@ -203,5 +208,7 @@ class TestJobsTable(unittest.TestCase):
         start_failing = True
         self.assertEqual(was_rollback, False, "Rollback should not be callsed")
         with self.assertRaises(NotImplementedError, msg="Should raise exception on error"):
-            table.submit_job(RemoteJobType.MASS_MANUAL_ANNOTATION, b"WAT", [("lol", b"foo"), ("goo", b"bar")])
+            table.submit_job(
+                RemoteJobType.MASS_MANUAL_ANNOTATION, b"WAT", [("lol", "jpg", b"foo"), ("goo", "jpg", b"bar")]
+            )
         self.assertEqual(was_rollback, True, "Rollback should be called on exception during execution")

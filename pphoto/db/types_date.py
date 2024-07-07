@@ -21,6 +21,7 @@ class DateClusterGroup:
 @dataclass
 class DateCluster:
     example_path_md5: str
+    example_path_extension: str
     bucket_min: float
     bucket_max: float
     overfetched: bool

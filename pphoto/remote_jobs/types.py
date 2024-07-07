@@ -34,6 +34,7 @@ class RemoteJob(t.Generic[T], DataClassJsonMixin):
     created: dt.datetime
     last_update: t.Optional[dt.datetime]
     example_path_md5: t.Optional[str]
+    example_path_extension: t.Optional[str]
 
     def test_sanitize(self) -> RemoteJob[T]:
         self.created = dt.datetime(1, 1, 1)

@@ -48,6 +48,10 @@ export const $DateCluster = {
             type: 'string',
             title: 'Example Path Md5'
         },
+        example_path_extension: {
+            type: 'string',
+            title: 'Example Path Extension'
+        },
         bucket_min: {
             type: 'number',
             title: 'Bucket Min'
@@ -81,7 +85,7 @@ export const $DateCluster = {
         }
     },
     type: 'object',
-    required: ['example_path_md5', 'bucket_min', 'bucket_max', 'overfetched', 'min_timestamp', 'max_timestamp', 'avg_timestamp', 'total', 'group_by'],
+    required: ['example_path_md5', 'example_path_extension', 'bucket_min', 'bucket_max', 'overfetched', 'min_timestamp', 'max_timestamp', 'avg_timestamp', 'total', 'group_by'],
     title: 'DateCluster'
 } as const;
 
@@ -349,6 +353,10 @@ export const $Image = {
             type: 'string',
             title: 'Md5'
         },
+        extension: {
+            type: 'string',
+            title: 'Extension'
+        },
         date: {
             anyOf: [
                 {
@@ -469,7 +477,7 @@ export const $Image = {
         }
     },
     type: 'object',
-    required: ['md5', 'date', 'date_transformed', 'tags', 'classifications', 'address', 'dependent_features_last_update', 'latitude', 'longitude', 'altitude', 'manual_features', 'being_annotated', 'camera', 'software', 'version'],
+    required: ['md5', 'extension', 'date', 'date_transformed', 'tags', 'classifications', 'address', 'dependent_features_last_update', 'latitude', 'longitude', 'altitude', 'manual_features', 'being_annotated', 'camera', 'software', 'version'],
     title: 'Image'
 } as const;
 
@@ -681,10 +689,21 @@ export const $JobDescription = {
                 }
             ],
             title: 'Example Path Md5'
+        },
+        example_path_extension: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Example Path Extension'
         }
     },
     type: 'object',
-    required: ['icon', 'total', 'id', 'type', 'replacements', 'time', 'latitude', 'longitude', 'query', 'job', 'example_path_md5'],
+    required: ['icon', 'total', 'id', 'type', 'replacements', 'time', 'latitude', 'longitude', 'query', 'job', 'example_path_md5', 'example_path_extension'],
     title: 'JobDescription'
 } as const;
 
@@ -830,6 +849,10 @@ export const $LocationCluster = {
             type: 'string',
             title: 'Example Path Md5'
         },
+        example_path_extension: {
+            type: 'string',
+            title: 'Example Path Extension'
+        },
         example_classification: {
             anyOf: [
                 {
@@ -900,7 +923,7 @@ export const $LocationCluster = {
         }
     },
     type: 'object',
-    required: ['example_path_md5', 'example_classification', 'size', 'address_name', 'address_country', 'tsfrom', 'tsto', 'top_left', 'bottom_right', 'position'],
+    required: ['example_path_md5', 'example_path_extension', 'example_classification', 'size', 'address_name', 'address_country', 'tsfrom', 'tsto', 'top_left', 'bottom_right', 'position'],
     title: 'LocationCluster'
 } as const;
 
@@ -1243,10 +1266,21 @@ export const $RemoteJob_bytes_ = {
                 }
             ],
             title: 'Example Path Md5'
+        },
+        example_path_extension: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Example Path Extension'
         }
     },
     type: 'object',
-    required: ['id_', 'type_', 'total', 'finished_tasks', 'original_request', 'created', 'last_update', 'example_path_md5'],
+    required: ['id_', 'type_', 'total', 'finished_tasks', 'original_request', 'created', 'last_update', 'example_path_md5', 'example_path_extension'],
     title: 'RemoteJob'
 } as const;
 
