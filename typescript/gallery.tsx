@@ -14,7 +14,7 @@ import { GalleryImage, ImageCallbacks } from "./gallery_image.tsx";
 import { AggregateInfoView } from "./aggregate_info.tsx";
 import { AnnotationOverlayRequest } from "./annotations.tsx";
 import { SortFormView } from "./sort_form.tsx";
-import { UpdateCallbacks } from "./types.ts";
+import { UpdateCallbacks } from "./types";
 
 export type GalleryUrlParams = {
     oi: null | number;
