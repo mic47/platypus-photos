@@ -23,6 +23,7 @@ interface GalleryImageProps {
     has_next_page: boolean;
     overlay_index: number | null;
     index: number;
+    showLocationIterpolation: boolean;
     callbacks: ImageCallbacks | null;
 }
 
@@ -47,6 +48,7 @@ export function GalleryImage({
     has_next_page,
     overlay_index,
     index,
+    showLocationIterpolation,
     callbacks: callbacksOG,
 }: GalleryImageProps) {
     const callbacks = callbacksOG === null ? null : { ...callbacksOG };
@@ -158,7 +160,7 @@ export function GalleryImage({
         );
     }
     let predictedLocation = null;
-    if (predicted_location !== null) {
+    if (predicted_location !== null && showLocationIterpolation) {
         let cls = "LocPredView";
         if (
             predicted_location.earlier === null ||

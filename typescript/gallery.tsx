@@ -248,6 +248,7 @@ function GalleryView({
                 overlay_index={overlay_index}
                 has_next_page={data.has_next_page}
                 index={index}
+                showLocationIterpolation={checkboxes["LocPredCheck"] === true}
                 callbacks={callbacks}
             />
         );

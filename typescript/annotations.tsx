@@ -271,6 +271,7 @@ function AnnotationOverlayView({
                       previous_timestamp={null}
                       has_next_page={false}
                       overlay_index={null}
+                      showLocationIterpolation={false}
                       callbacks={null}
                   />
               ));

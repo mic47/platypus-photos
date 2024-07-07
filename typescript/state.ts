@@ -18,6 +18,7 @@ export class CheckboxSync {
         return this.state;
     }
     update_from_element(element: HTMLInputElement) {
+        this.state = {...this.state}
         this.state[element.id] = element.checked;
     }
 }
