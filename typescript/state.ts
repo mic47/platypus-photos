@@ -22,6 +22,48 @@ export class CheckboxSync {
     }
 }
 
+export class URLSetSync {
+    private sync: UrlSync;
+    constructor(
+        private key: string,
+        private defaultOn: Set<string>,
+    ) {
+        this.sync = new UrlSync([key]);
+    }
+    get(): Set<string> {
+        const raw = this.sync.get().unparsed[this.key];
+        const data = raw === undefined ? [] : raw.split(",");
+        const on = new Set(this.defaultOn);
+        data.forEach((item) => {
+            if (item.startsWith("!")) {
+                on.delete(item.slice(1));
+            } else {
+                on.add(item);
+            }
+        });
+        return on;
+    }
+    update(data: Set<string>) {
+        const allMentions = new Set([...this.defaultOn, ...data]);
+        const out = [...allMentions]
+            .map((mention) => {
+                const defaultOn = this.defaultOn.has(mention);
+                const isOn = data.has(mention);
+                if (defaultOn === isOn) {
+                    return null;
+                } else if (isOn) {
+                    return mention;
+                } else if (!isOn) {
+                    return `!${mention}`;
+                } else {
+                    impissible(isOn);
+                }
+            })
+            .filter((x) => x !== null);
+        this.sync.update(Object.fromEntries([[this.key, out.join(",")]]));
+    }
+}
+
 // TODO: this could be better, and convert types properly
 export class UrlSync {
     constructor(private registered_fields: string[]) {}

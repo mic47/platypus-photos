@@ -6,6 +6,7 @@ import data_model from "./data_model.generated.json";
 import {
     CheckboxSync,
     TypedUrlSync,
+    URLSetSync,
     parse_gallery_paging,
     parse_search_query,
     parse_sort_params,
@@ -34,6 +35,7 @@ interface ApplicationProps {
     pagingSync: TypedUrlSync<GalleryPaging>;
     sortSync: TypedUrlSync<SortParams>;
     galleryUrlSync: TypedUrlSync<GalleryUrlParams>;
+    tabBarSync: URLSetSync;
     checkboxSync: CheckboxSync;
 }
 
@@ -42,6 +44,7 @@ export function Application({
     pagingSync,
     sortSync,
     galleryUrlSync,
+    tabBarSync,
     checkboxSync,
 }: ApplicationProps) {
     /* URL Params State */
@@ -102,15 +105,22 @@ export function Application({
     const [annotationRequest, updateAnnotationRequest] =
         React.useState<null | AnnotationOverlayRequest>(null);
     /* Tabs */
-    // TODO: make it in sync with url
-    const [activeTabs, updateActiveTabsInternal] = React.useState({
-        query: { active: true, text: "Query" },
-        dates: { active: false, text: "Dates Chart" },
-        directories: { active: false, text: "Directories" },
-        map: { active: true, text: "Map" },
-        gallery: { active: true, text: "Gallery" },
-        jobs: { active: false, text: "Job Progress" },
-        system_status: { active: false, text: "System Status" },
+    const [activeTabs, updateActiveTabsInternal] = React.useState(() => {
+        const tabBarCurrent = tabBarSync.get();
+        return Object.fromEntries(
+            [
+                ["query", "Query"],
+                ["dates", "Dates Chart"],
+                ["directories", "Directories"],
+                ["map", "Map"],
+                ["gallery", "Gallery"],
+                ["jobs", "Job Progress"],
+                ["system_status", "System Status"],
+            ].map(([key, text]) => [
+                key,
+                { active: tabBarCurrent.has(key), text },
+            ]),
+        );
     });
     /* Map related */
     const [zoomTo, updateZoomTo] = React.useState<null | {
@@ -123,11 +133,29 @@ export function Application({
                 items={activeTabs}
                 setActive={
                     ((key: keyof typeof activeTabs, active: boolean) => {
-                        const newTabs = { ...activeTabs };
+                        const newTabs = Object.fromEntries(
+                            Object.entries(activeTabs).map(
+                                ([key, settings]) => [key, { ...settings }],
+                            ),
+                        ) as typeof activeTabs;
                         if (newTabs[key] !== undefined) {
                             newTabs[key].active = active;
                         }
                         updateActiveTabsInternal(newTabs);
+                        tabBarSync.update(
+                            new Set(
+                                Object.entries(newTabs)
+                                    .map(([key, value]) => {
+                                        if (value.active) {
+                                            return key;
+                                        }
+                                        return null;
+                                    })
+                                    .filter(
+                                        (value) => value !== null,
+                                    ) as string[],
+                            ),
+                        );
                     }) as (key: string, active: boolean) => void
                 }
             />
@@ -221,6 +249,10 @@ export function init_fun(divId: string) {
     const pagingSync = new TypedUrlSync(paging_fields, parse_gallery_paging);
     const sortSync = new TypedUrlSync(sort_fields, parse_sort_params);
     const galleryUrlSync = new TypedUrlSync(["oi"], parse_gallery_url);
+    const tabBarSync = new URLSetSync(
+        "tb",
+        new Set(["query", "map", "gallery"]),
+    );
 
     const element = document.getElementById(divId);
     if (element === null) {
@@ -234,7 +266,7 @@ export function init_fun(divId: string) {
                 pagingSync={pagingSync}
                 sortSync={sortSync}
                 galleryUrlSync={galleryUrlSync}
-                // TODO: remove checkbox sync passing
+                tabBarSync={tabBarSync}
                 checkboxSync={new CheckboxSync()}
             />
         </React.StrictMode>,
