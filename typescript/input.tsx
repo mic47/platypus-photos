@@ -195,8 +195,8 @@ function add_to_float_param(
     if (value != value || value === null || value === undefined) {
         return;
     }
-    const update: { [key: string]: string } = {};
-    update[param] = (value + new_value).toString();
+    const update: SearchQuery = {};
+    update[param] = (value + new_value);
     callbacks.update(update);
 }
 export function shift_float_params(
