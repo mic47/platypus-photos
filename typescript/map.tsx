@@ -8,13 +8,19 @@ import { UpdateCallbacks } from "./types";
 interface MapViewProps {
     searchQuery: SearchQuery;
     zoom_to: null | { latitude: number; longitude: number };
+    resetZoomTo: () => void;
     oneTime: {
         searchQueryCallbacks: UpdateCallbacks<SearchQuery>;
         annotation_overlay: (latitude: number, longitude: number) => void;
     };
 }
 
-export function MapView({ searchQuery, zoom_to, oneTime }: MapViewProps) {
+export function MapView({
+    searchQuery,
+    zoom_to,
+    resetZoomTo,
+    oneTime,
+}: MapViewProps) {
     const mapContainerElementRef = React.useRef<null | HTMLDivElement>(null);
     const mapRef = React.useRef<null | PhotoMap>(null);
 
@@ -40,6 +46,7 @@ export function MapView({ searchQuery, zoom_to, oneTime }: MapViewProps) {
     React.useEffect(() => {
         if (zoom_to !== null) {
             getMap().zoom_to(zoom_to.latitude, zoom_to.longitude);
+            resetZoomTo();
         }
     }, [zoom_to]);
     const [mapUseQuery, updateMapUseQuery] = React.useState<boolean>(false);

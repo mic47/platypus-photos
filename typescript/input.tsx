@@ -196,7 +196,7 @@ function add_to_float_param(
         return;
     }
     const update: SearchQuery = {};
-    update[param] = (value + new_value);
+    update[param] = value + new_value;
     callbacks.update(update);
 }
 export function shift_float_params(

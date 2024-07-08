@@ -560,7 +560,7 @@ function validate_form_and_send_request_to_server(
     const adjust_dates = formData.get("apply_timestamp_trans") == "on";
     const request: MassLocationAndTextAnnotation_Input = {
         t: "MassLocAndTxt",
-        query: og_request.query as SearchQuery,
+        query: og_request.query,
         location,
         text: {
             t: "FixedText",

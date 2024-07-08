@@ -262,6 +262,7 @@ export class PhotoMap {
         return false;
     }
 
+    // TODO: this should be just update markers
     update_markers(location_url_json: SearchQuery, change_view = false) {
         // TODO: wrapped maps: shift from 0 + wrap around
         const should_use_query = this.should_use_query;

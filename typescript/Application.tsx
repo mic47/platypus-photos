@@ -183,6 +183,7 @@ export function Application({
                 <MapView
                     searchQuery={searchQueryWithTs.q}
                     zoom_to={zoomTo}
+                    resetZoomTo={() => updateZoomTo(null)}
                     oneTime={{
                         searchQueryCallbacks: queryCallbacks,
                         annotation_overlay: (latitude, longitude) => {
