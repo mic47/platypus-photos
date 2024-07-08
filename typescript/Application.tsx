@@ -62,7 +62,7 @@ export function Application({
     const [sort, updateSort] = React.useState<SortParams>(
         sortSync.get_parsed(),
     );
-    React.useEffect(() => sortSync.update(paging), [paging]);
+    React.useEffect(() => sortSync.update(sort), [sort]);
     const [galleryUrl, updateGalleryUrl] = React.useState<GalleryUrlParams>(
         galleryUrlSync.get_parsed(),
     );
