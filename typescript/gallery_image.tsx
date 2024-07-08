@@ -251,7 +251,6 @@ export function GalleryImage({
                                 : () => callbacks.update_url_add_tag(tag)
                         }
                     >
-                        {score}
                         {tag}
                     </MaybeA>
                 </span>,
