@@ -109,13 +109,13 @@ export function Application({
         const tabBarCurrent = tabBarSync.get();
         return Object.fromEntries(
             [
-                ["query", "Query"],
-                ["dates", "Dates Chart"],
-                ["directories", "Directories"],
-                ["map", "Map"],
-                ["gallery", "Gallery"],
-                ["jobs", "Job Progress"],
-                ["system_status", "System Status"],
+                ["query", "Query ⌨️"],
+                ["dates", "Dates Chart 📆📈"],
+                ["directories", "Directories 📂"],
+                ["map", "Map 🗺️"],
+                ["gallery", "Gallery 🖼️"],
+                ["jobs", "Job Progress 🏗️"],
+                ["system_status", "System Status 🙈"],
             ].map(([key, text]) => [
                 key,
                 { active: tabBarCurrent.has(key), text },
