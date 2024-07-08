@@ -125,7 +125,6 @@ def image_endpoint(hsh: t.Union[int, str], size: ImageSize, extension: str) -> t
             if file_path is None:
                 return {"error": "File not found!"}
             img = Image.open(file_path)
-            print(img.format)
             img.thumbnail((sz, sz))
             dirname = os.path.dirname(cache_file)
             if not os.path.exists(dirname):

@@ -238,7 +238,7 @@ function GalleryView({
     const galleryItems = data.omgs.map((image, index) => {
         const ret = (
             <GalleryImage
-                key={index}
+                key={image.omg.md5}
                 image={image}
                 sort={sort}
                 paging={paging}
