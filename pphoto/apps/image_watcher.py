@@ -204,7 +204,7 @@ async def reindex_gallery(reindexer: Reindexer, /) -> None:
     progress_bar = ProgressBar("Reindexing gallery", permanent=True)
     while True:
         try:
-            done = reindexer.load(progress=progress_bar)
+            done = await reindexer.load(progress=progress_bar)
             if done <= 100:
                 sleep_time = min(sleep_time * 2, max_sleep_time)
             else:

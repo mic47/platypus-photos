@@ -1,3 +1,4 @@
+import asyncio
 import itertools
 import os
 import sys
@@ -67,7 +68,7 @@ class Reindexer:
         self._p_con.check_unused()
         self._g_con.check_unused()
 
-    def load(self, progress: t.Optional[ProgressBar]) -> int:
+    async def load(self, progress: t.Optional[ProgressBar]) -> int:
         reindexed = 0
         # TODO: this is wrong?
         if progress is not None:
@@ -117,6 +118,7 @@ class Reindexer:
                     if progress is not None:
                         progress.update(1)
                     reindexed += 1
+            await asyncio.sleep(0)
 
         if progress is not None:
             progress.refresh()
