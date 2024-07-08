@@ -11,7 +11,11 @@ interface MapViewProps {
     resetZoomTo: () => void;
     oneTime: {
         searchQueryCallbacks: UpdateCallbacks<SearchQuery>;
-        annotation_overlay: (latitude: number, longitude: number) => void;
+        annotation_overlay: (
+            query: SearchQuery,
+            latitude: number,
+            longitude: number,
+        ) => void;
     };
 }
 

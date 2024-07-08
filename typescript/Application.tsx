@@ -186,9 +186,13 @@ export function Application({
                     resetZoomTo={() => updateZoomTo(null)}
                     oneTime={{
                         searchQueryCallbacks: queryCallbacks,
-                        annotation_overlay: (latitude, longitude) => {
+                        annotation_overlay: (
+                            searchQuery,
+                            latitude,
+                            longitude,
+                        ) => {
                             getFixedLocationAnnotationOverlayRequest(
-                                searchQueryWithTs.q,
+                                searchQuery,
                                 latitude,
                                 longitude,
                             ).then((request) => {

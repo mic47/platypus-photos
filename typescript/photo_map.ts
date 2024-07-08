@@ -52,7 +52,11 @@ export class PhotoMap {
         private searchQuery: SearchQuery,
         private searchQueryCallbacks: UpdateCallbacks<SearchQuery>,
         private callbacks: {
-            annotation_overlay: (latitude: number, longitude: number) => void;
+            annotation_overlay: (
+                query: SearchQuery,
+                latitude: number,
+                longitude: number,
+            ) => void;
         },
     ) {
         this.map = L.map(div_id).fitWorld();
@@ -124,6 +128,7 @@ export class PhotoMap {
                             longitude: number,
                         ) =>
                             this.callbacks.annotation_overlay(
+                                this.searchQuery,
                                 latitude,
                                 longitude,
                             ),
@@ -162,6 +167,7 @@ export class PhotoMap {
                                     longitude: number,
                                 ) =>
                                     this.callbacks.annotation_overlay(
+                                        this.searchQuery,
                                         latitude,
                                         longitude,
                                     ),
@@ -348,6 +354,7 @@ export class PhotoMap {
                                         longitude: number,
                                     ) =>
                                         this.callbacks.annotation_overlay(
+                                            this.searchQuery,
                                             latitude,
                                             longitude,
                                         ),
