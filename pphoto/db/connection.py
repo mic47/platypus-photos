@@ -1,3 +1,4 @@
+import contextlib
 from datetime import (
     datetime,
     timedelta,
@@ -18,6 +19,7 @@ class _Connection:
         self._last_use = datetime.now()
         self._connection: t.Optional[sqlite3.Connection] = None
         self._disconnect_timeout = timedelta(seconds=10)
+        self._transactions = 0
 
     def reconnect(self) -> None:
         if self._connection is not None:
@@ -83,7 +85,25 @@ class _Connection:
         self._last_use = datetime.now()
         if self._connection is None:
             self._connection = self._connect()
-        return self._connection.commit()
+        if self._transactions <= 0:
+            return self._connection.commit()
+        return None
+
+    @contextlib.contextmanager
+    def transaction(self) -> t.Generator[None, None, None]:
+        self._transactions += 1
+        try:
+            yield None
+            if self._connection is None:
+                self._connection = self._connect()
+            self._connection.commit()
+        except:
+            if self._connection is None:
+                self._connection = self._connect()
+            self._connection.rollback()
+            raise
+        finally:
+            self._transactions -= 1
 
     def rollback(self) -> None:
         self._last_use = datetime.now()

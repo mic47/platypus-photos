@@ -1,5 +1,7 @@
 import itertools
 import os
+import sys
+import traceback
 import typing as t
 
 from dataclasses_json import DataClassJsonMixin
@@ -85,11 +87,36 @@ class Reindexer:
             if progress is not None:
                 progress.update(1)
             reindexed += 1
-        for md5 in list(self._gallery_index.old_versions_md5()):
-            self._reindex(md5)
-            if progress is not None:
-                progress.update(1)
-            reindexed += 1
+        for md5s in batched(list(self._gallery_index.old_versions_md5()), 100):
+            try:
+                with (
+                    # pylint: disable-next = protected-access
+                    self._files_table._con.transaction(),
+                    # pylint: disable-next = protected-access
+                    self._features_table._con.transaction(),
+                    # pylint: disable-next = protected-access
+                    self._directories_table._con.transaction(),
+                    # pylint: disable-next = protected-access
+                    self._gallery_index._con.transaction(),
+                ):
+                    for md5 in md5s:
+                        self._reindex(md5)
+                if progress is not None:
+                    progress.update(len(md5s))
+                reindexed += len(md5s)
+            # pylint: disable-next = broad-exception-caught
+            except Exception as e:
+                traceback.print_exc()
+                print(
+                    "Error while batch reindexing. Going to reindex this batch individually",
+                    e,
+                    file=sys.stderr,
+                )
+                for md5 in md5s:
+                    self._reindex(md5)
+                    if progress is not None:
+                        progress.update(1)
+                    reindexed += 1
 
         if progress is not None:
             progress.refresh()
@@ -157,3 +184,15 @@ class Reindexer:
         self._files_table.undirty(md5, max_dir_last_update)
         self._gallery_index.add(omg)
         self._features_table.undirty(md5, self._feature_types, max_last_update)
+
+
+T = t.TypeVar("T")
+
+
+def batched(iterable: t.Iterable[T], n: int) -> t.Iterable[t.Tuple[T, ...]]:
+    # batched('ABCDEFG', 3) → ABC DEF G
+    if n < 1:
+        raise ValueError("n must be at least one")
+    iterator = iter(iterable)
+    while batch := tuple(itertools.islice(iterator, n)):
+        yield batch
