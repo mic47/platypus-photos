@@ -42,4 +42,4 @@ class Image(DataClassJsonMixin):
 
     @staticmethod
     def current_version() -> int:
-        return 4
+        return 5

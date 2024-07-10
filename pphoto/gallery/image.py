@@ -66,15 +66,23 @@ def make_image(
     if text_classification is not None:
         for boxes in text_classification.boxes:
             confidence = boxes.box.confidence
+            name = boxes.box.classification.replace("_", " ").lower()
+            if name not in tags:
+                tags[name] = confidence
+            else:
+                tags[name] = max(tags[name], confidence)
             for classification in boxes.classifications:
                 name = classification.name.replace("_", " ").lower()
                 if name not in tags:
                     tags[name] = 0.0
-                tags[name] += confidence * classification.confidence
+                tags[name] = max(tags[name], confidence * classification.confidence)
+
+    max_tag = min(0.0001, max(tags.values(), default=1.0))
     if manual_text is not None:
-        max_tags = max(tags.values(), default=1.0)
         for tag in manual_text.tags:
-            tags[tag] = max_tags
+            tags[tag] = max_tag
+    # Throw away rubish tags
+    tags = {k: v for k, v in tags.items() if (v / max_tag) >= 0.5}
 
     classifications = ";".join(
         sorted(
