@@ -780,7 +780,10 @@ def predict_location(
         prev_d = prev_loc.timedist(omg.date)
         next_d = next_loc.timedist(omg.date)
         t_d = prev_d + next_d
-        loc_point = prev_loc.loc + (next_loc.loc - prev_loc.loc).scale(prev_d / t_d)
+        if t_d == 0:
+            loc_point = prev_loc.loc + (next_loc.loc - prev_loc.loc).scale(0.5)
+        else:
+            loc_point = prev_loc.loc + (next_loc.loc - prev_loc.loc).scale(prev_d / t_d)
         return PredictedLocation(
             loc_point,
             ReferenceStats(distance_m(prev_loc.loc, loc_point), prev_d),
