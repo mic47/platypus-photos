@@ -59,6 +59,7 @@ class Reindexer:
             ManualLocation.__name__,
             ManualDate.__name__,
         ]
+        self._queue: t.Set[str] = set()
 
     def reconnect(self) -> None:
         self._p_con.reconnect()
@@ -70,25 +71,26 @@ class Reindexer:
 
     async def load(self, progress: t.Optional[ProgressBar]) -> int:
         reindexed = 0
-        # TODO: this is wrong?
-        if progress is not None:
-            todo = (
-                self._files_table.dirty_md5s_total()
-                + self._features_table.dirty_md5s_total(self._feature_types)
-                + self._gallery_index.old_versions_md5_total()
-            )
-            progress.update_what_is_left(todo)
-        for md5, _last_update in set(
-            itertools.chain(
-                self._features_table.dirty_md5s(self._feature_types),
-                ((x, None) for x in self._files_table.dirty_md5s()),
-            )
-        ):
-            self._reindex(md5)
+        if not self._queue:
             if progress is not None:
-                progress.update(1)
-            reindexed += 1
-        for md5s in batched(list(self._gallery_index.old_versions_md5()), 100):
+                # TODO: this is wrong?
+                todo = (
+                    self._files_table.dirty_md5s_total()
+                    + self._features_table.dirty_md5s_total(self._feature_types)
+                    + self._gallery_index.old_versions_md5_total()
+                )
+                progress.update_what_is_left(todo)
+            fetch_limit = 100000
+            for md5, _last_update in set(
+                itertools.chain(
+                    self._features_table.dirty_md5s(self._feature_types, limit=fetch_limit),
+                    ((x, None) for x in self._files_table.dirty_md5s(limit=fetch_limit)),
+                    ((x, None) for x in self._gallery_index.old_versions_md5(limit=fetch_limit)),
+                )
+            ):
+                self._queue.add(md5)
+        to_do_this_round = list(itertools.islice(self._queue, 1000))
+        for md5s in batched(to_do_this_round, 100):
             try:
                 with (
                     # pylint: disable-next = protected-access
@@ -102,6 +104,8 @@ class Reindexer:
                 ):
                     for md5 in md5s:
                         self._reindex(md5)
+                for md5 in md5s:
+                    self._queue.remove(md5)
                 if progress is not None:
                     progress.update(len(md5s))
                 reindexed += len(md5s)
@@ -115,6 +119,7 @@ class Reindexer:
                 )
                 for md5 in md5s:
                     self._reindex(md5)
+                    self._queue.remove(md5)
                     if progress is not None:
                         progress.update(1)
                     reindexed += 1
