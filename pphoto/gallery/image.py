@@ -77,7 +77,7 @@ def make_image(
                     tags[name] = 0.0
                 tags[name] = max(tags[name], confidence * classification.confidence)
 
-    max_tag = min(0.0001, max(tags.values(), default=1.0))
+    max_tag = max(0.0001, max(tags.values(), default=1.0))
     if manual_text is not None:
         for tag in manual_text.tags:
             tags[tag] = max_tag
