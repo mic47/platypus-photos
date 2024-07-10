@@ -66,13 +66,13 @@ def make_image(
     if text_classification is not None:
         for boxes in text_classification.boxes:
             confidence = boxes.box.confidence
-            name = boxes.box.classification.replace("_", " ").lower()
-            if name not in tags:
-                tags[name] = confidence
+            base_name = boxes.box.classification.replace("_", " ").lower()
+            if base_name not in tags:
+                tags[base_name] = confidence
             else:
-                tags[name] = max(tags[name], confidence)
+                tags[base_name] = max(tags[base_name], confidence)
             for classification in boxes.classifications:
-                name = classification.name.replace("_", " ").lower()
+                name = base_name + " - " + classification.name.replace("_", " ").lower()
                 if name not in tags:
                     tags[name] = 0.0
                 tags[name] = max(tags[name], confidence * classification.confidence)
