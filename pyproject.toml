@@ -30,6 +30,7 @@ disable = '''
 
 ignore_decorators = ["@app.*"]
 ignore_names = ["LOAD_TRUNCATED_IMAGES", "ASC"]
+exclude=["*/playground/*"]
 
 [tool.pydeps]
 
