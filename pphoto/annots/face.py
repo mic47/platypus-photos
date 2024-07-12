@@ -111,7 +111,7 @@ def process_image_impl(
     path: PathWithMd5,
     data: t.Optional[bytes],
 ) -> WithMD5[FaceEmbeddings]:
-    # pylint: disable-next = import-outside-toplevel
+    # pylint: disable-next = import-outside-toplevel,import-error
     import face_recognition
 
     image = PILImage.open(path.path) if data is None else PILImage.open(io.BytesIO(data))
