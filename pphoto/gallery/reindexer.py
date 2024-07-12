@@ -123,7 +123,7 @@ class Reindexer:
                     if progress is not None:
                         progress.update(1)
                     reindexed += 1
-            await asyncio.sleep(0)
+            await asyncio.sleep(0.001)
 
         if progress is not None:
             progress.refresh()

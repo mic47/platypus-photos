@@ -1,8 +1,7 @@
-from dataclasses import dataclass
+import asyncio
 import base64
 import datetime
 import io
-import json
 import os
 import itertools
 import multiprocessing
@@ -10,15 +9,12 @@ import sys
 import traceback
 import typing as t
 
-import aiohttp as aioh
-from dataclasses_json import DataClassJsonMixin
 from PIL import Image, ImageFile
 
 
 from pphoto.data_model.base import (
     WithMD5,
     PathWithMd5,
-    Error,
 )
 from pphoto.data_model.text import (
     ImageClassification,
@@ -27,7 +23,14 @@ from pphoto.data_model.text import (
     Box,
 )
 from pphoto.db.types import Cache, NoCache
-from pphoto.utils import Lazy
+from pphoto.communication.types import (
+    TextAnnotationRequest,
+    ImageClassificationWithMD5,
+    Error,
+    RemoteAnnotatorRequest,
+)
+from pphoto.communication.server import RemoteExecutorQueue
+from pphoto.utils import Lazy, assert_never
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
@@ -46,32 +49,16 @@ def remove_consecutive_words(sentence: str) -> str:
     return " ".join(out)
 
 
-@dataclass
-class ImageClassificationWithMD5:
-    md5: str
-    version: int
-    p: t.Optional[ImageClassification]
-    e: t.Optional[Error]
-    # TODO: make test that make sure it's same as WithMD5[ImageClassification]
-
-
-@dataclass
-class AnnotateRequest(DataClassJsonMixin):
-    path: PathWithMd5
-    data_base64: str
-    gap_threshold: float
-    discard_threshold: float
-
-
-def image_endpoint(models: "Models", image: AnnotateRequest) -> ImageClassificationWithMD5:
+def image_endpoint(models: "Models", image: TextAnnotationRequest) -> ImageClassificationWithMD5:
     try:
         x = models.process_image_data(image)
-        return ImageClassificationWithMD5(x.md5, x.version, x.p, x.e)
+        return ImageClassificationWithMD5("ImageClassificationWithMD5", x.md5, x.version, x.p, x.e)
     # pylint: disable-next = broad-exception-caught
     except Exception as e:
         traceback.print_exc()
         print("Error processing file:", image.path, file=sys.stderr)
         return ImageClassificationWithMD5(
+            "ImageClassificationWithMD5",
             image.path.md5,
             ImageClassification.current_version(),
             None,
@@ -80,20 +67,20 @@ def image_endpoint(models: "Models", image: AnnotateRequest) -> ImageClassificat
 
 
 async def fetch_ann(
-    session: aioh.ClientSession, url: str, request: AnnotateRequest
+    queue: RemoteExecutorQueue, request: TextAnnotationRequest
 ) -> WithMD5[ImageClassification]:
-    async with aioh.ClientSession() as session:
-        async with session.post(url, json=request.to_dict(), timeout=600) as data:
-            dct = json.loads(await data.text())
-            error = None
-            e = dct.get("e")
-            if e is not None:
-                error = Error.from_dict(e)
-            payload = None
-            p = dct.get("p")
-            if p is not None:
-                payload = ImageClassification.from_dict(p)
-            return WithMD5(cast(dct["md5"], str), cast(dct["version"], int), payload, error)
+    annotator = await queue.get()
+    response = await annotator(RemoteAnnotatorRequest(request))
+    if response.error is not None:
+        raise response.error
+    if response.response is None:
+        # pylint: disable-next = broad-exception-raised
+        raise Exception("No error and no payload")
+    if response.response.p.t == "ImageClassificationWithMD5":
+        return WithMD5(
+            response.response.p.md5, response.response.p.version, response.response.p.p, response.response.p.e
+        )
+    assert_never(response.response.p.t)
 
 
 T = t.TypeVar("T")
@@ -152,7 +139,7 @@ def process_image_in_pool(
 
 
 class Models:
-    def __init__(self, cache: Cache[ImageClassification], remote: t.Optional[str]) -> None:
+    def __init__(self, cache: Cache[ImageClassification], remote: t.Optional[RemoteExecutorQueue]) -> None:
         self._cache = cache
         self._predict_model = Lazy(lambda: yolo_model("yolov8x.pt"))
         self._classify_model = Lazy(lambda: yolo_model("yolov8x-cls.pt"))
@@ -175,7 +162,6 @@ class Models:
 
     async def process_image(
         self: "Models",
-        session: aioh.ClientSession,
         path: PathWithMd5,
         gap_threshold: float = 0.2,
         discard_threshold: float = 0.1,
@@ -186,14 +172,22 @@ class Models:
                 return self._cache.add(
                     WithMD5(path.md5, self._version, None, Error("SkippingHugeFile", None, None))
                 )
-            if self._remote is not None:
+            if self._remote is not None and not self._remote.empty():
                 try:
                     with open(path.path, "rb") as f:
                         data = base64.encodebytes(f.read())
-                    ret = await fetch_ann(
-                        session,
-                        self._remote,
-                        AnnotateRequest(path, data.decode("utf-8"), gap_threshold, discard_threshold),
+                    ret = await asyncio.wait_for(
+                        fetch_ann(
+                            self._remote,
+                            TextAnnotationRequest(
+                                "TextAnnotationRequest",
+                                path,
+                                data.decode("utf-8"),
+                                gap_threshold,
+                                discard_threshold,
+                            ),
+                        ),
+                        600,
                     )
                     return self._cache.add(ret)
                 # pylint: disable-next = bare-except
@@ -206,7 +200,7 @@ class Models:
 
     def process_image_data(
         self,
-        request: AnnotateRequest,
+        request: TextAnnotationRequest,
     ) -> WithMD5[ImageClassification]:
         return list(
             self.process_image_batch_impl(

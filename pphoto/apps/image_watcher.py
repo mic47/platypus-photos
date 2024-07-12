@@ -4,7 +4,6 @@ import sys
 import traceback
 import typing as t
 
-import aiohttp
 import asyncinotify
 import tqdm
 
@@ -26,6 +25,7 @@ from pphoto.utils import assert_never, Lazy
 from pphoto.utils.alive import Alive
 from pphoto.utils.files import get_paths, expand_vars_in_path
 from pphoto.utils.progress_bar import ProgressBar
+from pphoto.communication.server import RemoteExecutorQueue, start_annotation_remote_worker_loop
 
 
 class GlobalContext:
@@ -73,7 +73,7 @@ async def worker(name: str, context: GlobalContext, queue: Queue, /) -> None:
             context.queues.get_progress_bar(type_, item.priority).update(1)
             queue.task_done()
             # So that we gave up place for other workers too
-            await asyncio.sleep(0)
+            await asyncio.sleep(0.001)
 
 
 @Alive(persistent=True, key=[0])
@@ -144,7 +144,7 @@ async def reingest_directories_worker(context: GlobalContext, config: Config, /)
             context.queues.enqueue_path_skipped_known(path_with_md5, DEFAULT_PRIORITY)
             total_for_reingest += 1
             if total_for_reingest % 1000 == 0:
-                await asyncio.sleep(0)
+                await asyncio.sleep(0.001)
             found_something = True
         if found_something:
             context.queues.update_progress_bars()
@@ -182,7 +182,7 @@ async def managed_worker_and_import_worker(
                 finally:
                     progress_bar.get().update(1)
                     # So that we gave up place for other workers too
-                    await asyncio.sleep(0)
+                    await asyncio.sleep(0.001)
             if enqueued and paths:
                 context.queues.update_progress_bars()
         # pylint: disable-next = broad-exception-caught
@@ -192,13 +192,13 @@ async def managed_worker_and_import_worker(
             continue
         finally:
             # So that we gave up place for other workers too
-            await asyncio.sleep(0)
+            await asyncio.sleep(0.001)
 
 
 @Alive(persistent=True, key=[])
 async def reindex_gallery(reindexer: Reindexer, /) -> None:
     # Allow other tasks to start
-    await asyncio.sleep(0)
+    await asyncio.sleep(0.001)
     sleep_time = 1
     max_sleep_time = 64
     progress_bar = ProgressBar("Reindexing gallery", permanent=True)
@@ -225,8 +225,8 @@ async def main() -> None:
     parser = argparse.ArgumentParser(prog="Photo annotator")
     parser.add_argument("--config", default="config.yaml", type=str)
     parser.add_argument("--db", default=files_config.photos_db, type=str)
+    parser.add_argument("--remote-annotator-port", default=8001, type=int)
     parser.add_argument("--image-to-text-workers", default=3, type=int)
-    parser.add_argument("--annotate-url", default=None, type=str)
     args = parser.parse_args()
     config = Config.load(args.config)
     photos_connection = PhotosConnection(args.db)
@@ -247,54 +247,49 @@ async def main() -> None:
     import_queue: asyncio.Queue[ImportDirectory] = asyncio.Queue()
     refresh_queue: asyncio.Queue[RefreshJobs] = asyncio.Queue()
     await start_image_server_loop(refresh_queue, import_queue, "unix-domain-socket")
+    remote_annotator_queue: RemoteExecutorQueue = asyncio.Queue()
+    await start_annotation_remote_worker_loop(remote_annotator_queue, args.remote_annotator_port)
 
     tasks = []
     tasks.append(asyncio.create_task(check_db_connection()))
     tasks.append(asyncio.create_task(reindex_gallery(reindexer)))
 
-    async with aiohttp.ClientSession() as session:
-        annotator = Annotator(config.directory_matching, files_config, features, session, args.annotate_url)
-        remote_jobs_table = RemoteJobsTable(jobs_connection)
-        jobs = Jobs(
-            config.managed_folder, files, remote_jobs_table, PhotosQueries(photos_connection), annotator
-        )
-        queues = Queues()
-        context = GlobalContext(jobs, files, remote_jobs_table, queues)
+    annotator = Annotator(config.directory_matching, files_config, features, remote_annotator_queue)
+    remote_jobs_table = RemoteJobsTable(jobs_connection)
+    jobs = Jobs(config.managed_folder, files, remote_jobs_table, PhotosQueries(photos_connection), annotator)
+    queues = Queues()
+    context = GlobalContext(jobs, files, remote_jobs_table, queues)
 
-        # Fix inconsistencies in the DB before we start.
-        context.jobs.fix_in_progress_moved_files_at_startup()
-        context.jobs.fix_imported_files_at_startup()
+    # Fix inconsistencies in the DB before we start.
+    context.jobs.fix_in_progress_moved_files_at_startup()
+    context.jobs.fix_imported_files_at_startup()
 
-        unannotated = context.jobs.find_unannotated_files()
-        for action in tqdm.tqdm(unannotated, desc="Enqueuing unannotated files"):
-            context.queues.enqueue_path(
-                [(action.path_with_md5, t) for t in action.job_types], action.priority
-            )
-        del unannotated
-        context.queues.update_progress_bars()
+    unannotated = context.jobs.find_unannotated_files()
+    for action in tqdm.tqdm(unannotated, desc="Enqueuing unannotated files"):
+        context.queues.enqueue_path([(action.path_with_md5, t) for t in action.job_types], action.priority)
+    del unannotated
+    context.queues.update_progress_bars()
 
-        # Starting async tasks
-        tasks.append(
-            asyncio.create_task(manual_annotation_worker("manual-annotation", refresh_queue, context))
-        )
-        tasks.append(asyncio.create_task(managed_worker_and_import_worker(context, import_queue)))
-        tasks.append(asyncio.create_task(reingest_directories_worker(context, config)))
-        for i in range(1):
-            task = asyncio.create_task(worker(f"worker-cheap-{i}", context, queues.cheap_features))
-            tasks.append(task)
-        for i in range(args.image_to_text_workers):
-            task = asyncio.create_task(worker(f"worker-image-to-text-{i}", context, queues.image_to_text))
-            tasks.append(task)
-        tasks.append(asyncio.create_task(inotify_worker("watch-files", config.watched_directories, context)))
-        try:
-            while True:
-                await asyncio.sleep(3600 * 24 * 365)
-                print("Wow, it's on for 365 days!🚀", file=sys.stderr)
-        finally:
-            for task in tasks:
-                task.cancel()
-            # Wait until all worker tasks are cancelled.
-            await asyncio.gather(*tasks, return_exceptions=True)
+    # Starting async tasks
+    tasks.append(asyncio.create_task(manual_annotation_worker("manual-annotation", refresh_queue, context)))
+    tasks.append(asyncio.create_task(managed_worker_and_import_worker(context, import_queue)))
+    tasks.append(asyncio.create_task(reingest_directories_worker(context, config)))
+    for i in range(1):
+        task = asyncio.create_task(worker(f"worker-cheap-{i}", context, queues.cheap_features))
+        tasks.append(task)
+    for i in range(args.image_to_text_workers):
+        task = asyncio.create_task(worker(f"worker-image-to-text-{i}", context, queues.image_to_text))
+        tasks.append(task)
+    tasks.append(asyncio.create_task(inotify_worker("watch-files", config.watched_directories, context)))
+    try:
+        while True:
+            await asyncio.sleep(3600 * 24 * 365)
+            print("Wow, it's on for 365 days!🚀", file=sys.stderr)
+    finally:
+        for task in tasks:
+            task.cancel()
+        # Wait until all worker tasks are cancelled.
+        await asyncio.gather(*tasks, return_exceptions=True)
 
 
 if __name__ == "__main__":

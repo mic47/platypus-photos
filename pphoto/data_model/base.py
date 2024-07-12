@@ -23,7 +23,7 @@ T = t.TypeVar("T")
 
 
 @dataclass
-class Error(DataClassJsonMixin):
+class Error(DataClassJsonMixin, BaseException):
     name: str
     message: t.Optional[str]
     traceback: t.Optional[str]

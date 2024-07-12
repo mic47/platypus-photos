@@ -1,30 +1,23 @@
+import argparse
 import asyncio
-import datetime
+import multiprocessing
 import time
-import typing as t
 import sys
 
-from fastapi import FastAPI, Request, Response
-
 from pphoto.annots.text import (
-    AnnotateRequest,
     Models,
-    ImageClassificationWithMD5,
     image_endpoint as image_endpoint_impl,
 )
+from pphoto.communication.types import (
+    RemoteAnnotatorRequest,
+    RemoteAnnotatorResponse,
+    ActualResponse,
+)
+from pphoto.communication.client import async_compute_client_loop
 from pphoto.db.types import NoCache
-from pphoto.utils import Lazy
+from pphoto.utils import Lazy, assert_never, log_error
 
 MODELS = Models(NoCache(), None)
-# Load models because of undiagnosed memory leak
-MODELS.load()
-
-app = FastAPI()
-
-
-@app.on_event("startup")
-async def on_startup() -> None:
-    asyncio.create_task(check_db_connection())
 
 
 async def check_db_connection() -> None:
@@ -33,21 +26,50 @@ async def check_db_connection() -> None:
         await asyncio.sleep(60)
 
 
-@app.middleware("http")
-async def log_metadata(request: Request, func: t.Callable[[Request], t.Awaitable[Response]]) -> Response:
+def annotator_func(request: RemoteAnnotatorRequest) -> ActualResponse:
     start_time = time.time()
-    response = await func(request)
-    print("Remote annotator server request took", request.url, time.time() - start_time, file=sys.stderr)
-    return response
+    try:
+        if request.p.t == "TextAnnotationRequest":
+            return ActualResponse(RemoteAnnotatorResponse(image_endpoint_impl(MODELS, request.p)), None)
+        assert_never(request.p.t)
+    # pylint: disable-next=broad-exception-caught
+    except Exception as e:
+        log_error(e, "Unable to process request", request.p.t)
+        return ActualResponse.from_exception(e)
+    finally:
+        print("Remote annotator server request took", request.p.t, time.time() - start_time, file=sys.stderr)
 
 
-@app.post(
-    "/annotate/image_to_text",
-    response_model=ImageClassificationWithMD5,
-)
-def image_endpoint(image: AnnotateRequest) -> ImageClassificationWithMD5:
-    now = datetime.datetime.now()
-    ret = image_endpoint_impl(MODELS, image)
-    after = datetime.datetime.now()
-    print(after - now)
-    return ret
+async def worker(_worker_id: int, host: str, port: int) -> None:
+    tasks = []
+    tasks.append(asyncio.create_task(check_db_connection()))
+    tasks.append(
+        asyncio.create_task(async_compute_client_loop(annotator_func, RemoteAnnotatorRequest, host, port))
+    )
+    await asyncio.gather(*tasks, return_exceptions=True)
+
+
+def worker_run(worker_id: int, host: str, port: int) -> None:
+    asyncio.run(worker(worker_id, host, port))
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--workers", type=int, default=4)
+    parser.add_argument("--host", type=str, required=True)
+    parser.add_argument("--port", type=int, default=8001)
+    args = parser.parse_args()
+    processes = []
+    try:
+        for i in range(args.workers):
+            processes.append(multiprocessing.Process(target=worker_run, args=(i, args.host, args.port)))
+            processes[-1].start()
+        for p in processes:
+            p.join()
+    finally:
+        for p in processes:
+            p.kill()
+
+
+if __name__ == "__main__":
+    main()

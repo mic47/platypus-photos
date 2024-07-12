@@ -3,10 +3,17 @@ import datetime
 import gc
 import random
 import sys
+import traceback
 
 
 def assert_never(x: t.NoReturn) -> t.NoReturn:
     assert False, f"Unhandled type: {type(x).__name__}"
+
+
+def log_error(e: Exception, *print_args: t.Any) -> None:
+    traceback.print_exc()
+    print(e, file=sys.stderr)
+    print(*print_args, file=sys.stderr)
 
 
 T = t.TypeVar("T")

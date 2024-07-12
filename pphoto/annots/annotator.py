@@ -1,8 +1,6 @@
 import datetime
 import typing as t
 
-import aiohttp
-
 from pphoto.annots.date import PathDateExtractor
 from pphoto.annots.exif import Exif, ImageExif
 from pphoto.annots.geo import Geolocator, GeoAddress
@@ -13,6 +11,7 @@ from pphoto.data_model.manual import ManualLocation, ManualText, ManualDate
 from pphoto.remote_jobs.types import RemoteTask, ManualAnnotationTask
 from pphoto.db.cache import SQLiteCache
 from pphoto.db.features_table import FeaturesTable
+from pphoto.communication.server import RemoteExecutorQueue
 
 
 class Annotator:
@@ -21,13 +20,11 @@ class Annotator:
         directory_matching: DirectoryMatchingConfig,
         files_config: DBFilesConfig,
         features: FeaturesTable,
-        session: aiohttp.ClientSession,
-        annotate_url: t.Optional[str],
+        remote_annotator_queue: t.Optional[RemoteExecutorQueue],
     ):
-        self._session = session
         self.path_to_date = PathDateExtractor(directory_matching)
         models_cache = SQLiteCache(features, ImageClassification, files_config.image_to_text_jsonl)
-        self.models = Models(models_cache, annotate_url)
+        self.models = Models(models_cache, remote_annotator_queue)
         exif_cache = SQLiteCache(features, ImageExif, files_config.exif_jsonl)
         self.exif = Exif(exif_cache)
         self.manual_location = SQLiteCache(features, ManualLocation, files_config.manual_location_jsonl)
@@ -101,5 +98,5 @@ class Annotator:
         return (path, exif_item, geo, path_date)
 
     async def image_to_text(self, path: PathWithMd5) -> t.Tuple[PathWithMd5, WithMD5[ImageClassification]]:
-        itt = await self.models.process_image(self._session, path)
+        itt = await self.models.process_image(path)
         return (path, itt)
