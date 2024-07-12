@@ -80,6 +80,9 @@ async def fetch_ann(
         return WithMD5(
             response.response.p.md5, response.response.p.version, response.response.p.p, response.response.p.e
         )
+    if response.response.p.t == "FaceEmbeddingsWithMD5":
+        # pylint: disable-next = broad-exception-raised
+        raise Exception(f"Unexpected response from the server {response.response.p.t}")
     assert_never(response.response.p.t)
 
 

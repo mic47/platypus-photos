@@ -10,6 +10,7 @@ import dataclasses_json as dj
 from pphoto.utils.alive import State
 from pphoto.utils.progress_bar import ProgressBarProgress
 from pphoto.data_model.base import PathWithMd5, Error
+from pphoto.data_model.face import FaceEmbeddings
 from pphoto.data_model.text import (
     ImageClassification,
 )
@@ -30,6 +31,15 @@ class ImageClassificationWithMD5:
 
 
 @dc.dataclass
+class FaceEmbeddingsWithMD5:
+    t: _t.Literal["FaceEmbeddingsWithMD5"]
+    md5: str
+    version: int
+    p: _t.Optional[FaceEmbeddings]
+    e: _t.Optional[Error]
+
+
+@dc.dataclass
 class TextAnnotationRequest(dj.DataClassJsonMixin):
     t: _t.Literal["TextAnnotationRequest"]
     path: PathWithMd5
@@ -39,13 +49,20 @@ class TextAnnotationRequest(dj.DataClassJsonMixin):
 
 
 @dc.dataclass
+class FaceEmbeddingsRequest(dj.DataClassJsonMixin):
+    t: _t.Literal["FaceEmbeddingsRequest"]
+    path: PathWithMd5
+    data_base64: str
+
+
+@dc.dataclass
 class RemoteAnnotatorRequest(dj.DataClassJsonMixin):
-    p: TextAnnotationRequest
+    p: TextAnnotationRequest | FaceEmbeddingsRequest
 
 
 @dc.dataclass
 class RemoteAnnotatorResponse(dj.DataClassJsonMixin):
-    p: ImageClassificationWithMD5
+    p: ImageClassificationWithMD5 | FaceEmbeddingsWithMD5
 
 
 Response = t.TypeVar("Response", bound="dj.DataClassJsonMixin")

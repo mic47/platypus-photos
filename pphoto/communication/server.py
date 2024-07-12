@@ -76,7 +76,7 @@ class ConnectedComputeResouce(t.Generic[Request]):
     async def __call__(self, request: Request) -> ActualResponse:
         try:
             self._writer.write(request.to_json().encode("utf-8"))
-            self._writer.write(b"\n")
+            self._writer.write_eof()
             await self._writer.drain()
             line = await self._reader.readline()
             if not line.strip():

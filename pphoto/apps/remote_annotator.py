@@ -8,6 +8,7 @@ from pphoto.annots.text import (
     Models,
     image_endpoint as image_endpoint_impl,
 )
+from pphoto.annots.face import face_embeddings_endpoint
 from pphoto.communication.types import (
     RemoteAnnotatorRequest,
     RemoteAnnotatorResponse,
@@ -31,6 +32,8 @@ def annotator_func(request: RemoteAnnotatorRequest) -> ActualResponse:
     try:
         if request.p.t == "TextAnnotationRequest":
             return ActualResponse(RemoteAnnotatorResponse(image_endpoint_impl(MODELS, request.p)), None)
+        if request.p.t == "FaceEmbeddingsRequest":
+            return ActualResponse(RemoteAnnotatorResponse(face_embeddings_endpoint(request.p)), None)
         assert_never(request.p.t)
     # pylint: disable-next=broad-exception-caught
     except Exception as e:

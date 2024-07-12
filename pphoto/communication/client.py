@@ -81,7 +81,7 @@ async def async_compute_client_loop(
                 unable_to_connect_sleep = min(unable_to_connect_sleep, 120)
                 continue
             try:
-                line = await reader.readline()
+                line = await reader.read()
                 if not line.strip():
                     # pylint: disable-next = broad-exception-raised
                     raise Exception("Empty request")

@@ -3,11 +3,13 @@ import typing as t
 
 from pphoto.annots.date import PathDateExtractor
 from pphoto.annots.exif import Exif, ImageExif
+from pphoto.annots.face import FaceEmbeddingsAnnotator
 from pphoto.annots.geo import Geolocator, GeoAddress
 from pphoto.annots.text import Models, ImageClassification
 from pphoto.data_model.config import DirectoryMatchingConfig, DBFilesConfig
 from pphoto.data_model.base import WithMD5, PathWithMd5, Error, HasCurrentVersion
 from pphoto.data_model.manual import ManualLocation, ManualText, ManualDate
+from pphoto.data_model.face import FaceEmbeddings
 from pphoto.remote_jobs.types import RemoteTask, ManualAnnotationTask
 from pphoto.db.cache import SQLiteCache
 from pphoto.db.features_table import FeaturesTable
@@ -25,6 +27,8 @@ class Annotator:
         self.path_to_date = PathDateExtractor(directory_matching)
         models_cache = SQLiteCache(features, ImageClassification, files_config.image_to_text_jsonl)
         self.models = Models(models_cache, remote_annotator_queue)
+        face_embeddings_cache = SQLiteCache(features, FaceEmbeddings, files_config.face_embeddings_jsonl)
+        self.face = FaceEmbeddingsAnnotator(face_embeddings_cache, remote_annotator_queue)
         exif_cache = SQLiteCache(features, ImageExif, files_config.exif_jsonl)
         self.exif = Exif(exif_cache)
         self.manual_location = SQLiteCache(features, ManualLocation, files_config.manual_location_jsonl)
@@ -33,7 +37,7 @@ class Annotator:
         geolocator_cache = SQLiteCache(features, GeoAddress, files_config.geo_address_jsonl)
         self.geolocator = Geolocator(geolocator_cache)
         self.cheap_features_types: t.List[t.Type[HasCurrentVersion]] = [ImageExif, GeoAddress]
-        self.image_to_text_types: t.List[t.Type[HasCurrentVersion]] = [ImageClassification]
+        self.image_to_text_types: t.List[t.Type[HasCurrentVersion]] = [ImageClassification, FaceEmbeddings]
 
     def manual_features(
         self, task: RemoteTask[ManualAnnotationTask]
@@ -97,6 +101,9 @@ class Annotator:
         path_date = self.path_to_date.extract_date(path.path)
         return (path, exif_item, geo, path_date)
 
-    async def image_to_text(self, path: PathWithMd5) -> t.Tuple[PathWithMd5, WithMD5[ImageClassification]]:
+    async def image_to_text(
+        self, path: PathWithMd5
+    ) -> t.Tuple[PathWithMd5, WithMD5[ImageClassification], WithMD5[FaceEmbeddings]]:
         itt = await self.models.process_image(path)
-        return (path, itt)
+        fe = await self.face.process_image(path)
+        return (path, itt, fe)

@@ -11,6 +11,7 @@ from pphoto.utils.files import expand_vars_in_path
 @dataclass
 class DBFilesConfig:
     image_to_text_jsonl: str = "data/output-image-to-text.jsonl"
+    face_embeddings_jsonl: str = "data/output-face-embeddings.jsonl"
     exif_jsonl: str = "data/output-exif.jsonl"
     geo_address_jsonl: str = "data/output-geo.jsonl"
     manual_location_jsonl: str = "data/output-manual-location.jsonl"
