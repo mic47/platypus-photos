@@ -78,7 +78,7 @@ class ConnectedComputeResouce(t.Generic[Request]):
             self._writer.write(request.to_json().encode("utf-8"))
             self._writer.write_eof()
             await self._writer.drain()
-            line = await self._reader.readline()
+            line = await self._reader.read()
             if not line.strip():
                 # pylint: disable-next = broad-exception-raised
                 raise Exception("Empty response")
