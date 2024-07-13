@@ -156,12 +156,22 @@ class Models:
             destructor=_close_pool,
         )
         self._remote = remote
+        self._last_remote_request = datetime.datetime.now()
 
     def load(self) -> None:
         image = [Image.new(mode="RGB", size=(200, 200))]
         self._predict_model.get()(image, verbose=False)
         self._classify_model.get()(image, verbose=False)
         self._captioner.get()(image)
+
+    def _remote_can_be_available(self) -> bool:
+        if self._remote is None:
+            return False
+        if not self._remote.empty():
+            return True
+        if datetime.datetime.now() - self._last_remote_request < datetime.timedelta(seconds=300):
+            return True
+        return False
 
     async def process_image(
         self: "Models",
@@ -175,7 +185,7 @@ class Models:
                 return self._cache.add(
                     WithMD5(path.md5, self._version, None, Error("SkippingHugeFile", None, None))
                 )
-            if self._remote is not None and not self._remote.empty():
+            if self._remote is not None and self._remote_can_be_available():
                 try:
                     with open(path.path, "rb") as f:
                         data = base64.encodebytes(f.read())
@@ -192,6 +202,7 @@ class Models:
                         ),
                         600,
                     )
+                    self._last_remote_request = datetime.datetime.now()
                     return self._cache.add(ret)
                 # pylint: disable-next = bare-except
                 except:
