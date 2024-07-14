@@ -28,22 +28,22 @@ async def _image_watcher_server_loop(
 ) -> None:
     try:
         while True:
-            data = await reader.readline()
+            data = await reader.read()
             if not data.strip():
                 return
             decoded = image_watcher_decode_command(data)
             if decoded.t == "GetSystemStatus":
                 state = get_state()
                 writer.write(image_watcher_encode(SystemStatus(get_bars(), state)).encode("utf-8"))
-                writer.write(b"\n")
+                writer.write_eof()
             elif decoded.t == "RefreshJobs":
                 refresh_jobs_queue.put_nowait(decoded)
                 writer.write(image_watcher_encode(Ok()).encode("utf-8"))
-                writer.write(b"\n")
+                writer.write_eof()
             elif decoded.t == "ImportDirectory":
                 import_directory_queue.put_nowait(decoded)
                 writer.write(image_watcher_encode(Ok()).encode("utf-8"))
-                writer.write(b"\n")
+                writer.write_eof()
             else:
                 assert_never(decoded.t)
             await writer.drain()

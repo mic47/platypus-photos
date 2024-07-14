@@ -39,10 +39,10 @@ async def refresh_jobs(job_id: int) -> Ok:
 async def request_response(request: ImageWatcherCommands, expected_type: t.Type[R]) -> R:
     reader, writer = await asyncio.open_unix_connection(UNIX_CONNECTION_PATH)
     writer.write(image_watcher_encode(request).encode("utf-8"))
-    writer.write(b"\n")
+    writer.write_eof()
     await writer.drain()
     try:
-        line = await reader.readline()
+        line = await reader.read()
         if not line.strip():
             # pylint: disable-next = broad-exception-raised
             raise Exception("Server didn't return anything")
