@@ -14,7 +14,7 @@ from pphoto.data_model.base import (
 from pphoto.data_model.exif import ImageExif
 from pphoto.data_model.geo import GeoAddress
 from pphoto.data_model.text import ImageClassification
-from pphoto.data_model.manual import ManualLocation, ManualText, ManualDate
+from pphoto.data_model.manual import ManualLocation, ManualText, ManualDate, ManualIdentity
 from pphoto.db.features_table import FeaturesTable
 from pphoto.db.gallery_index_table import GalleryIndexTable
 from pphoto.db.connection import PhotosConnection, GalleryConnection
@@ -48,6 +48,7 @@ class Reindexer:
         self._address = SQLiteCache(self._features_table, GeoAddress)
         self._text_classification = SQLiteCache(self._features_table, ImageClassification)
         self._manual_location = SQLiteCache(self._features_table, ManualLocation)
+        self._manual_identity = SQLiteCache(self._features_table, ManualIdentity)
         self._manual_text = SQLiteCache(self._features_table, ManualText)
         self._manual_date = SQLiteCache(self._features_table, ManualDate)
         self._gallery_index = GalleryIndexTable(self._g_con)
@@ -58,6 +59,7 @@ class Reindexer:
             ManualText.__name__,
             ManualLocation.__name__,
             ManualDate.__name__,
+            ManualIdentity.__name__,
         ]
         self._queue: t.Set[str] = set()
 
@@ -145,6 +147,7 @@ class Reindexer:
         manual_location = extract_data(self._manual_location.get(md5))
         manual_text = extract_data(self._manual_text.get(md5))
         manual_date = extract_data(self._manual_date.get(md5))
+        manual_identity = extract_data(self._manual_identity.get(md5))
         files = self._files_table.by_md5(md5)
         directories = set()
         max_dir_last_update = 0.0
@@ -171,6 +174,7 @@ class Reindexer:
             manual_location,
             manual_text,
             manual_date,
+            manual_identity,
             [
                 x
                 for x in itertools.chain.from_iterable(

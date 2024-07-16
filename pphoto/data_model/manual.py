@@ -4,6 +4,7 @@ import typing as t
 from dataclasses import dataclass
 
 from pphoto.data_model.base import HasCurrentVersion
+from pphoto.data_model.face import Position
 
 T = t.TypeVar("T")
 
@@ -24,6 +25,16 @@ class ManualLocation(HasCurrentVersion):
 class ManualText(HasCurrentVersion):
     tags: t.List[str]
     description: t.List[str]
+
+    @staticmethod
+    def current_version() -> int:
+        return 0
+
+
+@dataclass
+class ManualIdentity(HasCurrentVersion):
+    identity: str
+    position: Position
 
     @staticmethod
     def current_version() -> int:

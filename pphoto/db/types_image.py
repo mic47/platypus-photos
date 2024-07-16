@@ -38,6 +38,7 @@ class Image(DataClassJsonMixin):
     being_annotated: bool
     camera: t.Optional[str]
     software: t.Optional[str]
+    identity: t.Optional[str]
     version: int
 
     @staticmethod

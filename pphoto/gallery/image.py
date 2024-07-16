@@ -7,7 +7,7 @@ import typing as t
 from pphoto.data_model.exif import ImageExif
 from pphoto.data_model.geo import GeoAddress
 from pphoto.data_model.text import ImageClassification
-from pphoto.data_model.manual import ManualText, ManualLocation, ManualDate
+from pphoto.data_model.manual import ManualText, ManualLocation, ManualDate, ManualIdentity
 from pphoto.db.types_image import Image, ImageAddress
 
 
@@ -40,6 +40,7 @@ def make_image(
     manual_location: t.Optional[ManualLocation],
     manual_text: t.Optional[ManualText],
     transformed_date: t.Optional[ManualDate],
+    manual_identity: t.Optional[ManualIdentity],
     date_from_path: t.List[datetime],
     max_last_update: float,
 ) -> Image:
@@ -114,6 +115,8 @@ def make_image(
         manual_features.append(type(manual_text).__name__)
     if transformed_date is not None:
         manual_features.append(type(transformed_date).__name__)
+    if manual_identity is not None:
+        manual_features.append(type(manual_identity).__name__)
 
     return Image(
         md5,
@@ -131,5 +134,6 @@ def make_image(
         False,
         camera,
         software,
+        manual_identity.identity if manual_identity is not None else None,
         Image.current_version(),
     )
