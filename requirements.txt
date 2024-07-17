@@ -11,7 +11,7 @@ pillow==10.4.0
 tqdm==4.66.4
 transformers==4.42.4
 types-tqdm==4.66.0.20240417
-ultralytics==8.2.57
+ultralytics==8.2.58
 
 # Dev
 black==24.4.2
