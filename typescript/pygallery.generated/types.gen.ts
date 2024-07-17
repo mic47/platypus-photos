@@ -105,6 +105,7 @@ export type Image = {
     being_annotated: boolean;
     camera: string | null;
     software: string | null;
+    identity: string | null;
     version: number;
 };
 

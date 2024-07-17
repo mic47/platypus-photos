@@ -471,13 +471,24 @@ export const $Image = {
             ],
             title: 'Software'
         },
+        identity: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Identity'
+        },
         version: {
             type: 'integer',
             title: 'Version'
         }
     },
     type: 'object',
-    required: ['md5', 'extension', 'date', 'date_transformed', 'tags', 'classifications', 'address', 'dependent_features_last_update', 'latitude', 'longitude', 'altitude', 'manual_features', 'being_annotated', 'camera', 'software', 'version'],
+    required: ['md5', 'extension', 'date', 'date_transformed', 'tags', 'classifications', 'address', 'dependent_features_last_update', 'latitude', 'longitude', 'altitude', 'manual_features', 'being_annotated', 'camera', 'software', 'identity', 'version'],
     title: 'Image'
 } as const;
 

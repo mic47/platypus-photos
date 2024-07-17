@@ -1064,6 +1064,17 @@
             ],
             "title": "Software"
           },
+          "identity": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Identity"
+          },
           "version": {
             "type": "integer",
             "title": "Version"
@@ -1086,6 +1097,7 @@
           "being_annotated",
           "camera",
           "software",
+          "identity",
           "version"
         ],
         "title": "Image"
