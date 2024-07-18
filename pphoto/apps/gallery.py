@@ -15,7 +15,7 @@ from dataclasses_json import DataClassJsonMixin
 from geopy.distance import distance
 from PIL import Image, ImageFile
 
-from fastapi import FastAPI, Request, Response
+from fastapi import FastAPI, Request, Response, Query
 from fastapi.responses import FileResponse
 from fastapi.routing import APIRoute
 from fastapi.staticfiles import StaticFiles
@@ -24,6 +24,7 @@ from pphoto.annots.geo import Geolocator
 from pphoto.communication.client import get_system_status, refresh_jobs, SystemStatus
 from pphoto.data_model.config import DBFilesConfig
 from pphoto.data_model.base import PathWithMd5
+from pphoto.data_model.face import Position
 from pphoto.db.types_location import LocationCluster, LocPoint, LocationBounds
 from pphoto.db.types_date import DateCluster, DateClusterGroupBy
 from pphoto.db.types_directory import DirectoryStats
@@ -106,8 +107,10 @@ def sz_to_resolution(size: ImageSize) -> t.Optional[int]:
     assert_never(size)
 
 
-def get_cache_file(size: int, hsh: str, extension: str) -> str:
-    return f".cache/{size}/{hsh[0]}/{hsh[1]}/{hsh[2]}/{hsh[3:]}.{extension}"
+def get_cache_file(size: int | str, hsh: str, extension: str, position: t.Optional[str] = None) -> str:
+    if position is None:
+        return f".cache/{size}/{hsh[0]}/{hsh[1]}/{hsh[2]}/{hsh[3:]}.{extension}"
+    return f".cache/{size}/{hsh[0]}/{hsh[1]}/{hsh[2]}/{hsh[3:]}.{position}.{extension}"
 
 
 @app.get(
@@ -116,16 +119,31 @@ def get_cache_file(size: int, hsh: str, extension: str) -> str:
         200: {"description": "photo", "content": {"image/jpeg": {"example": "No example available."}}}
     },
 )
-def image_endpoint(hsh: t.Union[int, str], size: ImageSize, extension: str) -> t.Any:
-    sz = sz_to_resolution(size)
-    if sz is not None and isinstance(hsh, str):
-        cache_file = get_cache_file(sz, hsh, extension)
+def image_endpoint(
+    hsh: t.Union[int, str],
+    size: ImageSize,
+    extension: str,
+    position: t.Annotated[t.Optional[str], Query(pattern="^[0-9]+,[0-9]+,[0-9]+,[0-9]+$")] = None,
+) -> t.Any:
+    resolution = sz_to_resolution(size)
+    if (resolution is not None or position is not None) and isinstance(hsh, str):
+        if position is not None:
+            sz: int | str = "crop"
+        else:
+            sz = t.cast(int, resolution)
+        cache_file = get_cache_file(sz, hsh, extension, position)
         if not os.path.exists(cache_file):
             file_path = DB.get().get_path_from_hash(hsh)
             if file_path is None:
                 return {"error": "File not found!"}
             img = Image.open(file_path)
-            img.thumbnail((sz, sz))
+            if position is not None:
+                pos = Position.from_query_string(position)
+                if pos is not None:
+                    # TODO: check that this is within proper bounds or something like that
+                    img = img.crop((pos.left, pos.top, pos.right, pos.bottom))
+            else:
+                img.thumbnail((t.cast(int, sz), t.cast(int, sz)))
             dirname = os.path.dirname(cache_file)
             if not os.path.exists(dirname):
                 os.makedirs(dirname, exist_ok=True)
@@ -741,6 +759,43 @@ async def image_page(params: GalleryRequest) -> ImageResponse:
         predicted_location = predict_location(omg, fwdbwd[index][0], fwdbwd[index][1])
         images.append(ImageWithMeta(omg, predicted_location, paths))
     return ImageResponse(has_next_page, images, some_location)
+
+
+@dataclass
+class FaceWithMeta(DataClassJsonMixin):
+    position: Position
+    md5: str
+    extension: str
+    identity: t.Optional[str]
+    embedding: t.List[float]
+
+
+@dataclass
+class FacesResponse(DataClassJsonMixin):
+    has_next_page: bool
+    faces: t.List[FaceWithMeta]
+
+
+@app.post("/api/faces")
+async def faces_on_page(params: GalleryRequest) -> FacesResponse:
+    faces = []
+    db = DB.get()
+    omgs, has_next_page = db.get_matching_images(params.query, params.sort, params.paging)
+
+    for omg in omgs:
+        fcs = db.get_face_embeddings(omg.md5)
+        if fcs is not None:
+            for face in fcs.faces:
+                faces.append(
+                    FaceWithMeta(
+                        face.position,
+                        omg.md5,
+                        omg.extension,
+                        None,
+                        face.embedding,
+                    )
+                )
+    return FacesResponse(has_next_page, faces)
 
 
 T = t.TypeVar("T")

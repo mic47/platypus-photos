@@ -29,6 +29,7 @@ import { JobProgressComponent } from "./jobs";
 import { SystemStatusComponent } from "./system_status";
 import { MapView } from "./map";
 import { DatesComponent } from "./dates_chart";
+import { FacesComponent } from "./faces";
 
 interface ApplicationProps {
     searchQuerySync: TypedUrlSync<SearchQuery>;
@@ -113,6 +114,7 @@ export function Application({
                 ["dates", "Dates Chart 📆📈"],
                 ["directories", "Directories 📂"],
                 ["map", "Map 🗺️"],
+                ["faces", "Faces 🤓"],
                 ["gallery", "Gallery 🖼️"],
                 ["jobs", "Job Progress 🏗️"],
                 ["system_status", "System Status 🙈"],
@@ -200,6 +202,13 @@ export function Application({
                             });
                         },
                     }}
+                />
+            </Switchable>
+            <Switchable switchedOn={activeTabs.faces.active}>
+                <FacesComponent
+                    query={searchQueryWithTs.q}
+                    paging={paging}
+                    sort={sort}
                 />
             </Switchable>
             <Switchable switchedOn={activeTabs.gallery.active}>

@@ -310,3 +310,15 @@ td.center {
 .hasTooltip:hover .tooltipText{
   visibility: visible;
 }
+.face_container {
+  display: inline;
+  max-width: 5em;
+  max-height: 5em;
+  text-align: center;
+
+}
+.face_cluster{
+  border: 1px solid black;
+  margin: 0.25em;
+  padding: 0.25em;
+}

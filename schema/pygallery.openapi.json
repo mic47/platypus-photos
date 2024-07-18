@@ -42,6 +42,23 @@
               "type": "string",
               "title": "Extension"
             }
+          },
+          {
+            "name": "position",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^[0-9]+,[0-9]+,[0-9]+,[0-9]+$"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Position"
+            }
           }
         ],
         "responses": {
@@ -475,6 +492,44 @@
         }
       }
     },
+    "/api/faces": {
+      "post": {
+        "summary": "Faces On Page",
+        "operationId": "faces_on_page-POST",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GalleryRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FacesResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/aggregate": {
       "post": {
         "summary": "Aggregate Images",
@@ -849,6 +904,69 @@
           "exc_tb"
         ],
         "title": "ExceptionInfo"
+      },
+      "FaceWithMeta": {
+        "properties": {
+          "position": {
+            "$ref": "#/components/schemas/Position"
+          },
+          "md5": {
+            "type": "string",
+            "title": "Md5"
+          },
+          "extension": {
+            "type": "string",
+            "title": "Extension"
+          },
+          "identity": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Identity"
+          },
+          "embedding": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "title": "Embedding"
+          }
+        },
+        "type": "object",
+        "required": [
+          "position",
+          "md5",
+          "extension",
+          "identity",
+          "embedding"
+        ],
+        "title": "FaceWithMeta"
+      },
+      "FacesResponse": {
+        "properties": {
+          "has_next_page": {
+            "type": "boolean",
+            "title": "Has Next Page"
+          },
+          "faces": {
+            "items": {
+              "$ref": "#/components/schemas/FaceWithMeta"
+            },
+            "type": "array",
+            "title": "Faces"
+          }
+        },
+        "type": "object",
+        "required": [
+          "has_next_page",
+          "faces"
+        ],
+        "title": "FacesResponse"
       },
       "FoundLocation": {
         "properties": {
@@ -1821,6 +1939,34 @@
           "file"
         ],
         "title": "PathSplit"
+      },
+      "Position": {
+        "properties": {
+          "left": {
+            "type": "integer",
+            "title": "Left"
+          },
+          "top": {
+            "type": "integer",
+            "title": "Top"
+          },
+          "right": {
+            "type": "integer",
+            "title": "Right"
+          },
+          "bottom": {
+            "type": "integer",
+            "title": "Bottom"
+          }
+        },
+        "type": "object",
+        "required": [
+          "left",
+          "top",
+          "right",
+          "bottom"
+        ],
+        "title": "Position"
       },
       "PredictedLocation": {
         "properties": {

@@ -263,6 +263,62 @@ export const $ExceptionInfo = {
     title: 'ExceptionInfo'
 } as const;
 
+export const $FaceWithMeta = {
+    properties: {
+        position: {
+            '$ref': '#/components/schemas/Position'
+        },
+        md5: {
+            type: 'string',
+            title: 'Md5'
+        },
+        extension: {
+            type: 'string',
+            title: 'Extension'
+        },
+        identity: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Identity'
+        },
+        embedding: {
+            items: {
+                type: 'number'
+            },
+            type: 'array',
+            title: 'Embedding'
+        }
+    },
+    type: 'object',
+    required: ['position', 'md5', 'extension', 'identity', 'embedding'],
+    title: 'FaceWithMeta'
+} as const;
+
+export const $FacesResponse = {
+    properties: {
+        has_next_page: {
+            type: 'boolean',
+            title: 'Has Next Page'
+        },
+        faces: {
+            items: {
+                '$ref': '#/components/schemas/FaceWithMeta'
+            },
+            type: 'array',
+            title: 'Faces'
+        }
+    },
+    type: 'object',
+    required: ['has_next_page', 'faces'],
+    title: 'FacesResponse'
+} as const;
+
 export const $FoundLocation = {
     properties: {
         latitude: {
@@ -1123,6 +1179,30 @@ export const $PathSplit = {
     type: 'object',
     required: ['dir', 'file'],
     title: 'PathSplit'
+} as const;
+
+export const $Position = {
+    properties: {
+        left: {
+            type: 'integer',
+            title: 'Left'
+        },
+        top: {
+            type: 'integer',
+            title: 'Top'
+        },
+        right: {
+            type: 'integer',
+            title: 'Right'
+        },
+        bottom: {
+            type: 'integer',
+            title: 'Bottom'
+        }
+    },
+    type: 'object',
+    required: ['left', 'top', 'right', 'bottom'],
+    title: 'Position'
 } as const;
 
 export const $PredictedLocation = {

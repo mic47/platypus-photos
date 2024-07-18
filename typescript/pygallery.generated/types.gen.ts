@@ -61,6 +61,19 @@ export type ExceptionInfo = {
     exc_tb: Array<(string)> | null;
 };
 
+export type FaceWithMeta = {
+    position: Position;
+    md5: string;
+    extension: string;
+    identity: string | null;
+    embedding: Array<(number)>;
+};
+
+export type FacesResponse = {
+    has_next_page: boolean;
+    faces: Array<FaceWithMeta>;
+};
+
 export type FoundLocation = {
     latitude: number;
     longitude: number;
@@ -256,6 +269,13 @@ export type PathSplit = {
     file: string;
 };
 
+export type Position = {
+    left: number;
+    top: number;
+    right: number;
+    bottom: number;
+};
+
 export type PredictedLocation = {
     loc: LocPoint;
     earlier: ReferenceStats | null;
@@ -365,6 +385,7 @@ export type ValidationError = {
 export type ImageEndpointGetData = {
     extension: string;
     hsh: number | string;
+    position?: string | null;
     size: ImageSize;
 };
 
@@ -427,6 +448,12 @@ export type ImagePagePostData = {
 };
 
 export type ImagePagePostResponse = ImageResponse;
+
+export type FacesOnPagePostData = {
+    requestBody: GalleryRequest;
+};
+
+export type FacesOnPagePostResponse = FacesResponse;
 
 export type AggregateImagesPostData = {
     requestBody: AggregateQuery;
@@ -602,6 +629,21 @@ export type $OpenApiTs = {
                  * Successful Response
                  */
                 200: ImageResponse;
+                /**
+                 * Validation Error
+                 */
+                422: HTTPValidationError;
+            };
+        };
+    };
+    '/api/faces': {
+        post: {
+            req: FacesOnPagePostData;
+            res: {
+                /**
+                 * Successful Response
+                 */
+                200: FacesResponse;
                 /**
                  * Validation Error
                  */

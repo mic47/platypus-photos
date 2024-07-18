@@ -51,7 +51,7 @@ export function GalleryComponent({
     submit_annotations,
 }: GalleryComponentProps) {
     const [data, updateData] = React.useState<[SearchQuery, ImageResponse]>([
-        {},
+        query,
         {
             omgs: [],
             has_next_page: false,
