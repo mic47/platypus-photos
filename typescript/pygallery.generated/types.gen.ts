@@ -61,11 +61,18 @@ export type ExceptionInfo = {
     exc_tb: Array<(string)> | null;
 };
 
+export type FaceIdentifier = {
+    md5: string;
+    extension: string;
+    position: Position;
+};
+
 export type FaceWithMeta = {
     position: Position;
     md5: string;
     extension: string;
     identity: string | null;
+    skip_reason: string | null;
     embedding: Array<(number)>;
 };
 
@@ -118,7 +125,7 @@ export type Image = {
     being_annotated: boolean;
     camera: string | null;
     software: string | null;
-    identity: string | null;
+    identities: Array<(string)>;
     version: number;
 };
 
@@ -232,6 +239,12 @@ export type LocationQueryFixedLocation = {
 
 export type t3 = 'FixedLocation';
 
+export type ManualIdentityClusterRequest = {
+    identity: string | null;
+    skip_reason: string | null;
+    faces: Array<FaceIdentifier>;
+};
+
 export type ManualLocation = {
     latitude: number;
     longitude: number;
@@ -295,7 +308,7 @@ export type ReferenceStats = {
     seconds: number;
 };
 
-export type RemoteJobType = 'mass_manual_annotation';
+export type RemoteJobType = 'mass_manual_annotation' | 'face_cluster_annotation';
 
 export type RemoteJob_bytes_ = {
     id_: number;
@@ -415,6 +428,12 @@ export type MassManualAnnotationEndpointPostData = {
 
 export type MassManualAnnotationEndpointPostResponse = number;
 
+export type ManualIdentityAnnotationEndpointPostData = {
+    requestBody: Array<ManualIdentityClusterRequest>;
+};
+
+export type ManualIdentityAnnotationEndpointPostResponse = number;
+
 export type FindLocationPostData = {
     req: string;
 };
@@ -529,6 +548,21 @@ export type $OpenApiTs = {
     '/api/mass_manual_annotation': {
         post: {
             req: MassManualAnnotationEndpointPostData;
+            res: {
+                /**
+                 * Successful Response
+                 */
+                200: number;
+                /**
+                 * Validation Error
+                 */
+                422: HTTPValidationError;
+            };
+        };
+    };
+    '/api/manual_identity_annotation': {
+        post: {
+            req: ManualIdentityAnnotationEndpointPostData;
             res: {
                 /**
                  * Successful Response

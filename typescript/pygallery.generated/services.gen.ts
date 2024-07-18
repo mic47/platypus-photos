@@ -3,7 +3,7 @@
 import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
-import type { ImageEndpointGetData, ImageEndpointGetResponse, LocationClustersEndpointPostData, LocationClustersEndpointPostResponse, LocationBoundsEndpointPostData, LocationBoundsEndpointPostResponse, DateClustersEndpointPostData, DateClustersEndpointPostResponse, MassManualAnnotationEndpointPostData, MassManualAnnotationEndpointPostResponse, FindLocationPostData, FindLocationPostResponse, JobProgressStatePostData, JobProgressStatePostResponse, RemoteJobsGetResponse, SystemStatusGetResponse, GetAddressPostData, GetAddressPostResponse, MatchingDirectoriesPostData, MatchingDirectoriesPostResponse, ImagePagePostData, ImagePagePostResponse, FacesOnPagePostData, FacesOnPagePostResponse, AggregateImagesPostData, AggregateImagesPostResponse, ReadIndexGetResponse, ReadIndexGet1Response } from './types.gen';
+import type { ImageEndpointGetData, ImageEndpointGetResponse, LocationClustersEndpointPostData, LocationClustersEndpointPostResponse, LocationBoundsEndpointPostData, LocationBoundsEndpointPostResponse, DateClustersEndpointPostData, DateClustersEndpointPostResponse, MassManualAnnotationEndpointPostData, MassManualAnnotationEndpointPostResponse, ManualIdentityAnnotationEndpointPostData, ManualIdentityAnnotationEndpointPostResponse, FindLocationPostData, FindLocationPostResponse, JobProgressStatePostData, JobProgressStatePostResponse, RemoteJobsGetResponse, SystemStatusGetResponse, GetAddressPostData, GetAddressPostResponse, MatchingDirectoriesPostData, MatchingDirectoriesPostResponse, ImagePagePostData, ImagePagePostResponse, FacesOnPagePostData, FacesOnPagePostResponse, AggregateImagesPostData, AggregateImagesPostResponse, ReadIndexGetResponse, ReadIndexGet1Response } from './types.gen';
 
 /**
  * Image Endpoint
@@ -92,6 +92,23 @@ export const dateClustersEndpointPost = (data: DateClustersEndpointPostData): Ca
 export const massManualAnnotationEndpointPost = (data: MassManualAnnotationEndpointPostData): CancelablePromise<MassManualAnnotationEndpointPostResponse> => { return __request(OpenAPI, {
     method: 'POST',
     url: '/api/mass_manual_annotation',
+    body: data.requestBody,
+    mediaType: 'application/json',
+    errors: {
+        422: 'Validation Error'
+    }
+}); };
+
+/**
+ * Manual Identity Annotation Endpoint
+ * @param data The data for the request.
+ * @param data.requestBody
+ * @returns number Successful Response
+ * @throws ApiError
+ */
+export const manualIdentityAnnotationEndpointPost = (data: ManualIdentityAnnotationEndpointPostData): CancelablePromise<ManualIdentityAnnotationEndpointPostResponse> => { return __request(OpenAPI, {
+    method: 'POST',
+    url: '/api/manual_identity_annotation',
     body: data.requestBody,
     mediaType: 'application/json',
     errors: {

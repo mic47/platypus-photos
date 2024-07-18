@@ -12,6 +12,7 @@ from pphoto.data_model.manual import ManualLocation, ManualDate
 
 class RemoteJobType(enum.Enum):
     MASS_MANUAL_ANNOTATION = "mass_manual_annotation"
+    FACE_CLUSTER_ANNOTATION = "face_cluster_annotation"
 
 
 @dataclasses.dataclass(frozen=True)

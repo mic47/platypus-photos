@@ -3,6 +3,8 @@ import typing as t
 
 from dataclasses import dataclass
 
+from dataclasses_json import DataClassJsonMixin
+
 from pphoto.data_model.base import HasCurrentVersion
 from pphoto.data_model.face import Position
 
@@ -32,9 +34,15 @@ class ManualText(HasCurrentVersion):
 
 
 @dataclass
-class ManualIdentity(HasCurrentVersion):
-    identity: str
+class ManualIdentity(DataClassJsonMixin):
+    identity: t.Optional[str]
+    skip_reason: t.Optional[str]
     position: Position
+
+
+@dataclass
+class ManualIdentities(HasCurrentVersion):
+    identities: t.List[ManualIdentity]
 
     @staticmethod
     def current_version() -> int:

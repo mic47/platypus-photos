@@ -186,7 +186,7 @@ WHERE
                 omg.camera,
                 omg.software,
                 omg.extension,
-                omg.identity,
+                f',{",".join(omg.identities)},',
             ),
         )
         self._con.commit()
@@ -738,7 +738,7 @@ SELECT "cam", camera, COUNT(1) FROM matched_images GROUP BY camera
                     bool(being_annotated),
                     camera,
                     software,
-                    identity,
+                    [x for x in identity.split(",") if x] if identity is not None else [],
                     version,
                 )
             )

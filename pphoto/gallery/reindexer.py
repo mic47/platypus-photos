@@ -14,7 +14,7 @@ from pphoto.data_model.base import (
 from pphoto.data_model.exif import ImageExif
 from pphoto.data_model.geo import GeoAddress
 from pphoto.data_model.text import ImageClassification
-from pphoto.data_model.manual import ManualLocation, ManualText, ManualDate, ManualIdentity
+from pphoto.data_model.manual import ManualLocation, ManualText, ManualDate, ManualIdentities
 from pphoto.db.features_table import FeaturesTable
 from pphoto.db.gallery_index_table import GalleryIndexTable
 from pphoto.db.connection import PhotosConnection, GalleryConnection
@@ -48,7 +48,7 @@ class Reindexer:
         self._address = SQLiteCache(self._features_table, GeoAddress)
         self._text_classification = SQLiteCache(self._features_table, ImageClassification)
         self._manual_location = SQLiteCache(self._features_table, ManualLocation)
-        self._manual_identity = SQLiteCache(self._features_table, ManualIdentity)
+        self._manual_identity = SQLiteCache(self._features_table, ManualIdentities)
         self._manual_text = SQLiteCache(self._features_table, ManualText)
         self._manual_date = SQLiteCache(self._features_table, ManualDate)
         self._gallery_index = GalleryIndexTable(self._g_con)
@@ -59,7 +59,7 @@ class Reindexer:
             ManualText.__name__,
             ManualLocation.__name__,
             ManualDate.__name__,
-            ManualIdentity.__name__,
+            ManualIdentities.__name__,
         ]
         self._queue: t.Set[str] = set()
 

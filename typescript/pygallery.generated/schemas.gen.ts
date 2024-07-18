@@ -263,6 +263,25 @@ export const $ExceptionInfo = {
     title: 'ExceptionInfo'
 } as const;
 
+export const $FaceIdentifier = {
+    properties: {
+        md5: {
+            type: 'string',
+            title: 'Md5'
+        },
+        extension: {
+            type: 'string',
+            title: 'Extension'
+        },
+        position: {
+            '$ref': '#/components/schemas/Position'
+        }
+    },
+    type: 'object',
+    required: ['md5', 'extension', 'position'],
+    title: 'FaceIdentifier'
+} as const;
+
 export const $FaceWithMeta = {
     properties: {
         position: {
@@ -287,6 +306,17 @@ export const $FaceWithMeta = {
             ],
             title: 'Identity'
         },
+        skip_reason: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Skip Reason'
+        },
         embedding: {
             items: {
                 type: 'number'
@@ -296,7 +326,7 @@ export const $FaceWithMeta = {
         }
     },
     type: 'object',
-    required: ['position', 'md5', 'extension', 'identity', 'embedding'],
+    required: ['position', 'md5', 'extension', 'identity', 'skip_reason', 'embedding'],
     title: 'FaceWithMeta'
 } as const;
 
@@ -527,16 +557,12 @@ export const $Image = {
             ],
             title: 'Software'
         },
-        identity: {
-            anyOf: [
-                {
-                    type: 'string'
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'Identity'
+        identities: {
+            items: {
+                type: 'string'
+            },
+            type: 'array',
+            title: 'Identities'
         },
         version: {
             type: 'integer',
@@ -544,7 +570,7 @@ export const $Image = {
         }
     },
     type: 'object',
-    required: ['md5', 'extension', 'date', 'date_transformed', 'tags', 'classifications', 'address', 'dependent_features_last_update', 'latitude', 'longitude', 'altitude', 'manual_features', 'being_annotated', 'camera', 'software', 'identity', 'version'],
+    required: ['md5', 'extension', 'date', 'date_transformed', 'tags', 'classifications', 'address', 'dependent_features_last_update', 'latitude', 'longitude', 'altitude', 'manual_features', 'being_annotated', 'camera', 'software', 'identities', 'version'],
     title: 'Image'
 } as const;
 
@@ -1014,6 +1040,43 @@ export const $LocationQueryFixedLocation = {
     title: 'LocationQueryFixedLocation'
 } as const;
 
+export const $ManualIdentityClusterRequest = {
+    properties: {
+        identity: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Identity'
+        },
+        skip_reason: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Skip Reason'
+        },
+        faces: {
+            items: {
+                '$ref': '#/components/schemas/FaceIdentifier'
+            },
+            type: 'array',
+            title: 'Faces'
+        }
+    },
+    type: 'object',
+    required: ['identity', 'skip_reason', 'faces'],
+    title: 'ManualIdentityClusterRequest'
+} as const;
+
 export const $ManualLocation = {
     properties: {
         latitude: {
@@ -1303,8 +1366,7 @@ export const $ReferenceStats = {
 
 export const $RemoteJobType = {
     type: 'string',
-    enum: ['mass_manual_annotation'],
-    const: 'mass_manual_annotation',
+    enum: ['mass_manual_annotation', 'face_cluster_annotation'],
     title: 'RemoteJobType'
 } as const;
 

@@ -14,7 +14,7 @@ class ImageResolution(DataClassJsonMixin):
     height: int  # noqa: F841
 
 
-@dataclass
+@dataclass(frozen=True, eq=True)
 class Position(DataClassJsonMixin):
     left: int
     top: int

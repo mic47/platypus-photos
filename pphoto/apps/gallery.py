@@ -25,6 +25,7 @@ from pphoto.communication.client import get_system_status, refresh_jobs, SystemS
 from pphoto.data_model.config import DBFilesConfig
 from pphoto.data_model.base import PathWithMd5
 from pphoto.data_model.face import Position
+from pphoto.data_model.manual import ManualIdentity
 from pphoto.db.types_location import LocationCluster, LocPoint, LocationBounds
 from pphoto.db.types_date import DateCluster, DateClusterGroupBy
 from pphoto.db.types_directory import DirectoryStats
@@ -209,6 +210,8 @@ def location_clusters_endpoint(params: LocClusterParams) -> t.List[LocationClust
             # pylint: disable-next = broad-exception-caught
             except Exception:
                 continue
+        elif job.type_ == RemoteJobType.FACE_CLUSTER_ANNOTATION:
+            pass
         else:
             assert_never(job.type_)
     return clusters
@@ -465,6 +468,46 @@ async def mass_manual_annotation_endpoint(params: MassManualAnnotation) -> int:
     return job_id
 
 
+@dataclass
+class FaceIdentifier(DataClassJsonMixin):
+    md5: str
+    extension: str
+    position: Position
+
+
+@dataclass
+class ManualIdentityClusterRequest(DataClassJsonMixin):
+    identity: t.Optional[str]
+    skip_reason: t.Optional[str]
+    faces: t.List[FaceIdentifier]
+
+
+def parse_manual_identity_cluster_requests(data: bytes) -> t.List[ManualIdentityClusterRequest]:
+    return [ManualIdentityClusterRequest.from_dict(x) for x in json.loads(data.decode("utf-8"))]
+
+
+@app.post("/api/manual_identity_annotation")
+async def manual_identity_annotation_endpoint(clusters: t.List[ManualIdentityClusterRequest]) -> int:
+    # Group by md5
+    by_md5: t.Dict[t.Tuple[str, str], t.List[ManualIdentity]] = {}
+    for cluster in clusters:
+        for face in cluster.faces:
+            by_md5.setdefault((face.md5, face.extension), []).append(
+                ManualIdentity(cluster.identity, cluster.skip_reason, face.position)
+            )
+    db = DB.get()
+    db.jobs.submit_job(
+        RemoteJobType.FACE_CLUSTER_ANNOTATION,
+        json.dumps([x.to_dict(encode_json=True) for x in clusters], ensure_ascii=False).encode("utf-8"),
+        [
+            (md5, ext, json.dumps([t.to_dict(encode_json=True) for t in task]).encode("utf-8"))
+            for (md5, ext), task in by_md5.items()
+        ],
+    )
+
+    return 10
+
+
 GEOLOCATOR = Geolocator()
 
 
@@ -585,11 +628,12 @@ def remote_jobs() -> t.List[JobDescription]:
             icon = "🚏"
         else:
             icon = "🏗️"
-        type_ = ["🗺️"]
+        type_ = []
         replacements = []
         latitude = None
         longitude = None
         if job.type_ == RemoteJobType.MASS_MANUAL_ANNOTATION:
+            type_.append("🗺️")
             try:
                 og_req = mass_manual_annotation_from_json(job.original_request)
                 if og_req.text.text.description:
@@ -616,6 +660,29 @@ def remote_jobs() -> t.List[JobDescription]:
                 else:
                     assert_never(og_req.location.t)
 
+            # pylint: disable-next = broad-exception-caught
+            except Exception as e:
+                replacements.append(str(e))
+        elif job.type_ == RemoteJobType.FACE_CLUSTER_ANNOTATION:
+            type_.append("🤓")
+            og_clusters = parse_manual_identity_cluster_requests(job.original_request)
+            has_skip = False
+            has_identity = False
+            identities = set()
+            for cluster in og_clusters:
+                if cluster.skip_reason is not None:
+                    has_skip = True
+                if cluster.identity is not None:
+                    has_identity = True
+                    identities.add(cluster.identity)
+            if has_skip:
+                type_.append("❌")
+            if has_identity:
+                type_.append("🛂")
+            for identity in identities:
+                replacements.append(f"🛂{identity}")
+            try:
+                pass
             # pylint: disable-next = broad-exception-caught
             except Exception as e:
                 replacements.append(str(e))
@@ -767,6 +834,7 @@ class FaceWithMeta(DataClassJsonMixin):
     md5: str
     extension: str
     identity: t.Optional[str]
+    skip_reason: t.Optional[str]
     embedding: t.List[float]
 
 
@@ -784,6 +852,21 @@ async def faces_on_page(params: GalleryRequest) -> FacesResponse:
 
     for omg in omgs:
         fcs = db.get_face_embeddings(omg.md5)
+        identities = db.get_manual_identities(omg.md5)
+        if identities is not None:
+            ident_dct = {
+                identity.position: identity.identity
+                for identity in identities.identities
+                if identity.identity is not None
+            }
+            skip_dct = {
+                identity.position: identity.skip_reason
+                for identity in identities.identities
+                if identity.skip_reason is not None
+            }
+        else:
+            ident_dct = {}
+            skip_dct = {}
         if fcs is not None:
             for face in fcs.faces:
                 faces.append(
@@ -791,7 +874,8 @@ async def faces_on_page(params: GalleryRequest) -> FacesResponse:
                         face.position,
                         omg.md5,
                         omg.extension,
-                        None,
+                        ident_dct.get(face.position),
+                        skip_dct.get(face.position),
                         face.embedding,
                     )
                 )

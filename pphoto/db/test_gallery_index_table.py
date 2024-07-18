@@ -29,11 +29,13 @@ def _image(
     lon: t.Optional[float] = 12.0,
     alt: t.Optional[float] = 13.0,
     camera: t.Optional[str] = "olympus e-510",
-    identity: t.Optional[str] = None,
+    identity: t.Optional[t.List[str]] = None,
     extension: str = "jpg",
 ) -> Image:
     if tags is None:
         tags = {"foo": 0.3, "bar": 1.457}
+    if identity is None:
+        identity = []
     return Image(
         md5,
         extension,

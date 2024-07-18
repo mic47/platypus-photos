@@ -257,6 +257,49 @@
         }
       }
     },
+    "/api/manual_identity_annotation": {
+      "post": {
+        "summary": "Manual Identity Annotation Endpoint",
+        "operationId": "manual_identity_annotation_endpoint-POST",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "items": {
+                  "$ref": "#/components/schemas/ManualIdentityClusterRequest"
+                },
+                "type": "array",
+                "title": "Clusters"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "integer",
+                  "title": "Response Manual Identity Annotation Endpoint-Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/map_search": {
       "post": {
         "summary": "Find Location",
@@ -905,6 +948,28 @@
         ],
         "title": "ExceptionInfo"
       },
+      "FaceIdentifier": {
+        "properties": {
+          "md5": {
+            "type": "string",
+            "title": "Md5"
+          },
+          "extension": {
+            "type": "string",
+            "title": "Extension"
+          },
+          "position": {
+            "$ref": "#/components/schemas/Position"
+          }
+        },
+        "type": "object",
+        "required": [
+          "md5",
+          "extension",
+          "position"
+        ],
+        "title": "FaceIdentifier"
+      },
       "FaceWithMeta": {
         "properties": {
           "position": {
@@ -929,6 +994,17 @@
             ],
             "title": "Identity"
           },
+          "skip_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Skip Reason"
+          },
           "embedding": {
             "items": {
               "type": "number"
@@ -943,6 +1019,7 @@
           "md5",
           "extension",
           "identity",
+          "skip_reason",
           "embedding"
         ],
         "title": "FaceWithMeta"
@@ -1182,16 +1259,12 @@
             ],
             "title": "Software"
           },
-          "identity": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Identity"
+          "identities": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Identities"
           },
           "version": {
             "type": "integer",
@@ -1215,7 +1288,7 @@
           "being_annotated",
           "camera",
           "software",
-          "identity",
+          "identities",
           "version"
         ],
         "title": "Image"
@@ -1747,6 +1820,46 @@
         ],
         "title": "LocationQueryFixedLocation"
       },
+      "ManualIdentityClusterRequest": {
+        "properties": {
+          "identity": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Identity"
+          },
+          "skip_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Skip Reason"
+          },
+          "faces": {
+            "items": {
+              "$ref": "#/components/schemas/FaceIdentifier"
+            },
+            "type": "array",
+            "title": "Faces"
+          }
+        },
+        "type": "object",
+        "required": [
+          "identity",
+          "skip_reason",
+          "faces"
+        ],
+        "title": "ManualIdentityClusterRequest"
+      },
       "ManualLocation": {
         "properties": {
           "latitude": {
@@ -2077,9 +2190,9 @@
       "RemoteJobType": {
         "type": "string",
         "enum": [
-          "mass_manual_annotation"
+          "mass_manual_annotation",
+          "face_cluster_annotation"
         ],
-        "const": "mass_manual_annotation",
         "title": "RemoteJobType"
       },
       "RemoteJob_bytes_": {

@@ -57,6 +57,11 @@ export function FacesComponent({ query, paging, sort }: FacesComponentProps) {
                     updateSlider(parseFloat(event.target.value));
                 }}
             />
+            <br />
+            <input type="checkbox" /> Show hidden faces
+            <br />
+            <input type="checkbox" /> Hide faces with assigned identities
+            <br />
             <FacesView
                 threshold={threshold}
                 availableIdentities={["RandomIdentity", "Other Test identity"]}
@@ -139,13 +144,21 @@ function FacesView({ threshold, availableIdentities, data }: FacesViewProps) {
                                     );
                                 })}
                             </select>
+                            <button>Submit this cluster only</button>
+                            <button>Submit all pending face annotations</button>
                         </div>
                     </div>
                     {clusterItems}
                 </div>
             );
         });
-    return <div>{items}</div>;
+    return (
+        <div>
+            <button>Submit pending face annotations</button>
+            {items}
+            <button>Submit pending identity annotations</button>
+        </div>
+    );
 }
 
 function doClustering(
