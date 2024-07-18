@@ -15,6 +15,7 @@ class DBFilesConfig:
     exif_jsonl: str = "data/output-exif.jsonl"
     geo_address_jsonl: str = "data/output-geo.jsonl"
     manual_location_jsonl: str = "data/output-manual-location.jsonl"
+    manual_identity_jsonl: str = "data/output-manual-identity.jsonl"
     manual_date_jsonl: str = "data/output-manual-date.jsonl"
     manual_text_jsonl: str = "data/output-manual-text.jsonl"
     photos_db: str = "data/photos.db"
