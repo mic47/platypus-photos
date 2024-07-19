@@ -43,6 +43,10 @@ export function FacesComponent({ query, paging, sort }: FacesComponentProps) {
             ignore = true;
         };
     }, [query, paging, sort]);
+    const [settings, updateSettings] = React.useState({
+        showHiddenFaces: false,
+        hideFacesWithIdentities: false,
+    });
     const [slider, updateSlider] = React.useState<number>(280);
     const threshold = slider / 1000;
     return (
@@ -59,14 +63,48 @@ export function FacesComponent({ query, paging, sort }: FacesComponentProps) {
                 }}
             />
             <br />
-            <input type="checkbox" /> Show hidden faces
+            <input
+                type="checkbox"
+                checked={settings.showHiddenFaces}
+                onChange={(event) => {
+                    updateSettings({
+                        ...settings,
+                        showHiddenFaces: event.target.checked,
+                    });
+                }}
+            />{" "}
+            Show hidden faces
             <br />
-            <input type="checkbox" /> Hide faces with assigned identities
+            <input
+                type="checkbox"
+                checked={settings.hideFacesWithIdentities}
+                onChange={(event) => {
+                    updateSettings({
+                        ...settings,
+                        hideFacesWithIdentities: event.target.checked,
+                    });
+                }}
+            />{" "}
+            Hide faces with assigned identities
             <br />
             <FacesView
                 threshold={threshold}
                 availableIdentities={["RandomIdentity", "Other Test identity"]}
-                data={data[1]}
+                data={data[1].faces.filter((face) => {
+                    if (
+                        !settings.showHiddenFaces &&
+                        face.skip_reason !== null
+                    ) {
+                        return false;
+                    }
+                    if (
+                        settings.hideFacesWithIdentities &&
+                        face.identity !== null
+                    ) {
+                        return false;
+                    }
+                    return true;
+                })}
             />
         </div>
     );
@@ -74,10 +112,10 @@ export function FacesComponent({ query, paging, sort }: FacesComponentProps) {
 interface FacesViewProps {
     threshold: number;
     availableIdentities: string[];
-    data: FacesResponse;
+    data: FaceWithMeta[];
 }
 function FacesView({ threshold, availableIdentities, data }: FacesViewProps) {
-    const items = doClustering(threshold, data.faces)
+    const items = doClustering(threshold, data)
         .sort((a, b) => {
             if (a.length < b.length) {
                 return 1;
@@ -99,9 +137,9 @@ function FacesView({ threshold, availableIdentities, data }: FacesViewProps) {
         });
     return (
         <div>
-            <button>Submit pending face annotations</button>
+            <button>Submit all pending face annotations</button>
             {items}
-            <button>Submit pending identity annotations</button>
+            <button>Submit all pending identity annotations</button>
         </div>
     );
 }
@@ -239,7 +277,13 @@ function FaceCluster({
                         })}
                     </select>
                     <br />
-                    <button onClick={() => submit()}>
+                    <button
+                        onClick={() => submit()}
+                        disabled={
+                            request.identity === null &&
+                            request.skip_reason === null
+                        }
+                    >
                         Submit this cluster only
                     </button>
                     <button>Submit all pending face annotations</button>
