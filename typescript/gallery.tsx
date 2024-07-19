@@ -51,7 +51,7 @@ export function GalleryComponent({
     submit_annotations,
 }: GalleryComponentProps) {
     const [data, updateData] = React.useState<[SearchQuery, ImageResponse]>([
-        {},
+        query,
         {
             omgs: [],
             has_next_page: false,
@@ -68,6 +68,7 @@ export function GalleryComponent({
             tag: {},
             classification: {},
             cameras: {},
+            identities: {},
         },
         paging,
     });
@@ -159,6 +160,16 @@ export function GalleryComponent({
                 queryCallbacks.update({ tag: tag });
             } else {
                 queryCallbacks.update({ tag: `${old_tag},${tag}` });
+            }
+        },
+        update_url_add_identity: (identity: string) => {
+            const old_identity = query["identity"];
+            if (old_identity === undefined || old_identity === null) {
+                queryCallbacks.update({ identity: identity });
+            } else {
+                queryCallbacks.update({
+                    identity: `${old_identity},${identity}`,
+                });
             }
         },
         close_overlay: () => {

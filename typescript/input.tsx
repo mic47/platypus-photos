@@ -59,6 +59,16 @@ export function InputFormView({
                 {formInputTextElement(
                     query.q,
                     callbacks,
+                    "identity",
+                    query.ts,
+                    query.q.identity,
+                    "🤓",
+                    "identity",
+                )}
+                <br />
+                {formInputTextElement(
+                    query.q,
+                    callbacks,
                     "directory",
                     query.ts,
                     query.q.directory,

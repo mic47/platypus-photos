@@ -15,7 +15,7 @@ from dataclasses_json import DataClassJsonMixin
 from geopy.distance import distance
 from PIL import Image, ImageFile
 
-from fastapi import FastAPI, Request, Response
+from fastapi import FastAPI, Request, Response, Query
 from fastapi.responses import FileResponse
 from fastapi.routing import APIRoute
 from fastapi.staticfiles import StaticFiles
@@ -24,10 +24,13 @@ from pphoto.annots.geo import Geolocator
 from pphoto.communication.client import get_system_status, refresh_jobs, SystemStatus
 from pphoto.data_model.config import DBFilesConfig
 from pphoto.data_model.base import PathWithMd5
+from pphoto.data_model.face import Position
+from pphoto.data_model.manual import ManualIdentity, IdentitySkipReason
 from pphoto.db.types_location import LocationCluster, LocPoint, LocationBounds
 from pphoto.db.types_date import DateCluster, DateClusterGroupBy
 from pphoto.db.types_directory import DirectoryStats
 from pphoto.db.types_image import ImageAddress, ImageAggregation
+from pphoto.db.types_identity import IdentityRowPayload
 from pphoto.db.connection import PhotosConnection, GalleryConnection, JobsConnection
 from pphoto.utils import assert_never, Lazy
 from pphoto.remote_jobs.types import (
@@ -106,8 +109,10 @@ def sz_to_resolution(size: ImageSize) -> t.Optional[int]:
     assert_never(size)
 
 
-def get_cache_file(size: int, hsh: str, extension: str) -> str:
-    return f".cache/{size}/{hsh[0]}/{hsh[1]}/{hsh[2]}/{hsh[3:]}.{extension}"
+def get_cache_file(size: int | str, hsh: str, extension: str, position: t.Optional[str] = None) -> str:
+    if position is None:
+        return f".cache/{size}/{hsh[0]}/{hsh[1]}/{hsh[2]}/{hsh[3:]}.{extension}"
+    return f".cache/{size}/{hsh[0]}/{hsh[1]}/{hsh[2]}/{hsh[3:]}.{position}.{extension}"
 
 
 @app.get(
@@ -116,16 +121,31 @@ def get_cache_file(size: int, hsh: str, extension: str) -> str:
         200: {"description": "photo", "content": {"image/jpeg": {"example": "No example available."}}}
     },
 )
-def image_endpoint(hsh: t.Union[int, str], size: ImageSize, extension: str) -> t.Any:
-    sz = sz_to_resolution(size)
-    if sz is not None and isinstance(hsh, str):
-        cache_file = get_cache_file(sz, hsh, extension)
+def image_endpoint(
+    hsh: t.Union[int, str],
+    size: ImageSize,
+    extension: str,
+    position: t.Annotated[t.Optional[str], Query(pattern="^[0-9]+,[0-9]+,[0-9]+,[0-9]+$")] = None,
+) -> t.Any:
+    resolution = sz_to_resolution(size)
+    if (resolution is not None or position is not None) and isinstance(hsh, str):
+        if position is not None:
+            sz: int | str = "crop"
+        else:
+            sz = t.cast(int, resolution)
+        cache_file = get_cache_file(sz, hsh, extension, position)
         if not os.path.exists(cache_file):
             file_path = DB.get().get_path_from_hash(hsh)
             if file_path is None:
                 return {"error": "File not found!"}
             img = Image.open(file_path)
-            img.thumbnail((sz, sz))
+            if position is not None:
+                pos = Position.from_query_string(position)
+                if pos is not None:
+                    # TODO: check that this is within proper bounds or something like that
+                    img = img.crop((pos.left, pos.top, pos.right, pos.bottom))
+            else:
+                img.thumbnail((t.cast(int, sz), t.cast(int, sz)))
             dirname = os.path.dirname(cache_file)
             if not os.path.exists(dirname):
                 os.makedirs(dirname, exist_ok=True)
@@ -191,6 +211,8 @@ def location_clusters_endpoint(params: LocClusterParams) -> t.List[LocationClust
             # pylint: disable-next = broad-exception-caught
             except Exception:
                 continue
+        elif job.type_ == RemoteJobType.FACE_CLUSTER_ANNOTATION:
+            pass
         else:
             assert_never(job.type_)
     return clusters
@@ -447,6 +469,48 @@ async def mass_manual_annotation_endpoint(params: MassManualAnnotation) -> int:
     return job_id
 
 
+@dataclass
+class FaceIdentifier(DataClassJsonMixin):
+    md5: str
+    extension: str
+    position: Position
+
+
+@dataclass
+class ManualIdentityClusterRequest(DataClassJsonMixin):
+    identity: t.Optional[str]
+    skip_reason: t.Optional[IdentitySkipReason]
+    faces: t.List[FaceIdentifier]
+
+
+def parse_manual_identity_cluster_requests(data: bytes) -> t.List[ManualIdentityClusterRequest]:
+    return [ManualIdentityClusterRequest.from_dict(x) for x in json.loads(data.decode("utf-8"))]
+
+
+@app.post("/api/manual_identity_annotation")
+async def manual_identity_annotation_endpoint(clusters: t.List[ManualIdentityClusterRequest]) -> int:
+    # Group by md5
+    db = DB.get()
+    by_md5: t.Dict[t.Tuple[str, str], t.List[ManualIdentity]] = {}
+    for cluster in clusters:
+        if cluster.identity is not None and cluster.faces:
+            db.identities.add(cluster.identity, cluster.faces[0].md5, cluster.faces[0].extension, False)
+        for face in cluster.faces:
+            by_md5.setdefault((face.md5, face.extension), []).append(
+                ManualIdentity(cluster.identity, cluster.skip_reason, face.position)
+            )
+    job_id = db.jobs.submit_job(
+        RemoteJobType.FACE_CLUSTER_ANNOTATION,
+        json.dumps([x.to_dict(encode_json=True) for x in clusters], ensure_ascii=False).encode("utf-8"),
+        [
+            (md5, ext, json.dumps([t.to_dict(encode_json=True) for t in task]).encode("utf-8"))
+            for (md5, ext), task in by_md5.items()
+        ],
+    )
+    await refresh_jobs(job_id)
+    return job_id
+
+
 GEOLOCATOR = Geolocator()
 
 
@@ -549,13 +613,14 @@ class JobDescription:
     time: float
     latitude: float | None
     longitude: float | None
-    query: MassLocationAndTextAnnotation
+    query: MassLocationAndTextAnnotation | t.List[ManualIdentityClusterRequest] | None
     job: RemoteJob[bytes]
     example_path_md5: str | None
     example_path_extension: str | None
 
 
 @app.get("/api/remote_jobs")
+# pylint: disable-next = too-many-statements
 def remote_jobs() -> t.List[JobDescription]:
     jobs = []
     for job in sorted(DB.get().jobs.get_jobs(skip_finished=False), key=lambda x: x.created, reverse=True):
@@ -567,13 +632,16 @@ def remote_jobs() -> t.List[JobDescription]:
             icon = "🚏"
         else:
             icon = "🏗️"
-        type_ = ["🗺️"]
+        type_ = []
         replacements = []
         latitude = None
         longitude = None
+        request: None | MassLocationAndTextAnnotation | t.List[ManualIdentityClusterRequest] = None
         if job.type_ == RemoteJobType.MASS_MANUAL_ANNOTATION:
+            type_.append("🗺️")
             try:
                 og_req = mass_manual_annotation_from_json(job.original_request)
+                request = og_req
                 if og_req.text.text.description:
                     type_.append("📝")
                     replacements.append(f"📝{og_req.text.text.description}")
@@ -601,6 +669,30 @@ def remote_jobs() -> t.List[JobDescription]:
             # pylint: disable-next = broad-exception-caught
             except Exception as e:
                 replacements.append(str(e))
+        elif job.type_ == RemoteJobType.FACE_CLUSTER_ANNOTATION:
+            type_.append("🤓")
+            og_clusters = parse_manual_identity_cluster_requests(job.original_request)
+            request = og_clusters
+            has_skip = False
+            has_identity = False
+            identities = set()
+            for cluster in og_clusters:
+                if cluster.skip_reason is not None:
+                    has_skip = True
+                if cluster.identity is not None:
+                    has_identity = True
+                    identities.add(cluster.identity)
+            if has_skip:
+                type_.append("❌")
+            if has_identity:
+                type_.append("🛂")
+            for identity in identities:
+                replacements.append(f"🛂{identity}")
+            try:
+                pass
+            # pylint: disable-next = broad-exception-caught
+            except Exception as e:
+                replacements.append(str(e))
         else:
             assert_never(job.type_)
         repls = ", ".join(replacements)
@@ -617,7 +709,7 @@ def remote_jobs() -> t.List[JobDescription]:
                 (job.last_update or job.created).timestamp(),
                 latitude,
                 longitude,
-                og_req,
+                request,
                 job,
                 job.example_path_md5,
                 job.example_path_extension,
@@ -741,6 +833,62 @@ async def image_page(params: GalleryRequest) -> ImageResponse:
         predicted_location = predict_location(omg, fwdbwd[index][0], fwdbwd[index][1])
         images.append(ImageWithMeta(omg, predicted_location, paths))
     return ImageResponse(has_next_page, images, some_location)
+
+
+@dataclass
+class FaceWithMeta(DataClassJsonMixin):
+    position: Position
+    md5: str
+    extension: str
+    identity: t.Optional[str]
+    skip_reason: t.Optional[IdentitySkipReason]
+    embedding: t.List[float]
+
+
+@dataclass
+class FacesResponse(DataClassJsonMixin):
+    has_next_page: bool
+    faces: t.List[FaceWithMeta]
+    top_identities: t.List[IdentityRowPayload]
+
+
+@app.post("/api/faces")
+async def faces_on_page(params: GalleryRequest) -> FacesResponse:
+    faces = []
+    db = DB.get()
+    omgs, has_next_page = db.get_matching_images(params.query, params.sort, params.paging)
+    top_identities = db.identities.top_identities(100)
+
+    for omg in omgs:
+        fcs = db.get_face_embeddings(omg.md5)
+        identities = db.get_manual_identities(omg.md5)
+        if identities is not None:
+            ident_dct = {
+                identity.position: identity.identity
+                for identity in identities.identities
+                if identity.identity is not None
+            }
+            skip_dct = {
+                identity.position: identity.skip_reason
+                for identity in identities.identities
+                if identity.skip_reason is not None
+            }
+        else:
+            ident_dct = {}
+            skip_dct = {}
+        if fcs is not None:
+            for face in fcs.faces:
+                faces.append(
+                    FaceWithMeta(
+                        face.position,
+                        omg.md5,
+                        omg.extension,
+                        ident_dct.get(face.position),
+                        skip_dct.get(face.position),
+                        face.embedding,
+                    )
+                )
+    return FacesResponse(has_next_page, faces, top_identities)
 
 
 T = t.TypeVar("T")

@@ -1,5 +1,6 @@
 import argparse
 import asyncio
+import json
 import sys
 import traceback
 import typing as t
@@ -9,14 +10,16 @@ import tqdm
 
 from pphoto.data_model.base import PathWithMd5
 from pphoto.data_model.config import Config, DBFilesConfig
+from pphoto.data_model.manual import ManualIdentity
 from pphoto.db.features_table import FeaturesTable
 from pphoto.db.connection import PhotosConnection, GalleryConnection, JobsConnection
 from pphoto.db.files_table import FilesTable
+from pphoto.db.identity_table import IdentityTable
 from pphoto.db.queries import PhotosQueries
 from pphoto.annots.annotator import Annotator
 from pphoto.annots.date import PathDateExtractor
 from pphoto.communication.server import start_image_server_loop, ImportDirectory, RefreshJobs
-from pphoto.remote_jobs.types import TaskId, RemoteTask, ManualAnnotationTask
+from pphoto.remote_jobs.types import TaskId, RemoteTask, ManualAnnotationTask, RemoteJobType
 from pphoto.remote_jobs.db import RemoteJobsTable
 from pphoto.file_mgmt.jobs import Jobs, JobType, IMPORT_PRIORITY, DEFAULT_PRIORITY, REALTIME_PRIORITY
 from pphoto.file_mgmt.queues import Queues, Queue
@@ -60,6 +63,15 @@ async def worker(name: str, context: GlobalContext, queue: Queue, /) -> None:
                     context.jobs.add_manual_annotation(path)
                 else:
                     assert False, "Wrong type for ADD_MANUAL_ANNOTATION"
+            elif type_ == JobType.FACE_CLUSTER_ANNOTATION:
+                if (
+                    isinstance(path, RemoteTask)
+                    and isinstance(path.payload, list)
+                    and all(isinstance(x, ManualIdentity) for x in path.payload)
+                ):
+                    context.jobs.face_cluster_task(path)
+                else:
+                    assert False, "Wrong type for FACE_CLUSTER_ANNOTATION"
             else:
                 assert_never(type_)
         # pylint: disable-next = broad-exception-caught
@@ -88,15 +100,34 @@ async def manual_annotation_worker(
             for task in unfinished_tasks:
                 if task.id_ in visited:
                     continue
-                try:
-                    parsed_task = task.map(ManualAnnotationTask.from_json)
-                # pylint: disable-next = bare-except
-                except:
-                    traceback.print_exc()
-                    print("Error while parsing manual task", name, task)
-                    continue
+                if task.type_ == RemoteJobType.MASS_MANUAL_ANNOTATION:
+                    try:
+                        parsed_task = task.map(ManualAnnotationTask.from_json)
+                    # pylint: disable-next = bare-except
+                    except:
+                        traceback.print_exc()
+                        print("Error while parsing manual task", name, task)
+                        continue
 
-                context.queues.enqueue_path([(parsed_task, JobType.ADD_MANUAL_ANNOTATION)], REALTIME_PRIORITY)
+                    context.queues.enqueue_path(
+                        [(parsed_task, JobType.ADD_MANUAL_ANNOTATION)], REALTIME_PRIORITY
+                    )
+                elif task.type_ == RemoteJobType.FACE_CLUSTER_ANNOTATION:
+                    try:
+                        face_cluster_task = task.map(
+                            lambda data: [ManualIdentity.from_dict(x) for x in json.loads(data)]
+                        )
+                    # pylint: disable-next = bare-except
+                    except:
+                        traceback.print_exc()
+                        print("Error while parsing manual task", name, task)
+                        continue
+
+                    context.queues.enqueue_path(
+                        [(face_cluster_task, JobType.FACE_CLUSTER_ANNOTATION)], REALTIME_PRIORITY
+                    )
+                else:
+                    assert_never(task.type_)
                 visited.add(task.id_)
         # pylint: disable-next = bare-except
         except:
@@ -235,6 +266,7 @@ async def main() -> None:
     reindexer = Reindexer(PathDateExtractor(config.directory_matching), photos_connection, gallery_connection)
     features = FeaturesTable(photos_connection)
     files = FilesTable(photos_connection)
+    identities = IdentityTable(photos_connection)
 
     @Alive(persistent=True, key=[])
     async def check_db_connection() -> None:
@@ -254,7 +286,9 @@ async def main() -> None:
     tasks.append(asyncio.create_task(check_db_connection()))
     tasks.append(asyncio.create_task(reindex_gallery(reindexer)))
 
-    annotator = Annotator(config.directory_matching, files_config, features, remote_annotator_queue)
+    annotator = Annotator(
+        config.directory_matching, files_config, features, identities, remote_annotator_queue
+    )
     remote_jobs_table = RemoteJobsTable(jobs_connection)
     jobs = Jobs(config.managed_folder, files, remote_jobs_table, PhotosQueries(photos_connection), annotator)
     queues = Queues()

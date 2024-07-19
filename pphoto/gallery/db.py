@@ -4,7 +4,12 @@ from dataclasses_json import DataClassJsonMixin
 
 from pphoto.db.gallery_index_table import GalleryIndexTable
 from pphoto.db.connection import PhotosConnection, GalleryConnection, JobsConnection
+from pphoto.db.cache import SQLiteCache
+from pphoto.data_model.manual import ManualIdentities
+from pphoto.data_model.face import FaceEmbeddings
 from pphoto.db.files_table import FilesTable
+from pphoto.db.features_table import FeaturesTable
+from pphoto.db.identity_table import IdentityTable
 from pphoto.db.directories_table import DirectoriesTable
 from pphoto.remote_jobs.db import RemoteJobsTable
 
@@ -27,6 +32,10 @@ class ImageSqlDB:
     ) -> None:
         self._connections = [photos_connection, gallery_connection, jobs_connection]
         self._files_table = FilesTable(photos_connection)
+        features_table = FeaturesTable(photos_connection)
+        self._manual_identities = SQLiteCache(features_table, ManualIdentities, None)
+        self.identities = IdentityTable(photos_connection)
+        self._faces_embeddings = SQLiteCache(features_table, FaceEmbeddings, None)
         self._gallery_index = GalleryIndexTable(gallery_connection)
         self.jobs = RemoteJobsTable(jobs_connection)
         self._directories_table = DirectoriesTable(gallery_connection)
@@ -94,6 +103,18 @@ class ImageSqlDB:
         return self._gallery_index.get_image_clusters(
             url, top_left, bottom_right, latitude_resolution, longitude_resolution, over_fetch
         )
+
+    def get_face_embeddings(self, md5: str) -> t.Optional[FaceEmbeddings]:
+        r = self._faces_embeddings.get(md5)
+        if r is None or r.payload is None:
+            return None
+        return r.payload.p
+
+    def get_manual_identities(self, md5: str) -> t.Optional[ManualIdentities]:
+        r = self._manual_identities.get(md5)
+        if r is None or r.payload is None:
+            return None
+        return r.payload.p
 
     def get_matching_images(
         self,

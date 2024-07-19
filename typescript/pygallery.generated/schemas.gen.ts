@@ -263,6 +263,98 @@ export const $ExceptionInfo = {
     title: 'ExceptionInfo'
 } as const;
 
+export const $FaceIdentifier = {
+    properties: {
+        md5: {
+            type: 'string',
+            title: 'Md5'
+        },
+        extension: {
+            type: 'string',
+            title: 'Extension'
+        },
+        position: {
+            '$ref': '#/components/schemas/Position'
+        }
+    },
+    type: 'object',
+    required: ['md5', 'extension', 'position'],
+    title: 'FaceIdentifier'
+} as const;
+
+export const $FaceWithMeta = {
+    properties: {
+        position: {
+            '$ref': '#/components/schemas/Position'
+        },
+        md5: {
+            type: 'string',
+            title: 'Md5'
+        },
+        extension: {
+            type: 'string',
+            title: 'Extension'
+        },
+        identity: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Identity'
+        },
+        skip_reason: {
+            anyOf: [
+                {
+                    '$ref': '#/components/schemas/IdentitySkipReason'
+                },
+                {
+                    type: 'null'
+                }
+            ]
+        },
+        embedding: {
+            items: {
+                type: 'number'
+            },
+            type: 'array',
+            title: 'Embedding'
+        }
+    },
+    type: 'object',
+    required: ['position', 'md5', 'extension', 'identity', 'skip_reason', 'embedding'],
+    title: 'FaceWithMeta'
+} as const;
+
+export const $FacesResponse = {
+    properties: {
+        has_next_page: {
+            type: 'boolean',
+            title: 'Has Next Page'
+        },
+        faces: {
+            items: {
+                '$ref': '#/components/schemas/FaceWithMeta'
+            },
+            type: 'array',
+            title: 'Faces'
+        },
+        top_identities: {
+            items: {
+                '$ref': '#/components/schemas/IdentityRowPayload'
+            },
+            type: 'array',
+            title: 'Top Identities'
+        }
+    },
+    type: 'object',
+    required: ['has_next_page', 'faces', 'top_identities'],
+    title: 'FacesResponse'
+} as const;
+
 export const $FoundLocation = {
     properties: {
         latitude: {
@@ -345,6 +437,54 @@ export const $HTTPValidationError = {
     },
     type: 'object',
     title: 'HTTPValidationError'
+} as const;
+
+export const $IdentityRowPayload = {
+    properties: {
+        identity: {
+            type: 'string',
+            title: 'Identity'
+        },
+        example_md5: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Example Md5'
+        },
+        example_extension: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Example Extension'
+        },
+        updates: {
+            type: 'integer',
+            title: 'Updates'
+        },
+        last_update: {
+            type: 'integer',
+            title: 'Last Update'
+        }
+    },
+    type: 'object',
+    required: ['identity', 'example_md5', 'example_extension', 'updates', 'last_update'],
+    title: 'IdentityRowPayload'
+} as const;
+
+export const $IdentitySkipReason = {
+    type: 'string',
+    enum: ['not_face', 'not_poi'],
+    title: 'IdentitySkipReason'
 } as const;
 
 export const $Image = {
@@ -471,16 +611,12 @@ export const $Image = {
             ],
             title: 'Software'
         },
-        identity: {
-            anyOf: [
-                {
-                    type: 'string'
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'Identity'
+        identities: {
+            items: {
+                type: 'string'
+            },
+            type: 'array',
+            title: 'Identities'
         },
         version: {
             type: 'integer',
@@ -488,7 +624,7 @@ export const $Image = {
         }
     },
     type: 'object',
-    required: ['md5', 'extension', 'date', 'date_transformed', 'tags', 'classifications', 'address', 'dependent_features_last_update', 'latitude', 'longitude', 'altitude', 'manual_features', 'being_annotated', 'camera', 'software', 'identity', 'version'],
+    required: ['md5', 'extension', 'date', 'date_transformed', 'tags', 'classifications', 'address', 'dependent_features_last_update', 'latitude', 'longitude', 'altitude', 'manual_features', 'being_annotated', 'camera', 'software', 'identities', 'version'],
     title: 'Image'
 } as const;
 
@@ -566,10 +702,17 @@ export const $ImageAggregation = {
             },
             type: 'object',
             title: 'Cameras'
+        },
+        identities: {
+            additionalProperties: {
+                type: 'integer'
+            },
+            type: 'object',
+            title: 'Identities'
         }
     },
     type: 'object',
-    required: ['total', 'address', 'tag', 'classification', 'cameras'],
+    required: ['total', 'address', 'tag', 'classification', 'cameras', 'identities'],
     title: 'ImageAggregation'
 } as const;
 
@@ -685,7 +828,21 @@ export const $JobDescription = {
             title: 'Longitude'
         },
         query: {
-            '$ref': '#/components/schemas/MassLocationAndTextAnnotation-Output'
+            anyOf: [
+                {
+                    '$ref': '#/components/schemas/MassLocationAndTextAnnotation-Output'
+                },
+                {
+                    items: {
+                        '$ref': '#/components/schemas/ManualIdentityClusterRequest-Output'
+                    },
+                    type: 'array'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Query'
         },
         job: {
             '$ref': '#/components/schemas/RemoteJob_bytes_'
@@ -958,6 +1115,78 @@ export const $LocationQueryFixedLocation = {
     title: 'LocationQueryFixedLocation'
 } as const;
 
+export const $ManualIdentityClusterRequest_Input = {
+    properties: {
+        identity: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Identity'
+        },
+        skip_reason: {
+            anyOf: [
+                {
+                    '$ref': '#/components/schemas/IdentitySkipReason'
+                },
+                {
+                    type: 'null'
+                }
+            ]
+        },
+        faces: {
+            items: {
+                '$ref': '#/components/schemas/FaceIdentifier'
+            },
+            type: 'array',
+            title: 'Faces'
+        }
+    },
+    type: 'object',
+    required: ['identity', 'skip_reason', 'faces'],
+    title: 'ManualIdentityClusterRequest'
+} as const;
+
+export const $ManualIdentityClusterRequest_Output = {
+    properties: {
+        identity: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Identity'
+        },
+        skip_reason: {
+            anyOf: [
+                {
+                    '$ref': '#/components/schemas/IdentitySkipReason'
+                },
+                {
+                    type: 'null'
+                }
+            ]
+        },
+        faces: {
+            items: {
+                '$ref': '#/components/schemas/FaceIdentifier'
+            },
+            type: 'array',
+            title: 'Faces'
+        }
+    },
+    type: 'object',
+    required: ['identity', 'skip_reason', 'faces'],
+    title: 'ManualIdentityClusterRequest'
+} as const;
+
 export const $ManualLocation = {
     properties: {
         latitude: {
@@ -1125,6 +1354,30 @@ export const $PathSplit = {
     title: 'PathSplit'
 } as const;
 
+export const $Position = {
+    properties: {
+        left: {
+            type: 'integer',
+            title: 'Left'
+        },
+        top: {
+            type: 'integer',
+            title: 'Top'
+        },
+        right: {
+            type: 'integer',
+            title: 'Right'
+        },
+        bottom: {
+            type: 'integer',
+            title: 'Bottom'
+        }
+    },
+    type: 'object',
+    required: ['left', 'top', 'right', 'bottom'],
+    title: 'Position'
+} as const;
+
 export const $PredictedLocation = {
     properties: {
         loc: {
@@ -1223,8 +1476,7 @@ export const $ReferenceStats = {
 
 export const $RemoteJobType = {
     type: 'string',
-    enum: ['mass_manual_annotation'],
-    const: 'mass_manual_annotation',
+    enum: ['mass_manual_annotation', 'face_cluster_annotation'],
     title: 'RemoteJobType'
 } as const;
 
@@ -1321,6 +1573,17 @@ export const $SearchQuery = {
             type: 'string',
             title: 'Camera',
             default: ''
+        },
+        identity: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Identity'
         },
         tsfrom: {
             anyOf: [

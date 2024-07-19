@@ -12,6 +12,7 @@ class ImageAggregation:
     tag: t.Dict[str, int]
     classification: t.Dict[str, int]
     cameras: t.Dict[t.Optional[str], int]  # noqa: F841
+    identities: t.Dict[t.Optional[str], int]
 
 
 @dataclass
@@ -38,7 +39,7 @@ class Image(DataClassJsonMixin):
     being_annotated: bool
     camera: t.Optional[str]
     software: t.Optional[str]
-    identity: t.Optional[str]
+    identities: t.List[str]
     version: int
 
     @staticmethod

@@ -13,6 +13,7 @@ interface AggregateInfoViewProps {
     show_links: boolean;
     callbacks: {
         update_url_add_tag: (tag: string) => void;
+        update_url_add_identity: (identity: string) => void;
         update_url: (update: SearchQuery) => void;
         set_page: (page: number) => void;
     };
@@ -22,7 +23,12 @@ export function AggregateInfoView({
     aggr,
     paging,
     show_links,
-    callbacks: { update_url_add_tag, update_url, set_page },
+    callbacks: {
+        update_url_add_tag,
+        update_url_add_identity,
+        update_url,
+        set_page,
+    },
 }: AggregateInfoViewProps) {
     const num_pages = Math.ceil(aggr.total / (paging.paging || 100));
     const tags = Object.entries(aggr.tag)
@@ -44,6 +50,30 @@ export function AggregateInfoView({
                 return [
                     <>
                         {tag} ({num}){" "}
+                    </>,
+                ];
+            }
+        });
+    console.log(aggr);
+    const people = Object.entries(aggr.identities)
+        .sort(([, a], [, b]) => b - a)
+        .slice(0, 15)
+        .flatMap(([identity, num]) => {
+            if (show_links) {
+                return [
+                    <a
+                        key={identity}
+                        onClick={() => update_url_add_identity(identity)}
+                        href="#"
+                    >
+                        {identity} ({num})
+                    </a>,
+                    " ",
+                ];
+            } else {
+                return [
+                    <>
+                        {identity} ({num}){" "}
                     </>,
                 ];
             }
@@ -138,6 +168,8 @@ export function AggregateInfoView({
     return (
         <div>
             Found {aggr.total} matches.
+            <br />
+            Top people: {people}
             <br />
             Top tags: {tags}
             <br />

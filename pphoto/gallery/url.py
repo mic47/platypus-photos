@@ -34,6 +34,7 @@ class SearchQuery(DataClassJsonMixin):
     addr: str = ""
     directory: str = ""
     camera: str = ""
+    identity: t.Optional[str] = None
     tsfrom: t.Optional[float] = None
     tsto: t.Optional[float] = None
     skip_with_location: bool = False

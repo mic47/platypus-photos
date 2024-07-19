@@ -1,7 +1,10 @@
 import datetime as dt
+import enum
 import typing as t
 
 from dataclasses import dataclass
+
+from dataclasses_json import DataClassJsonMixin
 
 from pphoto.data_model.base import HasCurrentVersion
 from pphoto.data_model.face import Position
@@ -31,10 +34,21 @@ class ManualText(HasCurrentVersion):
         return 0
 
 
+class IdentitySkipReason(enum.Enum):
+    NOT_FACE = "not_face"  # noqa: F841
+    NOT_POI = "not_poi"  # noqa: F841
+
+
 @dataclass
-class ManualIdentity(HasCurrentVersion):
-    identity: str
+class ManualIdentity(DataClassJsonMixin):
+    identity: t.Optional[str]
+    skip_reason: t.Optional[IdentitySkipReason]
     position: Position
+
+
+@dataclass
+class ManualIdentities(HasCurrentVersion):
+    identities: t.List[ManualIdentity]
 
     @staticmethod
     def current_version() -> int:

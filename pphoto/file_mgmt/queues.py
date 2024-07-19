@@ -6,6 +6,7 @@ import typing as t
 
 from pphoto.remote_jobs.types import RemoteTask, ManualAnnotationTask
 from pphoto.data_model.base import PathWithMd5
+from pphoto.data_model.manual import ManualIdentity
 from pphoto.file_mgmt.jobs import JobType, IMPORT_PRIORITY, DEFAULT_PRIORITY
 from pphoto.utils import assert_never, DefaultDict, CacheTTL
 from pphoto.utils.progress_bar import ProgressBar
@@ -28,6 +29,7 @@ class QueueItem(t.Generic[T]):
 QueueValue = t.Union[
     t.Tuple[PathWithMd5, t.Literal[JobType.CHEAP_FEATURES] | t.Literal[JobType.IMAGE_TO_TEXT]],
     t.Tuple[RemoteTask[ManualAnnotationTask], t.Literal[JobType.ADD_MANUAL_ANNOTATION]],
+    t.Tuple[RemoteTask[t.List[ManualIdentity]], t.Literal[JobType.FACE_CLUSTER_ANNOTATION]],
 ]
 
 Queue = asyncio.PriorityQueue[QueueItem[QueueValue]]
@@ -75,6 +77,9 @@ class Queues:
             elif type_ == JobType.IMAGE_TO_TEXT:
                 self.image_to_text.put_nowait(QueueItem(priority, random.random(), value))
             elif type_ == JobType.ADD_MANUAL_ANNOTATION:
+                self.cheap_features.put_nowait(QueueItem(priority, self._index, value))
+                self._index += 1
+            elif type_ == JobType.FACE_CLUSTER_ANNOTATION:
                 self.cheap_features.put_nowait(QueueItem(priority, self._index, value))
                 self._index += 1
             else:

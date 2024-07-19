@@ -8,11 +8,19 @@ from pphoto.annots.geo import Geolocator, GeoAddress
 from pphoto.annots.text import Models, ImageClassification
 from pphoto.data_model.config import DirectoryMatchingConfig, DBFilesConfig
 from pphoto.data_model.base import WithMD5, PathWithMd5, Error, HasCurrentVersion
-from pphoto.data_model.manual import ManualLocation, ManualText, ManualDate
+from pphoto.data_model.manual import (
+    ManualLocation,
+    ManualText,
+    ManualDate,
+    ManualIdentity,
+    ManualIdentities,
+    Position,
+)
 from pphoto.data_model.face import FaceEmbeddings
 from pphoto.remote_jobs.types import RemoteTask, ManualAnnotationTask
 from pphoto.db.cache import SQLiteCache
 from pphoto.db.features_table import FeaturesTable
+from pphoto.db.identity_table import IdentityTable
 from pphoto.communication.server import RemoteExecutorQueue
 
 
@@ -22,6 +30,7 @@ class Annotator:
         directory_matching: DirectoryMatchingConfig,
         files_config: DBFilesConfig,
         features: FeaturesTable,
+        identities_table: IdentityTable,
         remote_annotator_queue: t.Optional[RemoteExecutorQueue],
     ):
         self.path_to_date = PathDateExtractor(directory_matching)
@@ -32,12 +41,42 @@ class Annotator:
         exif_cache = SQLiteCache(features, ImageExif, files_config.exif_jsonl)
         self.exif = Exif(exif_cache)
         self.manual_location = SQLiteCache(features, ManualLocation, files_config.manual_location_jsonl)
+        self.manual_identities = SQLiteCache(features, ManualIdentities, files_config.manual_identity_jsonl)
+        self._identities = identities_table
         self.manual_date = SQLiteCache(features, ManualDate, files_config.manual_date_jsonl)
         self.manual_text = SQLiteCache(features, ManualText, files_config.manual_text_jsonl)
         geolocator_cache = SQLiteCache(features, GeoAddress, files_config.geo_address_jsonl)
         self.geolocator = Geolocator(geolocator_cache)
         self.cheap_features_types: t.List[t.Type[HasCurrentVersion]] = [ImageExif, GeoAddress]
         self.image_to_text_types: t.List[t.Type[HasCurrentVersion]] = [ImageClassification, FaceEmbeddings]
+
+    def update_manual_identity(
+        self, task: RemoteTask[t.List[ManualIdentity]]
+    ) -> t.Tuple[t.Optional[WithMD5[ManualIdentities]]]:
+        existing_identity = self.manual_identities.get(task.id_.md5)
+        if (
+            existing_identity is None
+            or existing_identity.payload is None
+            or existing_identity.payload.p is None
+        ):
+            identities: t.Dict[Position, ManualIdentity] = {}
+        else:
+            identities = {identity.position: identity for identity in existing_identity.payload.p.identities}
+        for identity in task.payload:
+            identities[identity.position] = identity
+        for identity in task.payload:
+            if identity.identity is not None:
+                self._identities.add(identity.identity, None, None, True)
+        return (
+            self.manual_identities.add(
+                WithMD5(
+                    task.id_.md5,
+                    ManualIdentities.current_version(),
+                    ManualIdentities(list(identities.values())),
+                    None,
+                )
+            ),
+        )
 
     def manual_features(
         self, task: RemoteTask[ManualAnnotationTask]

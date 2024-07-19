@@ -61,6 +61,27 @@ export type ExceptionInfo = {
     exc_tb: Array<(string)> | null;
 };
 
+export type FaceIdentifier = {
+    md5: string;
+    extension: string;
+    position: Position;
+};
+
+export type FaceWithMeta = {
+    position: Position;
+    md5: string;
+    extension: string;
+    identity: string | null;
+    skip_reason: IdentitySkipReason | null;
+    embedding: Array<(number)>;
+};
+
+export type FacesResponse = {
+    has_next_page: boolean;
+    faces: Array<FaceWithMeta>;
+    top_identities: Array<IdentityRowPayload>;
+};
+
 export type FoundLocation = {
     latitude: number;
     longitude: number;
@@ -87,6 +108,16 @@ export type HTTPValidationError = {
     detail?: Array<ValidationError>;
 };
 
+export type IdentityRowPayload = {
+    identity: string;
+    example_md5: string | null;
+    example_extension: string | null;
+    updates: number;
+    last_update: number;
+};
+
+export type IdentitySkipReason = 'not_face' | 'not_poi';
+
 export type Image = {
     md5: string;
     extension: string;
@@ -105,7 +136,7 @@ export type Image = {
     being_annotated: boolean;
     camera: string | null;
     software: string | null;
-    identity: string | null;
+    identities: Array<(string)>;
     version: number;
 };
 
@@ -127,6 +158,9 @@ export type ImageAggregation = {
         [key: string]: (number);
     };
     cameras: {
+        [key: string]: (number);
+    };
+    identities: {
         [key: string]: (number);
     };
 };
@@ -154,7 +188,7 @@ export type JobDescription = {
     time: number;
     latitude: number | null;
     longitude: number | null;
-    query: MassLocationAndTextAnnotation_Output;
+    query: MassLocationAndTextAnnotation_Output | Array<ManualIdentityClusterRequest_Output> | null;
     job: RemoteJob_bytes_;
     example_path_md5: string | null;
     example_path_extension: string | null;
@@ -219,6 +253,18 @@ export type LocationQueryFixedLocation = {
 
 export type t3 = 'FixedLocation';
 
+export type ManualIdentityClusterRequest_Input = {
+    identity: string | null;
+    skip_reason: IdentitySkipReason | null;
+    faces: Array<FaceIdentifier>;
+};
+
+export type ManualIdentityClusterRequest_Output = {
+    identity: string | null;
+    skip_reason: IdentitySkipReason | null;
+    faces: Array<FaceIdentifier>;
+};
+
 export type ManualLocation = {
     latitude: number;
     longitude: number;
@@ -256,6 +302,13 @@ export type PathSplit = {
     file: string;
 };
 
+export type Position = {
+    left: number;
+    top: number;
+    right: number;
+    bottom: number;
+};
+
 export type PredictedLocation = {
     loc: LocPoint;
     earlier: ReferenceStats | null;
@@ -275,7 +328,7 @@ export type ReferenceStats = {
     seconds: number;
 };
 
-export type RemoteJobType = 'mass_manual_annotation';
+export type RemoteJobType = 'mass_manual_annotation' | 'face_cluster_annotation';
 
 export type RemoteJob_bytes_ = {
     id_: number;
@@ -295,6 +348,7 @@ export type SearchQuery = {
     addr?: string;
     directory?: string;
     camera?: string;
+    identity?: string | null;
     tsfrom?: number | null;
     tsto?: number | null;
     skip_with_location?: boolean;
@@ -365,6 +419,7 @@ export type ValidationError = {
 export type ImageEndpointGetData = {
     extension: string;
     hsh: number | string;
+    position?: string | null;
     size: ImageSize;
 };
 
@@ -393,6 +448,12 @@ export type MassManualAnnotationEndpointPostData = {
 };
 
 export type MassManualAnnotationEndpointPostResponse = number;
+
+export type ManualIdentityAnnotationEndpointPostData = {
+    requestBody: Array<ManualIdentityClusterRequest_Input>;
+};
+
+export type ManualIdentityAnnotationEndpointPostResponse = number;
 
 export type FindLocationPostData = {
     req: string;
@@ -427,6 +488,12 @@ export type ImagePagePostData = {
 };
 
 export type ImagePagePostResponse = ImageResponse;
+
+export type FacesOnPagePostData = {
+    requestBody: GalleryRequest;
+};
+
+export type FacesOnPagePostResponse = FacesResponse;
 
 export type AggregateImagesPostData = {
     requestBody: AggregateQuery;
@@ -502,6 +569,21 @@ export type $OpenApiTs = {
     '/api/mass_manual_annotation': {
         post: {
             req: MassManualAnnotationEndpointPostData;
+            res: {
+                /**
+                 * Successful Response
+                 */
+                200: number;
+                /**
+                 * Validation Error
+                 */
+                422: HTTPValidationError;
+            };
+        };
+    };
+    '/api/manual_identity_annotation': {
+        post: {
+            req: ManualIdentityAnnotationEndpointPostData;
             res: {
                 /**
                  * Successful Response
@@ -602,6 +684,21 @@ export type $OpenApiTs = {
                  * Successful Response
                  */
                 200: ImageResponse;
+                /**
+                 * Validation Error
+                 */
+                422: HTTPValidationError;
+            };
+        };
+    };
+    '/api/faces': {
+        post: {
+            req: FacesOnPagePostData;
+            res: {
+                /**
+                 * Successful Response
+                 */
+                200: FacesResponse;
                 /**
                  * Validation Error
                  */

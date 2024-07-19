@@ -247,14 +247,16 @@ td.center {
 }
 
 .tab button:hover {
-  background-color: #bfb;
+  border-color: #bfb;
+  background-color: #faa;
 }
 
 .tab button.active {
   background-color: #dfd;
 }
 .tab button:hover.active {
-  background-color: #fbb;
+  border-color: #fbb;
+  background-color: #afa;
 }
 .disabled {
     display: none;
@@ -309,4 +311,16 @@ td.center {
 
 .hasTooltip:hover .tooltipText{
   visibility: visible;
+}
+.face_container {
+  display: inline;
+  max-width: 5em;
+  max-height: 5em;
+  text-align: center;
+
+}
+.face_cluster{
+  border: 1px solid black;
+  margin: 0.25em;
+  padding: 0.25em;
 }

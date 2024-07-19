@@ -12,6 +12,7 @@ from pphoto.annots.md5 import compute_md5
 from pphoto.annots.annotator import Annotator
 from pphoto.data_model.base import PathWithMd5
 from pphoto.data_model.geo import GeoAddress
+from pphoto.data_model.manual import ManualIdentity
 from pphoto.remote_jobs.types import ManualAnnotationTask, RemoteTask
 from pphoto.remote_jobs.db import RemoteJobsTable
 from pphoto.db.files_table import FilesTable
@@ -26,6 +27,7 @@ class JobType(enum.Enum):
     CHEAP_FEATURES = 1
     IMAGE_TO_TEXT = 2
     ADD_MANUAL_ANNOTATION = 3
+    FACE_CLUSTER_ANNOTATION = 4
 
 
 IMPORT_PRIORITY = 46
@@ -154,6 +156,10 @@ class Jobs:
         (loc, _dt, _text) = self._annotator.manual_features(task)
         for file in self._files.by_md5(task.id_.md5):
             self.cheap_features(PathWithMd5(file.file, task.id_.md5), recompute_location=loc is not None)
+        self._jobs.finish_task(task.id_)
+
+    def face_cluster_task(self, task: RemoteTask[t.List[ManualIdentity]]) -> None:
+        (_identity,) = self._annotator.update_manual_identity(task)
         self._jobs.finish_task(task.id_)
 
     def fix_in_progress_moved_files_at_startup(self) -> None:
