@@ -160,6 +160,9 @@ export type ImageAggregation = {
     cameras: {
         [key: string]: (number);
     };
+    identities: {
+        [key: string]: (number);
+    };
 };
 
 export type ImageResponse = {
@@ -345,6 +348,7 @@ export type SearchQuery = {
     addr?: string;
     directory?: string;
     camera?: string;
+    identity?: string | null;
     tsfrom?: number | null;
     tsto?: number | null;
     skip_with_location?: boolean;

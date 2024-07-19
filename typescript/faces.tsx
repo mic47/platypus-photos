@@ -67,7 +67,6 @@ export function FacesComponent({ query, paging, sort }: FacesComponentProps) {
             availableIdentities.push(identity.identity);
         }
     });
-    console.log(availableIdentities);
     return (
         <div>
             Threshold: {threshold}

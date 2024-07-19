@@ -6,6 +6,7 @@
       "addr",
       "directory",
       "camera",
+      "identity",
       "tsfrom",
       "tsto",
       "skip_with_location",

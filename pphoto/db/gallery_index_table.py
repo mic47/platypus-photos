@@ -265,6 +265,10 @@ WHERE
             for tag in url.tag.split(","):
                 clauses.append("tags like ?")
                 variables.append(f"%{tag}%")
+        if url.identity:
+            for ident in url.identity.split(","):
+                clauses.append("identity like ?")
+                variables.append(f"%,{ident},%")
         if url.directory:
             clauses.append("md5 in (SELECT md5 FROM directories WHERE directory like ?)")
             variables.append(f"{url.directory}%")
@@ -587,7 +591,7 @@ FROM
             select,
             variables,
         ) = self._matching_query(
-            "tags, classifications, address_name, address_country, camera",
+            "tags, classifications, address_name, address_country, camera, identity",
             url,
         )
         query = f"""
@@ -597,6 +601,8 @@ UNION ALL
 SELECT "cls", classifications, COUNT(1) FROM matched_images GROUP BY classifications
 UNION ALL
 SELECT "tag", tags, COUNT(1) FROM matched_images GROUP BY tags
+UNION ALL
+SELECT "ident", identity, COUNT(1) FROM matched_images GROUP BY identity
 UNION ALL
 SELECT "addrn", address_name, COUNT(1) FROM matched_images WHERE address_name IS NOT NULL GROUP BY address_name
 UNION ALL
@@ -609,6 +615,7 @@ SELECT "cam", camera, COUNT(1) FROM matched_images GROUP BY camera
         classifications_cnt: t.Counter[str] = Counter()
         address_cnt: t.Counter[str] = Counter()
         cameras_cnt: t.Counter[t.Optional[str]] = Counter()
+        identity_cnt: t.Counter[t.Optional[str]] = Counter()
         total = 0
         res = self._con.execute(
             query,
@@ -623,6 +630,7 @@ SELECT "cam", camera, COUNT(1) FROM matched_images GROUP BY camera
                     tag_cnt,
                     classifications_cnt,
                     cameras_cnt,
+                    identity_cnt,
                 )
             for (
                 type_,
@@ -641,6 +649,12 @@ SELECT "cam", camera, COUNT(1) FROM matched_images GROUP BY camera
                         continue
                     for c in value.split(":"):
                         tag_cnt[c] += count
+                elif type_ == "ident":
+                    if not value:
+                        continue
+                    for c in value.split(","):
+                        if c:
+                            identity_cnt[c] += count
                 elif type_ == "cam":
                     cameras_cnt[value] += count
                 elif type_ in [

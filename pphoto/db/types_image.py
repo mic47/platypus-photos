@@ -12,6 +12,7 @@ class ImageAggregation:
     tag: t.Dict[str, int]
     classification: t.Dict[str, int]
     cameras: t.Dict[t.Optional[str], int]  # noqa: F841
+    identities: t.Dict[t.Optional[str], int]
 
 
 @dataclass

@@ -1432,6 +1432,13 @@
             },
             "type": "object",
             "title": "Cameras"
+          },
+          "identities": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Identities"
           }
         },
         "type": "object",
@@ -1440,7 +1447,8 @@
           "address",
           "tag",
           "classification",
-          "cameras"
+          "cameras",
+          "identities"
         ],
         "title": "ImageAggregation"
       },
@@ -2411,6 +2419,17 @@
             "type": "string",
             "title": "Camera",
             "default": ""
+          },
+          "identity": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Identity"
           },
           "tsfrom": {
             "anyOf": [

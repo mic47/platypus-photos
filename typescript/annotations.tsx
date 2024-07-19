@@ -375,6 +375,7 @@ function AnnotationOverlayView({
                         show_links={false}
                         callbacks={{
                             update_url_add_tag: noop,
+                            update_url_add_identity: noop,
                             update_url: noop,
                             set_page: noop,
                         }}

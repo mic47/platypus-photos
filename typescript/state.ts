@@ -130,6 +130,7 @@ export function update_search_query_value(
         key === "addr" ||
         key === "directory" ||
         key === "camera" ||
+        key === "identity" ||
         key === "timestamp_trans"
     ) {
         const val = parse_string_or_null(value);

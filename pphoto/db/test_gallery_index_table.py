@@ -120,10 +120,11 @@ class TestGalleryIndexTable(unittest.TestCase):
             {"bar": 2, "foo": 2, "lol": 1},
             {"There is something fishy here": 2, "This is ridiculous": 1},
             {"olympus e-510": 2, "obscura": 1, None: 1},
+            {},
         )
         self.assertEqual(stats, expected)
         stats = table.get_aggregate_stats(SearchQuery(tag="missing"))
-        self.assertEqual(stats, ImageAggregation(0, {}, {}, {}, {}))
+        self.assertEqual(stats, ImageAggregation(0, {}, {}, {}, {}, {}))
 
     def test_get_location_bounds(self) -> None:
         table = GalleryIndexTable(connection())

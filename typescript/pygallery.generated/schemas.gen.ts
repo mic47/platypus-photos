@@ -702,10 +702,17 @@ export const $ImageAggregation = {
             },
             type: 'object',
             title: 'Cameras'
+        },
+        identities: {
+            additionalProperties: {
+                type: 'integer'
+            },
+            type: 'object',
+            title: 'Identities'
         }
     },
     type: 'object',
-    required: ['total', 'address', 'tag', 'classification', 'cameras'],
+    required: ['total', 'address', 'tag', 'classification', 'cameras', 'identities'],
     title: 'ImageAggregation'
 } as const;
 
@@ -1566,6 +1573,17 @@ export const $SearchQuery = {
             type: 'string',
             title: 'Camera',
             default: ''
+        },
+        identity: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Identity'
         },
         tsfrom: {
             anyOf: [
