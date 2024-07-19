@@ -6,6 +6,7 @@ import {
     FaceWithMeta,
     GalleryPaging,
     IdentitySkipReason,
+    ManualIdentityClusterRequest_Input,
     SearchQuery,
     SortParams,
 } from "./pygallery.generated";
@@ -115,49 +116,109 @@ interface FacesViewProps {
     data: FaceWithMeta[];
 }
 function FacesView({ threshold, availableIdentities, data }: FacesViewProps) {
-    const items = doClustering(threshold, data)
-        .sort((a, b) => {
-            if (a.length < b.length) {
-                return 1;
-            } else if (a.length > b.length) {
-                return -1;
-            } else {
-                return 0;
-            }
-        })
-        .map((faces) => {
-            const posStr = `${faces[0].md5}/${faces[0].position.left},${faces[0].position.top},${faces[0].position.right},${faces[0].position.bottom}`;
-            return (
-                <FaceCluster
-                    key={posStr}
-                    faces={faces}
-                    availableIdentities={availableIdentities}
-                />
-            );
-        });
+    const [clusters, updateClusters] = React.useState<
+        Array<{ id: string; faces: FaceWithMeta[] }>
+    >([]);
+    const [annotations, updateAnnotations] = React.useState<{
+        [id: string]: IdentityAnnotation;
+    }>({});
+    React.useEffect(() => {
+        const clusters = doClustering(threshold, data)
+            .sort((a, b) => {
+                if (a.length < b.length) {
+                    return 1;
+                } else if (a.length > b.length) {
+                    return -1;
+                } else {
+                    return 0;
+                }
+            })
+            .map((faces) => {
+                const posStr = `${faces[0].md5}/${faces[0].position.left},${faces[0].position.top},${faces[0].position.right},${faces[0].position.bottom}`;
+                return { id: posStr, faces: faces };
+            });
+        updateClusters(clusters);
+        const ids = new Set(clusters.map((cluster) => cluster.id));
+        const deleted = Object.keys(annotations).filter((x) => !ids.has(x));
+        if (deleted.length > 0) {
+            const annots = { ...annotations };
+            deleted.forEach((id) => {
+                delete annots[id];
+            });
+        }
+    }, [data, threshold]);
+    console.log(annotations);
+    const submit = () => {
+        const req = clusters
+            .map(({ id, faces }) => {
+                const annotation = annotations[id];
+                if (annotation === null || annotation === undefined) {
+                    return null;
+                }
+                return makeClusterRequest(faces, annotation);
+            })
+            .filter((x) => x !== null);
+        submitAnnotationRequest(req);
+    };
+    const items = clusters.map(({ id, faces }) => {
+        return (
+            <FaceCluster
+                key={id}
+                faces={faces}
+                availableIdentities={availableIdentities}
+                submitAllFaceAnnotations={() => submit()}
+                updateAnnotations={(
+                    request: ManualIdentityClusterRequest_Input | null,
+                ) => {
+                    const annots = { ...annotations };
+                    if (request === null) {
+                        delete annots[id];
+                    } else {
+                        annots[id] = request;
+                    }
+                    updateAnnotations(annots);
+                }}
+            />
+        );
+    });
     return (
         <div>
-            <button>Submit all pending face annotations</button>
+            <button onClick={() => submit()}>
+                Submit all pending face annotations
+            </button>
             {items}
-            <button>Submit all pending identity annotations</button>
+            <button onClick={() => submit()}>
+                Submit all pending identity annotations
+            </button>
         </div>
     );
 }
 
+type IdentityAnnotation = {
+    identity: string | null;
+    skip_reason: IdentitySkipReason | null;
+};
+
 function FaceCluster({
     faces,
     availableIdentities,
+    submitAllFaceAnnotations,
+    updateAnnotations,
 }: {
     faces: FaceWithMeta[];
     availableIdentities: string[];
+    submitAllFaceAnnotations: () => void;
+    updateAnnotations: (
+        requests: ManualIdentityClusterRequest_Input | null,
+    ) => void;
 }) {
-    const [request, updateRequest] = React.useState<{
-        identity: string | null;
-        skip_reason: IdentitySkipReason | null;
-    }>({
+    const [request, updateRequest] = React.useState<IdentityAnnotation>({
         identity: null,
         skip_reason: null,
     });
+    React.useEffect(() => {
+        updateAnnotations(makeClusterRequest(faces, request));
+    }, [request, faces]);
     const setSkipReason = (reason: IdentitySkipReason | null) => {
         if (reason === null) {
             updateRequest({ ...request, skip_reason: null });
@@ -175,27 +236,6 @@ function FaceCluster({
                 skip_reason: null,
             });
         }
-    };
-    const submit = () => {
-        pygallery_service
-            .manualIdentityAnnotationEndpointPost({
-                requestBody: [
-                    {
-                        identity: request.identity,
-                        skip_reason: request.skip_reason,
-                        faces: faces.map((face) => {
-                            return {
-                                md5: face.md5,
-                                extension: face.extension,
-                                position: face.position,
-                            };
-                        }),
-                    },
-                ],
-            })
-            .then((job_id) => {
-                console.log(job_id);
-            });
     };
     const clusterItems = faces.map((face) => {
         const posStr = `${face.position.left},${face.position.top},${face.position.right},${face.position.bottom}`;
@@ -219,7 +259,6 @@ function FaceCluster({
         ),
     ];
     // TODO: warning if there are duplicit identities, or something like that
-    console.log(request);
     return (
         <div className="face_cluster">
             <div>
@@ -278,7 +317,11 @@ function FaceCluster({
                     </select>
                     <br />
                     <button
-                        onClick={() => submit()}
+                        onClick={() =>
+                            submitAnnotationRequest([
+                                makeClusterRequest(faces, request),
+                            ])
+                        }
                         disabled={
                             request.identity === null &&
                             request.skip_reason === null
@@ -286,12 +329,48 @@ function FaceCluster({
                     >
                         Submit this cluster only
                     </button>
-                    <button>Submit all pending face annotations</button>
+                    <button onClick={() => submitAllFaceAnnotations()}>
+                        Submit all pending face annotations
+                    </button>
                 </div>
             </div>
             {clusterItems}
         </div>
     );
+}
+function makeClusterRequest(
+    faces: FaceWithMeta[],
+    request: IdentityAnnotation,
+): ManualIdentityClusterRequest_Input | null {
+    if (request.identity === null && request.skip_reason === null) {
+        return null;
+    }
+    return {
+        identity: request.identity,
+        skip_reason: request.skip_reason,
+        faces: faces.map((face) => {
+            return {
+                md5: face.md5,
+                extension: face.extension,
+                position: face.position,
+            };
+        }),
+    };
+}
+function submitAnnotationRequest(
+    maybe_requests: Array<ManualIdentityClusterRequest_Input | null>,
+) {
+    const request = maybe_requests.filter((x) => x !== null);
+    if (request.length === 0) {
+        return;
+    }
+    pygallery_service
+        .manualIdentityAnnotationEndpointPost({
+            requestBody: request,
+        })
+        .then((job_id) => {
+            console.log(job_id);
+        });
 }
 
 function doClustering(
