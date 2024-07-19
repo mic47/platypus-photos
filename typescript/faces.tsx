@@ -95,7 +95,13 @@ export function FacesComponent({ query, paging, sort }: FacesComponentProps) {
             <br />
             <FacesView
                 threshold={threshold}
-                availableIdentities={["RandomIdentity", "Other Test identity"]}
+                availableIdentities={[
+                    ...new Set(
+                        Object.values(pendingAnnotations)
+                            .map((a) => a.identity)
+                            .filter((id) => id !== null),
+                    ),
+                ]}
                 updatePendingAnnotations={(
                     req: ManualIdentityClusterRequest_Input[],
                 ) => {
