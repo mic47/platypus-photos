@@ -341,10 +341,17 @@ export const $FacesResponse = {
             },
             type: 'array',
             title: 'Faces'
+        },
+        top_identities: {
+            items: {
+                '$ref': '#/components/schemas/IdentityRowPayload'
+            },
+            type: 'array',
+            title: 'Top Identities'
         }
     },
     type: 'object',
-    required: ['has_next_page', 'faces'],
+    required: ['has_next_page', 'faces', 'top_identities'],
     title: 'FacesResponse'
 } as const;
 
@@ -430,6 +437,48 @@ export const $HTTPValidationError = {
     },
     type: 'object',
     title: 'HTTPValidationError'
+} as const;
+
+export const $IdentityRowPayload = {
+    properties: {
+        identity: {
+            type: 'string',
+            title: 'Identity'
+        },
+        example_md5: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Example Md5'
+        },
+        example_extension: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Example Extension'
+        },
+        updates: {
+            type: 'integer',
+            title: 'Updates'
+        },
+        last_update: {
+            type: 'integer',
+            title: 'Last Update'
+        }
+    },
+    type: 'object',
+    required: ['identity', 'example_md5', 'example_extension', 'updates', 'last_update'],
+    title: 'IdentityRowPayload'
 } as const;
 
 export const $IdentitySkipReason = {

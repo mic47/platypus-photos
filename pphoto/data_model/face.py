@@ -21,9 +21,6 @@ class Position(DataClassJsonMixin):
     right: int
     bottom: int
 
-    def to_query_string(self) -> str:
-        return ",".join([str(self.left), str(self.top), str(self.right), str(self.bottom)])
-
     @staticmethod
     def from_query_string(inp: str) -> t.Optional[Position]:
         splitted = inp.split(",")

@@ -35,8 +35,8 @@ class ManualText(HasCurrentVersion):
 
 
 class IdentitySkipReason(enum.Enum):
-    NOT_FACE = "not_face"
-    NOT_POI = "not_poi"
+    NOT_FACE = "not_face"  # noqa: F841
+    NOT_POI = "not_poi"  # noqa: F841
 
 
 @dataclass

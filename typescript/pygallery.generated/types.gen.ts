@@ -79,6 +79,7 @@ export type FaceWithMeta = {
 export type FacesResponse = {
     has_next_page: boolean;
     faces: Array<FaceWithMeta>;
+    top_identities: Array<IdentityRowPayload>;
 };
 
 export type FoundLocation = {
@@ -105,6 +106,14 @@ export type GetAddressRequest = {
 
 export type HTTPValidationError = {
     detail?: Array<ValidationError>;
+};
+
+export type IdentityRowPayload = {
+    identity: string;
+    example_md5: string | null;
+    example_extension: string | null;
+    updates: number;
+    last_update: number;
 };
 
 export type IdentitySkipReason = 'not_face' | 'not_poi';

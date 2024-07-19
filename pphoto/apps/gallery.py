@@ -30,6 +30,7 @@ from pphoto.db.types_location import LocationCluster, LocPoint, LocationBounds
 from pphoto.db.types_date import DateCluster, DateClusterGroupBy
 from pphoto.db.types_directory import DirectoryStats
 from pphoto.db.types_image import ImageAddress, ImageAggregation
+from pphoto.db.types_identity import IdentityRowPayload
 from pphoto.db.connection import PhotosConnection, GalleryConnection, JobsConnection
 from pphoto.utils import assert_never, Lazy
 from pphoto.remote_jobs.types import (
@@ -489,13 +490,15 @@ def parse_manual_identity_cluster_requests(data: bytes) -> t.List[ManualIdentity
 @app.post("/api/manual_identity_annotation")
 async def manual_identity_annotation_endpoint(clusters: t.List[ManualIdentityClusterRequest]) -> int:
     # Group by md5
+    db = DB.get()
     by_md5: t.Dict[t.Tuple[str, str], t.List[ManualIdentity]] = {}
     for cluster in clusters:
+        if cluster.identity is not None and cluster.faces:
+            db.identities.add(cluster.identity, cluster.faces[0].md5, cluster.faces[0].extension, False)
         for face in cluster.faces:
             by_md5.setdefault((face.md5, face.extension), []).append(
                 ManualIdentity(cluster.identity, cluster.skip_reason, face.position)
             )
-    db = DB.get()
     job_id = db.jobs.submit_job(
         RemoteJobType.FACE_CLUSTER_ANNOTATION,
         json.dumps([x.to_dict(encode_json=True) for x in clusters], ensure_ascii=False).encode("utf-8"),
@@ -617,6 +620,7 @@ class JobDescription:
 
 
 @app.get("/api/remote_jobs")
+# pylint: disable-next = too-many-statements
 def remote_jobs() -> t.List[JobDescription]:
     jobs = []
     for job in sorted(DB.get().jobs.get_jobs(skip_finished=False), key=lambda x: x.created, reverse=True):
@@ -845,6 +849,7 @@ class FaceWithMeta(DataClassJsonMixin):
 class FacesResponse(DataClassJsonMixin):
     has_next_page: bool
     faces: t.List[FaceWithMeta]
+    top_identities: t.List[IdentityRowPayload]
 
 
 @app.post("/api/faces")
@@ -852,6 +857,7 @@ async def faces_on_page(params: GalleryRequest) -> FacesResponse:
     faces = []
     db = DB.get()
     omgs, has_next_page = db.get_matching_images(params.query, params.sort, params.paging)
+    top_identities = db.identities.top_identities(100)
 
     for omg in omgs:
         fcs = db.get_face_embeddings(omg.md5)
@@ -882,7 +888,7 @@ async def faces_on_page(params: GalleryRequest) -> FacesResponse:
                         face.embedding,
                     )
                 )
-    return FacesResponse(has_next_page, faces)
+    return FacesResponse(has_next_page, faces, top_identities)
 
 
 T = t.TypeVar("T")

@@ -14,6 +14,7 @@ from pphoto.data_model.manual import ManualIdentity
 from pphoto.db.features_table import FeaturesTable
 from pphoto.db.connection import PhotosConnection, GalleryConnection, JobsConnection
 from pphoto.db.files_table import FilesTable
+from pphoto.db.identity_table import IdentityTable
 from pphoto.db.queries import PhotosQueries
 from pphoto.annots.annotator import Annotator
 from pphoto.annots.date import PathDateExtractor
@@ -265,6 +266,7 @@ async def main() -> None:
     reindexer = Reindexer(PathDateExtractor(config.directory_matching), photos_connection, gallery_connection)
     features = FeaturesTable(photos_connection)
     files = FilesTable(photos_connection)
+    identities = IdentityTable(photos_connection)
 
     @Alive(persistent=True, key=[])
     async def check_db_connection() -> None:
@@ -284,7 +286,9 @@ async def main() -> None:
     tasks.append(asyncio.create_task(check_db_connection()))
     tasks.append(asyncio.create_task(reindex_gallery(reindexer)))
 
-    annotator = Annotator(config.directory_matching, files_config, features, remote_annotator_queue)
+    annotator = Annotator(
+        config.directory_matching, files_config, features, identities, remote_annotator_queue
+    )
     remote_jobs_table = RemoteJobsTable(jobs_connection)
     jobs = Jobs(config.managed_folder, files, remote_jobs_table, PhotosQueries(photos_connection), annotator)
     queues = Queues()

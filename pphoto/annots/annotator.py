@@ -20,6 +20,7 @@ from pphoto.data_model.face import FaceEmbeddings
 from pphoto.remote_jobs.types import RemoteTask, ManualAnnotationTask
 from pphoto.db.cache import SQLiteCache
 from pphoto.db.features_table import FeaturesTable
+from pphoto.db.identity_table import IdentityTable
 from pphoto.communication.server import RemoteExecutorQueue
 
 
@@ -29,6 +30,7 @@ class Annotator:
         directory_matching: DirectoryMatchingConfig,
         files_config: DBFilesConfig,
         features: FeaturesTable,
+        identities_table: IdentityTable,
         remote_annotator_queue: t.Optional[RemoteExecutorQueue],
     ):
         self.path_to_date = PathDateExtractor(directory_matching)
@@ -40,6 +42,7 @@ class Annotator:
         self.exif = Exif(exif_cache)
         self.manual_location = SQLiteCache(features, ManualLocation, files_config.manual_location_jsonl)
         self.manual_identities = SQLiteCache(features, ManualIdentities, files_config.manual_identity_jsonl)
+        self._identities = identities_table
         self.manual_date = SQLiteCache(features, ManualDate, files_config.manual_date_jsonl)
         self.manual_text = SQLiteCache(features, ManualText, files_config.manual_text_jsonl)
         geolocator_cache = SQLiteCache(features, GeoAddress, files_config.geo_address_jsonl)
@@ -61,6 +64,9 @@ class Annotator:
             identities = {identity.position: identity for identity in existing_identity.payload.p.identities}
         for identity in task.payload:
             identities[identity.position] = identity
+        for identity in task.payload:
+            if identity.identity is not None:
+                self._identities.add(identity.identity, None, None, True)
         return (
             self.manual_identities.add(
                 WithMD5(

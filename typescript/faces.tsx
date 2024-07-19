@@ -23,6 +23,7 @@ export function FacesComponent({ query, paging, sort }: FacesComponentProps) {
         {
             faces: [],
             has_next_page: false,
+            top_identities: [],
         },
     ]);
     const [pendingAnnotations, updatePendingAnnotations] = React.useState<{
@@ -55,6 +56,18 @@ export function FacesComponent({ query, paging, sort }: FacesComponentProps) {
     });
     const [slider, updateSlider] = React.useState<number>(280);
     const threshold = slider / 1000;
+    const pendingIdentities = new Set(
+        Object.values(pendingAnnotations)
+            .map((a) => a.identity)
+            .filter((id) => id !== null),
+    );
+    const availableIdentities = [...pendingIdentities];
+    data[1].top_identities.forEach((identity) => {
+        if (!pendingIdentities.has(identity.identity)) {
+            availableIdentities.push(identity.identity);
+        }
+    });
+    console.log(availableIdentities);
     return (
         <div>
             Threshold: {threshold}
@@ -95,13 +108,7 @@ export function FacesComponent({ query, paging, sort }: FacesComponentProps) {
             <br />
             <FacesView
                 threshold={threshold}
-                availableIdentities={[
-                    ...new Set(
-                        Object.values(pendingAnnotations)
-                            .map((a) => a.identity)
-                            .filter((id) => id !== null),
-                    ),
-                ]}
+                availableIdentities={availableIdentities}
                 updatePendingAnnotations={(
                     req: ManualIdentityClusterRequest_Input[],
                 ) => {

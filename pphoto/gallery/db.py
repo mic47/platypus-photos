@@ -9,6 +9,7 @@ from pphoto.data_model.manual import ManualIdentities
 from pphoto.data_model.face import FaceEmbeddings
 from pphoto.db.files_table import FilesTable
 from pphoto.db.features_table import FeaturesTable
+from pphoto.db.identity_table import IdentityTable
 from pphoto.db.directories_table import DirectoriesTable
 from pphoto.remote_jobs.db import RemoteJobsTable
 
@@ -33,6 +34,7 @@ class ImageSqlDB:
         self._files_table = FilesTable(photos_connection)
         features_table = FeaturesTable(photos_connection)
         self._manual_identities = SQLiteCache(features_table, ManualIdentities, None)
+        self.identities = IdentityTable(photos_connection)
         self._faces_embeddings = SQLiteCache(features_table, FaceEmbeddings, None)
         self._gallery_index = GalleryIndexTable(gallery_connection)
         self.jobs = RemoteJobsTable(jobs_connection)
