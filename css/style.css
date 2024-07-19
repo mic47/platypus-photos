@@ -247,14 +247,16 @@ td.center {
 }
 
 .tab button:hover {
-  background-color: #bfb;
+  border-color: #bfb;
+  background-color: #faa;
 }
 
 .tab button.active {
   background-color: #dfd;
 }
 .tab button:hover.active {
-  background-color: #fbb;
+  border-color: #fbb;
+  background-color: #afa;
 }
 .disabled {
     display: none;
