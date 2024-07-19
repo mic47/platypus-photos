@@ -309,13 +309,12 @@ export const $FaceWithMeta = {
         skip_reason: {
             anyOf: [
                 {
-                    type: 'string'
+                    '$ref': '#/components/schemas/IdentitySkipReason'
                 },
                 {
                     type: 'null'
                 }
-            ],
-            title: 'Skip Reason'
+            ]
         },
         embedding: {
             items: {

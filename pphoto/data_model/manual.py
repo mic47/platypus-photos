@@ -33,9 +33,11 @@ class ManualText(HasCurrentVersion):
     def current_version() -> int:
         return 0
 
+
 class IdentitySkipReason(enum.Enum):
-    NOT_FACE="not_face"
-    NOT_POI ="not_poi"
+    NOT_FACE = "not_face"
+    NOT_POI = "not_poi"
+
 
 @dataclass
 class ManualIdentity(DataClassJsonMixin):

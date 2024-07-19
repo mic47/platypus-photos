@@ -72,7 +72,7 @@ export type FaceWithMeta = {
     md5: string;
     extension: string;
     identity: string | null;
-    skip_reason: string | null;
+    skip_reason: IdentitySkipReason | null;
     embedding: Array<(number)>;
 };
 

@@ -837,7 +837,7 @@ class FaceWithMeta(DataClassJsonMixin):
     md5: str
     extension: str
     identity: t.Optional[str]
-    skip_reason: t.Optional[str]
+    skip_reason: t.Optional[IdentitySkipReason]
     embedding: t.List[float]
 
 
