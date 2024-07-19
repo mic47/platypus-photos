@@ -54,7 +54,6 @@ export function AggregateInfoView({
                 ];
             }
         });
-    console.log(aggr);
     const people = Object.entries(aggr.identities)
         .sort(([, a], [, b]) => b - a)
         .slice(0, 15)

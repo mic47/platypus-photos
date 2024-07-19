@@ -30,6 +30,7 @@ interface GalleryImageProps {
 export type ImageCallbacks = {
     update_url: (update: SearchQuery) => void;
     update_url_add_tag: (tag: string) => void;
+    update_url_add_identity: (tag: string) => void;
     prev_item: (index: number, paging: GalleryPaging) => void;
     close_overlay: () => void;
     next_item: (
@@ -233,6 +234,22 @@ export function GalleryImage({
             </span>,
         );
     });
+    const identityCrumbs: JSX.Element[] = [];
+    omg.identities.forEach((identity) => {
+        identityCrumbs.push(
+            <span className="identity" key={identity}>
+                <MaybeA
+                    onClick={
+                        callbacks === null
+                            ? null
+                            : () => callbacks.update_url_add_identity(identity)
+                    }
+                >
+                    {identity}
+                </MaybeA>
+            </span>,
+        );
+    });
     const max_tag = Math.min(
         1,
         Math.max(1.0, ...Object.values(omg.tags || {})),
@@ -357,6 +374,7 @@ export function GalleryImage({
             <div className="overflow">
                 {dateCrumb}
                 {timeCrumb}
+                {identityCrumbs}
                 {addressCrumb}
                 {tagsCrumbs}
                 {cameraCrumb}

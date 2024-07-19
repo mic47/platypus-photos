@@ -67,6 +67,16 @@ div.gallery_item:hover {
   padding: 0.1em;
   margin: 0.2em;
 }
+.identity a {
+  color: black;
+  text-decoration: none;
+}
+.identity {
+  background-color: #0000BB33;
+  border-radius: 1em;
+  padding: 0.1em;
+  margin: 0.2em;
+}
 .camera a {
   color: black;
   text-decoration: none;
