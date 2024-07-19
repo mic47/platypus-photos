@@ -1,4 +1,5 @@
 import datetime as dt
+import enum
 import typing as t
 
 from dataclasses import dataclass
@@ -32,11 +33,14 @@ class ManualText(HasCurrentVersion):
     def current_version() -> int:
         return 0
 
+class IdentitySkipReason(enum.Enum):
+    NOT_FACE="not_face"
+    NOT_POI ="not_poi"
 
 @dataclass
 class ManualIdentity(DataClassJsonMixin):
     identity: t.Optional[str]
-    skip_reason: t.Optional[str]
+    skip_reason: t.Optional[IdentitySkipReason]
     position: Position
 
 

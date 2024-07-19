@@ -107,6 +107,8 @@ export type HTTPValidationError = {
     detail?: Array<ValidationError>;
 };
 
+export type IdentitySkipReason = 'not_face' | 'not_poi';
+
 export type Image = {
     md5: string;
     extension: string;
@@ -174,7 +176,7 @@ export type JobDescription = {
     time: number;
     latitude: number | null;
     longitude: number | null;
-    query: MassLocationAndTextAnnotation_Output;
+    query: MassLocationAndTextAnnotation_Output | Array<ManualIdentityClusterRequest_Output> | null;
     job: RemoteJob_bytes_;
     example_path_md5: string | null;
     example_path_extension: string | null;
@@ -239,9 +241,15 @@ export type LocationQueryFixedLocation = {
 
 export type t3 = 'FixedLocation';
 
-export type ManualIdentityClusterRequest = {
+export type ManualIdentityClusterRequest_Input = {
     identity: string | null;
-    skip_reason: string | null;
+    skip_reason: IdentitySkipReason | null;
+    faces: Array<FaceIdentifier>;
+};
+
+export type ManualIdentityClusterRequest_Output = {
+    identity: string | null;
+    skip_reason: IdentitySkipReason | null;
     faces: Array<FaceIdentifier>;
 };
 
@@ -429,7 +437,7 @@ export type MassManualAnnotationEndpointPostData = {
 export type MassManualAnnotationEndpointPostResponse = number;
 
 export type ManualIdentityAnnotationEndpointPostData = {
-    requestBody: Array<ManualIdentityClusterRequest>;
+    requestBody: Array<ManualIdentityClusterRequest_Input>;
 };
 
 export type ManualIdentityAnnotationEndpointPostResponse = number;

@@ -433,6 +433,12 @@ export const $HTTPValidationError = {
     title: 'HTTPValidationError'
 } as const;
 
+export const $IdentitySkipReason = {
+    type: 'string',
+    enum: ['not_face', 'not_poi'],
+    title: 'IdentitySkipReason'
+} as const;
+
 export const $Image = {
     properties: {
         md5: {
@@ -767,7 +773,21 @@ export const $JobDescription = {
             title: 'Longitude'
         },
         query: {
-            '$ref': '#/components/schemas/MassLocationAndTextAnnotation-Output'
+            anyOf: [
+                {
+                    '$ref': '#/components/schemas/MassLocationAndTextAnnotation-Output'
+                },
+                {
+                    items: {
+                        '$ref': '#/components/schemas/ManualIdentityClusterRequest-Output'
+                    },
+                    type: 'array'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Query'
         },
         job: {
             '$ref': '#/components/schemas/RemoteJob_bytes_'
@@ -1040,7 +1060,7 @@ export const $LocationQueryFixedLocation = {
     title: 'LocationQueryFixedLocation'
 } as const;
 
-export const $ManualIdentityClusterRequest = {
+export const $ManualIdentityClusterRequest_Input = {
     properties: {
         identity: {
             anyOf: [
@@ -1056,13 +1076,48 @@ export const $ManualIdentityClusterRequest = {
         skip_reason: {
             anyOf: [
                 {
+                    '$ref': '#/components/schemas/IdentitySkipReason'
+                },
+                {
+                    type: 'null'
+                }
+            ]
+        },
+        faces: {
+            items: {
+                '$ref': '#/components/schemas/FaceIdentifier'
+            },
+            type: 'array',
+            title: 'Faces'
+        }
+    },
+    type: 'object',
+    required: ['identity', 'skip_reason', 'faces'],
+    title: 'ManualIdentityClusterRequest'
+} as const;
+
+export const $ManualIdentityClusterRequest_Output = {
+    properties: {
+        identity: {
+            anyOf: [
+                {
                     type: 'string'
                 },
                 {
                     type: 'null'
                 }
             ],
-            title: 'Skip Reason'
+            title: 'Identity'
+        },
+        skip_reason: {
+            anyOf: [
+                {
+                    '$ref': '#/components/schemas/IdentitySkipReason'
+                },
+                {
+                    type: 'null'
+                }
+            ]
         },
         faces: {
             items: {

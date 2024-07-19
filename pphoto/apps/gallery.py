@@ -25,7 +25,7 @@ from pphoto.communication.client import get_system_status, refresh_jobs, SystemS
 from pphoto.data_model.config import DBFilesConfig
 from pphoto.data_model.base import PathWithMd5
 from pphoto.data_model.face import Position
-from pphoto.data_model.manual import ManualIdentity
+from pphoto.data_model.manual import ManualIdentity, IdentitySkipReason
 from pphoto.db.types_location import LocationCluster, LocPoint, LocationBounds
 from pphoto.db.types_date import DateCluster, DateClusterGroupBy
 from pphoto.db.types_directory import DirectoryStats
@@ -478,7 +478,7 @@ class FaceIdentifier(DataClassJsonMixin):
 @dataclass
 class ManualIdentityClusterRequest(DataClassJsonMixin):
     identity: t.Optional[str]
-    skip_reason: t.Optional[str]
+    skip_reason: t.Optional[IdentitySkipReason]
     faces: t.List[FaceIdentifier]
 
 
@@ -496,7 +496,7 @@ async def manual_identity_annotation_endpoint(clusters: t.List[ManualIdentityClu
                 ManualIdentity(cluster.identity, cluster.skip_reason, face.position)
             )
     db = DB.get()
-    db.jobs.submit_job(
+    job_id = db.jobs.submit_job(
         RemoteJobType.FACE_CLUSTER_ANNOTATION,
         json.dumps([x.to_dict(encode_json=True) for x in clusters], ensure_ascii=False).encode("utf-8"),
         [
@@ -504,8 +504,8 @@ async def manual_identity_annotation_endpoint(clusters: t.List[ManualIdentityClu
             for (md5, ext), task in by_md5.items()
         ],
     )
-
-    return 10
+    await refresh_jobs(job_id)
+    return job_id
 
 
 GEOLOCATOR = Geolocator()
@@ -610,7 +610,7 @@ class JobDescription:
     time: float
     latitude: float | None
     longitude: float | None
-    query: MassLocationAndTextAnnotation
+    query: MassLocationAndTextAnnotation | t.List[ManualIdentityClusterRequest] | None
     job: RemoteJob[bytes]
     example_path_md5: str | None
     example_path_extension: str | None
@@ -632,10 +632,12 @@ def remote_jobs() -> t.List[JobDescription]:
         replacements = []
         latitude = None
         longitude = None
+        request: None | MassLocationAndTextAnnotation | t.List[ManualIdentityClusterRequest] = None
         if job.type_ == RemoteJobType.MASS_MANUAL_ANNOTATION:
             type_.append("🗺️")
             try:
                 og_req = mass_manual_annotation_from_json(job.original_request)
+                request = og_req
                 if og_req.text.text.description:
                     type_.append("📝")
                     replacements.append(f"📝{og_req.text.text.description}")
@@ -666,6 +668,7 @@ def remote_jobs() -> t.List[JobDescription]:
         elif job.type_ == RemoteJobType.FACE_CLUSTER_ANNOTATION:
             type_.append("🤓")
             og_clusters = parse_manual_identity_cluster_requests(job.original_request)
+            request = og_clusters
             has_skip = False
             has_identity = False
             identities = set()
@@ -702,7 +705,7 @@ def remote_jobs() -> t.List[JobDescription]:
                 (job.last_update or job.created).timestamp(),
                 latitude,
                 longitude,
-                og_req,
+                request,
                 job,
                 job.example_path_md5,
                 job.example_path_extension,

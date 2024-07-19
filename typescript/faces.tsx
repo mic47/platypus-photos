@@ -5,6 +5,7 @@ import {
     FacesResponse,
     FaceWithMeta,
     GalleryPaging,
+    IdentitySkipReason,
     SearchQuery,
     SortParams,
 } from "./pygallery.generated";
@@ -87,69 +88,13 @@ function FacesView({ threshold, availableIdentities, data }: FacesViewProps) {
             }
         })
         .map((faces) => {
-            const clusterItems = faces.map((face) => {
-                const posStr = `${face.position.left},${face.position.top},${face.position.right},${face.position.bottom}`;
-                return (
-                    <div
-                        key={`${face.md5}/${posStr}`}
-                        className="face_container"
-                    >
-                        <img
-                            loading="lazy"
-                            src={`/img/original/${face.md5}.${face.extension}?position=${posStr}`}
-                            className="gallery_image"
-                            alt={face.identity || "No identity assigned"}
-                            title={face.identity || "No identity assigned"}
-                        />
-                    </div>
-                );
-            });
             const posStr = `${faces[0].md5}/${faces[0].position.left},${faces[0].position.top},${faces[0].position.right},${faces[0].position.bottom}`;
-            const identities = [
-                ...new Set(
-                    faces
-                        .map((face) => face.identity)
-                        .filter((x) => x !== null),
-                ),
-            ];
-            // TODO: warning if there are duplicit identities
             return (
-                <div key={posStr} className="face_cluster">
-                    <div>
-                        <div>
-                            Already assigned identities :{" "}
-                            {identities.join(", ")}
-                            <br />
-                            <input type="checkbox" /> Not a face <br />
-                            <input type="checkbox" /> Not interesting person{" "}
-                            <br />
-                            <input type="checkbox" /> New identity{" "}
-                            <input type="text" />
-                            <br />
-                            <select
-                                defaultValue={
-                                    identities.length > 0
-                                        ? identities[0]
-                                        : "__NOIDENTITY__}"
-                                }
-                            >
-                                <option value="__NOIDENTITY__">
-                                    No identity
-                                </option>
-                                {availableIdentities.map((identity) => {
-                                    return (
-                                        <option key={identity} value={identity}>
-                                            {identity}
-                                        </option>
-                                    );
-                                })}
-                            </select>
-                            <button>Submit this cluster only</button>
-                            <button>Submit all pending face annotations</button>
-                        </div>
-                    </div>
-                    {clusterItems}
-                </div>
+                <FaceCluster
+                    key={posStr}
+                    faces={faces}
+                    availableIdentities={availableIdentities}
+                />
             );
         });
     return (
@@ -157,6 +102,150 @@ function FacesView({ threshold, availableIdentities, data }: FacesViewProps) {
             <button>Submit pending face annotations</button>
             {items}
             <button>Submit pending identity annotations</button>
+        </div>
+    );
+}
+
+function FaceCluster({
+    faces,
+    availableIdentities,
+}: {
+    faces: FaceWithMeta[];
+    availableIdentities: string[];
+}) {
+    const [request, updateRequest] = React.useState<{
+        identity: string | null;
+        skip_reason: IdentitySkipReason | null;
+    }>({
+        identity: null,
+        skip_reason: null,
+    });
+    const setSkipReason = (reason: IdentitySkipReason | null) => {
+        if (reason === null) {
+            updateRequest({ ...request, skip_reason: null });
+        } else {
+            updateRequest({ ...request, skip_reason: reason, identity: null });
+        }
+    };
+    const setIdentity = (identity: null | string) => {
+        if (identity === null || identity.trim() === "") {
+            updateRequest({ ...request, identity: null });
+        } else {
+            updateRequest({
+                ...request,
+                identity: identity,
+                skip_reason: null,
+            });
+        }
+    };
+    const submit = () => {
+        pygallery_service
+            .manualIdentityAnnotationEndpointPost({
+                requestBody: [
+                    {
+                        identity: request.identity,
+                        skip_reason: request.skip_reason,
+                        faces: faces.map((face) => {
+                            return {
+                                md5: face.md5,
+                                extension: face.extension,
+                                position: face.position,
+                            };
+                        }),
+                    },
+                ],
+            })
+            .then((job_id) => {
+                console.log(job_id);
+            });
+    };
+    const clusterItems = faces.map((face) => {
+        const posStr = `${face.position.left},${face.position.top},${face.position.right},${face.position.bottom}`;
+        return (
+            <div key={`${face.md5}/${posStr}`} className="face_container">
+                <img
+                    loading="lazy"
+                    src={`/img/original/${face.md5}.${face.extension}?position=${posStr}`}
+                    className="gallery_image"
+                    alt={face.identity || "No identity assigned"}
+                    title={face.identity || "No identity assigned"}
+                />
+            </div>
+        );
+    });
+    const identities = [
+        ...new Set(
+            faces
+                .map((face) => face.identity || face.skip_reason)
+                .filter((x) => x !== null),
+        ),
+    ];
+    // TODO: warning if there are duplicit identities, or something like that
+    console.log(request);
+    return (
+        <div className="face_cluster">
+            <div>
+                <div>
+                    Already assigned identities: {identities.join(", ")}
+                    <br />
+                    <input
+                        type="checkbox"
+                        checked={request.skip_reason === "not_face"}
+                        onChange={(event) =>
+                            setSkipReason(
+                                event.target.checked ? "not_face" : null,
+                            )
+                        }
+                    />{" "}
+                    Not a face <br />
+                    <input
+                        type="checkbox"
+                        checked={request.skip_reason == "not_poi"}
+                        onChange={(event) =>
+                            setSkipReason(
+                                event.target.checked ? "not_poi" : null,
+                            )
+                        }
+                    />{" "}
+                    Not interesting person <br />
+                    <input
+                        type="checkbox"
+                        checked={request.identity !== null}
+                        disabled={true}
+                    />{" "}
+                    Identity{" "}
+                    <input
+                        type="text"
+                        value={request.identity || ""}
+                        onChange={(event) => setIdentity(event.target.value)}
+                    />
+                    <select
+                        value={
+                            request.identity === null
+                                ? "__NOIDENTITY__"
+                                : request.identity
+                        }
+                        onChange={(event) => setIdentity(event.target.value)}
+                    >
+                        <option value="__NOIDENTITY__">
+                            Other (use input box)
+                        </option>
+                        {availableIdentities.map((identity) => {
+                            return (
+                                <option key={identity} value={identity}>
+                                    {identity}
+                                </option>
+                            );
+                        })}
+                    </select>
+                    <br />
+                    <button onClick={() => submit()}>
+                        Submit this cluster only
+                    </button>
+                    <button>Submit all pending face annotations</button>
+                </div>
+            </div>
+            {clusterItems}
         </div>
     );
 }
