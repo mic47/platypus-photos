@@ -2,6 +2,7 @@ import React from "react";
 
 import * as pygallery_service from "./pygallery.generated/services.gen.ts";
 import {
+    FaceIdentifier,
     FacesResponse,
     FaceWithMeta,
     GalleryPaging,
@@ -24,6 +25,9 @@ export function FacesComponent({ query, paging, sort }: FacesComponentProps) {
             has_next_page: false,
         },
     ]);
+    const [pendingAnnotations, updatePendingAnnotations] = React.useState<{
+        [id: string]: IdentityAnnotation;
+    }>({});
     React.useEffect(() => {
         let ignore = false;
         const requestBody = {
@@ -38,6 +42,7 @@ export function FacesComponent({ query, paging, sort }: FacesComponentProps) {
             .then((data) => {
                 if (!ignore) {
                     updateData([query, data]);
+                    updatePendingAnnotations({});
                 }
             });
         return () => {
@@ -91,31 +96,79 @@ export function FacesComponent({ query, paging, sort }: FacesComponentProps) {
             <FacesView
                 threshold={threshold}
                 availableIdentities={["RandomIdentity", "Other Test identity"]}
-                data={data[1].faces.filter((face) => {
-                    if (
-                        !settings.showHiddenFaces &&
-                        face.skip_reason !== null
-                    ) {
-                        return false;
+                updatePendingAnnotations={(
+                    req: ManualIdentityClusterRequest_Input[],
+                ) => {
+                    const newAnnotations = req.flatMap((c) =>
+                        c.faces.map((f) => {
+                            return {
+                                id: faceId(f),
+                                annotation: {
+                                    skip_reason: c.skip_reason,
+                                    identity: c.identity,
+                                },
+                            };
+                        }),
+                    );
+                    if (newAnnotations.length === 0) {
+                        return;
                     }
-                    if (
-                        settings.hideFacesWithIdentities &&
-                        face.identity !== null
-                    ) {
-                        return false;
-                    }
-                    return true;
-                })}
+                    const pending = { ...pendingAnnotations };
+                    newAnnotations.forEach(({ id, annotation }) => {
+                        pending[id] = annotation;
+                    });
+                    updatePendingAnnotations(pending);
+                }}
+                data={data[1].faces
+                    .map((face) => {
+                        const id = faceId(face);
+                        const pending = pendingAnnotations[id];
+                        if (pending !== undefined && pending !== null) {
+                            return {
+                                ...face,
+                                identity: pending.identity,
+                                skip_reason: pending.skip_reason,
+                            };
+                        }
+                        return face;
+                    })
+                    .filter((face) => {
+                        if (
+                            !settings.showHiddenFaces &&
+                            face.skip_reason !== null
+                        ) {
+                            return false;
+                        }
+                        if (
+                            settings.hideFacesWithIdentities &&
+                            face.identity !== null
+                        ) {
+                            return false;
+                        }
+                        return true;
+                    })}
             />
         </div>
     );
 }
+function faceId(face: FaceWithMeta | FaceIdentifier): string {
+    return `${face.md5}/${face.position.left},${face.position.top},${face.position.right},${face.position.bottom}`;
+}
+
 interface FacesViewProps {
     threshold: number;
     availableIdentities: string[];
     data: FaceWithMeta[];
+    updatePendingAnnotations: (
+        pending: ManualIdentityClusterRequest_Input[],
+    ) => void;
 }
-function FacesView({ threshold, availableIdentities, data }: FacesViewProps) {
+function FacesView({
+    threshold,
+    availableIdentities,
+    updatePendingAnnotations,
+    data,
+}: FacesViewProps) {
     const [clusters, updateClusters] = React.useState<
         Array<{ id: string; faces: FaceWithMeta[] }>
     >([]);
@@ -134,7 +187,7 @@ function FacesView({ threshold, availableIdentities, data }: FacesViewProps) {
                 }
             })
             .map((faces) => {
-                const posStr = `${faces[0].md5}/${faces[0].position.left},${faces[0].position.top},${faces[0].position.right},${faces[0].position.bottom}`;
+                const posStr = faceId(faces[0]);
                 return { id: posStr, faces: faces };
             });
         updateClusters(clusters);
@@ -147,7 +200,6 @@ function FacesView({ threshold, availableIdentities, data }: FacesViewProps) {
             });
         }
     }, [data, threshold]);
-    console.log(annotations);
     const submit = () => {
         const req = clusters
             .map(({ id, faces }) => {
@@ -159,6 +211,7 @@ function FacesView({ threshold, availableIdentities, data }: FacesViewProps) {
             })
             .filter((x) => x !== null);
         submitAnnotationRequest(req);
+        updatePendingAnnotations(req);
     };
     const items = clusters.map(({ id, faces }) => {
         return (
@@ -166,6 +219,7 @@ function FacesView({ threshold, availableIdentities, data }: FacesViewProps) {
                 key={id}
                 faces={faces}
                 availableIdentities={availableIdentities}
+                updatePendingAnnotations={updatePendingAnnotations}
                 submitAllFaceAnnotations={() => submit()}
                 updateAnnotations={(
                     request: ManualIdentityClusterRequest_Input | null,
@@ -204,12 +258,16 @@ function FaceCluster({
     availableIdentities,
     submitAllFaceAnnotations,
     updateAnnotations,
+    updatePendingAnnotations,
 }: {
     faces: FaceWithMeta[];
     availableIdentities: string[];
     submitAllFaceAnnotations: () => void;
     updateAnnotations: (
         requests: ManualIdentityClusterRequest_Input | null,
+    ) => void;
+    updatePendingAnnotations: (
+        req: ManualIdentityClusterRequest_Input[],
     ) => void;
 }) {
     const [request, updateRequest] = React.useState<IdentityAnnotation>({
@@ -317,11 +375,13 @@ function FaceCluster({
                     </select>
                     <br />
                     <button
-                        onClick={() =>
-                            submitAnnotationRequest([
-                                makeClusterRequest(faces, request),
-                            ])
-                        }
+                        onClick={() => {
+                            const req = makeClusterRequest(faces, request);
+                            submitAnnotationRequest([req]);
+                            if (req !== null) {
+                                updatePendingAnnotations([req]);
+                            }
+                        }}
                         disabled={
                             request.identity === null &&
                             request.skip_reason === null
@@ -364,13 +424,9 @@ function submitAnnotationRequest(
     if (request.length === 0) {
         return;
     }
-    pygallery_service
-        .manualIdentityAnnotationEndpointPost({
-            requestBody: request,
-        })
-        .then((job_id) => {
-            console.log(job_id);
-        });
+    pygallery_service.manualIdentityAnnotationEndpointPost({
+        requestBody: request,
+    });
 }
 
 function doClustering(
