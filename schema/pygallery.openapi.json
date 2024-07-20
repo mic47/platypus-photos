@@ -15,14 +15,10 @@
             "in": "path",
             "required": true,
             "schema": {
-              "anyOf": [
-                {
-                  "type": "integer"
-                },
-                {
-                  "type": "string"
-                }
-              ],
+              "type": "string",
+              "minLength": 7,
+              "maxLength": 40,
+              "pattern": "^[0-9a-zA-Z]+$",
               "title": "Hsh"
             }
           },
@@ -40,6 +36,9 @@
             "required": true,
             "schema": {
               "type": "string",
+              "minLength": 1,
+              "maxLength": 10,
+              "pattern": "^[0-9a-zA-Z]+$",
               "title": "Extension"
             }
           },

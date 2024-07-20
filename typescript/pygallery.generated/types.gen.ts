@@ -418,7 +418,7 @@ export type ValidationError = {
 
 export type ImageEndpointGetData = {
     extension: string;
-    hsh: number | string;
+    hsh: string;
     position?: string | null;
     size: ImageSize;
 };
