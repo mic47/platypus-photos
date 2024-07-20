@@ -15,7 +15,7 @@ from dataclasses_json import DataClassJsonMixin
 from geopy.distance import distance
 from PIL import Image, ImageFile
 
-from fastapi import FastAPI, Request, Response, Query
+from fastapi import FastAPI, Request, Response, Query, Path as PathParam
 from fastapi.responses import FileResponse
 from fastapi.routing import APIRoute
 from fastapi.staticfiles import StaticFiles
@@ -122,17 +122,20 @@ def get_cache_file(size: int | str, hsh: str, extension: str, position: t.Option
     },
 )
 def image_endpoint(
-    hsh: t.Union[int, str],
+    hsh: t.Annotated[str, PathParam(pattern="^[0-9a-zA-Z]+$", min_length=7, max_length=40)],
     size: ImageSize,
-    extension: str,
+    extension: t.Annotated[str, PathParam(pattern="^[0-9a-zA-Z]+$", min_length=1, max_length=10)],
     position: t.Annotated[t.Optional[str], Query(pattern="^[0-9]+,[0-9]+,[0-9]+,[0-9]+$")] = None,
 ) -> t.Any:
     resolution = sz_to_resolution(size)
-    if (resolution is not None or position is not None) and isinstance(hsh, str):
+    if resolution is not None or position is not None:
         if position is not None:
             sz: int | str = "crop"
         else:
             sz = t.cast(int, resolution)
+        if (isinstance(sz, str) and not sz.isalnum()) or not hsh.isalnum() or not extension.isalnum():
+            # pylint: disable-next = broad-exception-raised
+            raise Exception("Validation error, image contained disallowed characters")
         cache_file = get_cache_file(sz, hsh, extension, position)
         if not os.path.exists(cache_file):
             file_path = DB.get().get_path_from_hash(hsh)
