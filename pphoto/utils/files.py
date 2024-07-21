@@ -43,7 +43,7 @@ def expand_vars_in_path(path: str) -> str:
     return re.sub("^~/", os.environ["HOME"] + "/", path)
 
 
-REMOVE_FROM_PATH_PART = re.compile(r"[^a-zA-Z0-9-:\w]+")
+REMOVE_FROM_PATH_PART = re.compile(r"[^-:\w]+")
 
 
 def pathify(path: str) -> str:
