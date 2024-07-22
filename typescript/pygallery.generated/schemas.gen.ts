@@ -263,6 +263,22 @@ export const $ExceptionInfo = {
     title: 'ExceptionInfo'
 } as const;
 
+export const $FaceFeatureRequest = {
+    properties: {
+        md5: {
+            type: 'string',
+            title: 'Md5'
+        },
+        extension: {
+            type: 'string',
+            title: 'Extension'
+        }
+    },
+    type: 'object',
+    required: ['md5', 'extension'],
+    title: 'FaceFeatureRequest'
+} as const;
+
 export const $FaceIdentifier = {
     properties: {
         md5: {

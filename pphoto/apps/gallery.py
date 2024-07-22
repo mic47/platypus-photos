@@ -894,6 +894,47 @@ async def faces_on_page(params: GalleryRequest) -> FacesResponse:
     return FacesResponse(has_next_page, faces, top_identities)
 
 
+@dataclass
+class FaceFeatureRequest(DataClassJsonMixin):
+    md5: str
+    extension: str
+
+
+@app.post("/api/face")
+async def face_features_for_image(params: FaceFeatureRequest) -> t.List[FaceWithMeta]:
+    db = DB.get()
+    fcs = db.get_face_embeddings(params.md5)
+    identities = db.get_manual_identities(params.md5)
+    faces = []
+    if identities is not None:
+        ident_dct = {
+            identity.position: identity.identity
+            for identity in identities.identities
+            if identity.identity is not None
+        }
+        skip_dct = {
+            identity.position: identity.skip_reason
+            for identity in identities.identities
+            if identity.skip_reason is not None
+        }
+    else:
+        ident_dct = {}
+        skip_dct = {}
+    if fcs is not None:
+        for face in fcs.faces:
+            faces.append(
+                FaceWithMeta(
+                    face.position,
+                    params.md5,
+                    params.extension,
+                    ident_dct.get(face.position),
+                    skip_dct.get(face.position),
+                    face.embedding,
+                )
+            )
+    return faces
+
+
 T = t.TypeVar("T")
 R = t.TypeVar("R")
 
