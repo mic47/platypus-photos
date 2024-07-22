@@ -85,10 +85,10 @@
   resolved "https://registry.yarnpkg.com/@eslint/object-schema/-/object-schema-2.1.4.tgz#9e69f8bb4031e11df79e03db09f9dbbae1740843"
   integrity sha512-BsWiH1yFGjXXS2yvrf5LyuoSIIbPrGUWob917o+BTKuZ7qJdxX8aJLRxs1fS9n6r7vESrq1OUqb68dANcFXuQQ==
 
-"@hey-api/openapi-ts@^0.48.2":
-  version "0.48.2"
-  resolved "https://registry.yarnpkg.com/@hey-api/openapi-ts/-/openapi-ts-0.48.2.tgz#75dfda2393293c1e2d4554387b4d49f034a0f5d5"
-  integrity sha512-pjJb0kzjTyKAdKGfi3GkOqD4AklImS5xz7xx1grZQMlNv87iV12g2pccEsml6WYDxQ1qJ7DFWa8FexAPDbzvZg==
+"@hey-api/openapi-ts@^0.50.0":
+  version "0.50.0"
+  resolved "https://registry.yarnpkg.com/@hey-api/openapi-ts/-/openapi-ts-0.50.0.tgz#d5cf160693d6ac509f2b2e6bb3abc9cc33fd095e"
+  integrity sha512-Nt3Zcv+7evPQm1YZaeT0xbGOQ5PyOUU3jjIGYbUHm9eE7awpyM6BUByTJdZulldqUh829GDhfiU/md2ZQ1VHYw==
   dependencies:
     "@apidevtools/json-schema-ref-parser" "11.6.4"
     c12 "1.11.1"
