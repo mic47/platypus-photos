@@ -8,6 +8,7 @@ import {
     GalleryPaging,
     IdentitySkipReason,
     ManualIdentityClusterRequest_Input,
+    Position,
     SearchQuery,
     SortParams,
 } from "./pygallery.generated";
@@ -260,7 +261,7 @@ function FacesView({
     );
 }
 
-type IdentityAnnotation = {
+export type IdentityAnnotation = {
     identity: string | null;
     skip_reason: IdentitySkipReason | null;
 };
@@ -410,8 +411,8 @@ function FaceCluster({
         </div>
     );
 }
-function makeClusterRequest(
-    faces: FaceWithMeta[],
+export function makeClusterRequest(
+    faces: Array<{ md5: string; extension: string; position: Position }>,
     request: IdentityAnnotation,
 ): ManualIdentityClusterRequest_Input | null {
     if (request.identity === null && request.skip_reason === null) {
@@ -429,7 +430,7 @@ function makeClusterRequest(
         }),
     };
 }
-function submitAnnotationRequest(
+export function submitAnnotationRequest(
     maybe_requests: Array<ManualIdentityClusterRequest_Input | null>,
 ) {
     const request = maybe_requests.filter((x) => x !== null);

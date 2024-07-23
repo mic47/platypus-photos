@@ -572,6 +572,48 @@
         }
       }
     },
+    "/api/face": {
+      "post": {
+        "summary": "Face Features For Image",
+        "operationId": "face_features_for_image-POST",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FaceFeatureRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/FaceWithMeta"
+                  },
+                  "type": "array",
+                  "title": "Response Face Features For Image-Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/aggregate": {
       "post": {
         "summary": "Aggregate Images",
@@ -946,6 +988,24 @@
           "exc_tb"
         ],
         "title": "ExceptionInfo"
+      },
+      "FaceFeatureRequest": {
+        "properties": {
+          "md5": {
+            "type": "string",
+            "title": "Md5"
+          },
+          "extension": {
+            "type": "string",
+            "title": "Extension"
+          }
+        },
+        "type": "object",
+        "required": [
+          "md5",
+          "extension"
+        ],
+        "title": "FaceFeatureRequest"
       },
       "FaceIdentifier": {
         "properties": {

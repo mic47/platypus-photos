@@ -3,7 +3,7 @@
 import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
-import type { ImageEndpointGetData, ImageEndpointGetResponse, LocationClustersEndpointPostData, LocationClustersEndpointPostResponse, LocationBoundsEndpointPostData, LocationBoundsEndpointPostResponse, DateClustersEndpointPostData, DateClustersEndpointPostResponse, MassManualAnnotationEndpointPostData, MassManualAnnotationEndpointPostResponse, ManualIdentityAnnotationEndpointPostData, ManualIdentityAnnotationEndpointPostResponse, FindLocationPostData, FindLocationPostResponse, JobProgressStatePostData, JobProgressStatePostResponse, RemoteJobsGetResponse, SystemStatusGetResponse, GetAddressPostData, GetAddressPostResponse, MatchingDirectoriesPostData, MatchingDirectoriesPostResponse, ImagePagePostData, ImagePagePostResponse, FacesOnPagePostData, FacesOnPagePostResponse, AggregateImagesPostData, AggregateImagesPostResponse, ReadIndexGetResponse, ReadIndexGet1Response } from './types.gen';
+import type { ImageEndpointGetData, ImageEndpointGetResponse, LocationClustersEndpointPostData, LocationClustersEndpointPostResponse, LocationBoundsEndpointPostData, LocationBoundsEndpointPostResponse, DateClustersEndpointPostData, DateClustersEndpointPostResponse, MassManualAnnotationEndpointPostData, MassManualAnnotationEndpointPostResponse, ManualIdentityAnnotationEndpointPostData, ManualIdentityAnnotationEndpointPostResponse, FindLocationPostData, FindLocationPostResponse, JobProgressStatePostData, JobProgressStatePostResponse, RemoteJobsGetResponse, SystemStatusGetResponse, GetAddressPostData, GetAddressPostResponse, MatchingDirectoriesPostData, MatchingDirectoriesPostResponse, ImagePagePostData, ImagePagePostResponse, FacesOnPagePostData, FacesOnPagePostResponse, FaceFeaturesForImagePostData, FaceFeaturesForImagePostResponse, AggregateImagesPostData, AggregateImagesPostResponse, ReadIndexGetResponse, ReadIndexGet1Response } from './types.gen';
 
 /**
  * Image Endpoint
@@ -232,6 +232,23 @@ export const imagePagePost = (data: ImagePagePostData): CancelablePromise<ImageP
 export const facesOnPagePost = (data: FacesOnPagePostData): CancelablePromise<FacesOnPagePostResponse> => { return __request(OpenAPI, {
     method: 'POST',
     url: '/api/faces',
+    body: data.requestBody,
+    mediaType: 'application/json',
+    errors: {
+        422: 'Validation Error'
+    }
+}); };
+
+/**
+ * Face Features For Image
+ * @param data The data for the request.
+ * @param data.requestBody
+ * @returns FaceWithMeta Successful Response
+ * @throws ApiError
+ */
+export const faceFeaturesForImagePost = (data: FaceFeaturesForImagePostData): CancelablePromise<FaceFeaturesForImagePostResponse> => { return __request(OpenAPI, {
+    method: 'POST',
+    url: '/api/face',
     body: data.requestBody,
     mediaType: 'application/json',
     errors: {

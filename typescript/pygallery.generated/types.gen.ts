@@ -61,6 +61,11 @@ export type ExceptionInfo = {
     exc_tb: Array<(string)> | null;
 };
 
+export type FaceFeatureRequest = {
+    md5: string;
+    extension: string;
+};
+
 export type FaceIdentifier = {
     md5: string;
     extension: string;
@@ -495,6 +500,12 @@ export type FacesOnPagePostData = {
 
 export type FacesOnPagePostResponse = FacesResponse;
 
+export type FaceFeaturesForImagePostData = {
+    requestBody: FaceFeatureRequest;
+};
+
+export type FaceFeaturesForImagePostResponse = Array<FaceWithMeta>;
+
 export type AggregateImagesPostData = {
     requestBody: AggregateQuery;
 };
@@ -699,6 +710,21 @@ export type $OpenApiTs = {
                  * Successful Response
                  */
                 200: FacesResponse;
+                /**
+                 * Validation Error
+                 */
+                422: HTTPValidationError;
+            };
+        };
+    };
+    '/api/face': {
+        post: {
+            req: FaceFeaturesForImagePostData;
+            res: {
+                /**
+                 * Successful Response
+                 */
+                200: Array<FaceWithMeta>;
                 /**
                  * Validation Error
                  */
