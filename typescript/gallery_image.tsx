@@ -4,6 +4,7 @@ import { isEqual } from "lodash";
 import {
     FaceWithMeta,
     GalleryPaging,
+    IdentityRowPayload,
     IdentitySkipReason,
     ImageWithMeta,
     ManualIdentityClusterRequest_Input,
@@ -227,6 +228,27 @@ export function AnnotableImage({
     const [pendingRequest, updatePendingRequests] = React.useState<
         ManualIdentityClusterRequest_Input[]
     >([]);
+    const [topIdentities, updateTopIdentities] = React.useState<
+        IdentityRowPayload[]
+    >([]);
+    React.useEffect(() => {
+        pygallery_service
+            .topIdentitiesPost()
+            .then((data) => updateTopIdentities(data));
+    }, []);
+    const availableIdentities = [
+        ...pendingRequest.map((x) => x.identity).filter((x) => x !== null),
+    ];
+    const availableIdentitiesSet = new Set(availableIdentities);
+    topIdentities.forEach((ident) => {
+        if (ident.identity === null) {
+            return;
+        }
+        if (availableIdentitiesSet.has(ident.identity)) {
+            return;
+        }
+        availableIdentities.push(ident.identity);
+    });
     React.useEffect(() => {
         let shouldUpdate = true;
         pygallery_service
@@ -481,7 +503,7 @@ export function AnnotableImage({
             {addOrUpdateAnnotation === null ? null : (
                 <AnnotateFaceBox
                     request={addOrUpdateAnnotation}
-                    availableIdentities={["test1", "test2"]}
+                    availableIdentities={availableIdentities}
                     cancel={() => updateAddOrUpdateAnnotation(null)}
                     updatePendingAnnotations={(req) =>
                         updatePendingRequests([...pendingRequest, req])

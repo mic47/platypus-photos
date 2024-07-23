@@ -494,6 +494,8 @@ export type ImagePagePostData = {
 
 export type ImagePagePostResponse = ImageResponse;
 
+export type TopIdentitiesPostResponse = Array<IdentityRowPayload>;
+
 export type FacesOnPagePostData = {
     requestBody: GalleryRequest;
 };
@@ -699,6 +701,16 @@ export type $OpenApiTs = {
                  * Validation Error
                  */
                 422: HTTPValidationError;
+            };
+        };
+    };
+    '/api/top_identities': {
+        post: {
+            res: {
+                /**
+                 * Successful Response
+                 */
+                200: Array<IdentityRowPayload>;
             };
         };
     };

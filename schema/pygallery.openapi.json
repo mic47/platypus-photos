@@ -534,6 +534,28 @@
         }
       }
     },
+    "/api/top_identities": {
+      "post": {
+        "summary": "Top Identities",
+        "operationId": "top_identities-POST",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/IdentityRowPayload"
+                  },
+                  "type": "array",
+                  "title": "Response Top Identities-Post"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/faces": {
       "post": {
         "summary": "Faces On Page",

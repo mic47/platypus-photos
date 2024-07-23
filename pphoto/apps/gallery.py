@@ -856,12 +856,17 @@ class FacesResponse(DataClassJsonMixin):
     top_identities: t.List[IdentityRowPayload]
 
 
+@app.post("/api/top_identities")
+async def top_identities() -> t.List[IdentityRowPayload]:
+    return DB.get().identities.top_identities(100)
+
+
 @app.post("/api/faces")
 async def faces_on_page(params: GalleryRequest) -> FacesResponse:
     faces = []
     db = DB.get()
     omgs, has_next_page = db.get_matching_images(params.query, params.sort, params.paging)
-    top_identities = db.identities.top_identities(100)
+    top_idents = db.identities.top_identities(100)
 
     for omg in omgs:
         fcs = db.get_face_embeddings(omg.md5)
@@ -892,7 +897,7 @@ async def faces_on_page(params: GalleryRequest) -> FacesResponse:
                         face.embedding,
                     )
                 )
-    return FacesResponse(has_next_page, faces, top_identities)
+    return FacesResponse(has_next_page, faces, top_idents)
 
 
 @dataclass
