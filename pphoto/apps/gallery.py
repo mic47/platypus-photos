@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import itertools
 import json
 import typing as t
 import os
@@ -908,18 +909,17 @@ async def face_features_for_image(params: FaceFeatureRequest) -> t.List[FaceWith
     faces = []
     if identities is not None:
         ident_dct = {
-            identity.position: identity.identity
-            for identity in identities.identities
-            if identity.identity is not None
+            identity.position: identity for identity in identities.identities if identity.identity is not None
         }
         skip_dct = {
-            identity.position: identity.skip_reason
+            identity.position: identity
             for identity in identities.identities
             if identity.skip_reason is not None
         }
     else:
         ident_dct = {}
         skip_dct = {}
+    empty_identity = ManualIdentity(None, None, Position(0, 0, 0, 0))
     if fcs is not None:
         for face in fcs.faces:
             faces.append(
@@ -927,11 +927,15 @@ async def face_features_for_image(params: FaceFeatureRequest) -> t.List[FaceWith
                     face.position,
                     params.md5,
                     params.extension,
-                    ident_dct.get(face.position),
-                    skip_dct.get(face.position),
+                    ident_dct.pop(face.position, empty_identity).identity,
+                    skip_dct.pop(face.position, empty_identity).skip_reason,
                     face.embedding,
                 )
             )
+    for ident in itertools.chain(ident_dct.values(), skip_dct.values()):
+        faces.append(
+            FaceWithMeta(ident.position, params.md5, params.extension, ident.identity, ident.skip_reason, [])
+        )
     return faces
 
 
