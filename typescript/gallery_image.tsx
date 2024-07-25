@@ -220,9 +220,7 @@ export function AnnotableImage({
         null | FaceWithMeta[]
     >(null);
     const [imgDims, updateImgDims] = React.useState<null | ImgDimensions>(null);
-    const [selection, updateSelection] = React.useState<
-        null | [number, number, number, number]
-    >(null);
+    const [selection, updateSelection] = React.useState<null | Selection>(null);
     const [addOrUpdateAnnotation, updateAddOrUpdateAnnotation] =
         React.useState<null | AnnotateFaceBoxRequest>(null);
     const [pendingRequest, updatePendingRequests] = React.useState<
@@ -379,12 +377,12 @@ export function AnnotableImage({
                 <polygon
                     fill="none"
                     stroke="red"
-                    points={`${selection[0]},${selection[1]} ${selection[2]},${selection[1]} ${selection[2]},${selection[3]} ${selection[0]},${selection[3]}`}
+                    points={selectionToPointStr(selection)}
                 />
                 <polygon
                     fill="none"
                     stroke="#00FFFF"
-                    points={`${selection[0] + 1},${selection[1] + 1} ${selection[2] - 1},${selection[1] + 1} ${selection[2] - 1},${selection[3] - 1} ${selection[0] + 1},${selection[3] - 1}`}
+                    points={selectionToPointStr(shrinkSelection(selection))}
                 />
             </>
         );
@@ -453,10 +451,8 @@ class SquareSelector {
     constructor(
         private readonly svg: SVGSVGElement | null,
         private readonly imgDims: ImgDimensions | null,
-        private readonly selection: [number, number, number, number] | null,
-        private readonly updateSelection: (
-            selection: [number, number, number, number] | null,
-        ) => void,
+        private readonly selection: Selection | null,
+        private readonly updateSelection: (selection: Selection | null) => void,
         private readonly doAction: (position: Position) => void,
     ) {
         // WARNING: this class should not have any internal state
@@ -494,7 +490,7 @@ class SquareSelector {
         if (!this.validateShiftedPoint(point)) {
             return;
         }
-        this.updateSelection([point.x, point.y, point.x, point.y]);
+        this.updateSelection({ start: { ...point }, end: { ...point } });
     }
     onMouseMove(e: React.MouseEvent<SVGSVGElement, MouseEvent>) {
         if (this.svg === null) {
@@ -502,34 +498,32 @@ class SquareSelector {
         }
         const r = this.svg.getBoundingClientRect();
         if (this.selection !== null) {
-            const dx = this.selection[0] - (e.clientX - r.x);
-            const dy = this.selection[1] - (e.clientY - r.y);
+            const dx = this.selection.start.x - (e.clientX - r.x);
+            const dy = this.selection.start.y - (e.clientY - r.y);
             let point = {
-                x: this.selection[0] - sameDirection(dy, dx),
-                y: this.selection[1] - dy,
+                x: this.selection.start.x - sameDirection(dy, dx),
+                y: this.selection.start.y - dy,
             };
             if (Math.abs(dx) > Math.abs(dy)) {
                 point = {
-                    x: this.selection[0] - dx,
-                    y: this.selection[1] - sameDirection(dx, dy),
+                    x: this.selection.start.x - dx,
+                    y: this.selection.start.y - sameDirection(dx, dy),
                 };
             }
             if (!this.validateShiftedPoint(point)) {
                 return;
             }
-            this.updateSelection([
-                this.selection[0],
-                this.selection[1],
-                point.x,
-                point.y,
-            ]);
+            this.updateSelection({
+                start: { ...this.selection.start },
+                end: point,
+            });
         }
     }
     onMouseUp() {
         if (this.selection !== null) {
             if (
-                Math.abs(this.selection[0] - this.selection[2]) < 10 ||
-                Math.abs(this.selection[1] - this.selection[3]) < 10
+                Math.abs(this.selection.start.x - this.selection.end.x) < 10 ||
+                Math.abs(this.selection.start.y - this.selection.end.y) < 10
             ) {
                 this.updateSelection(null);
                 return;
@@ -542,17 +536,20 @@ class SquareSelector {
                     unScaleAndShiftPosition(
                         {
                             left: Math.min(
-                                this.selection[0],
-                                this.selection[2],
+                                this.selection.start.x,
+                                this.selection.end.x,
                             ),
-                            top: Math.min(this.selection[1], this.selection[3]),
+                            top: Math.min(
+                                this.selection.start.y,
+                                this.selection.end.y,
+                            ),
                             right: Math.max(
-                                this.selection[0],
-                                this.selection[2],
+                                this.selection.start.x,
+                                this.selection.end.x,
                             ),
                             bottom: Math.max(
-                                this.selection[1],
-                                this.selection[3],
+                                this.selection.start.y,
+                                this.selection.end.y,
                             ),
                         },
                         this.vbox,
@@ -615,6 +612,31 @@ function computeSvgViewbox(imgDims: ImgDimensions): VBox & {
     };
 }
 
+type Selection = {
+    start: Point;
+    end: Point;
+};
+function selectionToPointStr(s: Selection): string {
+    return `${s.start.x},${s.start.y} ${s.end.x},${s.start.y} ${s.end.x},${s.end.y} ${s.start.x},${s.end.y}`;
+}
+function shrinkSelection(s: Selection): Selection {
+    const out = { start: { ...s.start }, end: { ...s.end } };
+    if (out.start.x < out.end.x) {
+        out.start.x += 1;
+        out.end.x -= 1;
+    } else {
+        out.end.x += 1;
+        out.start.x -= 1;
+    }
+    if (out.start.y < out.end.y) {
+        out.start.y += 1;
+        out.end.y -= 1;
+    } else {
+        out.end.y += 1;
+        out.start.y -= 1;
+    }
+    return out;
+}
 function scaleAndShiftPosition(position: Position, vbox: VBox): Position {
     return {
         left: vbox.offsetW + vbox.ratioW * position.left,
