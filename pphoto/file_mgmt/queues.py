@@ -30,6 +30,10 @@ QueueValue = t.Union[
     t.Tuple[PathWithMd5, t.Literal[JobType.CHEAP_FEATURES] | t.Literal[JobType.IMAGE_TO_TEXT]],
     t.Tuple[RemoteTask[ManualAnnotationTask], t.Literal[JobType.ADD_MANUAL_ANNOTATION]],
     t.Tuple[RemoteTask[t.List[ManualIdentity]], t.Literal[JobType.FACE_CLUSTER_ANNOTATION]],
+    t.Tuple[
+        t.Tuple[PathWithMd5, t.List[ManualIdentity]],
+        t.Literal[JobType.COMPUTE_FACE_EMBEDDING_FOR_MANUAL_ANNOTATION],
+    ],
 ]
 
 Queue = asyncio.PriorityQueue[QueueItem[QueueValue]]
@@ -81,6 +85,9 @@ class Queues:
                 self._index += 1
             elif type_ == JobType.FACE_CLUSTER_ANNOTATION:
                 self.cheap_features.put_nowait(QueueItem(priority, self._index, value))
+                self._index += 1
+            elif type_ == JobType.COMPUTE_FACE_EMBEDDING_FOR_MANUAL_ANNOTATION:
+                self.image_to_text.put_nowait(QueueItem(priority, self._index, value))
                 self._index += 1
             else:
                 assert_never(type_)

@@ -69,7 +69,23 @@ async def worker(name: str, context: GlobalContext, queue: Queue, /) -> None:
                     and isinstance(path.payload, list)
                     and all(isinstance(x, ManualIdentity) for x in path.payload)
                 ):
-                    context.jobs.face_cluster_task(path)
+                    new_identities = context.jobs.face_cluster_task(path)
+                    if new_identities[1]:
+                        context.queues.enqueue_path(
+                            [(new_identities, JobType.COMPUTE_FACE_EMBEDDING_FOR_MANUAL_ANNOTATION)],
+                            item.priority,
+                        )
+                else:
+                    assert False, "Wrong type for FACE_CLUSTER_ANNOTATION"
+            elif type_ == JobType.COMPUTE_FACE_EMBEDDING_FOR_MANUAL_ANNOTATION:
+                if (
+                    isinstance(path, tuple)
+                    and len(path) == 2
+                    and isinstance(path[0], PathWithMd5)
+                    and isinstance(path[1], list)
+                    and all(isinstance(x, ManualIdentity) for x in path[1])
+                ):
+                    await context.jobs.compute_additional_face_embedding(path[0], path[1])
                 else:
                     assert False, "Wrong type for FACE_CLUSTER_ANNOTATION"
             else:

@@ -52,7 +52,7 @@ class Annotator:
 
     def update_manual_identity(
         self, task: RemoteTask[t.List[ManualIdentity]]
-    ) -> t.Tuple[t.Optional[WithMD5[ManualIdentities]]]:
+    ) -> t.Tuple[t.Optional[WithMD5[ManualIdentities]], t.Tuple[str, t.List[ManualIdentity]]]:
         existing_identity = self.manual_identities.get(task.id_.md5)
         if (
             existing_identity is None
@@ -62,7 +62,10 @@ class Annotator:
             identities: t.Dict[Position, ManualIdentity] = {}
         else:
             identities = {identity.position: identity for identity in existing_identity.payload.p.identities}
+        new_identities = []
         for identity in task.payload:
+            if identity.position not in identities:
+                new_identities.append(identity)
             identities[identity.position] = identity
         for identity in task.payload:
             if identity.identity is not None:
@@ -76,6 +79,7 @@ class Annotator:
                     None,
                 )
             ),
+            (task.id_.md5, new_identities),
         )
 
     def manual_features(
@@ -145,4 +149,27 @@ class Annotator:
     ) -> t.Tuple[PathWithMd5, WithMD5[ImageClassification], WithMD5[FaceEmbeddings]]:
         itt = await self.models.process_image(path)
         fe = await self.face.process_image(path)
+        # There might be manual annotations which needs to be processed too
+        identities = self.manual_identities.get(path.md5)
+        if identities is None or identities.payload is None or identities.payload.p is None:
+            return (path, itt, fe)
+        if fe.p is not None:
+            existing_positions = set(fc.position for fc in fe.p.faces)
+        else:
+            existing_positions = set()
+        to_annotate = [
+            identity
+            for identity in identities.payload.p.identities
+            if identity.position not in existing_positions
+        ]
+        if not to_annotate:
+            return (path, itt, fe)
+        (fe,) = await self.add_faces(path, to_annotate)
         return (path, itt, fe)
+
+    async def add_faces(
+        self,
+        path: PathWithMd5,
+        identities: t.List[ManualIdentity],
+    ) -> t.Tuple[WithMD5[FaceEmbeddings]]:
+        return (await self.face.add_faces(path, identities),)

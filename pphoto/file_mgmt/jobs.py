@@ -28,6 +28,7 @@ class JobType(enum.Enum):
     IMAGE_TO_TEXT = 2
     ADD_MANUAL_ANNOTATION = 3
     FACE_CLUSTER_ANNOTATION = 4
+    COMPUTE_FACE_EMBEDDING_FOR_MANUAL_ANNOTATION = 5
 
 
 IMPORT_PRIORITY = 46
@@ -158,9 +159,22 @@ class Jobs:
             self.cheap_features(PathWithMd5(file.file, task.id_.md5), recompute_location=loc is not None)
         self._jobs.finish_task(task.id_)
 
-    def face_cluster_task(self, task: RemoteTask[t.List[ManualIdentity]]) -> None:
-        (_identity,) = self._annotator.update_manual_identity(task)
+    def face_cluster_task(
+        self, task: RemoteTask[t.List[ManualIdentity]]
+    ) -> t.Tuple[PathWithMd5, t.List[ManualIdentity]]:
+        (_identity, [md5, new_identities]) = self._annotator.update_manual_identity(task)
         self._jobs.finish_task(task.id_)
+        path = ""
+        if new_identities:
+            paths = self._files.by_md5(md5)
+            if paths:
+                path = paths[0].file
+        return (PathWithMd5(path, md5), new_identities)
+
+    async def compute_additional_face_embedding(
+        self, path: PathWithMd5, identities: t.List[ManualIdentity]
+    ) -> None:
+        await self._annotator.add_faces(path, identities)
 
     def fix_in_progress_moved_files_at_startup(self) -> None:
         for file_row in tqdm.tqdm(

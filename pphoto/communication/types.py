@@ -10,7 +10,7 @@ import dataclasses_json as dj
 from pphoto.utils.alive import State
 from pphoto.utils.progress_bar import ProgressBarProgress
 from pphoto.data_model.base import PathWithMd5, Error
-from pphoto.data_model.face import FaceEmbeddings
+from pphoto.data_model.face import FaceEmbeddings, Position
 from pphoto.data_model.text import (
     ImageClassification,
 )
@@ -52,6 +52,7 @@ class TextAnnotationRequest(dj.DataClassJsonMixin):
 class FaceEmbeddingsRequest(dj.DataClassJsonMixin):
     t: _t.Literal["FaceEmbeddingsRequest"]
     path: PathWithMd5
+    for_positions: _t.Optional[_t.List[Position]]
     data_base64: str
 
 
