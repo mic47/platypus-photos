@@ -429,7 +429,7 @@ export function AnnotableImage({
                 xmlns="http://www.w3.org/2000/svg"
                 onMouseDown={(e) => squareSelector.onMouseDown(e)}
                 onMouseMove={(e) => squareSelector.onMouseMove(e)}
-                onMouseUp={(e) => squareSelector.onMouseUp(e)}
+                onMouseUp={() => squareSelector.onMouseUp()}
             >
                 {selElement}
                 {featuresSvgContent}
@@ -449,57 +449,83 @@ export function AnnotableImage({
 }
 
 class SquareSelector {
+    private readonly vbox: VBox | null;
     constructor(
-        private svg: SVGSVGElement | null,
-        private imgDims: ImgDimensions | null,
-        private selection: [number, number, number, number] | null,
-        private updateSelection: (
+        private readonly svg: SVGSVGElement | null,
+        private readonly imgDims: ImgDimensions | null,
+        private readonly selection: [number, number, number, number] | null,
+        private readonly updateSelection: (
             selection: [number, number, number, number] | null,
         ) => void,
-        private doAction: (position: Position) => void,
-    ) {}
+        private readonly doAction: (position: Position) => void,
+    ) {
+        // WARNING: this class should not have any internal state
+        if (this.imgDims === null) {
+            this.vbox = null;
+        } else {
+            this.vbox = computeSvgViewbox(this.imgDims);
+        }
+    }
+    private validateShiftedPoint(point: Point): boolean {
+        if (this.vbox === null || this.imgDims === null) {
+            return false;
+        }
+        const unscaled = unscaleAndShiftPoint(point, this.vbox);
+        if (
+            unscaled.x < 0 ||
+            unscaled.y < 0 ||
+            unscaled.x >= this.imgDims.origW ||
+            unscaled.y >= this.imgDims.origH
+        ) {
+            console.log("outside bound");
+            return false;
+        }
+        return true;
+    }
     onMouseDown(e: React.MouseEvent<SVGSVGElement, MouseEvent>) {
         if (this.svg === null) {
             return;
         }
         const r = this.svg.getBoundingClientRect();
-        // TODO: do this only if its within bounds
-        // Refuse to create somethisn if outside of bounds
-        this.updateSelection([
-            e.clientX - r.x,
-            e.clientY - r.y,
-            e.clientX - r.x,
-            e.clientY - r.y,
-        ]);
+        const point = {
+            x: e.clientX - r.x,
+            y: e.clientY - r.y,
+        };
+        if (!this.validateShiftedPoint(point)) {
+            return;
+        }
+        this.updateSelection([point.x, point.y, point.x, point.y]);
     }
     onMouseMove(e: React.MouseEvent<SVGSVGElement, MouseEvent>) {
         if (this.svg === null) {
             return;
         }
         const r = this.svg.getBoundingClientRect();
-        // TODO: clip this only into bounds
-        // Fit to bounds if outside
         if (this.selection !== null) {
             const dx = this.selection[0] - (e.clientX - r.x);
             const dy = this.selection[1] - (e.clientY - r.y);
+            let point = {
+                x: this.selection[0] - sameDirection(dy, dx),
+                y: this.selection[1] - dy,
+            };
             if (Math.abs(dx) > Math.abs(dy)) {
-                this.updateSelection([
-                    this.selection[0],
-                    this.selection[1],
-                    this.selection[0] - dx,
-                    this.selection[1] - sameDirection(dx, dy),
-                ]);
-            } else {
-                this.updateSelection([
-                    this.selection[0],
-                    this.selection[1],
-                    this.selection[0] - sameDirection(dy, dx),
-                    this.selection[1] - dy,
-                ]);
+                point = {
+                    x: this.selection[0] - dx,
+                    y: this.selection[1] - sameDirection(dx, dy),
+                };
             }
+            if (!this.validateShiftedPoint(point)) {
+                return;
+            }
+            this.updateSelection([
+                this.selection[0],
+                this.selection[1],
+                point.x,
+                point.y,
+            ]);
         }
     }
-    onMouseUp(e: React.MouseEvent<SVGSVGElement, MouseEvent>) {
+    onMouseUp() {
         if (this.selection !== null) {
             if (
                 Math.abs(this.selection[0] - this.selection[2]) < 10 ||
@@ -508,10 +534,9 @@ class SquareSelector {
                 this.updateSelection(null);
                 return;
             }
-            if (this.imgDims === null) {
+            if (this.imgDims === null || this.vbox === null) {
                 return;
             }
-            const vbox = computeSvgViewbox(this.imgDims);
             this.doAction(
                 truncCeilPosition(
                     unScaleAndShiftPosition(
@@ -530,7 +555,7 @@ class SquareSelector {
                                 this.selection[3],
                             ),
                         },
-                        vbox,
+                        this.vbox,
                     ),
                 ),
             );
@@ -603,6 +628,25 @@ function scaleAndShiftPosition(
         top: vbox.offsetH + vbox.ratioH * position.top,
         right: vbox.offsetW + vbox.ratioW * position.right,
         bottom: vbox.offsetH + vbox.ratioH * position.bottom,
+    };
+}
+type Point = {
+    x: number;
+    y: number;
+};
+type VBox = {
+    ratioW: number;
+    ratioH: number;
+    offsetW: number;
+    offsetH: number;
+};
+function unscaleAndShiftPoint(
+    point: Point,
+    vbox: { ratioW: number; ratioH: number; offsetW: number; offsetH: number },
+): Point {
+    return {
+        x: (point.x - vbox.offsetW) / vbox.ratioW,
+        y: (point.y - vbox.offsetH) / vbox.ratioH,
     };
 }
 function unScaleAndShiftPosition(
