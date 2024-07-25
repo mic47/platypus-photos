@@ -388,6 +388,27 @@ export function AnnotableImage({
                 />
             </>
         );
+    const squareSelector = new SquareSelector(
+        svgRef.current,
+        imgDims,
+        selection,
+        updateSelection,
+        (position) => {
+            updateAddOrUpdateAnnotation({
+                face: {
+                    md5,
+                    extension,
+                    position,
+                },
+                identities: null,
+                newAnnotation: true,
+                ogRequest: {
+                    skip_reason: null,
+                    identity: null,
+                },
+            });
+        },
+    );
     return (
         <>
             {children}
@@ -406,96 +427,9 @@ export function AnnotableImage({
                         : viewBoxStr.split(" ")[3]
                 }
                 xmlns="http://www.w3.org/2000/svg"
-                onMouseDown={(e) => {
-                    if (svgRef.current === null) {
-                        return;
-                    }
-                    const r = svgRef.current.getBoundingClientRect();
-                    updateSelection([
-                        e.clientX - r.x,
-                        e.clientY - r.y,
-                        e.clientX - r.x,
-                        e.clientY - r.y,
-                    ]);
-                }}
-                onMouseMove={(e) => {
-                    {
-                        if (svgRef.current === null) {
-                            return;
-                        }
-                        const r = svgRef.current.getBoundingClientRect();
-                        if (selection !== null) {
-                            const dx = selection[0] - (e.clientX - r.x);
-                            const dy = selection[1] - (e.clientY - r.y);
-                            if (Math.abs(dx) > Math.abs(dy)) {
-                                updateSelection([
-                                    selection[0],
-                                    selection[1],
-                                    selection[0] - dx,
-                                    selection[1] - sameDirection(dx, dy),
-                                ]);
-                            } else {
-                                updateSelection([
-                                    selection[0],
-                                    selection[1],
-                                    selection[0] - sameDirection(dy, dx),
-                                    selection[1] - dy,
-                                ]);
-                            }
-                        }
-                    }
-                }}
-                onMouseUp={() => {
-                    if (selection !== null) {
-                        if (
-                            Math.abs(selection[0] - selection[2]) < 10 ||
-                            Math.abs(selection[1] - selection[3]) < 10
-                        ) {
-                            updateSelection(null);
-                            return;
-                        }
-                        if (imgDims === null) {
-                            return;
-                        }
-                        const vbox = computeSvgViewbox(imgDims);
-                        updateAddOrUpdateAnnotation({
-                            face: {
-                                md5,
-                                extension,
-                                position: truncCeilPosition(
-                                    unScaleAndShiftPosition(
-                                        {
-                                            left: Math.min(
-                                                selection[0],
-                                                selection[2],
-                                            ),
-                                            top: Math.min(
-                                                selection[1],
-                                                selection[3],
-                                            ),
-                                            right: Math.max(
-                                                selection[0],
-                                                selection[2],
-                                            ),
-                                            bottom: Math.max(
-                                                selection[1],
-                                                selection[3],
-                                            ),
-                                        },
-                                        vbox,
-                                    ),
-                                ),
-                            },
-                            identities: null,
-                            newAnnotation: true,
-                            ogRequest: {
-                                skip_reason: null,
-                                identity: null,
-                            },
-                        });
-                    }
-                    updateSelection(null);
-                }}
+                onMouseDown={(e) => squareSelector.onMouseDown(e)}
+                onMouseMove={(e) => squareSelector.onMouseMove(e)}
+                onMouseUp={(e) => squareSelector.onMouseUp(e)}
             >
                 {selElement}
                 {featuresSvgContent}
@@ -512,6 +446,97 @@ export function AnnotableImage({
             )}
         </>
     );
+}
+
+class SquareSelector {
+    constructor(
+        private svg: SVGSVGElement | null,
+        private imgDims: ImgDimensions | null,
+        private selection: [number, number, number, number] | null,
+        private updateSelection: (
+            selection: [number, number, number, number] | null,
+        ) => void,
+        private doAction: (position: Position) => void,
+    ) {}
+    onMouseDown(e: React.MouseEvent<SVGSVGElement, MouseEvent>) {
+        if (this.svg === null) {
+            return;
+        }
+        const r = this.svg.getBoundingClientRect();
+        // TODO: do this only if its within bounds
+        // Refuse to create somethisn if outside of bounds
+        this.updateSelection([
+            e.clientX - r.x,
+            e.clientY - r.y,
+            e.clientX - r.x,
+            e.clientY - r.y,
+        ]);
+    }
+    onMouseMove(e: React.MouseEvent<SVGSVGElement, MouseEvent>) {
+        if (this.svg === null) {
+            return;
+        }
+        const r = this.svg.getBoundingClientRect();
+        // TODO: clip this only into bounds
+        // Fit to bounds if outside
+        if (this.selection !== null) {
+            const dx = this.selection[0] - (e.clientX - r.x);
+            const dy = this.selection[1] - (e.clientY - r.y);
+            if (Math.abs(dx) > Math.abs(dy)) {
+                this.updateSelection([
+                    this.selection[0],
+                    this.selection[1],
+                    this.selection[0] - dx,
+                    this.selection[1] - sameDirection(dx, dy),
+                ]);
+            } else {
+                this.updateSelection([
+                    this.selection[0],
+                    this.selection[1],
+                    this.selection[0] - sameDirection(dy, dx),
+                    this.selection[1] - dy,
+                ]);
+            }
+        }
+    }
+    onMouseUp(e: React.MouseEvent<SVGSVGElement, MouseEvent>) {
+        if (this.selection !== null) {
+            if (
+                Math.abs(this.selection[0] - this.selection[2]) < 10 ||
+                Math.abs(this.selection[1] - this.selection[3]) < 10
+            ) {
+                this.updateSelection(null);
+                return;
+            }
+            if (this.imgDims === null) {
+                return;
+            }
+            const vbox = computeSvgViewbox(this.imgDims);
+            this.doAction(
+                truncCeilPosition(
+                    unScaleAndShiftPosition(
+                        {
+                            left: Math.min(
+                                this.selection[0],
+                                this.selection[2],
+                            ),
+                            top: Math.min(this.selection[1], this.selection[3]),
+                            right: Math.max(
+                                this.selection[0],
+                                this.selection[2],
+                            ),
+                            bottom: Math.max(
+                                this.selection[1],
+                                this.selection[3],
+                            ),
+                        },
+                        vbox,
+                    ),
+                ),
+            );
+        }
+        this.updateSelection(null);
+    }
 }
 
 type ImgDimensions = {
