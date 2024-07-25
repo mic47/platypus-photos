@@ -584,11 +584,7 @@ function computeImgDimentions(img: HTMLImageElement): ImgDimensions {
     };
 }
 
-function computeSvgViewbox(imgDims: ImgDimensions): {
-    ratioW: number;
-    ratioH: number;
-    offsetW: number;
-    offsetH: number;
+function computeSvgViewbox(imgDims: ImgDimensions): VBox & {
     viewBox: string;
 } {
     const { origW, origH, imgW, imgH } = imgDims;
@@ -619,10 +615,7 @@ function computeSvgViewbox(imgDims: ImgDimensions): {
     };
 }
 
-function scaleAndShiftPosition(
-    position: Position,
-    vbox: { ratioW: number; ratioH: number; offsetW: number; offsetH: number },
-): Position {
+function scaleAndShiftPosition(position: Position, vbox: VBox): Position {
     return {
         left: vbox.offsetW + vbox.ratioW * position.left,
         top: vbox.offsetH + vbox.ratioH * position.top,
@@ -640,19 +633,13 @@ type VBox = {
     offsetW: number;
     offsetH: number;
 };
-function unscaleAndShiftPoint(
-    point: Point,
-    vbox: { ratioW: number; ratioH: number; offsetW: number; offsetH: number },
-): Point {
+function unscaleAndShiftPoint(point: Point, vbox: VBox): Point {
     return {
         x: (point.x - vbox.offsetW) / vbox.ratioW,
         y: (point.y - vbox.offsetH) / vbox.ratioH,
     };
 }
-function unScaleAndShiftPosition(
-    position: Position,
-    vbox: { ratioW: number; ratioH: number; offsetW: number; offsetH: number },
-): Position {
+function unScaleAndShiftPosition(position: Position, vbox: VBox): Position {
     return {
         left: (position.left - vbox.offsetW) / vbox.ratioW,
         top: (position.top - vbox.offsetH) / vbox.ratioH,
