@@ -35,7 +35,7 @@
     "typescript-eslint": "^7.16.1"
   },
   "dependencies": {
-    "@hey-api/openapi-ts": "^0.50.0",
+    "@hey-api/openapi-ts": "^0.51.0",
     "@types/lodash": "^4.17.7",
     "chart.js": "^4.4.3",
     "chartjs-adapter-date-fns": "^3.0.0",
