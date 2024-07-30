@@ -2,8 +2,6 @@ from dataclasses import dataclass
 from datetime import datetime
 import typing as t
 
-from dataclasses_json import DataClassJsonMixin
-
 
 @dataclass
 class ImageAggregation:
@@ -16,14 +14,14 @@ class ImageAggregation:
 
 
 @dataclass
-class ImageAddress(DataClassJsonMixin):
+class ImageAddress:
     country: t.Optional[str]
     name: t.Optional[str]
     full: t.Optional[str]
 
 
 @dataclass
-class Image(DataClassJsonMixin):
+class Image:
     md5: str
     extension: str
     date: t.Optional[datetime]
