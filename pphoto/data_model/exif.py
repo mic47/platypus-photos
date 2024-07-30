@@ -58,7 +58,7 @@ class Camera:
         return {
             "make": self.make,
             "model": self.model,
-            "serial": self.serial_number,
+            "serial_number": self.serial_number,
             "software": self.software,
         }
 
