@@ -7,8 +7,6 @@ import typing as t
 
 from dataclasses import dataclass
 
-from dataclasses_json import DataClassJsonMixin
-
 from pphoto.data_model.base import StorableData
 from pphoto.data_model.face import Position
 
@@ -75,7 +73,7 @@ class IdentitySkipReason(enum.Enum):
 
 
 @dataclass
-class ManualIdentity(DataClassJsonMixin):
+class ManualIdentity:
     identity: t.Optional[str]
     skip_reason: t.Optional[IdentitySkipReason]
     position: Position
@@ -86,6 +84,15 @@ class ManualIdentity(DataClassJsonMixin):
             "skip_reason": None if self.skip_reason is None else self.skip_reason.value,
             "position": self.position.to_json_dict(),
         }
+
+    @staticmethod
+    def from_json_dict(d: t.Dict[str, t.Any]) -> ManualIdentity:
+        skip_reason = d.get("skip_reason")
+        return ManualIdentity(
+            d.get("identity"),
+            None if skip_reason is None else IdentitySkipReason(skip_reason),
+            Position.from_json_dict(d["position"]),
+        )
 
 
 @dataclass
@@ -99,7 +106,7 @@ class ManualIdentities(StorableData):
     def from_json_dict(d: t.Dict[str, t.Any]) -> ManualIdentities:
         identities = d["identities"]
         assert isinstance(identities, list)
-        return ManualIdentities([ManualIdentity.from_dict(x) for x in identities])
+        return ManualIdentities([ManualIdentity.from_json_dict(x) for x in identities])
 
     @staticmethod
     def from_json_bytes(x: bytes) -> ManualIdentities:

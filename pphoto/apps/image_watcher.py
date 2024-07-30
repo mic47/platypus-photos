@@ -131,7 +131,7 @@ async def manual_annotation_worker(
                 elif task.type_ == RemoteJobType.FACE_CLUSTER_ANNOTATION:
                     try:
                         face_cluster_task = task.map(
-                            lambda data: [ManualIdentity.from_dict(x) for x in json.loads(data)]
+                            lambda data: [ManualIdentity.from_json_dict(x) for x in json.loads(data)]
                         )
                     # pylint: disable-next = bare-except
                     except:

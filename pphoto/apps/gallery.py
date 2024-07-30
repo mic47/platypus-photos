@@ -507,7 +507,7 @@ async def manual_identity_annotation_endpoint(clusters: t.List[ManualIdentityClu
         RemoteJobType.FACE_CLUSTER_ANNOTATION,
         json.dumps([x.to_dict(encode_json=True) for x in clusters], ensure_ascii=False).encode("utf-8"),
         [
-            (md5, ext, json.dumps([t.to_dict(encode_json=True) for t in task]).encode("utf-8"))
+            (md5, ext, json.dumps([t.to_json_dict() for t in task]).encode("utf-8"))
             for (md5, ext), task in by_md5.items()
         ],
     )
