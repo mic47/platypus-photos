@@ -1,11 +1,9 @@
 import datetime as dt
 import json
-import math
 import unittest
-import types
 import typing as t
 
-from hypothesis import given, example
+from hypothesis import given
 from hypothesis.strategies import from_type, register_type_strategy, floats, datetimes, none
 
 from pphoto.data_model.base import StorableData
