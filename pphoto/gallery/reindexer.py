@@ -5,12 +5,8 @@ import sys
 import traceback
 import typing as t
 
-from dataclasses_json import DataClassJsonMixin
-
 from pphoto.annots.date import PathDateExtractor
-from pphoto.data_model.base import (
-    WithMD5,
-)
+from pphoto.data_model.base import WithMD5, StorableData
 from pphoto.data_model.exif import ImageExif
 from pphoto.data_model.geo import GeoAddress
 from pphoto.data_model.text import ImageClassification
@@ -27,7 +23,7 @@ from pphoto.utils.progress_bar import ProgressBar
 from pphoto.db.types import FeaturePayload
 
 
-Ser = t.TypeVar("Ser", bound=DataClassJsonMixin)
+Ser = t.TypeVar("Ser", bound=StorableData)
 
 
 class Reindexer:
@@ -44,13 +40,19 @@ class Reindexer:
         self._features_table = FeaturesTable(self._p_con)
         self._files_table = FilesTable(self._p_con)
         self._directories_table = DirectoriesTable(self._g_con)
-        self._exif = SQLiteCache(self._features_table, ImageExif)
-        self._address = SQLiteCache(self._features_table, GeoAddress)
-        self._text_classification = SQLiteCache(self._features_table, ImageClassification)
-        self._manual_location = SQLiteCache(self._features_table, ManualLocation)
-        self._manual_identity = SQLiteCache(self._features_table, ManualIdentities)
-        self._manual_text = SQLiteCache(self._features_table, ManualText)
-        self._manual_date = SQLiteCache(self._features_table, ManualDate)
+        self._exif = SQLiteCache(self._features_table, ImageExif, ImageExif.from_json_bytes)
+        self._address = SQLiteCache(self._features_table, GeoAddress, GeoAddress.from_json_bytes)
+        self._text_classification = SQLiteCache(
+            self._features_table, ImageClassification, ImageClassification.from_json_bytes
+        )
+        self._manual_location = SQLiteCache(
+            self._features_table, ManualLocation, ManualLocation.from_json_bytes
+        )
+        self._manual_identity = SQLiteCache(
+            self._features_table, ManualIdentities, ManualIdentities.from_json_bytes
+        )
+        self._manual_text = SQLiteCache(self._features_table, ManualText, ManualText.from_json_bytes)
+        self._manual_date = SQLiteCache(self._features_table, ManualDate, ManualDate.from_json_bytes)
         self._gallery_index = GalleryIndexTable(self._g_con)
         self._feature_types = [
             ImageExif.__name__,

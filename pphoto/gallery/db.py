@@ -1,3 +1,4 @@
+import json
 import typing as t
 
 from dataclasses_json import DataClassJsonMixin
@@ -33,9 +34,13 @@ class ImageSqlDB:
         self._connections = [photos_connection, gallery_connection, jobs_connection]
         self._files_table = FilesTable(photos_connection)
         features_table = FeaturesTable(photos_connection)
-        self._manual_identities = SQLiteCache(features_table, ManualIdentities, None)
+        self._manual_identities = SQLiteCache(
+            features_table, ManualIdentities, lambda x: ManualIdentities.from_json_dict(json.loads(x)), None
+        )
         self.identities = IdentityTable(photos_connection)
-        self._faces_embeddings = SQLiteCache(features_table, FaceEmbeddings, None)
+        self._faces_embeddings = SQLiteCache(
+            features_table, FaceEmbeddings, lambda x: FaceEmbeddings.from_json_dict(json.loads(x)), None
+        )
         self._gallery_index = GalleryIndexTable(gallery_connection)
         self.jobs = RemoteJobsTable(jobs_connection)
         self._directories_table = DirectoriesTable(gallery_connection)

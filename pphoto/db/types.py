@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 import typing as t
 
-from pphoto.data_model.base import HasCurrentVersion, WithMD5
+from pphoto.data_model.base import StorableData, WithMD5
 
 T = t.TypeVar("T")
 E = t.TypeVar("E")
@@ -18,7 +18,7 @@ class FeaturePayload(t.Generic[T, E]):
     rowid: int
 
 
-Ser = t.TypeVar("Ser", bound=HasCurrentVersion)
+Ser = t.TypeVar("Ser", bound=StorableData)
 
 
 class Cache(t.Generic[Ser]):

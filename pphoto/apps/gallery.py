@@ -507,7 +507,7 @@ async def manual_identity_annotation_endpoint(clusters: t.List[ManualIdentityClu
         RemoteJobType.FACE_CLUSTER_ANNOTATION,
         json.dumps([x.to_dict(encode_json=True) for x in clusters], ensure_ascii=False).encode("utf-8"),
         [
-            (md5, ext, json.dumps([t.to_dict(encode_json=True) for t in task]).encode("utf-8"))
+            (md5, ext, json.dumps([t.to_json_dict() for t in task]).encode("utf-8"))
             for (md5, ext), task in by_md5.items()
         ],
     )
@@ -543,7 +543,7 @@ def find_location(req: str) -> MapSearchResponse:
 
 
 @dataclass
-class JobProgressState(DataClassJsonMixin):
+class JobProgressState:
     ts: float
     t_total: int
     t_finished: int
@@ -728,7 +728,7 @@ async def system_status(_request: Request) -> SystemStatus:
 
 
 @dataclass
-class GetAddressRequest(DataClassJsonMixin):
+class GetAddressRequest:
     latitude: float
     longitude: float
 
@@ -775,20 +775,20 @@ class DateWithLoc:
 
 
 @dataclass
-class ReferenceStats(DataClassJsonMixin):
+class ReferenceStats:
     distance_m: float
     seconds: float  # noqa: F841
 
 
 @dataclass
-class PredictedLocation(DataClassJsonMixin):
+class PredictedLocation:
     loc: LocPoint
     earlier: t.Optional[ReferenceStats]
     later: t.Optional[ReferenceStats]  # noqa: F841
 
 
 @dataclass
-class PathSplit(DataClassJsonMixin):
+class PathSplit:
     dir: str  # noqa: F841
     file: str
 
@@ -801,14 +801,14 @@ class PathSplit(DataClassJsonMixin):
 
 
 @dataclass
-class ImageWithMeta(DataClassJsonMixin):
+class ImageWithMeta:
     omg: ImageRow
     predicted_location: t.Optional[PredictedLocation]
     paths: t.List[PathSplit]
 
 
 @dataclass
-class ImageResponse(DataClassJsonMixin):
+class ImageResponse:
     has_next_page: bool
     omgs: t.List[ImageWithMeta]
     some_location: ManualLocation | None
@@ -840,7 +840,7 @@ async def image_page(params: GalleryRequest) -> ImageResponse:
 
 
 @dataclass
-class FaceWithMeta(DataClassJsonMixin):
+class FaceWithMeta:
     position: Position
     md5: str
     extension: str
@@ -850,7 +850,7 @@ class FaceWithMeta(DataClassJsonMixin):
 
 
 @dataclass
-class FacesResponse(DataClassJsonMixin):
+class FacesResponse:
     has_next_page: bool
     faces: t.List[FaceWithMeta]
     top_identities: t.List[IdentityRowPayload]
@@ -901,7 +901,7 @@ async def faces_on_page(params: GalleryRequest) -> FacesResponse:
 
 
 @dataclass
-class FaceFeatureRequest(DataClassJsonMixin):
+class FaceFeatureRequest:
     md5: str
     extension: str
 

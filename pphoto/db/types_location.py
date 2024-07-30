@@ -3,11 +3,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 import typing as t
 
-from dataclasses_json import DataClassJsonMixin
-
 
 @dataclass
-class LocPoint(DataClassJsonMixin):
+class LocPoint:
     latitude: float
     longitude: float
 
@@ -31,7 +29,7 @@ class LocPoint(DataClassJsonMixin):
 
 
 @dataclass
-class LocationBounds(DataClassJsonMixin):
+class LocationBounds:
     nw: LocPoint  # noqa: F841
     se: LocPoint  # noqa: F841
 
