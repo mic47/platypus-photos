@@ -1,6 +1,6 @@
 import typing as t
 
-from pphoto.data_model.base import HasCurrentVersion, PathWithMd5
+from pphoto.data_model.base import StorableData, PathWithMd5
 from pphoto.db.connection import PhotosConnection
 
 
@@ -8,7 +8,7 @@ class PhotosQueries:
     def __init__(self, con: PhotosConnection) -> None:
         self._con = con
 
-    def get_not_annotated_files(self, models: t.List[t.Type[HasCurrentVersion]]) -> t.List[PathWithMd5]:
+    def get_not_annotated_files(self, models: t.List[t.Type[StorableData]]) -> t.List[PathWithMd5]:
         assert len(models) > 0, "You have to provide at least single model"
         clauses = [
             f"(type == '{model.__name__}' AND version == {model.current_version()})" for model in models

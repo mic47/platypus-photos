@@ -1,12 +1,13 @@
+import json
 import sys
 import typing as t
 
-from pphoto.data_model.base import HasCurrentVersion, WithMD5, Error
+from pphoto.data_model.base import StorableData, WithMD5, Error
 from pphoto.db.features_table import FeaturesTable
 from pphoto.db.types import FeaturePayload, Cache
 
 
-Ser = t.TypeVar("Ser", bound=HasCurrentVersion)
+Ser = t.TypeVar("Ser", bound=StorableData)
 
 
 class JsonlWriter:
@@ -29,14 +30,15 @@ class SQLiteCache(t.Generic[Ser], Cache[Ser]):
     def __init__(
         self,
         features_table: FeaturesTable,
-        loader: t.Type[Ser],
+        type_: t.Type[Ser],
+        loader: t.Callable[[bytes], Ser],
         jsonl_path: t.Optional[str] = None,
     ) -> None:
         self._features_table = features_table
         self._loader = loader
-        self._type = loader.__name__
+        self._type = type_.__name__
         self._data: t.Dict[str, FeaturePayload[WithMD5[Ser], None]] = {}
-        self._current_version = loader.current_version()
+        self._current_version = type_.current_version()
         self._jsonl = JsonlWriter(jsonl_path)
 
     def get(self, key: str) -> t.Optional[FeaturePayload[WithMD5[Ser], None]]:
@@ -47,7 +49,7 @@ class SQLiteCache(t.Generic[Ser], Cache[Ser]):
         if cached is not None and cached.rowid == res.rowid and cached.last_update == res.last_update:
             return cached
         if res.payload is not None:
-            parsed = WithMD5(key, res.version, self._loader.from_json(res.payload), None)
+            parsed = WithMD5(key, res.version, self._loader(res.payload), None)
         elif res.error is not None:
             parsed = WithMD5(key, res.version, None, Error.from_json(res.error))
         else:
@@ -71,7 +73,7 @@ class SQLiteCache(t.Generic[Ser], Cache[Ser]):
         if data.p is None:
             d = None
         else:
-            d = data.p.to_json().encode("utf-8")
+            d = json.dumps(data.p.to_json_dict()).encode("utf-8")
         if data.e is None:
             e = None
         else:

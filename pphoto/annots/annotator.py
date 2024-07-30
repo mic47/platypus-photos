@@ -7,7 +7,7 @@ from pphoto.annots.face import FaceEmbeddingsAnnotator
 from pphoto.annots.geo import Geolocator, GeoAddress
 from pphoto.annots.text import Models, ImageClassification
 from pphoto.data_model.config import DirectoryMatchingConfig, DBFilesConfig
-from pphoto.data_model.base import WithMD5, PathWithMd5, Error, HasCurrentVersion
+from pphoto.data_model.base import WithMD5, PathWithMd5, Error, StorableData
 from pphoto.data_model.manual import (
     ManualLocation,
     ManualText,
@@ -34,21 +34,38 @@ class Annotator:
         remote_annotator_queue: t.Optional[RemoteExecutorQueue],
     ):
         self.path_to_date = PathDateExtractor(directory_matching)
-        models_cache = SQLiteCache(features, ImageClassification, files_config.image_to_text_jsonl)
+        models_cache = SQLiteCache(
+            features,
+            ImageClassification,
+            ImageClassification.from_json_bytes,
+            files_config.image_to_text_jsonl,
+        )
         self.models = Models(models_cache, remote_annotator_queue)
-        face_embeddings_cache = SQLiteCache(features, FaceEmbeddings, files_config.face_embeddings_jsonl)
+        face_embeddings_cache = SQLiteCache(
+            features, FaceEmbeddings, FaceEmbeddings.from_json_bytes, files_config.face_embeddings_jsonl
+        )
         self.face = FaceEmbeddingsAnnotator(face_embeddings_cache, remote_annotator_queue)
-        exif_cache = SQLiteCache(features, ImageExif, files_config.exif_jsonl)
+        exif_cache = SQLiteCache(features, ImageExif, ImageExif.from_json_bytes, files_config.exif_jsonl)
         self.exif = Exif(exif_cache)
-        self.manual_location = SQLiteCache(features, ManualLocation, files_config.manual_location_jsonl)
-        self.manual_identities = SQLiteCache(features, ManualIdentities, files_config.manual_identity_jsonl)
+        self.manual_location = SQLiteCache(
+            features, ManualLocation, ManualLocation.from_json_bytes, files_config.manual_location_jsonl
+        )
+        self.manual_identities = SQLiteCache(
+            features, ManualIdentities, ManualIdentities.from_json_bytes, files_config.manual_identity_jsonl
+        )
         self._identities = identities_table
-        self.manual_date = SQLiteCache(features, ManualDate, files_config.manual_date_jsonl)
-        self.manual_text = SQLiteCache(features, ManualText, files_config.manual_text_jsonl)
-        geolocator_cache = SQLiteCache(features, GeoAddress, files_config.geo_address_jsonl)
+        self.manual_date = SQLiteCache(
+            features, ManualDate, ManualDate.from_json_bytes, files_config.manual_date_jsonl
+        )
+        self.manual_text = SQLiteCache(
+            features, ManualText, ManualText.from_json_bytes, files_config.manual_text_jsonl
+        )
+        geolocator_cache = SQLiteCache(
+            features, GeoAddress, GeoAddress.from_json_bytes, files_config.geo_address_jsonl
+        )
         self.geolocator = Geolocator(geolocator_cache)
-        self.cheap_features_types: t.List[t.Type[HasCurrentVersion]] = [ImageExif, GeoAddress]
-        self.image_to_text_types: t.List[t.Type[HasCurrentVersion]] = [ImageClassification, FaceEmbeddings]
+        self.cheap_features_types: t.List[t.Type[StorableData]] = [ImageExif, GeoAddress]
+        self.image_to_text_types: t.List[t.Type[StorableData]] = [ImageClassification, FaceEmbeddings]
 
     def update_manual_identity(
         self, task: RemoteTask[t.List[ManualIdentity]]
