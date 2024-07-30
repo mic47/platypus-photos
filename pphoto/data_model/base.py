@@ -5,7 +5,6 @@ import traceback
 import typing as t
 
 from dataclasses import dataclass
-from dataclasses_json import DataClassJsonMixin
 
 
 class StorableData(t.Protocol):
@@ -25,13 +24,29 @@ T = t.TypeVar("T")
 
 
 @dataclass
-class Error(BaseException, DataClassJsonMixin):
+class Error(BaseException):
     name: str
     message: t.Optional[str]
     traceback: t.Optional[str]
 
     def to_json_dict(self) -> object:
-        return self.to_dict(encode_json=True)
+        return {
+            "name": self.name,
+            "message": self.message,
+            "traceback": self.traceback,
+        }
+
+    @staticmethod
+    def from_json_dict(d: t.Dict[str, t.Any]) -> Error:
+        return Error(
+            d["name"],
+            d.get("message"),
+            d.get("traceback"),
+        )
+
+    @staticmethod
+    def from_json_bytes(d: bytes) -> Error:
+        return Error.from_json_dict(json.loads(d))
 
     @staticmethod
     def from_exception(e: Exception) -> "Error":

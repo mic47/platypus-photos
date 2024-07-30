@@ -51,7 +51,7 @@ class SQLiteCache(t.Generic[Ser], Cache[Ser]):
         if res.payload is not None:
             parsed = WithMD5(key, res.version, self._loader(res.payload), None)
         elif res.error is not None:
-            parsed = WithMD5(key, res.version, None, Error.from_json(res.error))
+            parsed = WithMD5(key, res.version, None, Error.from_json_bytes(res.error))
         else:
             assert False, "FeaturePayload is missing payload and error"
         ret = t.cast(FeaturePayload[WithMD5[Ser], None], res)
@@ -77,7 +77,7 @@ class SQLiteCache(t.Generic[Ser], Cache[Ser]):
         if data.e is None:
             e = None
         else:
-            e = data.e.to_json().encode("utf-8")
+            e = json.dumps(data.e.to_json_dict()).encode("utf-8")
         self._features_table.add(
             d,
             e,
