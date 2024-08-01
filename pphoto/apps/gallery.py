@@ -116,6 +116,12 @@ def get_cache_file(size: int | str, hsh: str, extension: str, position: t.Option
     return f".cache/{size}/{hsh[0]}/{hsh[1]}/{hsh[2]}/{hsh[3:]}.{position}.{extension}"
 
 
+# TODO:
+# store extension inside cache file, so that this endpoint does not need extension.
+# Can be some encoding with <length><extension><length><metadata><length><data>
+# TODO:
+# Handle caching of cropped parts with care -- or maybe add some timeout (week or so),
+# or have cache LRU cache or something, with some max cache size -- maybe use diskcache
 @app.get(
     "/img/{size}/{hsh}.{extension}",
     responses={

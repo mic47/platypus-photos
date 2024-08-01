@@ -75,6 +75,17 @@ class Reindexer:
 
     async def load(self, progress: t.Optional[ProgressBar]) -> int:
         reindexed = 0
+        # TODO:
+        # If queue does not exists
+        #     Pull queue from the DB
+        # If queue is empty:
+        #     check newest items from source tables, save queue index
+        #     put and store them into queue
+        # Additionally, make the DB to automatically batch inserts in transactions.
+        # Why?
+        # 1. photo table will be again read only.
+        # 2. Ability to have more clients reindexing / reacting to changes
+        # 3. Faster reingest -- only one table is locking
         if not self._queue:
             if progress is not None:
                 # TODO: this is wrong?
