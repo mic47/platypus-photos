@@ -11,7 +11,6 @@ import tqdm
 from pphoto.annots.md5 import compute_md5
 from pphoto.annots.annotator import Annotator
 from pphoto.data_model.base import PathWithMd5
-from pphoto.data_model.geo import GeoAddress
 from pphoto.data_model.manual import ManualIdentity
 from pphoto.remote_jobs.types import ManualAnnotationTask, RemoteTask
 from pphoto.remote_jobs.db import RemoteJobsTable
@@ -20,7 +19,8 @@ from pphoto.db.queries import PhotosQueries
 from pphoto.db.types_file import ManagedLifecycle
 from pphoto.communication.types import ImportMode
 from pphoto.utils import assert_never
-from pphoto.utils.files import supported_media, pathify
+from pphoto.utils.files import supported_media
+from pphoto.file_mgmt.paths import resolve_dir, resolve_path
 
 
 class JobType(enum.Enum):
@@ -101,10 +101,10 @@ class Jobs:
         date = (None if exif.p is None or exif.p.date is None else exif.p.date.datetime) or path_date
         # Move file
         # TODO: we need to extract date and location from the path
-        new_dir = _resolve_dir(self.photos_dir, date, None if geo is None else geo.p)
+        new_dir = resolve_dir(self.photos_dir, date, None if geo is None else geo.p)
         os.makedirs(new_dir, exist_ok=True)
         new_path: PathWithMd5 = PathWithMd5(
-            _resolve_path(new_dir, path_with_md5.path),
+            resolve_path(new_dir, path_with_md5.path),
             path_with_md5.md5,
         )
         # TODO: what happens if this file is watched
@@ -132,7 +132,7 @@ class Jobs:
 
         # Figure out if file should be moved
         date = (None if exif.p is None or exif.p.date is None else exif.p.date.datetime) or path_date
-        new_dir = _resolve_dir(self.photos_dir, date, None if geo is None else geo.p)
+        new_dir = resolve_dir(self.photos_dir, date, None if geo is None else geo.p)
         old_dir = os.path.dirname(path.path)
         if old_dir == new_dir:
             # Dir is same, not moving file
@@ -144,7 +144,7 @@ class Jobs:
             return
 
         new_path: PathWithMd5 = PathWithMd5(
-            _resolve_path(new_dir, path.path),
+            resolve_path(new_dir, path.path),
             path.md5,
         )
         os.makedirs(new_dir, exist_ok=True)
@@ -231,35 +231,6 @@ class Jobs:
             output.append(EnqueuePathAction(path, DEFAULT_PRIORITY, jobs))
         progress.update(1)
         return output
-
-
-def _resolve_dir(photos_dir: str, date: t.Optional[datetime.datetime], geo: t.Optional[GeoAddress]) -> str:
-    # f"{base_dir}/{year}/{month}-{day}-{place}/{filename}_{exists_suffix}.{extension}"
-    path = photos_dir
-    if date is not None:
-        path = f"{path}/{date.year}/{date.month}-{date.day}"
-    else:
-        path = f"{path}/UnknownDate"
-    if geo is not None:
-        path = f"{path}-{pathify(geo.address)}"
-    return path
-
-
-def _resolve_path(directory: str, og_path: str) -> str:
-    path = directory
-    filename = os.path.basename(og_path)
-    splitted = filename.rsplit(".", maxsplit=1)
-    extension = splitted[-1]
-    basefile = ".".join(splitted[:-1])
-    insert = ""
-    count = 0
-    while True:
-        final_path = f"{path}/{basefile}{insert}.{extension}"
-        if not os.path.exists(final_path):
-            break
-        insert = f"_{count:03d}"
-        count += 1
-    return final_path
 
 
 def _is_valid_file(path: str) -> bool:
