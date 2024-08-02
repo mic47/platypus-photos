@@ -11,12 +11,16 @@ class HaveNameAndCountry(t.Protocol):
 
 
 def resolve_dir(
-    photos_dir: str, date: t.Optional[datetime.datetime], geo: t.Optional[HaveNameAndCountry]
+    photos_dir: str,
+    date: t.Optional[datetime.datetime],
+    geo: t.Optional[HaveNameAndCountry],
+    flat: bool = False,
 ) -> str:
     # f"{base_dir}/{year}/{month}-{day}-{place}/{filename}_{exists_suffix}.{extension}"
     path = photos_dir
+    separator = "-" if flat else "/"
     if date is not None:
-        path = f"{path}/{date.year}/{date.month}-{date.day}"
+        path = f"{path}/{date.year:04d}{separator}{date.month:02d}-{date.day:02d}"
     else:
         path = f"{path}/UnknownDate"
     if geo is not None:

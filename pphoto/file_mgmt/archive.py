@@ -20,7 +20,7 @@ def non_repeating_dirs(
     last_dir = None
     used_dirs: t.Dict[str, int] = {}
     for path, date, geo in paths:
-        directory = resolve_dir(photos_dir, date, geo)
+        directory = resolve_dir(photos_dir, date, geo, flat=True)
         if directory != last_dir:
             index = used_dirs.get(directory)
             if index is not None and geo is not None and (geo.name is not None or geo.country is not None):
@@ -39,11 +39,9 @@ def non_repeating_dirs(
 class ByteStream(io.BytesIO):
     def __init__(self) -> None:
         self._buffer = io.BytesIO()
-        self._offset = 0
 
     def write(self, s: t.Any, /) -> int:
         self._buffer.write(s)
-        self._offset += len(s)
         return len(s)
 
     def close(self) -> None:
