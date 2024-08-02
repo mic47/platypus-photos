@@ -55,6 +55,7 @@ class ByteStream(io.BytesIO):
 
 
 def tar_stream(paths: t.Iterable[FileToStore]) -> t.Iterable[bytes]:
+    # TODO: consider streaming zip library: https://stream-zip.docs.trade.gov.uk/get-started/
     output = ByteStream()
     with tarfile.TarFile.open(None, "w", output) as tar:
         for path in paths:
