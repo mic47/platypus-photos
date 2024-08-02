@@ -17,7 +17,7 @@ from geopy.distance import distance
 from PIL import Image, ImageFile
 
 from fastapi import FastAPI, Request, Response, Query, Path as PathParam
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.routing import APIRoute
 from fastapi.staticfiles import StaticFiles
 
@@ -47,6 +47,8 @@ from pphoto.gallery.db import ImageSqlDB, Image as ImageRow
 from pphoto.gallery.image import make_image_address
 from pphoto.gallery.url import SearchQuery, GalleryPaging, SortParams, SortBy, SortOrder
 from pphoto.gallery.unicode import flag
+from pphoto.file_mgmt.archive import non_repeating_dirs, tar_stream
+from pphoto.utils.files import pathify
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
@@ -114,6 +116,53 @@ def get_cache_file(size: int | str, hsh: str, extension: str, position: t.Option
     if position is None:
         return f".cache/{size}/{hsh[0]}/{hsh[1]}/{hsh[2]}/{hsh[3:]}.{extension}"
     return f".cache/{size}/{hsh[0]}/{hsh[1]}/{hsh[2]}/{hsh[3:]}.{position}.{extension}"
+
+
+@app.get(
+    "/export",
+    responses={
+        200: {
+            "description": "tar file with selected photos",
+            "content": {"application/x-tar": {"example": "No example available."}},
+        }
+    },
+)
+def export_photos(query: str) -> StreamingResponse:
+    db = DB.get()
+    actual_query = SearchQuery.from_json(query)
+
+    def image_iterator(
+        query: SearchQuery,
+    ) -> t.Iterable[t.Tuple[str, t.Optional[datetime], t.Optional[ImageAddress]]]:
+        page = 0
+        paging = 1000
+        has_next_page = True
+        while has_next_page:
+            omgs, has_next_page = db.get_matching_images(
+                query, SortParams(SortBy.TIMESTAMP, SortOrder.ASC), GalleryPaging(page, paging)
+            )
+            page += 1
+            for omg in omgs:
+                filename = None
+                for possible_filename in db.files(omg.md5):
+                    if os.path.exists(possible_filename.file):
+                        filename = possible_filename.file
+                        break
+                if filename is None:
+                    continue
+                yield (filename, omg.date, omg.address)
+
+    pretty = pathify(actual_query.to_user_string().replace("/", "_"))
+    if pretty:
+        filename = f"export-{pretty}"
+    else:
+        filename = "export"
+    tar = tar_stream(non_repeating_dirs(filename, image_iterator(actual_query)))
+    return StreamingResponse(
+        content=tar,
+        headers={"Content-Disposition": f'attachment; filename*="{filename}.tar"'},
+        media_type="application/x-tar",
+    )
 
 
 # TODO:

@@ -2,11 +2,17 @@ import datetime
 import os
 import typing as t
 
-from pphoto.data_model.geo import GeoAddress
 from pphoto.utils.files import pathify
 
 
-def resolve_dir(photos_dir: str, date: t.Optional[datetime.datetime], geo: t.Optional[GeoAddress]) -> str:
+class HaveNameAndCountry(t.Protocol):
+    country: t.Optional[str]
+    name: t.Optional[str]
+
+
+def resolve_dir(
+    photos_dir: str, date: t.Optional[datetime.datetime], geo: t.Optional[HaveNameAndCountry]
+) -> str:
     # f"{base_dir}/{year}/{month}-{day}-{place}/{filename}_{exists_suffix}.{extension}"
     path = photos_dir
     if date is not None:
@@ -19,10 +25,9 @@ def resolve_dir(photos_dir: str, date: t.Optional[datetime.datetime], geo: t.Opt
             address_parts.append(geo.country)
         if geo.name is not None:
             address_parts.append(geo.name)
-        if not address_parts and geo.address:
-            address_parts.append(geo.address)
-        address = "_".join(address_parts)
-        path = f"{path}-{pathify(address)}"
+        if address_parts:
+            address = "_".join(address_parts)
+            path = f"{path}-{pathify(address)}"
     return path
 
 

@@ -5,6 +5,46 @@
     "version": "0.1.0"
   },
   "paths": {
+    "/export": {
+      "get": {
+        "summary": "Export Photos",
+        "operationId": "export_photos-GET",
+        "parameters": [
+          {
+            "name": "query",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Query"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "tar file with selected photos",
+            "content": {
+              "application/json": {
+                "schema": {}
+              },
+              "application/x-tar": {
+                "example": "No example available."
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/img/{size}/{hsh}.{extension}": {
       "get": {
         "summary": "Image Endpoint",

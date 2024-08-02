@@ -116,6 +116,7 @@ export function Application({
                 ["map", "Map 🗺️"],
                 ["faces", "Faces 🤓"],
                 ["gallery", "Gallery 🖼️"],
+                ["export", "Export 💾"],
                 ["jobs", "Job Progress 🏗️"],
                 ["system_status", "System Status 🙈"],
             ].map(([key, text]) => [
@@ -151,6 +152,21 @@ export function Application({
             </Switchable>
             <Switchable switchedOn={activeTabs.system_status.active}>
                 <SystemStatusComponent intervalSeconds={10} />
+            </Switchable>
+            <Switchable switchedOn={activeTabs.export.active}>
+                <form action="/export" method="get">
+                    <input
+                        type="hidden"
+                        name="query"
+                        value={JSON.stringify(searchQueryWithTs.q)}
+                    />
+                    <input
+                        type="submit"
+                        name="button"
+                        value="💾 Export current query ⚠️"
+                    />
+                </form>
+                <br />
             </Switchable>
             <Switchable switchedOn={activeTabs.query.active}>
                 <InputFormView

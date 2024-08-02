@@ -421,6 +421,12 @@ export type ValidationError = {
     type: string;
 };
 
+export type ExportPhotosGetData = {
+    query: string;
+};
+
+export type ExportPhotosGetResponse = unknown;
+
 export type ImageEndpointGetData = {
     extension: string;
     hsh: string;
@@ -519,6 +525,21 @@ export type ReadIndexGetResponse = unknown;
 export type ReadIndexGet1Response = unknown;
 
 export type $OpenApiTs = {
+    '/export': {
+        get: {
+            req: ExportPhotosGetData;
+            res: {
+                /**
+                 * tar file with selected photos
+                 */
+                200: unknown;
+                /**
+                 * Validation Error
+                 */
+                422: HTTPValidationError;
+            };
+        };
+    };
     '/img/{size}/{hsh}.{extension}': {
         get: {
             req: ImageEndpointGetData;
