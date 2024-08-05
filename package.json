@@ -32,7 +32,7 @@
     "prettier": "^3.3.3",
     "process": "^0.11.10",
     "typescript": "^5.5.4",
-    "typescript-eslint": "^7.17.0"
+    "typescript-eslint": "^8.0.0"
   },
   "dependencies": {
     "@hey-api/openapi-ts": "^0.51.0",
