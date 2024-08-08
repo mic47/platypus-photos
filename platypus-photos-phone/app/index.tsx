@@ -243,9 +243,8 @@ export default function Index() {
         // refreshing
         //
         const pinch = Gesture.Pinch()
-            .onStart((e) => {
+            .onStart(() => {
                 console.log("pinch start", galleryRows);
-                //runOnJS(updatePinchParams)({ initialWidth: galleryWidth });
             })
             .onUpdate((e) => {
                 //console.log(e.scale);
@@ -256,14 +255,6 @@ export default function Index() {
                         galleryRows.gestureStart - update,
                     );
                     if (newWidth !== galleryRows.actual) {
-                        /*
-                        console.log(
-                            "Updating width",
-                            galleryRows,
-                            "->",
-                            newWidth,
-                        );
-                        */
                         runOnJS(updateGalleryRows)({
                             actual: newWidth,
                             gestureStart: galleryRows.gestureStart,
@@ -274,14 +265,6 @@ export default function Index() {
                     const update = Math.floor(Math.max(0, 1.0 - e.scale) / 0.1);
                     const newWidth = galleryRows.gestureStart + update;
                     if (newWidth !== galleryRows.actual) {
-                        /*
-                        console.log(
-                            "Updating width",
-                            galleryRows,
-                            "->",
-                            newWidth,
-                        );
-                        */
                         runOnJS(updateGalleryRows)({
                             actual: newWidth,
                             gestureStart: galleryRows.gestureStart,
