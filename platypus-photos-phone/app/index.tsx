@@ -9,6 +9,8 @@ import {
     Dimensions,
     FlatList,
     Image as NativeImage,
+    FlatListProps,
+    ViewToken,
 } from "react-native";
 import Gallery, {
     GalleryRef,
@@ -296,34 +298,67 @@ export default function Index() {
                     initialIndex: topViewableIndex,
                 });
             });
+        const getItemLayout = (_: any, index: number) => {
+            return {
+                length: imageWidth,
+                offset: index * imageWidth,
+                index,
+            };
+        };
+        const keyExtractor = (_: any, index: number) => index.toString();
+        const renderItem = ({
+            item: omg,
+            index,
+        }: {
+            item: ImageWithMeta;
+            index: number;
+        }) => {
+            const url = `http://10.0.2.2:8000/img/preview/${omg.omg.md5}.${omg.omg.extension}`;
+            return (
+                <TouchableWithoutFeedback
+                    key={url}
+                    onPress={() => {
+                        console.log(index, omgs.length);
+                        updateSelectedPhoto(index);
+                    }}
+                >
+                    <Image source={url} style={styles.image} />
+                </TouchableWithoutFeedback>
+            );
+        };
+        const onViewableItemsChanged = ({
+            viewableItems,
+        }: {
+            viewableItems: ViewToken<ImageWithMeta>[];
+        }) => {
+            const viewable: number[] = viewableItems
+                .filter((x) => x.isViewable)
+                .map((x) => x.index)
+                .filter((x) => x !== null) as number[];
+            if (viewable.length > 0) {
+                const newTop = Math.min(...viewable);
+                if (topViewableIndex !== newTop) {
+                    console.log("UPDATING WHAT WE SEE", newTop);
+                    updateTopViewableIndex(newTop);
+                    if (galleryRows.actual === galleryRows.gestureStart) {
+                        updateGalleryRows({
+                            ...galleryRows,
+                            initialIndex: newTop,
+                        });
+                    }
+                }
+            }
+        };
+
         return (
             <GestureDetector gesture={pinch}>
                 <View style={{ flex: 1 }}>
                     <FlatList
                         key={galleryRows.actual}
                         data={images.images}
-                        keyExtractor={(_omg, index) => index.toString()}
-                        getItemLayout={(_, index) => {
-                            return {
-                                length: imageWidth,
-                                offset: index * imageWidth,
-                                index,
-                            };
-                        }}
-                        renderItem={({ item: omg, index }) => {
-                            const url = `http://10.0.2.2:8000/img/preview/${omg.omg.md5}.${omg.omg.extension}`;
-                            return (
-                                <TouchableWithoutFeedback
-                                    key={url}
-                                    onPress={() => {
-                                        console.log(index, omgs.length);
-                                        updateSelectedPhoto(index);
-                                    }}
-                                >
-                                    <Image source={url} style={styles.image} />
-                                </TouchableWithoutFeedback>
-                            );
-                        }}
+                        keyExtractor={keyExtractor}
+                        getItemLayout={getItemLayout}
+                        renderItem={renderItem}
                         persistentScrollbar={true}
                         onEndReached={() => fetchMore()}
                         onEndReachedThreshold={5}
@@ -333,31 +368,7 @@ export default function Index() {
                         initialScrollIndex={Math.ceil(
                             galleryRows.initialIndex / galleryRows.actual,
                         )}
-                        onViewableItemsChanged={({
-                            changed,
-                            viewableItems,
-                        }) => {
-                            const viewable: number[] = viewableItems
-                                .filter((x) => x.isViewable)
-                                .map((x) => x.index)
-                                .filter((x) => x !== null) as number[];
-                            if (viewable.length > 0) {
-                                const newTop = Math.min(...viewable);
-                                if (topViewableIndex !== newTop) {
-                                    console.log("UPDATING WHAT WE SEE", newTop);
-                                    updateTopViewableIndex(newTop);
-                                    if (
-                                        galleryRows.actual ===
-                                        galleryRows.gestureStart
-                                    ) {
-                                        updateGalleryRows({
-                                            ...galleryRows,
-                                            initialIndex: newTop,
-                                        });
-                                    }
-                                }
-                            }
-                        }}
+                        onViewableItemsChanged={onViewableItemsChanged}
                         viewabilityConfig={{
                             itemVisiblePercentThreshold: 20,
                         }}
