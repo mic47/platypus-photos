@@ -12,7 +12,7 @@ export default function Page() {
         <InputForm
             submit={(query: SearchQuery) => {
                 updateQuery(query);
-                router.replace("/galleryBrowser");
+                router.push("/galleryBrowser");
             }}
         />
     );
