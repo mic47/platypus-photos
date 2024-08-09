@@ -10,6 +10,7 @@ import {
 } from "react-native";
 
 import { ImageWithMeta } from "@/components/pygallery.generated/types.gen";
+import { OpenAPI } from "./pygallery.generated";
 
 export function GalleryBrowser({
     width,
@@ -59,7 +60,7 @@ export function GalleryBrowser({
         item: ImageWithMeta;
         index: number;
     }) => {
-        const url = `http://10.0.2.2:8000/img/preview/${omg.omg.md5}.${omg.omg.extension}`;
+        const url = `${OpenAPI.BASE}/img/preview/${omg.omg.md5}.${omg.omg.extension}`;
         return (
             <TouchableWithoutFeedback
                 key={url}

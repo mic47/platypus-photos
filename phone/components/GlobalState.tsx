@@ -1,7 +1,7 @@
 import React from "react";
 import { ImageWithMeta, SearchQuery } from "./pygallery.generated/types.gen";
 
-type Updateable<T> = {
+export type Updateable<T> = {
     value: T;
     update: (update: T) => void;
 };

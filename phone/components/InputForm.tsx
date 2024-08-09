@@ -2,11 +2,14 @@ import React from "react";
 import { Button, Text, View, StyleSheet, TextInput } from "react-native";
 
 import { SearchQuery } from "@/components/pygallery.generated/types.gen";
+import { Updateable } from "./GlobalState";
 
 export function InputForm({
     submit,
+    endpoint,
 }: {
     submit: (query: SearchQuery) => void;
+    endpoint: Updateable<string>;
 }) {
     const [query, changeQuery] = React.useState<SearchQuery>({});
     const stringField = (
@@ -15,9 +18,9 @@ export function InputForm({
         const f = query[field];
         return {
             value: f === undefined ? null : f,
-            changeValue: (value: string) => {
+            update: (value: string | null) => {
                 const ret = { ...query };
-                if (value === "") {
+                if (value === "" || value === null) {
                     delete ret[field];
                 } else {
                     ret[field] = value;
@@ -34,6 +37,17 @@ export function InputForm({
                 alignItems: "center",
             }}
         >
+            <InputField
+                prefix="🕸️"
+                suffix="(server)"
+                control={{
+                    value: endpoint.value,
+                    update: (value) =>
+                        endpoint.update(value === null ? "" : value),
+                }}
+                hideReset={true}
+            />
+            <Text>🌱〰️〰️〰️🦆〰️〰️〰️〰️〰️〰️〰️〰️🚢〰️〰️</Text>
             <InputField
                 prefix="🏷️"
                 suffix="(tags)"
@@ -72,28 +86,29 @@ export function InputForm({
 function InputField({
     prefix,
     suffix,
-    control: { value, changeValue },
+    control: { value, update },
+    hideReset,
 }: {
     prefix: string;
     suffix: string;
-    control: {
-        value: string | null;
-        changeValue: (text: string) => void;
-    };
+    control: Updateable<string | null>;
+    hideReset?: boolean;
 }) {
     return (
         <View style={styles.inputView}>
-            <Button
-                title="reset"
-                onPress={() => {
-                    changeValue("");
-                }}
-            />
+            {hideReset === true ? null : (
+                <Button
+                    title="reset"
+                    onPress={() => {
+                        update("");
+                    }}
+                />
+            )}
             <Text>{prefix}</Text>
             <TextInput
                 style={styles.textInput}
                 editable
-                onChangeText={(text) => changeValue(text)}
+                onChangeText={(text) => update(text)}
                 value={value || ""}
             ></TextInput>
             <Text>{suffix}</Text>

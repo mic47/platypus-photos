@@ -8,6 +8,7 @@ import { Image } from "expo-image";
 
 import { FetchedImages } from "@/components/GlobalState";
 import { ImageWithMeta } from "@/components/pygallery.generated/types.gen";
+import { OpenAPI } from "./pygallery.generated";
 
 export function ImageViewer({
     index,
@@ -48,7 +49,7 @@ function renderItem({
     item,
     setImageDimensions,
 }: RenderItemInfo<ImageWithMeta>) {
-    const url = `http://10.0.2.2:8000/img/original/${item.omg.md5}.${item.omg.extension}`;
+    const url = `${OpenAPI.BASE}/img/original/${item.omg.md5}.${item.omg.extension}`;
     return (
         <Image
             source={url}
