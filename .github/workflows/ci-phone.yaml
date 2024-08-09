@@ -17,6 +17,7 @@ jobs:
     steps:
       - name: Check out repository code
         uses: actions/checkout@v4
+      - run: yarn
       - run: make ci
       - run: git diff --exit-code
       - run: echo "🍏 This job's status is ${{ job.status }}."
