@@ -1,5 +1,5 @@
 ---
-name: Platypul Photos CI
+name: Platypul Photos CI Web
 run-name: ${{ github.actor }} is running CI🚀
 on:
   push:
@@ -11,6 +11,9 @@ on:
 jobs:
   CI:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./web
     steps:
       - name: Check out repository code
         uses: actions/checkout@v4
