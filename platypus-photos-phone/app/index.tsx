@@ -6,8 +6,7 @@ import { QueryContext } from "@/components/GlobalState";
 import { InputForm } from "@/components/InputForm";
 
 export default function Page() {
-    const { value: query, update: updateQuery } =
-        React.useContext(QueryContext);
+    const { value: _, update: updateQuery } = React.useContext(QueryContext);
     // TODO: use query to preselect values?
     return (
         <InputForm
