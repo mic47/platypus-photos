@@ -1,8 +1,9 @@
 import React from "react";
-import { SearchQuery } from "./pygallery.generated/types.gen";
-import { Button, Text, View, StyleSheet, TextInput } from "react-native";
-import { QueryContext } from "./globalState";
 import { router } from "expo-router";
+import { Button, Text, View, StyleSheet, TextInput } from "react-native";
+
+import { SearchQuery } from "@/components/pygallery.generated/types.gen";
+import { QueryContext } from "@/components/GlobalState";
 
 export default function Page() {
     const { value: query, update: updateQuery } =

@@ -1,12 +1,12 @@
 import * as React from "react";
 import { SearchQuery } from "./pygallery.generated/types.gen";
+import * as pygallery_service from "./pygallery.generated/services.gen";
 import {
     FetchedImages,
     FetchedImagesContext,
     QueryContext,
     RefreshingContext,
-} from "./globalState";
-import * as pygallery_service from "./pygallery.generated/services.gen";
+} from "./GlobalState";
 
 export function ImageFetcher() {
     const query = React.useContext(QueryContext).value;

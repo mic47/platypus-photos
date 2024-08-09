@@ -1,14 +1,14 @@
 import { Stack } from "expo-router";
 import * as React from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { SearchQuery } from "./pygallery.generated/types.gen";
+import { SearchQuery } from "@/components/pygallery.generated/types.gen";
 import {
     FetchedImages,
     FetchedImagesContext,
     QueryContext,
     RefreshingContext,
-} from "./globalState";
-import { ImageFetcher } from "./imageFetcher";
+} from "@/components/GlobalState";
+import { ImageFetcher } from "@/components/ImageFetcher";
 
 export default function RootLayout() {
     const [query, updateQuery] = React.useState<SearchQuery>({});

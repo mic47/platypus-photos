@@ -1,6 +1,5 @@
 import * as React from "react";
 
-import { ImageWithMeta } from "./pygallery.generated/types.gen";
 import { Image } from "expo-image";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { runOnJS } from "react-native-reanimated";
@@ -14,12 +13,14 @@ import {
     View,
     ViewToken,
 } from "react-native";
+
 import {
     FetchedImagesContext,
     QueryContext,
     RefreshingContext,
-} from "./globalState";
-import { fetchImages } from "./imageFetcher";
+} from "@/components/GlobalState";
+import { ImageWithMeta } from "@/components/pygallery.generated/types.gen";
+import { fetchImages } from "@/components/ImageFetcher";
 import { router } from "expo-router";
 
 export default function Page() {

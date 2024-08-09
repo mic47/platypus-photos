@@ -4,14 +4,14 @@ import Gallery, {
     GalleryRef,
     RenderItemInfo,
 } from "react-native-awesome-gallery";
+import { Image } from "expo-image";
 import {
     FetchedImagesContext,
     QueryContext,
     RefreshingContext,
-} from "../globalState";
-import { Image } from "expo-image";
-import { fetchImages } from "../imageFetcher";
-import { ImageWithMeta } from "../pygallery.generated/types.gen";
+} from "@/components/GlobalState";
+import { fetchImages } from "@/components/ImageFetcher";
+import { ImageWithMeta } from "@/components/pygallery.generated/types.gen";
 import { useLocalSearchParams } from "expo-router";
 
 export default function Page() {
