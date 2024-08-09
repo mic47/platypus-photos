@@ -21,7 +21,7 @@ export function ZoomableGalleryBrowser({
     hasNextPage: boolean;
     refreshing: boolean;
     images: ImageWithMeta[];
-    fetchMore: ({}) => void;
+    fetchMore: () => void;
     onImageClick: (index: number) => void;
 }) {
     const [galleryRows, updateGalleryRows] = React.useState<{

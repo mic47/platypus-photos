@@ -28,7 +28,7 @@ export function GalleryBrowser({
     hasNextPage: boolean;
     refreshing: boolean;
     images: ImageWithMeta[];
-    fetchMore: ({}) => void;
+    fetchMore: () => void;
     onImageClick: (index: number) => void;
     onViewableImagesChange: (index: number) => void;
 }) {
@@ -94,7 +94,7 @@ export function GalleryBrowser({
             getItemLayout={getItemLayout}
             renderItem={renderItem}
             persistentScrollbar={true}
-            onEndReached={() => fetchMore({})}
+            onEndReached={() => fetchMore()}
             onEndReachedThreshold={5}
             horizontal={false}
             numColumns={numberOfRows}

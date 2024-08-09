@@ -21,7 +21,7 @@ export function ImageFetcher() {
             updateFetchedImages: fetchedImages.update,
             updateRefreshing,
         });
-    }, [query]);
+    }, [query, fetchedImages.value, fetchedImages.update, updateRefreshing]);
     return <></>;
 }
 
