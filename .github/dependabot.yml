@@ -13,3 +13,7 @@ updates:
     directory: "/web"
     schedule:
       interval: "weekly"
+  - package-ecosystem: "npm"
+    directory: "/phone"
+    schedule:
+      interval: "weekly"

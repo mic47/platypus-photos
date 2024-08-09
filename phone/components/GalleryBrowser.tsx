@@ -116,7 +116,7 @@ export function GalleryBrowser({
                         )}
                         <Button
                             title="Fetch manually"
-                            onPress={() => fetchMore({})}
+                            onPress={() => fetchMore()}
                         ></Button>
                     </>
                 ) : null

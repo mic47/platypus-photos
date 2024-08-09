@@ -22,9 +22,6 @@ ci:
 	make gen
 	make cits
 
-dev-android:
-	npx expo run:android
-
 prepare-ci:
 	cp config.example.yaml config.yaml
 
