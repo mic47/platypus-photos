@@ -40,6 +40,13 @@ export function fetchImages({
     updateRefreshing: (refreshing: boolean) => void;
 }) {
     const page = reset === true ? 0 : fetchedImages.page;
+    if (reset === true) {
+        updateFetchedImages({
+            page: 0,
+            images: [],
+            hasNextPage: false,
+        });
+    }
     console.log("Fetching page", page);
     updateRefreshing(true);
     pygallery_service
