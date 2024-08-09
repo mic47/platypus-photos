@@ -21,7 +21,8 @@ export function ImageFetcher() {
             updateFetchedImages: fetchedImages.update,
             updateRefreshing,
         });
-    }, [query, fetchedImages.value, fetchedImages.update, updateRefreshing]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [query]);
     return <></>;
 }
 
