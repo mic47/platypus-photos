@@ -10,7 +10,7 @@ hypothesis==6.109.1
 numpy==1.26.4
 pillow==10.4.0
 tqdm==4.66.4
-transformers==4.43.3
+transformers==4.44.0
 types-tqdm==4.66.0.20240417
 ultralytics==8.2.74
 
