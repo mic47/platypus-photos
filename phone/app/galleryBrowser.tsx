@@ -11,10 +11,18 @@ import { fetchImages } from "@/components/ImageFetcher";
 import { ZoomableGalleryBrowser } from "@/components/ZoomableGalleryBrowser";
 
 export default function Page() {
-    const { width } = Dimensions.get("window");
+    const [width, updateWidth] = React.useState<number>(
+        () => Dimensions.get("window").width,
+    );
     const query = React.useContext(QueryContext).value;
     const fetchedImages = React.useContext(FetchedImagesContext);
     const refreshing = React.useContext(RefreshingContext);
+    React.useEffect(() => {
+        const ret = Dimensions.addEventListener("change", () => {
+            updateWidth(Dimensions.get("window").width);
+        });
+        return () => ret.remove();
+    }, []);
     const fetchMore = () =>
         fetchImages({
             reset: false,
