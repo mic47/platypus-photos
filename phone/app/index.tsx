@@ -42,8 +42,8 @@ export default function Page() {
     // TODO: use query to preselect values?
     return (
         <InputForm
-            submit={(query: SearchQuery) => {
-                updateQuery(query);
+            query={{ value: query, update: updateQuery }}
+            submit={() => {
                 router.push("/galleryBrowser");
             }}
             endpoint={{

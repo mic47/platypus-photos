@@ -6,31 +6,31 @@ import { Updateable } from "./GlobalState";
 import DatePicker from "react-native-date-picker";
 
 export function InputForm({
+    query,
     submit,
     endpoint,
 }: {
-    submit: (query: SearchQuery) => void;
+    query: Updateable<SearchQuery>;
+    submit: () => void;
     endpoint: Updateable<string>;
 }) {
-    const [query, changeQuery] = React.useState<SearchQuery>({});
     const stringField = (
         field: "tag" | "cls" | "addr" | "directory" | "camera" | "identity",
     ) => {
-        const f = query[field];
+        const f = query.value[field];
         return {
             value: f === undefined ? null : f,
             update: (value: string | null) => {
-                const ret = { ...query };
+                const ret = { ...query.value };
                 if (value === "" || value === null) {
                     delete ret[field];
                 } else {
                     ret[field] = value;
                 }
-                changeQuery(ret);
+                query.update(ret);
             },
         };
     };
-    console.log(query);
     return (
         <View
             style={{
@@ -88,17 +88,18 @@ export function InputForm({
                 text="Date From"
                 control={{
                     value:
-                        query.tsfrom === undefined || query.tsfrom === null
+                        query.value.tsfrom === undefined ||
+                        query.value.tsfrom === null
                             ? null
-                            : new Date(query.tsfrom * 1000),
+                            : new Date(query.value.tsfrom * 1000),
                     update: (value) => {
                         if (value === null) {
-                            const ret = { ...query };
+                            const ret = { ...query.value };
                             delete ret.tsfrom;
-                            changeQuery(ret);
+                            query.update(ret);
                         } else {
-                            changeQuery({
-                                ...query,
+                            query.update({
+                                ...query.value,
                                 tsfrom: value.valueOf() / 1000,
                             });
                         }
@@ -110,24 +111,25 @@ export function InputForm({
                 text="Date To"
                 control={{
                     value:
-                        query.tsto === undefined || query.tsto === null
+                        query.value.tsto === undefined ||
+                        query.value.tsto === null
                             ? null
-                            : new Date(query.tsto * 1000),
+                            : new Date(query.value.tsto * 1000),
                     update: (value) => {
                         if (value === null) {
-                            const ret = { ...query };
+                            const ret = { ...query.value };
                             delete ret.tsto;
-                            changeQuery(ret);
+                            query.update(ret);
                         } else {
-                            changeQuery({
-                                ...query,
+                            query.update({
+                                ...query.value,
                                 tsto: value.valueOf() / 1000 + 86400,
                             });
                         }
                     },
                 }}
             />
-            <Button title="Submit" onPress={() => submit(query)} />
+            <Button title="Submit" onPress={() => submit()} />
         </View>
     );
 }
