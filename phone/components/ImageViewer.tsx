@@ -87,6 +87,9 @@ function RenderedItem({
         if (item.omg.camera !== null && item.omg.camera !== "") {
             textParts.push(`Camera: ${item.omg.camera}`);
         }
+        item.paths.forEach((path) => {
+            textParts.push(`${path.dir}/${path.file}`);
+        });
     }
     return (
         <View style={{ flex: 1 }}>
