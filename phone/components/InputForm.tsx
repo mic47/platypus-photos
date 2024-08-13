@@ -13,8 +13,6 @@ export function InputForm({
     endpoint: Updateable<string>;
 }) {
     const [query, changeQuery] = React.useState<SearchQuery>({});
-    const [dateFromOpen, changeDateFromOpen] = React.useState(false);
-    const [dateToOpen, changeDateToOpen] = React.useState(false);
     const stringField = (
         field: "tag" | "cls" | "addr" | "directory" | "camera" | "identity",
     ) => {
