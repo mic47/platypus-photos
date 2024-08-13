@@ -3,6 +3,7 @@ import { Button, Text, View, StyleSheet, TextInput } from "react-native";
 
 import { SearchQuery } from "@/components/pygallery.generated/types.gen";
 import { Updateable } from "./GlobalState";
+import DatePicker from "react-native-date-picker";
 
 export function InputForm({
     submit,
@@ -12,6 +13,8 @@ export function InputForm({
     endpoint: Updateable<string>;
 }) {
     const [query, changeQuery] = React.useState<SearchQuery>({});
+    const [dateFromOpen, changeDateFromOpen] = React.useState(false);
+    const [dateToOpen, changeDateToOpen] = React.useState(false);
     const stringField = (
         field: "tag" | "cls" | "addr" | "directory" | "camera" | "identity",
     ) => {
@@ -29,6 +32,7 @@ export function InputForm({
             },
         };
     };
+    console.log(query);
     return (
         <View
             style={{
@@ -37,7 +41,7 @@ export function InputForm({
                 alignItems: "center",
             }}
         >
-            <InputField
+            <TextField
                 prefix="🕸️"
                 suffix="(server)"
                 control={{
@@ -51,42 +55,127 @@ export function InputForm({
                 {"     "}✈️{"     "}☀️{"          "}☁️☁️☁️☁️☁️🌧️⛈️🌧️🌧️🌧️
             </Text>
             <Text>🛫🌱🌊🌊🌊🦆〰️〰️〰️〰️〰️〰️〰️〰️🚢〰️〰️</Text>
-            <InputField
+            <TextField
                 prefix="🏷️"
                 suffix="(tags)"
                 control={stringField("tag")}
             />
-            <InputField
+            <TextField
                 prefix="📝"
                 suffix="(text)"
                 control={stringField("cls")}
             />
-            <InputField
+            <TextField
                 prefix="📭"
                 suffix="(address)"
                 control={stringField("addr")}
             />
-            <InputField
+            <TextField
                 prefix="🤓"
                 suffix="(identity)"
                 control={stringField("identity")}
             />
-            <InputField
+            <TextField
                 prefix="📁"
                 suffix="(folder)"
                 control={stringField("directory")}
             />
-            <InputField
+            <TextField
                 prefix="📷"
                 suffix="(camera)"
                 control={stringField("camera")}
+            />
+            <DateField
+                prefix="🕰️"
+                text="Date From"
+                control={{
+                    value:
+                        query.tsfrom === undefined || query.tsfrom === null
+                            ? null
+                            : new Date(query.tsfrom * 1000),
+                    update: (value) => {
+                        if (value === null) {
+                            const ret = { ...query };
+                            delete ret.tsfrom;
+                            changeQuery(ret);
+                        } else {
+                            changeQuery({
+                                ...query,
+                                tsfrom: value.valueOf() / 1000,
+                            });
+                        }
+                    },
+                }}
+            />
+            <DateField
+                prefix="⌚"
+                text="Date To"
+                control={{
+                    value:
+                        query.tsto === undefined || query.tsto === null
+                            ? null
+                            : new Date(query.tsto * 1000),
+                    update: (value) => {
+                        if (value === null) {
+                            const ret = { ...query };
+                            delete ret.tsto;
+                            changeQuery(ret);
+                        } else {
+                            changeQuery({
+                                ...query,
+                                tsto: value.valueOf() / 1000 + 86400,
+                            });
+                        }
+                    },
+                }}
             />
             <Button title="Submit" onPress={() => submit(query)} />
         </View>
     );
 }
 
-function InputField({
+function DateField({
+    prefix,
+    text,
+    control: { value, update },
+}: {
+    prefix: string;
+    text: string;
+    control: Updateable<Date | null>;
+}) {
+    const [open, changeOpen] = React.useState(false);
+    return (
+        <View style={styles.inputView}>
+            <Button
+                title="reset"
+                onPress={() => {
+                    update(null);
+                }}
+            />
+            <Text>{prefix}</Text>
+            <Button title={text} onPress={() => changeOpen(true)} />
+            <Text style={{ flex: 1 }}>
+                {value === null ? null : value.toString()}
+            </Text>
+            <DatePicker
+                modal
+                mode="date"
+                open={open}
+                date={value === null ? new Date(Date.now()) : value}
+                onConfirm={(date) => {
+                    console.log(date);
+                    changeOpen(false);
+                    update(date);
+                }}
+                onCancel={() => {
+                    changeOpen(false);
+                }}
+            />
+        </View>
+    );
+}
+
+function TextField({
     prefix,
     suffix,
     control: { value, update },
