@@ -47,7 +47,7 @@ export function fetchImages({
             hasNextPage: false,
         });
     }
-    console.log("Fetching page", page);
+    console.log("Fetching page", page, query);
     updateRefreshing(true);
     pygallery_service
         .imagePagePost({
