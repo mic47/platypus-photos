@@ -22,7 +22,7 @@
     "chart.js": "^4.4.3",
     "chartjs-adapter-date-fns": "^3.0.0",
     "date-fns": "^3.6.0",
-    "@hey-api/openapi-ts": "^0.52.5",
+    "@hey-api/openapi-ts": "^0.52.9",
     "leaflet": "^1.9.4",
     "lodash": "^4.17.21",
     "react": "^18.3.1",
