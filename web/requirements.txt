@@ -17,7 +17,7 @@ ultralytics==8.2.76
 # Dev
 black==24.8.0
 coverage==7.6.1
-mypy==1.11.1
+mypy==1.11.2
 pylint==3.2.6
 types-aiofiles==24.1.0.20240626
 types-Pillow==10.2.0.20240520
