@@ -85,13 +85,13 @@
   resolved "https://registry.yarnpkg.com/@eslint/object-schema/-/object-schema-2.1.4.tgz#9e69f8bb4031e11df79e03db09f9dbbae1740843"
   integrity sha512-BsWiH1yFGjXXS2yvrf5LyuoSIIbPrGUWob917o+BTKuZ7qJdxX8aJLRxs1fS9n6r7vESrq1OUqb68dANcFXuQQ==
 
-"@hey-api/openapi-ts@^0.52.5":
-  version "0.52.5"
-  resolved "https://registry.yarnpkg.com/@hey-api/openapi-ts/-/openapi-ts-0.52.5.tgz#63ed7b7e99e5b3fcbeae8260a73e8e8991be6ac9"
-  integrity sha512-nhBHVeEe0S11QuD9mEYZ3Fb9eXVoY2JKzLZxpzEoqdnW1yVZssMe9qdxRfuwTJrN0IC8kcY3bna6pLk0ENXrVQ==
+"@hey-api/openapi-ts@^0.53.3":
+  version "0.53.3"
+  resolved "https://registry.yarnpkg.com/@hey-api/openapi-ts/-/openapi-ts-0.53.3.tgz#eb9c6f56c31b3bb6489a6324fe33c0794d3255c3"
+  integrity sha512-o4XPr0g7Ey0xibSAohRO895ZKS2DgvVn2Dprd9wi7Oi1Vuoe+hT4Zy+0LqhMYOx14E2ViXVWa3fmihwO6meZsA==
   dependencies:
     "@apidevtools/json-schema-ref-parser" "11.7.0"
-    c12 "1.11.1"
+    c12 "1.11.2"
     commander "12.1.0"
     handlebars "4.7.8"
 
@@ -1309,10 +1309,10 @@ buffer@^5.5.0||^6.0.0:
     base64-js "^1.3.1"
     ieee754 "^1.2.1"
 
-c12@1.11.1:
-  version "1.11.1"
-  resolved "https://registry.yarnpkg.com/c12/-/c12-1.11.1.tgz#d5244e95407af450a523e44eb57e5b87b82f8677"
-  integrity sha512-KDU0TvSvVdaYcQKQ6iPHATGz/7p/KiVjPg4vQrB6Jg/wX9R0yl5RZxWm9IoZqaIHD2+6PZd81+KMGwRr/lRIUg==
+c12@1.11.2:
+  version "1.11.2"
+  resolved "https://registry.yarnpkg.com/c12/-/c12-1.11.2.tgz#f8a1e30c10f4b273894a1bcb6944f76c15b56717"
+  integrity sha512-oBs8a4uvSDO9dm8b7OCFW7+dgtVrwmwnrVXYzLm43ta7ep2jCn/0MhoUFygIWtxhyy6+/MG7/agvpY0U1Iemew==
   dependencies:
     chokidar "^3.6.0"
     confbox "^0.1.7"
@@ -1324,7 +1324,7 @@ c12@1.11.1:
     ohash "^1.1.3"
     pathe "^1.1.2"
     perfect-debounce "^1.0.0"
-    pkg-types "^1.1.1"
+    pkg-types "^1.2.0"
     rc9 "^2.1.2"
 
 call-bind@^1.0.2, call-bind@^1.0.5, call-bind@^1.0.6, call-bind@^1.0.7:
@@ -3042,6 +3042,15 @@ pkg-types@^1.1.1:
   dependencies:
     confbox "^0.1.7"
     mlly "^1.7.0"
+    pathe "^1.1.2"
+
+pkg-types@^1.2.0:
+  version "1.2.0"
+  resolved "https://registry.yarnpkg.com/pkg-types/-/pkg-types-1.2.0.tgz#d0268e894e93acff11a6279de147e83354ebd42d"
+  integrity sha512-+ifYuSSqOQ8CqP4MbZA5hDpb97n3E8SVWdJe+Wms9kj745lmd3b7EZJiqvmLwAlmRfjrI7Hi5z3kdBJ93lFNPA==
+  dependencies:
+    confbox "^0.1.7"
+    mlly "^1.7.1"
     pathe "^1.1.2"
 
 possible-typed-array-names@^1.0.0:
