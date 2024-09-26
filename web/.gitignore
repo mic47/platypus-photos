@@ -14,3 +14,5 @@ mypy/
 static/
 .parcel-cache
 .hypothesis
+pyenv
+.env

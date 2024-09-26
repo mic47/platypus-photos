@@ -1,0 +1,41 @@
+name: Platypus Photos
+
+services:
+  photo-web:
+    restart: always
+    build: 
+      context: .
+      dockerfile: docker/service.dockerfile
+    environment:
+      HOME: ${HOME}
+    volumes:
+      - ${GALLERY_CONFIG}:/app/config.yaml:ro
+      - ${GALLERY_MOUNT_POINT}:${GALLERY_MOUNT_POINT}
+      - ${PWD}/data:/app/data
+    ports:
+      - "8000:8000"
+    command: fastapi run pphoto/apps/gallery.py --workers ${GALLERY_WEB_WORKERS:-3}
+
+  remote-annotator:
+    restart: always
+    build: 
+      context: .
+      dockerfile: docker/service.dockerfile
+    environment:
+      HOME: ${HOME}
+    command: python -m pphoto.apps.remote_annotator  --host ${GALLERY_REMOTE_HOST} --workers ${GALLERY_REMOTE_ANNOTATOR_WORKERS:-9}
+
+  image-watcher:
+    restart: always
+    build: 
+      context: .
+      dockerfile: docker/service.dockerfile
+    environment:
+      HOME: ${HOME}
+    volumes:
+      - ${GALLERY_CONFIG}:/app/config.yaml:ro
+      - ${GALLERY_MOUNT_POINT}:${GALLERY_MOUNT_POINT}
+      - ${PWD}/data:/app/data
+    ports: 
+      - "8001:8001"
+    command: python -m pphoto.apps.image_watcher  --image-to-text-workers ${GALLERY_WATCHER_WORKERS:-8}

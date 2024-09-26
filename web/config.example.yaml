@@ -1,6 +1,5 @@
 ---
 managed_folder: ~/Photos
-import_fifo: import-fifo
 
 input_patterns:
   - ~/Downloads/*jpg
