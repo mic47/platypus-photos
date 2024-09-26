@@ -10,6 +10,7 @@ services:
       HOME: ${HOME}
     volumes:
       - ${GALLERY_CONFIG}:/app/config.yaml:ro
+      - ${GALLERY_CACHE}:/app/.cache
       - ${GALLERY_MOUNT_POINT}:${GALLERY_MOUNT_POINT}
       - ${PWD}/data:/app/data
     ports:
