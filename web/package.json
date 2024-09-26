@@ -21,7 +21,7 @@
   "dependencies": {
     "@hey-api/openapi-ts": "^0.52.5",
     "@types/lodash": "^4.17.7",
-    "chart.js": "^4.4.3",
+    "chart.js": "^4.4.4",
     "chartjs-adapter-date-fns": "^3.0.0",
     "date-fns": "^3.6.0",
     "leaflet": "^1.9.4",
