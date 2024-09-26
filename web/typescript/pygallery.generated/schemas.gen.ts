@@ -1664,19 +1664,11 @@ export const $SortOrder = {
 export const $SortParams = {
     properties: {
         sort_by: {
-            allOf: [
-                {
-                    '$ref': '#/components/schemas/SortBy'
-                }
-            ],
+            '$ref': '#/components/schemas/SortBy',
             default: 'TIMESTAMP'
         },
         order: {
-            allOf: [
-                {
-                    '$ref': '#/components/schemas/SortOrder'
-                }
-            ],
+            '$ref': '#/components/schemas/SortOrder',
             default: 'DESC'
         }
     },
