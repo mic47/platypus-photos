@@ -8,7 +8,7 @@
     "typecheck": "tsc --noEmit",
     "dev-watch": "yarn parcel watch typescript/index.html --no-cache --dist-dir \"static/\" --public-url \"/static\" --watch-dir typescript/",
     "prod-build": "yarn parcel build typescript/index.html --no-cache --dist-dir \"static/\" --public-url \"/static\" --detailed-report --no-optimize --no-scope-hoist",
-    "gen-code": "openapi-ts --input schema/pygallery.openapi.json --output ./typescript/pygallery.generated --client fetch",
+    "gen-code": "openapi-ts --input schema/pygallery.openapi.json --output ./typescript/pygallery.generated --client legacy/fetch",
     "__last-one__": "Just to have trailing comma"
   },
   "prettier": {

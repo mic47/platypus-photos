@@ -1,7 +1,7 @@
 [tool.black]
 
 line-length = 110
-exclude = "node_modules/"
+extend-exclude = "(node_modules/|pyenv)"
 
 
 [tool.pylint.format]

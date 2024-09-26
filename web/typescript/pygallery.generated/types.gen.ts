@@ -31,10 +31,10 @@ export type DateCluster = {
 };
 
 export type DateClusterGroup = {
-    address_name: string | null;
-    country: string | null;
-    camera: string | null;
-    has_location: boolean | null;
+    address_name: (string | null);
+    country: (string | null);
+    camera: (string | null);
+    has_location: (boolean | null);
 };
 
 export type DateClusterGroupBy = 'country' | 'camera' | 'has_location' | 'address_name';
@@ -51,14 +51,14 @@ export type DirectoryStats = {
     has_location: number;
     has_timestamp: number;
     being_annotated: number;
-    since: number | null;
-    until: number | null;
+    since: (number | null);
+    until: (number | null);
 };
 
 export type ExceptionInfo = {
-    exc_type: string | null;
-    exc_val: string | null;
-    exc_tb: Array<(string)> | null;
+    exc_type: (string | null);
+    exc_val: (string | null);
+    exc_tb: (Array<(string)> | null);
 };
 
 export type FaceFeatureRequest = {
@@ -76,8 +76,8 @@ export type FaceWithMeta = {
     position: Position;
     md5: string;
     extension: string;
-    identity: string | null;
-    skip_reason: IdentitySkipReason | null;
+    identity: (string | null);
+    skip_reason: (IdentitySkipReason | null);
     embedding: Array<(number)>;
 };
 
@@ -115,8 +115,8 @@ export type HTTPValidationError = {
 
 export type IdentityRowPayload = {
     identity: string;
-    example_md5: string | null;
-    example_extension: string | null;
+    example_md5: (string | null);
+    example_extension: (string | null);
     updates: number;
     last_update: number;
 };
@@ -126,29 +126,29 @@ export type IdentitySkipReason = 'not_face' | 'not_poi';
 export type Image = {
     md5: string;
     extension: string;
-    date: string | null;
+    date: (string | null);
     date_transformed: boolean;
-    tags: {
+    tags: ({
     [key: string]: (number);
-} | null;
-    classifications: string | null;
+} | null);
+    classifications: (string | null);
     address: ImageAddress;
     dependent_features_last_update: number;
-    latitude: number | null;
-    longitude: number | null;
-    altitude: number | null;
+    latitude: (number | null);
+    longitude: (number | null);
+    altitude: (number | null);
     manual_features: Array<(string)>;
     being_annotated: boolean;
-    camera: string | null;
-    software: string | null;
+    camera: (string | null);
+    software: (string | null);
     identities: Array<(string)>;
     version: number;
 };
 
 export type ImageAddress = {
-    country: string | null;
-    name: string | null;
-    full: string | null;
+    country: (string | null);
+    name: (string | null);
+    full: (string | null);
 };
 
 export type ImageAggregation = {
@@ -173,14 +173,14 @@ export type ImageAggregation = {
 export type ImageResponse = {
     has_next_page: boolean;
     omgs: Array<ImageWithMeta>;
-    some_location: ManualLocation | null;
+    some_location: (ManualLocation | null);
 };
 
 export type ImageSize = 'original' | 'medium' | 'preview';
 
 export type ImageWithMeta = {
     omg: Image;
-    predicted_location: PredictedLocation | null;
+    predicted_location: (PredictedLocation | null);
     paths: Array<PathSplit>;
 };
 
@@ -191,16 +191,16 @@ export type JobDescription = {
     type: string;
     replacements: string;
     time: number;
-    latitude: number | null;
-    longitude: number | null;
-    query: MassLocationAndTextAnnotation_Output | Array<ManualIdentityClusterRequest_Output> | null;
+    latitude: (number | null);
+    longitude: (number | null);
+    query: (MassLocationAndTextAnnotation_Output | Array<ManualIdentityClusterRequest_Output> | null);
     job: RemoteJob_bytes_;
-    example_path_md5: string | null;
-    example_path_extension: string | null;
+    example_path_md5: (string | null);
+    example_path_extension: (string | null);
 };
 
 export type JobProgressRequest = {
-    state?: JobProgressState | null;
+    state?: (JobProgressState | null);
 };
 
 export type JobProgressState = {
@@ -214,8 +214,8 @@ export type JobProgressState = {
 
 export type JobProgressStateResponse = {
     state: JobProgressState;
-    diff: JobProgressState | null;
-    eta_str: string | null;
+    diff: (JobProgressState | null);
+    eta_str: (string | null);
 };
 
 export type LocClusterParams = {
@@ -239,12 +239,12 @@ export type LocationBounds = {
 export type LocationCluster = {
     example_path_md5: string;
     example_path_extension: string;
-    example_classification: string | null;
+    example_classification: (string | null);
     size: number;
-    address_name: string | null;
-    address_country: string | null;
-    tsfrom: number | null;
-    tsto: number | null;
+    address_name: (string | null);
+    address_country: (string | null);
+    tsfrom: (number | null);
+    tsto: (number | null);
     top_left: LocPoint;
     bottom_right: LocPoint;
     position: LocPoint;
@@ -259,35 +259,35 @@ export type LocationQueryFixedLocation = {
 export type t3 = 'FixedLocation';
 
 export type ManualIdentityClusterRequest_Input = {
-    identity: string | null;
-    skip_reason: IdentitySkipReason | null;
+    identity: (string | null);
+    skip_reason: (IdentitySkipReason | null);
     faces: Array<FaceIdentifier>;
 };
 
 export type ManualIdentityClusterRequest_Output = {
-    identity: string | null;
-    skip_reason: IdentitySkipReason | null;
+    identity: (string | null);
+    skip_reason: (IdentitySkipReason | null);
     faces: Array<FaceIdentifier>;
 };
 
 export type ManualLocation = {
     latitude: number;
     longitude: number;
-    address_name: string | null;
-    address_country: string | null;
+    address_name: (string | null);
+    address_country: (string | null);
 };
 
 export type ManualLocationOverride = 'NoLocNoMan' | 'NoLocYeMan' | 'YeLocNoMan' | 'YeLocYeMan';
 
 export type MapSearchResponse = {
-    response: Array<FoundLocation> | null;
-    error: string | null;
+    response: (Array<FoundLocation> | null);
+    error: (string | null);
 };
 
 export type MassLocationAndTextAnnotation_Input = {
     t: 'MassLocAndTxt';
     query: SearchQuery;
-    location: LocationQueryFixedLocation | AnnotationOverlayInterpolateLocation | AnnotationOverlayNoLocation;
+    location: (LocationQueryFixedLocation | AnnotationOverlayInterpolateLocation | AnnotationOverlayNoLocation);
     text: TextQueryFixedText;
     date: TransDate;
 };
@@ -297,7 +297,7 @@ export type t4 = 'MassLocAndTxt';
 export type MassLocationAndTextAnnotation_Output = {
     t: 'MassLocAndTxt';
     query: SearchQuery;
-    location: LocationQueryFixedLocation | AnnotationOverlayInterpolateLocation | AnnotationOverlayNoLocation;
+    location: (LocationQueryFixedLocation | AnnotationOverlayInterpolateLocation | AnnotationOverlayNoLocation);
     text: TextQueryFixedText;
     date: TransDate;
 };
@@ -316,16 +316,16 @@ export type Position = {
 
 export type PredictedLocation = {
     loc: LocPoint;
-    earlier: ReferenceStats | null;
-    later: ReferenceStats | null;
+    earlier: (ReferenceStats | null);
+    later: (ReferenceStats | null);
 };
 
 export type ProgressBarProgress = {
-    desc: string | null;
+    desc: (string | null);
     progress: number;
     total: number;
-    rate: number | null;
-    elapsed: number | null;
+    rate: (number | null);
+    elapsed: (number | null);
 };
 
 export type ReferenceStats = {
@@ -342,9 +342,9 @@ export type RemoteJob_bytes_ = {
     finished_tasks: number;
     original_request: (Blob | File);
     created: string;
-    last_update: string | null;
-    example_path_md5: string | null;
-    example_path_extension: string | null;
+    last_update: (string | null);
+    example_path_md5: (string | null);
+    example_path_extension: (string | null);
 };
 
 export type SearchQuery = {
@@ -353,12 +353,12 @@ export type SearchQuery = {
     addr?: string;
     directory?: string;
     camera?: string;
-    identity?: string | null;
-    tsfrom?: number | null;
-    tsto?: number | null;
+    identity?: (string | null);
+    tsfrom?: (number | null);
+    tsto?: (number | null);
     skip_with_location?: boolean;
     skip_being_annotated?: boolean;
-    timestamp_trans?: string | null;
+    timestamp_trans?: (string | null);
 };
 
 export type SortBy = 'TIMESTAMP' | 'RANDOM';
@@ -374,7 +374,7 @@ export type State = {
     name: string;
     state: StateEnum;
     when: number;
-    exception: ExceptionInfo | null;
+    exception: (ExceptionInfo | null);
 };
 
 export type StateEnum = 'initialized' | 'running' | 'finished' | 'unexpected finish' | 'error';
@@ -393,8 +393,8 @@ export type SystemStatus = {
 export type t5 = 'SystemStatus';
 
 export type TextAnnotation = {
-    description: string | null;
-    tags: string | null;
+    description: (string | null);
+    tags: (string | null);
 };
 
 export type TextAnnotationOverride = 'ExMan' | 'NoMan' | 'YeMan';
@@ -425,101 +425,101 @@ export type ExportPhotosGetData = {
     query: string;
 };
 
-export type ExportPhotosGetResponse = unknown;
+export type ExportPhotosGetResponse = (unknown);
 
 export type ImageEndpointGetData = {
     extension: string;
     hsh: string;
-    position?: string | null;
+    position?: (string | null);
     size: ImageSize;
 };
 
-export type ImageEndpointGetResponse = unknown;
+export type ImageEndpointGetResponse = (unknown);
 
 export type LocationClustersEndpointPostData = {
     requestBody: LocClusterParams;
 };
 
-export type LocationClustersEndpointPostResponse = Array<LocationCluster>;
+export type LocationClustersEndpointPostResponse = (Array<LocationCluster>);
 
 export type LocationBoundsEndpointPostData = {
     requestBody: SearchQuery;
 };
 
-export type LocationBoundsEndpointPostResponse = LocationBounds | null;
+export type LocationBoundsEndpointPostResponse = ((LocationBounds | null));
 
 export type DateClustersEndpointPostData = {
     requestBody: DateClusterParams;
 };
 
-export type DateClustersEndpointPostResponse = Array<DateCluster>;
+export type DateClustersEndpointPostResponse = (Array<DateCluster>);
 
 export type MassManualAnnotationEndpointPostData = {
     requestBody: MassLocationAndTextAnnotation_Input;
 };
 
-export type MassManualAnnotationEndpointPostResponse = number;
+export type MassManualAnnotationEndpointPostResponse = (number);
 
 export type ManualIdentityAnnotationEndpointPostData = {
     requestBody: Array<ManualIdentityClusterRequest_Input>;
 };
 
-export type ManualIdentityAnnotationEndpointPostResponse = number;
+export type ManualIdentityAnnotationEndpointPostResponse = (number);
 
 export type FindLocationPostData = {
     req: string;
 };
 
-export type FindLocationPostResponse = MapSearchResponse;
+export type FindLocationPostResponse = (MapSearchResponse);
 
 export type JobProgressStatePostData = {
     requestBody: JobProgressRequest;
 };
 
-export type JobProgressStatePostResponse = JobProgressStateResponse;
+export type JobProgressStatePostResponse = (JobProgressStateResponse);
 
-export type RemoteJobsGetResponse = Array<JobDescription>;
+export type RemoteJobsGetResponse = (Array<JobDescription>);
 
-export type SystemStatusGetResponse = SystemStatus;
+export type SystemStatusGetResponse = (SystemStatus);
 
 export type GetAddressPostData = {
     requestBody: GetAddressRequest;
 };
 
-export type GetAddressPostResponse = ImageAddress;
+export type GetAddressPostResponse = (ImageAddress);
 
 export type MatchingDirectoriesPostData = {
     requestBody: SearchQuery;
 };
 
-export type MatchingDirectoriesPostResponse = Array<DirectoryStats>;
+export type MatchingDirectoriesPostResponse = (Array<DirectoryStats>);
 
 export type ImagePagePostData = {
     requestBody: GalleryRequest;
 };
 
-export type ImagePagePostResponse = ImageResponse;
+export type ImagePagePostResponse = (ImageResponse);
 
-export type TopIdentitiesPostResponse = Array<IdentityRowPayload>;
+export type TopIdentitiesPostResponse = (Array<IdentityRowPayload>);
 
 export type FacesOnPagePostData = {
     requestBody: GalleryRequest;
 };
 
-export type FacesOnPagePostResponse = FacesResponse;
+export type FacesOnPagePostResponse = (FacesResponse);
 
 export type FaceFeaturesForImagePostData = {
     requestBody: FaceFeatureRequest;
 };
 
-export type FaceFeaturesForImagePostResponse = Array<FaceWithMeta>;
+export type FaceFeaturesForImagePostResponse = (Array<FaceWithMeta>);
 
 export type AggregateImagesPostData = {
     requestBody: AggregateQuery;
 };
 
-export type AggregateImagesPostResponse = ImageAggregation;
+export type AggregateImagesPostResponse = (ImageAggregation);
 
-export type ReadIndexGetResponse = unknown;
+export type ReadIndexGetResponse = (unknown);
 
-export type ReadIndexGet1Response = unknown;
+export type ReadIndexGet1Response = (unknown);
