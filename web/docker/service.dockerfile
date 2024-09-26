@@ -4,10 +4,10 @@ RUN mkdir /app
 WORKDIR /app
 
 COPY package.json tsconfig.json yarn.lock ./
+RUN yarn
 COPY typescript/ typescript/
 COPY css/ css/
 COPY schema/ schema/
-RUN yarn
 RUN yarn prod-build
 
 FROM python:3.12
