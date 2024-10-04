@@ -19,7 +19,7 @@ ultralytics==8.2.101
 black==24.8.0
 coverage==7.6.1
 mypy==1.11.2
-pylint==3.2.6
+pylint==3.3.1
 types-aiofiles==24.1.0.20240626
 types-Pillow==10.2.0.20240520
 types-PyYAML==6.0.12.20240808
