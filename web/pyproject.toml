@@ -21,6 +21,7 @@ disable = '''
   line-too-long,
   too-few-public-methods,
   too-many-instance-attributes,
+  too-many-positional-arguments,
   too-many-arguments,
   too-many-locals,
   too-many-branches,
