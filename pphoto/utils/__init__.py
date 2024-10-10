@@ -5,9 +5,7 @@ import random
 import sys
 import traceback
 
-
-def assert_never(x: t.NoReturn) -> t.NoReturn:
-    assert False, f"Unhandled type: {type(x).__name__}"
+from pphoto.utils.typing_support import assert_never
 
 
 def log_error(e: Exception, *print_args: t.Any) -> None:
