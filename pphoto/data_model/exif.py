@@ -4,7 +4,7 @@ import json
 import typing as t
 
 from datetime import datetime
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from pphoto.data_model.base import StorableData
 
@@ -64,6 +64,27 @@ class Camera:
 
 
 @dataclass
+class VideoInfo:
+    frame_rate: t.Optional[float]
+    duration_seconds: t.Optional[float]
+
+    @staticmethod
+    def from_json_dict(d: t.Dict[str, t.Any]) -> VideoInfo:
+        frame_rate = d.get("frame_rate")
+        duration_seconds = d.get("duration_seconds")
+        return VideoInfo(
+            None if frame_rate is None else float(frame_rate),
+            None if duration_seconds is None else float(duration_seconds),
+        )
+
+    def to_json_dict(self) -> t.Any:
+        return {
+            "frame_rate": self.frame_rate,
+            "duration_seconds": self.duration_seconds,
+        }
+
+
+@dataclass
 class Date:
     datetime: t.Optional[datetime]
     time_str: t.Optional[str]  # noqa: F841
@@ -88,22 +109,26 @@ class ImageExif(StorableData):
     gps: t.Optional[GPSCoord]
     camera: Camera
     date: t.Optional[Date]
+    video_info: t.Optional[VideoInfo] = field(default=None)
 
     def to_json_dict(self) -> t.Any:
         return {
             "gps": None if self.gps is None else self.gps.to_json_dict(),
             "camera": self.camera.to_json_dict(),
             "date": None if self.date is None else self.date.to_json_dict(),
+            "video_info": None if self.video_info is None else self.video_info.to_json_dict(),
         }
 
     @staticmethod
     def from_json_dict(d: t.Dict[str, t.Any]) -> ImageExif:
         gps = d.get("gps")
         date = d.get("date")
+        video_info = d.get("video_info")
         return ImageExif(
             None if gps is None else GPSCoord.from_json_dict(gps),
             Camera.from_json_dict(d["camera"]),
             None if date is None else Date.from_json_dict(date),
+            None if video_info is None else VideoInfo.from_json_dict(video_info),
         )
 
     @staticmethod

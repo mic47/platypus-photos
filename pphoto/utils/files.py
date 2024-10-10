@@ -4,13 +4,24 @@ import os
 import re
 import typing as t
 
+from pphoto.utils.typing_support import assert_never
+
 
 class SupportedMedia(enum.Enum):
     JPEG = 0
     PNG = 1
     GIF = 2
     WEBP = 3
-    # VIDEO = 1 TODO
+    MP4 = 4
+    MOV = 5
+    AVI = 6
+    WMV = 7
+    WEBM = 8
+
+
+class SupportedMediaClass(enum.Enum):
+    IMAGE = 0
+    VIDEO = 1
 
 
 _EXTENSIONS = {
@@ -19,12 +30,41 @@ _EXTENSIONS = {
     "png": SupportedMedia.PNG,
     "gif": SupportedMedia.GIF,
     "webp": SupportedMedia.WEBP,
+    "mp4": SupportedMedia.MP4,
+    "mov": SupportedMedia.MOV,
+    "avi": SupportedMedia.AVI,
+    "wmv": SupportedMedia.WMV,
+    "webm": SupportedMedia.WEBM,
 }
 
 
 def supported_media(path: str) -> t.Optional[SupportedMedia]:
     extension = path.rsplit(".", 1)[-1].lower()
     return _EXTENSIONS.get(extension)
+
+
+def supported_media_class(path: str) -> t.Optional[SupportedMediaClass]:
+    media = supported_media(path)
+    if (
+        # pylint: disable-next = consider-using-in
+        media == SupportedMedia.JPEG
+        or media == SupportedMedia.PNG
+        or media == SupportedMedia.GIF
+        or media == SupportedMedia.WEBP
+    ):
+        return SupportedMediaClass.IMAGE
+    if (
+        # pylint: disable-next = consider-using-in
+        media == SupportedMedia.MP4
+        or media == SupportedMedia.MOV
+        or media == SupportedMedia.AVI
+        or media == SupportedMedia.WMV
+        or media == SupportedMedia.WEBM
+    ):
+        return SupportedMediaClass.VIDEO
+    if media is None:
+        return None
+    assert_never(media)
 
 
 def walk_tree(path: str) -> t.Iterable[str]:
