@@ -32,6 +32,11 @@ RUN pip install opencv-python-headless==4.10.0.84
 COPY download_models.py ./
 RUN python download_models.py
 
+# Install rest system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+  libimage-exiftool-perl && \
+  apt-get clean && rm -rf /var/lib/apt/lists/*
+
 # Install rest of python dependencies
 COPY requirements.txt ./
 RUN pip install -r requirements.txt
