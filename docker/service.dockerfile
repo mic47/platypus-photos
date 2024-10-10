@@ -34,7 +34,8 @@ RUN python download_models.py
 
 # Install rest system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
-  libimage-exiftool-perl && \
+  libimage-exiftool-perl \
+  && \
   apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Install rest of python dependencies
