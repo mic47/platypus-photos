@@ -207,7 +207,6 @@ class Models:
         # TODO: figure out duration
         # TODO: pass hardcoded stuff as parameters
         # TODO: pass pts into the process_image
-        # TODO: implement merging of results
 
         async def process_frame(frame: VideoFrame) -> t.Tuple[int, WithMD5[ImageClassification]]:
             buffer = io.BytesIO(b"")
@@ -233,7 +232,7 @@ class Models:
                 continue
             processed.append((pts, annotated.p))
         if processed:
-            return WithMD5(path.md5, self._version, None, Error("NotImplemented", None, None))
+            return WithMD5(path.md5, self._version, _merge_image_classifications_for_video(processed), None)
         if errors:
             return WithMD5(path.md5, self._version, None, errors[0])
         return WithMD5(
@@ -375,3 +374,16 @@ class Models:
                 if gt is not None:
                     captions.add(remove_consecutive_words(gt))
             yield WithMD5(path.md5, self._version, ImageClassification(list(captions), []), None)
+
+
+def _merge_image_classifications_for_video(classifications: t.Sequence[ImageClassification]) -> ImageClassification:
+    captions = []
+    used_captions = set()
+    for cls in classifications:
+        for cap in cls.captions:
+            if cap in used_captions:
+                continue
+            captions.append(cap)
+            used_captions.add(cap)
+
+    return ImageClassification(captions, [box for box in cls.boxes for cls in classifications], None)
