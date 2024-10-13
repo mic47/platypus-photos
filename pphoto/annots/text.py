@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import asyncio
 import base64
 import datetime
@@ -49,7 +51,7 @@ def remove_consecutive_words(sentence: str) -> str:
     return " ".join(out)
 
 
-def image_endpoint(models: "Models", image: TextAnnotationRequest) -> ImageClassificationWithMD5:
+def image_endpoint(models: Models, image: TextAnnotationRequest) -> ImageClassificationWithMD5:
     try:
         x = models.process_image_data(image)
         return ImageClassificationWithMD5("ImageClassificationWithMD5", x.md5, x.version, x.p, x.e)
@@ -173,44 +175,52 @@ class Models:
             return True
         return False
 
-    async def process_image(
+    async def process_file(
         self: "Models",
         path: PathWithMd5,
         gap_threshold: float = 0.2,
         discard_threshold: float = 0.1,
     ) -> WithMD5[ImageClassification]:
         x = self._cache.get(path.md5)
-        if x is None or x.payload is None:
-            if os.path.getsize(path.path) > 100_000_000:
-                return self._cache.add(
-                    WithMD5(path.md5, self._version, None, Error("SkippingHugeFile", None, None))
-                )
-            if self._remote is not None and self._remote_can_be_available():
-                try:
-                    with open(path.path, "rb") as f:
-                        data = base64.encodebytes(f.read())
-                    ret = await asyncio.wait_for(
-                        fetch_ann(
-                            self._remote,
-                            TextAnnotationRequest(
-                                "TextAnnotationRequest",
-                                path,
-                                data.decode("utf-8"),
-                                gap_threshold,
-                                discard_threshold,
-                            ),
-                        ),
-                        600,
-                    )
-                    self._last_remote_request = datetime.datetime.now()
-                    return self._cache.add(ret)
-                # pylint: disable-next = bare-except
-                except:
-                    traceback.print_exc()
-        else:
+        if x is not None and x.payload is not None:
             return x.payload
+        return self._cache.add(await self._process_image(path, gap_threshold, discard_threshold))
+
+    async def _process_image(
+        self: "Models",
+        path: PathWithMd5,
+        gap_threshold: float,
+        discard_threshold: float,
+    ) -> WithMD5[ImageClassification]:
+        """
+        Used externally to process image
+        """
+        if os.path.getsize(path.path) > 100_000_000:
+            return WithMD5(path.md5, self._version, None, Error("SkippingHugeFile", None, None))
+        if self._remote is not None and self._remote_can_be_available():
+            try:
+                with open(path.path, "rb") as f:
+                    data = base64.encodebytes(f.read())
+                ret = await asyncio.wait_for(
+                    fetch_ann(
+                        self._remote,
+                        TextAnnotationRequest(
+                            "TextAnnotationRequest",
+                            path,
+                            data.decode("utf-8"),
+                            gap_threshold,
+                            discard_threshold,
+                        ),
+                    ),
+                    600,
+                )
+                self._last_remote_request = datetime.datetime.now()
+                return ret
+            # pylint: disable-next = bare-except
+            except:
+                traceback.print_exc()
         p = self._pool.get().apply(process_image_in_pool, (path, gap_threshold, discard_threshold))
-        return self._cache.add(p)
+        return p
 
     def process_image_data(
         self,

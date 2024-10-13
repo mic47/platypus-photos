@@ -401,7 +401,7 @@ class Exif:
         self._version = ImageExif.current_version()
         self._exiftool = exiftool.ExifToolHelper()
 
-    def process_image(self, inp: PathWithMd5) -> WithMD5[ImageExif]:
+    def process_file(self, inp: PathWithMd5) -> WithMD5[ImageExif]:
         ret = self._cache.get(inp.md5)
         if ret is not None and ret.payload is not None:
             return ret.payload
