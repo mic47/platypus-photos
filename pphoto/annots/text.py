@@ -34,6 +34,7 @@ from pphoto.communication.types import (
 from pphoto.communication.server import RemoteExecutorQueue
 from pphoto.utils import Lazy, assert_never
 from pphoto.utils.files import supported_media_class, SupportedMediaClass
+from pphoto.utils.video import get_video_frames, VideoFrame
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
@@ -192,10 +193,55 @@ class Models:
         if media_class == SupportedMediaClass.IMAGE:
             return self._cache.add(await self._process_image(path, None, gap_threshold, discard_threshold))
         if media_class == SupportedMediaClass.VIDEO:
-            return WithMD5(path.md5, self._version, None, Error("NotImplemented", None, None))
+            return self._cache.add(await self._process_video(path, gap_threshold, discard_threshold))
         if media_class is None:
             return WithMD5(path.md5, self._version, None, Error("UnsupportedMediaFile", None, None))
         assert_never(media_class)
+
+    async def _process_video(
+        self: Models,
+        path: PathWithMd5,
+        gap_threshold: float,
+        discard_threshold: float,
+    ) -> WithMD5[ImageClassification]:
+        # TODO: figure out duration
+        # TODO: pass hardcoded stuff as parameters
+        # TODO: pass pts into the process_image
+        # TODO: implement merging of results
+
+        async def process_frame(frame: VideoFrame) -> t.Tuple[int, WithMD5[ImageClassification]]:
+            buffer = io.BytesIO(b"")
+            frame.image.save(buffer, format="jpg")
+            data = buffer.getvalue()
+            pts = frame.pts
+            return (pts, await self._process_image(path, data, gap_threshold, discard_threshold))
+
+        annotations = await asyncio.gather(
+            *[
+                process_frame(frame)
+                for frame in get_video_frames(
+                    path.path, duration_seconds=None, frame_each_seconds=3, number_of_frames=10
+                )
+            ]
+        )
+        processed = []
+        errors = []
+        for pts, annotated in annotations:
+            if annotated.e is not None:
+                errors.append(annotated.e)
+            if annotated.p is None:
+                continue
+            processed.append((pts, annotated.p))
+        if processed:
+            return WithMD5(path.md5, self._version, None, Error("NotImplemented", None, None))
+        if errors:
+            return WithMD5(path.md5, self._version, None, errors[0])
+        return WithMD5(
+            path.md5,
+            self._version,
+            None,
+            Error("NothingErrorOrSuccessWhileProcessingVideo", None, None),
+        )
 
     async def _process_image(
         self: Models,
