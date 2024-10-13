@@ -979,7 +979,7 @@ async def face_features_for_image(params: FaceFeatureRequest) -> t.List[FaceWith
     else:
         ident_dct = {}
         skip_dct = {}
-    empty_identity = ManualIdentity(None, None, Position(0, 0, 0, 0))
+    empty_identity = ManualIdentity(None, None, Position(0, 0, 0, 0, None))
     if fcs is not None:
         for face in fcs.faces:
             faces.append(

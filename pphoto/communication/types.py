@@ -55,6 +55,7 @@ class FaceEmbeddingsRequest(dj.DataClassJsonMixin):
     path: PathWithMd5
     for_positions: _t.Optional[_t.List[Position]]
     data_base64: str
+    pts: _t.Optional[int]
 
 
 @dc.dataclass

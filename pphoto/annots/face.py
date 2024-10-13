@@ -31,7 +31,10 @@ def _close_pool(pool: "multiprocessing.pool.Pool") -> None:
 def face_embeddings_endpoint(request: FaceEmbeddingsRequest) -> FaceEmbeddingsWithMD5:
     try:
         x = _process_image_impl(
-            request.path, base64.decodebytes(request.data_base64.encode("utf-8")), request.for_positions
+            request.path,
+            base64.decodebytes(request.data_base64.encode("utf-8")),
+            request.pts,
+            request.for_positions,
         )
         return FaceEmbeddingsWithMD5("FaceEmbeddingsWithMD5", x.md5, x.version, x.p, x.e)
     # pylint: disable-next = broad-exception-caught
@@ -119,6 +122,7 @@ class FaceEmbeddingsAnnotator:
                             path,
                             [x.position for x in to_compute],
                             data.decode("utf-8"),
+                            None,  # TODO: is this correct?
                         ),
                     ),
                     600,
@@ -146,13 +150,14 @@ class FaceEmbeddingsAnnotator:
         frame_each_seconds: int = 3,
         number_of_frames: int = 10,
     ) -> WithMD5[FaceEmbeddings]:
-        # TODO: add pts to items
+        # TODO: extract image previews with pts
+        # TODO: extract iamge previews for gallery
         x = self._cache.get(path.md5)
         if x is not None and x.payload is not None:
             return x.payload
         media_class = supported_media_class(path.path)
         if media_class == SupportedMediaClass.IMAGE:
-            return self._cache.add(await self._process_image(path, None))
+            return self._cache.add(await self._process_image(path, None, None))
         if media_class == SupportedMediaClass.VIDEO:
             return self._cache.add(await self._process_video(path, frame_each_seconds, number_of_frames))
         if media_class is None:
@@ -168,7 +173,7 @@ class FaceEmbeddingsAnnotator:
             buffer = io.BytesIO(b"")
             frame.image.save(buffer, format="jpg")
             data = buffer.getvalue()
-            return await self._process_image(path, data)
+            return await self._process_image(path, data, frame.pts)
 
         annotations = await asyncio.gather(
             *[
@@ -199,7 +204,9 @@ class FaceEmbeddingsAnnotator:
             Error("NothingErrorOrSuccessWhileProcessingVideo", None, None),
         )
 
-    async def _process_image(self, path: PathWithMd5, data: t.Optional[bytes]) -> WithMD5[FaceEmbeddings]:
+    async def _process_image(
+        self, path: PathWithMd5, data: t.Optional[bytes], pts: t.Optional[int]
+    ) -> WithMD5[FaceEmbeddings]:
         if data is None and os.path.getsize(path.path) > 100_000_000:
             return WithMD5(path.md5, self._version, None, Error("SkippingHugeFile", None, None))
         if self._remote is not None and self._remote_can_be_available():
@@ -217,6 +224,7 @@ class FaceEmbeddingsAnnotator:
                             path,
                             None,
                             data.decode("utf-8"),
+                            pts,
                         ),
                     ),
                     600,
@@ -226,12 +234,12 @@ class FaceEmbeddingsAnnotator:
             # pylint: disable-next = bare-except
             except:
                 traceback.print_exc()
-        p = self._pool.get().apply(_process_image_impl, (path, data, None))
+        p = self._pool.get().apply(_process_image_impl, (path, data, pts, None))
         return p
 
 
 def _process_image_impl(
-    path: PathWithMd5, data: t.Optional[bytes], positions: t.Optional[t.List[Position]]
+    path: PathWithMd5, data: t.Optional[bytes], pts: t.Optional[int], positions: t.Optional[t.List[Position]]
 ) -> WithMD5[FaceEmbeddings]:
     # pylint: disable-next = import-outside-toplevel,import-error
     import face_recognition
@@ -244,7 +252,7 @@ def _process_image_impl(
     resolution = ImageResolution(w, h)
     if positions is None:
         positions = [
-            Position(left, top, right, bottom)
+            Position(left, top, right, bottom, pts)
             for (top, right, bottom, left) in t.cast(
                 t.List[t.Tuple[int, int, int, int]], face_recognition.face_locations(img)
             )
