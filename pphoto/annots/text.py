@@ -33,6 +33,7 @@ from pphoto.communication.types import (
 )
 from pphoto.communication.server import RemoteExecutorQueue
 from pphoto.utils import Lazy, assert_never
+from pphoto.utils.files import supported_media_class, SupportedMediaClass
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
@@ -176,7 +177,7 @@ class Models:
         return False
 
     async def process_file(
-        self: "Models",
+        self: Models,
         path: PathWithMd5,
         gap_threshold: float = 0.2,
         discard_threshold: float = 0.1,
@@ -187,10 +188,17 @@ class Models:
         x = self._cache.get(path.md5)
         if x is not None and x.payload is not None:
             return x.payload
-        return self._cache.add(await self._process_image(path, None, gap_threshold, discard_threshold))
+        media_class = supported_media_class(path.path)
+        if media_class == SupportedMediaClass.IMAGE:
+            return self._cache.add(await self._process_image(path, None, gap_threshold, discard_threshold))
+        if media_class == SupportedMediaClass.VIDEO:
+            return WithMD5(path.md5, self._version, None, Error("NotImplemented", None, None))
+        if media_class is None:
+            return WithMD5(path.md5, self._version, None, Error("UnsupportedMediaFile", None, None))
+        assert_never(media_class)
 
     async def _process_image(
-        self: "Models",
+        self: Models,
         path: PathWithMd5,
         data: t.Optional[bytes],
         gap_threshold: float,
@@ -237,7 +245,7 @@ class Models:
         )[0]
 
     def process_image_batch_impl(
-        self: "Models",
+        self: Models,
         paths: t.Iterable[t.Tuple[PathWithMd5, t.Optional[bytes]]],
         gap_threshold: float,
         discard_threshold: float,
