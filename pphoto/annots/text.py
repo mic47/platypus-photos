@@ -269,6 +269,8 @@ class Models:
                 if data is None:
                     with open(path.path, "rb") as f:
                         data = base64.encodebytes(f.read())
+                else:
+                    data = base64.encodebytes(data)
                 ret = await asyncio.wait_for(
                     fetch_ann(
                         self._remote,

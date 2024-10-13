@@ -145,22 +145,21 @@ class FaceEmbeddingsAnnotator:
         # TODO: add pts to items
         # TODO: implement merging
         # TODO: implement video
-        # TODO: add possiblity of processing data
         x = self._cache.get(path.md5)
         if x is not None and x.payload is not None:
             return x.payload
-        return self._cache.add(await self._process_image(path))
+        return self._cache.add(await self._process_image(path, None))
 
-    async def _process_image(
-        self,
-        path: PathWithMd5,
-    ) -> WithMD5[FaceEmbeddings]:
-        if os.path.getsize(path.path) > 100_000_000:
+    async def _process_image(self, path: PathWithMd5, data: t.Optional[bytes]) -> WithMD5[FaceEmbeddings]:
+        if data is None and os.path.getsize(path.path) > 100_000_000:
             return WithMD5(path.md5, self._version, None, Error("SkippingHugeFile", None, None))
         if self._remote is not None and self._remote_can_be_available():
             try:
-                with open(path.path, "rb") as f:
-                    data = base64.encodebytes(f.read())
+                if data is None:
+                    with open(path.path, "rb") as f:
+                        data = base64.encodebytes(f.read())
+                else:
+                    data = base64.encodebytes(data)
                 ret = await asyncio.wait_for(
                     fetch_ann(
                         self._remote,
@@ -178,7 +177,7 @@ class FaceEmbeddingsAnnotator:
             # pylint: disable-next = bare-except
             except:
                 traceback.print_exc()
-        p = self._pool.get().apply(_process_image_impl, (path, None, None))
+        p = self._pool.get().apply(_process_image_impl, (path, data, None))
         return p
 
 
