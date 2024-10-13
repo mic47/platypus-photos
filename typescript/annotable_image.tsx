@@ -368,6 +368,7 @@ class SquareSelector {
                                 this.selection.start.y,
                                 this.selection.end.y,
                             ),
+                            pts: null,
                         },
                         this.vbox,
                     ),
@@ -460,6 +461,7 @@ function scaleAndShiftPosition(position: Position, vbox: VBox): Position {
         top: vbox.offsetH + vbox.ratioH * position.top,
         right: vbox.offsetW + vbox.ratioW * position.right,
         bottom: vbox.offsetH + vbox.ratioH * position.bottom,
+        pts: position.pts,
     };
 }
 type Point = {
@@ -484,6 +486,7 @@ function unScaleAndShiftPosition(position: Position, vbox: VBox): Position {
         top: (position.top - vbox.offsetH) / vbox.ratioH,
         right: (position.right - vbox.offsetW) / vbox.ratioW,
         bottom: (position.bottom - vbox.offsetH) / vbox.ratioH,
+        pts: position.pts,
     };
 }
 function truncCeilPosition(p: Position): Position {
@@ -492,6 +495,7 @@ function truncCeilPosition(p: Position): Position {
         top: Math.trunc(p.top),
         right: Math.ceil(p.right),
         bottom: Math.ceil(p.bottom),
+        pts: p.pts,
     };
 }
 
