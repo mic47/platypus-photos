@@ -207,7 +207,9 @@ class Models:
                 )
             )
         if media_class is None:
-            return WithMD5(path.md5, self._version, None, Error("UnsupportedMediaFile", None, None))
+            return self._cache.add(
+                WithMD5(path.md5, self._version, None, Error("UnsupportedMediaFile", None, None))
+            )
         assert_never(media_class)
 
     async def _process_video(
@@ -406,4 +408,4 @@ def _merge_image_classifications_for_video(
             captions.append(cap)
             used_captions.add(cap)
 
-    return ImageClassification(captions, [box for box in cls.boxes for cls in classifications], None)
+    return ImageClassification(captions, [box for cls in classifications for box in cls.boxes], None)

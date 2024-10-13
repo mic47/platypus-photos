@@ -19,6 +19,8 @@ from pphoto.db.cache import Cache
 from pphoto.communication.server import RemoteExecutorQueue
 from pphoto.communication.types import FaceEmbeddingsRequest, FaceEmbeddingsWithMD5, RemoteAnnotatorRequest
 from pphoto.utils import Lazy, assert_never, log_error
+from pphoto.utils.files import supported_media_class, SupportedMediaClass
+from pphoto.utils.video import get_video_frames, VideoFrame
 
 
 def _close_pool(pool: "multiprocessing.pool.Pool") -> None:
@@ -141,14 +143,61 @@ class FaceEmbeddingsAnnotator:
     async def process_file(
         self,
         path: PathWithMd5,
+        frame_each_seconds: int = 3,
+        number_of_frames: int = 10,
     ) -> WithMD5[FaceEmbeddings]:
         # TODO: add pts to items
-        # TODO: implement merging
-        # TODO: implement video
         x = self._cache.get(path.md5)
         if x is not None and x.payload is not None:
             return x.payload
-        return self._cache.add(await self._process_image(path, None))
+        media_class = supported_media_class(path.path)
+        if media_class == SupportedMediaClass.IMAGE:
+            return self._cache.add(await self._process_image(path, None))
+        if media_class == SupportedMediaClass.VIDEO:
+            return self._cache.add(await self._process_video(path, frame_each_seconds, number_of_frames))
+        if media_class is None:
+            return self._cache.add(
+                WithMD5(path.md5, self._version, None, Error("UnsupportedMediaFile", None, None))
+            )
+        assert_never(media_class)
+
+    async def _process_video(
+        self, path: PathWithMd5, frame_each_seconds: int, number_of_frames: int
+    ) -> WithMD5[FaceEmbeddings]:
+        async def process_frame(frame: VideoFrame) -> WithMD5[FaceEmbeddings]:
+            buffer = io.BytesIO(b"")
+            frame.image.save(buffer, format="jpg")
+            data = buffer.getvalue()
+            return await self._process_image(path, data)
+
+        annotations = await asyncio.gather(
+            *[
+                process_frame(frame)
+                for frame in get_video_frames(
+                    path.path,
+                    frame_each_seconds=frame_each_seconds,
+                    number_of_frames=number_of_frames,
+                )
+            ]
+        )
+        processed = []
+        errors = []
+        for annotated in annotations:
+            if annotated.e is not None:
+                errors.append(annotated.e)
+            if annotated.p is None:
+                continue
+            processed.append(annotated.p)
+        if processed:
+            return WithMD5(path.md5, self._version, _merge_face_embeddings_for_video(processed), None)
+        if errors:
+            return WithMD5(path.md5, self._version, None, errors[0])
+        return WithMD5(
+            path.md5,
+            self._version,
+            None,
+            Error("NothingErrorOrSuccessWhileProcessingVideo", None, None),
+        )
 
     async def _process_image(self, path: PathWithMd5, data: t.Optional[bytes]) -> WithMD5[FaceEmbeddings]:
         if data is None and os.path.getsize(path.path) > 100_000_000:
@@ -212,3 +261,7 @@ def _process_image_impl(
             )
         )
     return WithMD5(path.md5, FaceEmbeddings.current_version(), FaceEmbeddings(resolution, faces), None)
+
+
+def _merge_face_embeddings_for_video(embeddings: t.Sequence[FaceEmbeddings]) -> FaceEmbeddings:
+    return FaceEmbeddings(embeddings[0].resolution, [face for emb in embeddings for face in emb.faces])
