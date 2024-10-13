@@ -263,7 +263,7 @@ def get_video_preview(
         # pylint: disable-next = broad-exception-raised
         raise Exception("Validation error, image contained disallowed characters")
     cache_file = get_cache_file(sz, hsh, "jpg", position, frame)
-    if not os.path:
+    if not os.path.exists(cache_file):
         file_path = DB.get().get_path_from_hash(hsh)
         if file_path is None:
             return {"error": "File not found!"}

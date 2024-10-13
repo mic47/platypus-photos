@@ -241,15 +241,15 @@ def camera_from_image_tags(tags: UnparsedTags) -> Camera:
 def camera_from_video_tags(tags: UnparsedTags) -> Camera:
     make, model = None, None
     author = tags.get("QuickTime:Author")
+    samsung_model = tags.get("MakerNotes:SamsungModel")
     if author is not None and isinstance(author, str):
         x = author.lower().split(" ", maxsplit=1)
         if len(x) == 2 and x[0] in ["samsung"]:
             make, model = x
     if model is None:
-        x = tags.get("MakerNotes:SamsungModel")
-        if x is not None and isinstance(x, str):
+        if samsung_model is not None and isinstance(samsung_model, str):
             make = "samsung"
-            model = x
+            model = samsung_model.lower()
     return Camera(
         make or "",
         model or "",

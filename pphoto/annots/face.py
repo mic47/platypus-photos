@@ -171,7 +171,7 @@ class FaceEmbeddingsAnnotator:
     ) -> WithMD5[FaceEmbeddings]:
         async def process_frame(frame: VideoFrame) -> WithMD5[FaceEmbeddings]:
             buffer = io.BytesIO(b"")
-            frame.image.save(buffer, format="jpg")
+            frame.image.save(buffer, format="jpeg")
             data = buffer.getvalue()
             return await self._process_image(path, data, frame.pts)
 
