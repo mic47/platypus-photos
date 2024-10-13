@@ -14,6 +14,7 @@ import {
     makeClusterRequest,
     submitAnnotationRequest,
 } from "./faces.tsx";
+import { position_to_str } from "./utils.ts";
 
 export function AnnotableImage({
     md5,
@@ -554,7 +555,7 @@ function AnnotateFaceBox({
             });
         }
     };
-    const posStr = `${Math.trunc(face.position.left)},${Math.trunc(face.position.top)},${Math.ceil(face.position.right)},${Math.ceil(face.position.bottom)}`;
+    const posStr = position_to_str(face.position);
     return (
         <div style={{ position: "absolute", background: "#FFFFFFaa" }}>
             <div style={{ display: "flex" }}>

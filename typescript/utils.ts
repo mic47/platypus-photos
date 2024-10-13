@@ -1,6 +1,14 @@
 import data_model from "./data_model.generated.json";
+import { Position } from "./pygallery.generated/types.gen";
 export const FLAGS: { [key: string]: string } = data_model.unicode.flags;
 
+export function position_to_str(position: Position): string {
+    const posStr = `${Math.trunc(position.left)},${Math.trunc(position.top)},${Math.ceil(position.right)},${Math.ceil(position.bottom)}`;
+    if (position.pts === null) {
+        return posStr;
+    }
+    return `${posStr},${position.pts}`;
+}
 export function append_flag(country: string): string {
     const flag = FLAGS[country.toLowerCase()] || "";
     return `${country}${flag}`;
