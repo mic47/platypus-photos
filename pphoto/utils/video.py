@@ -11,6 +11,24 @@ class VideoFrame:
     pts: int
 
 
+def get_video_frame(filename: str, frame_position: t.Optional[int]) -> VideoFrame | None:
+    with av.open(filename) as video:
+        stream = video.streams.best("video")
+        if stream is None:
+            return None
+        video.seek(frame_position or 0, stream=stream)
+        for frame in video.decode(stream):
+            if not isinstance(frame, av.VideoFrame):
+                continue
+            image = frame.to_image()
+            if frame_position is not None and frame.pts != frame_position:
+                raise Exception(  # pylint: disable=broad-exception-raised
+                    f"Unable to seek to frame {frame_position} in file {filename}"
+                )
+            return VideoFrame(image, frame.pts)
+    return None
+
+
 def get_video_frames(
     filename: str,
     frame_each_seconds: float | None,

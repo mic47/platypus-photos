@@ -562,7 +562,7 @@ function AnnotateFaceBox({
                 <div style={{ flex: "10%" }}>
                     <img
                         style={{ width: "7em", height: "7em" }}
-                        src={`/img/original/${face.md5}.${face.extension}?position=${posStr}`}
+                        src={`/img/original/${face.md5}.${face.extension}?${posStr}`}
                     />
                 </div>
                 <div style={{ flex: "90%" }}>

@@ -430,6 +430,7 @@ export type ExportPhotosGetResponse = (unknown);
 
 export type ImageEndpointGetData = {
     extension: string;
+    frame?: (number | null);
     hsh: string;
     position?: (string | null);
     size: ImageSize;

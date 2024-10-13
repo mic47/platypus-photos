@@ -315,7 +315,7 @@ function FaceCluster({
             <div key={`${face.md5}/${posStr}`} className="face_container">
                 <img
                     loading="lazy"
-                    src={`/img/original/${face.md5}.${face.extension}?position=${posStr}`}
+                    src={`/img/original/${face.md5}.${face.extension}?${posStr}`}
                     className="gallery_image"
                     alt={face.identity || "No identity assigned"}
                     title={face.identity || "No identity assigned"}

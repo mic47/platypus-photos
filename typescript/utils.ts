@@ -3,11 +3,11 @@ import { Position } from "./pygallery.generated/types.gen";
 export const FLAGS: { [key: string]: string } = data_model.unicode.flags;
 
 export function position_to_str(position: Position): string {
-    const posStr = `${Math.trunc(position.left)},${Math.trunc(position.top)},${Math.ceil(position.right)},${Math.ceil(position.bottom)}`;
+    const posStr = `position=${Math.trunc(position.left)},${Math.trunc(position.top)},${Math.ceil(position.right)},${Math.ceil(position.bottom)}`;
     if (position.pts === null) {
         return posStr;
     }
-    return `${posStr},${position.pts}`;
+    return `${posStr}&frame=${position.pts}`;
 }
 export function append_flag(country: string): string {
     const flag = FLAGS[country.toLowerCase()] || "";

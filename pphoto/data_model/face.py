@@ -58,10 +58,10 @@ class Position:
         )
 
     @staticmethod
-    def from_query_string(inp: str) -> t.Optional[Position]:
+    def from_query_string(inp: str, frame: int | None) -> t.Optional[Position]:
         splitted = inp.split(",")
         length = len(splitted)
-        if length < 4 or length > 5:
+        if length != 4:
             return None
         if any(not x.isnumeric() for x in splitted):
             return None
@@ -70,7 +70,7 @@ class Position:
             int(splitted[1]),
             int(splitted[2]),
             int(splitted[3]),
-            None if length == 4 else int(splitted[4]),
+            frame,
         )
 
 

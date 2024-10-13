@@ -90,13 +90,29 @@
               "anyOf": [
                 {
                   "type": "string",
-                  "pattern": "^[0-9]+,[0-9]+,[0-9]+,[0-9]+(,[0-9]+)?$"
+                  "pattern": "^[0-9]+,[0-9]+,[0-9]+,[0-9]$"
                 },
                 {
                   "type": "null"
                 }
               ],
               "title": "Position"
+            }
+          },
+          {
+            "name": "frame",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Frame"
             }
           }
         ],
