@@ -76,7 +76,7 @@ class Geolocator:
                     # This is valid case of transient error, we raise exception
                     raise
                 print(
-                    f"Gelolocation request for {inp.path} {inp.md5} failed. Retrying ({retries_left} left)",
+                    f"Gelolocation request ({query}) for {inp.path} {inp.md5} failed. Retrying ({retries_left} left)",
                     e,
                     file=sys.stderr,
                 )
