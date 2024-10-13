@@ -136,11 +136,15 @@ _POOL_MODELS = Lazy(lambda: Models(NoCache(), remote=None))
 
 
 def _process_image_in_pool(
-    path: PathWithMd5, data: t.Optional[bytes], gap_threshold: float, discard_threshold: float
+    path: PathWithMd5,
+    data: t.Optional[bytes],
+    pts: t.Optional[int],
+    gap_threshold: float,
+    discard_threshold: float,
 ) -> WithMD5[ImageClassification]:
     return list(
         _POOL_MODELS.get().process_image_batch_impl(
-            ((x, data) for x in [path]), gap_threshold, discard_threshold
+            ((x, data, pts) for x in [path]), gap_threshold, discard_threshold
         )
     )[0]
 
@@ -182,6 +186,8 @@ class Models:
         path: PathWithMd5,
         gap_threshold: float = 0.2,
         discard_threshold: float = 0.1,
+        frame_each_seconds: int = 3,
+        number_of_frames: int = 10,
     ) -> WithMD5[ImageClassification]:
         """
         Used externally to process file
@@ -191,9 +197,15 @@ class Models:
             return x.payload
         media_class = supported_media_class(path.path)
         if media_class == SupportedMediaClass.IMAGE:
-            return self._cache.add(await self._process_image(path, None, gap_threshold, discard_threshold))
+            return self._cache.add(
+                await self._process_image(path, None, None, gap_threshold, discard_threshold)
+            )
         if media_class == SupportedMediaClass.VIDEO:
-            return self._cache.add(await self._process_video(path, gap_threshold, discard_threshold))
+            return self._cache.add(
+                await self._process_video(
+                    path, gap_threshold, discard_threshold, frame_each_seconds, number_of_frames
+                )
+            )
         if media_class is None:
             return WithMD5(path.md5, self._version, None, Error("UnsupportedMediaFile", None, None))
         assert_never(media_class)
@@ -203,34 +215,36 @@ class Models:
         path: PathWithMd5,
         gap_threshold: float,
         discard_threshold: float,
+        frame_each_seconds: int,
+        number_of_frames: int,
     ) -> WithMD5[ImageClassification]:
         # TODO: figure out duration
-        # TODO: pass hardcoded stuff as parameters
-        # TODO: pass pts into the process_image
 
-        async def process_frame(frame: VideoFrame) -> t.Tuple[int, WithMD5[ImageClassification]]:
+        async def process_frame(frame: VideoFrame) -> WithMD5[ImageClassification]:
             buffer = io.BytesIO(b"")
             frame.image.save(buffer, format="jpg")
             data = buffer.getvalue()
-            pts = frame.pts
-            return (pts, await self._process_image(path, data, gap_threshold, discard_threshold))
+            return await self._process_image(path, data, frame.pts, gap_threshold, discard_threshold)
 
         annotations = await asyncio.gather(
             *[
                 process_frame(frame)
                 for frame in get_video_frames(
-                    path.path, duration_seconds=None, frame_each_seconds=3, number_of_frames=10
+                    path.path,
+                    duration_seconds=None,
+                    frame_each_seconds=frame_each_seconds,
+                    number_of_frames=number_of_frames,
                 )
             ]
         )
         processed = []
         errors = []
-        for pts, annotated in annotations:
+        for annotated in annotations:
             if annotated.e is not None:
                 errors.append(annotated.e)
             if annotated.p is None:
                 continue
-            processed.append((pts, annotated.p))
+            processed.append(annotated.p)
         if processed:
             return WithMD5(path.md5, self._version, _merge_image_classifications_for_video(processed), None)
         if errors:
@@ -246,6 +260,7 @@ class Models:
         self: Models,
         path: PathWithMd5,
         data: t.Optional[bytes],
+        pts: t.Optional[int],
         gap_threshold: float,
         discard_threshold: float,
     ) -> WithMD5[ImageClassification]:
@@ -263,6 +278,7 @@ class Models:
                             "TextAnnotationRequest",
                             path,
                             data.decode("utf-8"),
+                            pts,
                             gap_threshold,
                             discard_threshold,
                         ),
@@ -274,7 +290,9 @@ class Models:
             # pylint: disable-next = bare-except
             except:
                 traceback.print_exc()
-        p = self._pool.get().apply(_process_image_in_pool, (path, data, gap_threshold, discard_threshold))
+        p = self._pool.get().apply(
+            _process_image_in_pool, (path, data, pts, gap_threshold, discard_threshold)
+        )
         return p
 
     def process_image_data(
@@ -283,7 +301,7 @@ class Models:
     ) -> WithMD5[ImageClassification]:
         return list(
             self.process_image_batch_impl(
-                [(request.path, base64.decodebytes(request.data_base64.encode("utf-8")))],
+                [(request.path, base64.decodebytes(request.data_base64.encode("utf-8")), request.pts)],
                 request.gap_threshold,
                 request.discard_threshold,
             )
@@ -291,19 +309,19 @@ class Models:
 
     def process_image_batch_impl(
         self: Models,
-        paths: t.Iterable[t.Tuple[PathWithMd5, t.Optional[bytes]]],
+        paths: t.Iterable[t.Tuple[PathWithMd5, t.Optional[bytes], t.Optional[int]]],
         gap_threshold: float,
         discard_threshold: float,
     ) -> t.Iterable[WithMD5[ImageClassification]]:
         images = [
-            (path, Image.open(path.path) if data is None else Image.open(io.BytesIO(data)))
-            for path, data in paths
+            (path, Image.open(path.path) if data is None else Image.open(io.BytesIO(data)), pts)
+            for path, data, pts in paths
         ]
-        captions = self._captioner.get()([image for (_, image) in images])
-        results = self._predict_model.get()([img for (_, img) in images], verbose=False)
+        captions = self._captioner.get()([image for (_, image, _) in images])
+        results = self._predict_model.get()([img for (_, img, _) in images], verbose=False)
         boxes_to_classify = []
         all_input = list(zip(images, results, captions))
-        for (path, image), result, caption in all_input:
+        for (path, image, pts), result, caption in all_input:
             names = result.names
             for box_id, box in enumerate(result.boxes):
                 classification = names[int(box.cls[0])]
@@ -315,7 +333,7 @@ class Models:
                         image,
                         box_id,
                         caption,
-                        Box(classification, confidence, xyxy),
+                        Box(classification, confidence, xyxy, pts),
                     )
                 )
 
@@ -364,7 +382,7 @@ class Models:
                     classifications.append(Classification(names[index], float(conf)))
                 box_class.append(BoxClassification(box, classifications))
             yield WithMD5(path.md5, self._version, ImageClassification(list(captions), box_class), None)
-        for (path, image), captions, _ in all_input:
+        for (path, image, _), captions, _ in all_input:
             if path.path in visited:
                 continue
             visited.add(path.path)
@@ -376,7 +394,9 @@ class Models:
             yield WithMD5(path.md5, self._version, ImageClassification(list(captions), []), None)
 
 
-def _merge_image_classifications_for_video(classifications: t.Sequence[ImageClassification]) -> ImageClassification:
+def _merge_image_classifications_for_video(
+    classifications: t.Sequence[ImageClassification],
+) -> ImageClassification:
     captions = []
     used_captions = set()
     for cls in classifications:

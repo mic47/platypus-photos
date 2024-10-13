@@ -15,13 +15,17 @@ class Box:
     classification: str
     confidence: float
     xyxy: t.List[float]
+    pts: t.Optional[int]
 
     def to_json_dict(self) -> t.Any:
-        return {
+        x = {
             "classification": self.classification,
             "confidence": self.confidence,
             "xyxy": self.xyxy,
         }
+        if self.pts is not None:
+            x["pts"] = self.pts
+        return x
 
     @staticmethod
     def from_json_dict(d: t.Dict[str, t.Any]) -> Box:
@@ -29,6 +33,7 @@ class Box:
             d["classification"],
             d["confidence"],
             d["xyxy"],
+            d.get("pts"),
         )
 
 

@@ -44,6 +44,7 @@ class TextAnnotationRequest(dj.DataClassJsonMixin):
     t: _t.Literal["TextAnnotationRequest"]
     path: PathWithMd5
     data_base64: str
+    pts: _t.Optional[int]
     gap_threshold: float
     discard_threshold: float
 
