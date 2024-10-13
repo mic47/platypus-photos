@@ -312,6 +312,7 @@ export type Position = {
     top: number;
     right: number;
     bottom: number;
+    pts: (number | null);
 };
 
 export type PredictedLocation = {

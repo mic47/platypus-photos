@@ -2313,6 +2313,17 @@
           "bottom": {
             "type": "integer",
             "title": "Bottom"
+          },
+          "pts": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pts"
           }
         },
         "type": "object",
@@ -2320,7 +2331,8 @@
           "left",
           "top",
           "right",
-          "bottom"
+          "bottom",
+          "pts"
         ],
         "title": "Position"
       },
