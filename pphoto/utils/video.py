@@ -13,7 +13,6 @@ class VideoFrame:
 
 def get_video_frames(
     filename: str,
-    duration_seconds: float | None,
     frame_each_seconds: float | None,
     number_of_frames: int | None,
 ) -> t.Iterable[VideoFrame]:
@@ -24,11 +23,14 @@ def get_video_frames(
             return
         stream.codec_context.skip_frame = "NONKEY"  # noqa: F841
         duration = stream.duration  # in time_base units
-        if duration is not None and duration_seconds is not None and frame_each_seconds is not None:
+        time_base = stream.time_base
+        if duration is not None and time_base is not None and frame_each_seconds is not None:
             # In this case, the number of frames is used as minimum number of frames to extract
             if number_of_frames is None:
                 number_of_frames = 3
-            number_of_frames = max(number_of_frames, int(1 + duration_seconds / frame_each_seconds))
+            number_of_frames = max(
+                number_of_frames, int(1 + float(duration * time_base) / frame_each_seconds)
+            )
         if duration is not None and number_of_frames is not None:
             seeks = [duration * i // (number_of_frames - 1) for i in range(number_of_frames)]
         else:

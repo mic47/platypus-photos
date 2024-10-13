@@ -218,7 +218,6 @@ class Models:
         frame_each_seconds: int,
         number_of_frames: int,
     ) -> WithMD5[ImageClassification]:
-        # TODO: figure out duration
 
         async def process_frame(frame: VideoFrame) -> WithMD5[ImageClassification]:
             buffer = io.BytesIO(b"")
@@ -231,7 +230,6 @@ class Models:
                 process_frame(frame)
                 for frame in get_video_frames(
                     path.path,
-                    duration_seconds=None,
                     frame_each_seconds=frame_each_seconds,
                     number_of_frames=number_of_frames,
                 )
