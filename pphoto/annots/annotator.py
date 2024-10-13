@@ -165,7 +165,7 @@ class Annotator:
         self, path: PathWithMd5
     ) -> t.Tuple[PathWithMd5, WithMD5[ImageClassification], WithMD5[FaceEmbeddings]]:
         itt = await self.models.process_file(path)
-        fe = await self.face.process_image(path)
+        fe = await self.face.process_file(path)
         # There might be manual annotations which needs to be processed too
         identities = self.manual_identities.get(path.md5)
         if identities is None or identities.payload is None or identities.payload.p is None:
