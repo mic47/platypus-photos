@@ -133,12 +133,12 @@ def _close_pool(pool: "multiprocessing.pool.Pool") -> None:
 _POOL_MODELS = Lazy(lambda: Models(NoCache(), remote=None))
 
 
-def process_image_in_pool(
-    path: PathWithMd5, gap_threshold: float, discard_threshold: float
+def _process_image_in_pool(
+    path: PathWithMd5, data: t.Optional[bytes], gap_threshold: float, discard_threshold: float
 ) -> WithMD5[ImageClassification]:
     return list(
         _POOL_MODELS.get().process_image_batch_impl(
-            ((x, None) for x in [path]), gap_threshold, discard_threshold
+            ((x, data) for x in [path]), gap_threshold, discard_threshold
         )
     )[0]
 
@@ -181,26 +181,28 @@ class Models:
         gap_threshold: float = 0.2,
         discard_threshold: float = 0.1,
     ) -> WithMD5[ImageClassification]:
+        """
+        Used externally to process file
+        """
         x = self._cache.get(path.md5)
         if x is not None and x.payload is not None:
             return x.payload
-        return self._cache.add(await self._process_image(path, gap_threshold, discard_threshold))
+        return self._cache.add(await self._process_image(path, None, gap_threshold, discard_threshold))
 
     async def _process_image(
         self: "Models",
         path: PathWithMd5,
+        data: t.Optional[bytes],
         gap_threshold: float,
         discard_threshold: float,
     ) -> WithMD5[ImageClassification]:
-        """
-        Used externally to process image
-        """
-        if os.path.getsize(path.path) > 100_000_000:
+        if data is None and os.path.getsize(path.path) > 100_000_000:
             return WithMD5(path.md5, self._version, None, Error("SkippingHugeFile", None, None))
         if self._remote is not None and self._remote_can_be_available():
             try:
-                with open(path.path, "rb") as f:
-                    data = base64.encodebytes(f.read())
+                if data is None:
+                    with open(path.path, "rb") as f:
+                        data = base64.encodebytes(f.read())
                 ret = await asyncio.wait_for(
                     fetch_ann(
                         self._remote,
@@ -219,7 +221,7 @@ class Models:
             # pylint: disable-next = bare-except
             except:
                 traceback.print_exc()
-        p = self._pool.get().apply(process_image_in_pool, (path, gap_threshold, discard_threshold))
+        p = self._pool.get().apply(_process_image_in_pool, (path, data, gap_threshold, discard_threshold))
         return p
 
     def process_image_data(
