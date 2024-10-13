@@ -165,6 +165,32 @@ def export_photos(query: str) -> StreamingResponse:
     )
 
 
+def _download_file_response(hsh: str) -> t.Any:
+    file_path = DB.get().get_path_from_hash(hsh)
+    if file_path is not None and os.path.exists(file_path):
+        # TODO: fix media type
+        return FileResponse(file_path, filename=file_path.split("/")[-1])
+    return {"error": "File not found!"}
+
+
+def _create_cache_file(img: Image.Image, cache_file: str, sz: int | str, position: str | None) -> None:
+    if position is not None:
+        pos = Position.from_query_string(position)
+        if pos is not None:
+            # TODO: check that this is within proper bounds or something like that
+            img = img.crop((pos.left, pos.top, pos.right, pos.bottom))
+    else:
+        img.thumbnail((t.cast(int, sz), t.cast(int, sz)))
+    dirname = os.path.dirname(cache_file)
+    if not os.path.exists(dirname):
+        os.makedirs(dirname, exist_ok=True)
+    if "exif" in img.info:
+        exif = img.info["exif"]
+        img.save(cache_file, format=img.format, exif=exif)
+    else:
+        img.save(cache_file, format=img.format)
+
+
 # TODO:
 # store extension inside cache file, so that this endpoint does not need extension.
 # Can be some encoding with <length><extension><length><metadata><length><data>
@@ -183,6 +209,7 @@ def image_endpoint(
     extension: t.Annotated[str, PathParam(pattern="^[0-9a-zA-Z]+$", min_length=1, max_length=10)],
     position: t.Annotated[t.Optional[str], Query(pattern="^[0-9]+,[0-9]+,[0-9]+,[0-9]+(,[0-9]+)?$")] = None,
 ) -> t.Any:
+    # TODO: here handle video
     resolution = sz_to_resolution(size)
     if resolution is not None or position is not None:
         if position is not None:
@@ -198,27 +225,9 @@ def image_endpoint(
             if file_path is None:
                 return {"error": "File not found!"}
             img = Image.open(file_path)
-            if position is not None:
-                pos = Position.from_query_string(position)
-                if pos is not None:
-                    # TODO: check that this is within proper bounds or something like that
-                    img = img.crop((pos.left, pos.top, pos.right, pos.bottom))
-            else:
-                img.thumbnail((t.cast(int, sz), t.cast(int, sz)))
-            dirname = os.path.dirname(cache_file)
-            if not os.path.exists(dirname):
-                os.makedirs(dirname, exist_ok=True)
-            if "exif" in img.info:
-                exif = img.info["exif"]
-                img.save(cache_file, format=img.format, exif=exif)
-            else:
-                img.save(cache_file, format=img.format)
+            _create_cache_file(img, cache_file, sz, position)
         return FileResponse(cache_file, filename=cache_file.split("/")[-1])
-    file_path = DB.get().get_path_from_hash(hsh)
-    if file_path is not None and os.path.exists(file_path):
-        # TODO: fix media type
-        return FileResponse(file_path, filename=file_path.split("/")[-1])
-    return {"error": "File not found!"}
+    return _download_file_response(hsh)
 
 
 @dataclass
