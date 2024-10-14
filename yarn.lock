@@ -97,10 +97,10 @@
   dependencies:
     levn "^0.4.1"
 
-"@hey-api/openapi-ts@^0.53.8":
-  version "0.53.8"
-  resolved "https://registry.yarnpkg.com/@hey-api/openapi-ts/-/openapi-ts-0.53.8.tgz#26e4a599852aa38a6b26bc42398caa9e465f6aa5"
-  integrity sha512-UbiaIq+JNgG00N/iWYk+LSivOBgWsfGxEHDleWEgQcQr3q7oZJTKL8oH87+KkFDDbUngm1g8lnKI/zLdu1aElQ==
+"@hey-api/openapi-ts@^0.53.11":
+  version "0.53.11"
+  resolved "https://registry.yarnpkg.com/@hey-api/openapi-ts/-/openapi-ts-0.53.11.tgz#d2d745e9405bec49b7ddf69f0cefdcfa9e884297"
+  integrity sha512-PaO+o0jDhfHVS5SjtonP5CzP/NYoW8dVZUn8WthSgzpgPts8AiWYXplOyk5uEnM4ZxbkZbeTiREwaNLnJmXlTQ==
   dependencies:
     "@apidevtools/json-schema-ref-parser" "11.7.0"
     c12 "2.0.1"
