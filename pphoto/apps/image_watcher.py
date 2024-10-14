@@ -294,7 +294,7 @@ async def main() -> None:
 
     import_queue: asyncio.Queue[ImportDirectory] = asyncio.Queue()
     refresh_queue: asyncio.Queue[RefreshJobs] = asyncio.Queue()
-    await start_image_server_loop(refresh_queue, import_queue, "unix-domain-socket")
+    await start_image_server_loop(refresh_queue, import_queue, "data/unix-domain-socket")
     remote_annotator_queue: RemoteExecutorQueue = asyncio.Queue()
     await start_annotation_remote_worker_loop(remote_annotator_queue, args.remote_annotator_port)
 

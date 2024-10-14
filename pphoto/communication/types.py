@@ -15,7 +15,7 @@ from pphoto.data_model.text import (
     ImageClassification,
 )
 
-UNIX_CONNECTION_PATH = "unix-domain-socket"
+UNIX_CONNECTION_PATH = "data/unix-domain-socket"
 
 _t = t
 
