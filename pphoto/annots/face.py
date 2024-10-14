@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import asyncio
 import base64
+import concurrent.futures as cfut
 import datetime as dt
 import io
-import multiprocessing
 import os
 import traceback
 import typing as t
@@ -23,9 +23,8 @@ from pphoto.utils.files import supported_media_class, SupportedMediaClass
 from pphoto.utils.video import get_video_frames, VideoFrame
 
 
-def _close_pool(pool: "multiprocessing.pool.Pool") -> None:
-    pool.close()
-    pool.terminate()
+def _close_pool(pool: cfut.ProcessPoolExecutor) -> None:
+    pool.shutdown(wait=False, cancel_futures=False)
 
 
 def face_embeddings_endpoint(request: FaceEmbeddingsRequest) -> FaceEmbeddingsWithMD5:
@@ -71,10 +70,10 @@ class FaceEmbeddingsAnnotator:
     def __init__(self, cache: Cache[FaceEmbeddings], remote: t.Optional[RemoteExecutorQueue]) -> None:
         self._cache = cache
         self._version = FaceEmbeddings.current_version()
-        ttl = dt.timedelta(seconds=5 * 60)
+        ttl = dt.timedelta(seconds=20 * 60)
         self._pool = Lazy(
             # pylint: disable-next = consider-using-with
-            lambda: multiprocessing.Pool(processes=1),
+            lambda: cfut.ProcessPoolExecutor(max_workers=1),
             ttl=ttl,
             destructor=_close_pool,
         )
@@ -109,7 +108,7 @@ class FaceEmbeddingsAnnotator:
             return self._cache.add(
                 WithMD5(path.md5, self._version, None, Error("SkippingHugeFile", None, None))
             )
-        to_return = None
+        to_return_nullable: None | WithMD5[FaceEmbeddings] = None
         if self._remote is not None and self._remote_can_be_available():
             try:
                 with open(path.path, "rb") as f:
@@ -128,14 +127,16 @@ class FaceEmbeddingsAnnotator:
                     600,
                 )
                 self._last_remote_request = dt.datetime.now()
-                to_return = self._cache.add(ret)
+                to_return_nullable = self._cache.add(ret)
             # pylint: disable-next = bare-except
             except:
                 traceback.print_exc()
-        if to_return is None:
-            to_return = self._pool.get().apply(
-                _process_image_impl, (path, None, [x.position for x in to_compute])
+        if to_return_nullable is None:
+            to_return = await asyncio.get_running_loop().run_in_executor(
+                self._pool.get(), _process_image_impl, path, None, None, [x.position for x in to_compute]
             )
+        else:
+            to_return = to_return_nullable
 
         if existing is None or existing.payload is None or existing.payload.p is None:
             return self._cache.add(to_return)
@@ -234,7 +235,9 @@ class FaceEmbeddingsAnnotator:
             # pylint: disable-next = bare-except
             except:
                 traceback.print_exc()
-        p = self._pool.get().apply(_process_image_impl, (path, data, pts, None))
+        p = await asyncio.get_running_loop().run_in_executor(
+            self._pool.get(), _process_image_impl, path, data, pts, None
+        )
         return p
 
 

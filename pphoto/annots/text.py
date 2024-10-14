@@ -2,11 +2,11 @@ from __future__ import annotations
 
 import asyncio
 import base64
+import concurrent.futures as cfut
 import datetime
 import io
 import os
 import itertools
-import multiprocessing
 import sys
 import traceback
 import typing as t
@@ -127,9 +127,8 @@ def image_to_text_model() -> PipelineProtocol:
     return t.cast(PipelineProtocol, ret)
 
 
-def _close_pool(pool: "multiprocessing.pool.Pool") -> None:
-    pool.close()
-    pool.terminate()
+def _close_pool(pool: cfut.ProcessPoolExecutor) -> None:
+    pool.shutdown(wait=False, cancel_futures=False)
 
 
 _POOL_MODELS = Lazy(lambda: Models(NoCache(), remote=None))
@@ -156,10 +155,10 @@ class Models:
         self._classify_model = Lazy(lambda: yolo_model("yolov8x-cls.pt"))
         self._captioner = Lazy(image_to_text_model)
         self._version = ImageClassification.current_version()
-        ttl = datetime.timedelta(seconds=5 * 60)
+        ttl = datetime.timedelta(seconds=20 * 60)
         self._pool = Lazy(
             # pylint: disable-next = consider-using-with
-            lambda: multiprocessing.Pool(processes=1),
+            lambda: cfut.ProcessPoolExecutor(max_workers=1),
             ttl=ttl,
             destructor=_close_pool,
         )
@@ -292,8 +291,8 @@ class Models:
             # pylint: disable-next = bare-except
             except:
                 traceback.print_exc()
-        p = self._pool.get().apply(
-            _process_image_in_pool, (path, data, pts, gap_threshold, discard_threshold)
+        p = await asyncio.get_running_loop().run_in_executor(
+            self._pool.get(), _process_image_in_pool, path, data, pts, gap_threshold, discard_threshold
         )
         return p
 
