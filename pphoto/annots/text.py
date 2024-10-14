@@ -34,7 +34,7 @@ from pphoto.communication.types import (
 from pphoto.communication.server import RemoteExecutorQueue
 from pphoto.utils import Lazy, assert_never
 from pphoto.utils.files import supported_media_class, SupportedMediaClass
-from pphoto.utils.video import get_video_frames, VideoFrame
+from pphoto.utils.video import get_video_frames
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
@@ -220,22 +220,21 @@ class Models:
         number_of_frames: int,
     ) -> WithMD5[ImageClassification]:
 
-        async def process_frame(frame: VideoFrame) -> WithMD5[ImageClassification]:
+        annotations = []
+        for frame in get_video_frames(
+            path.path,
+            frame_each_seconds=frame_each_seconds,
+            number_of_frames=number_of_frames,
+        ):
+            # Intentionally doing this in serial, as otherwise we might fire too much annotation request (from each worker)
+            # and overwhelm the system
             buffer = io.BytesIO(b"")
             frame.image.save(buffer, format="jpeg")
             data = buffer.getvalue()
-            return await self._process_image(path, data, frame.pts, gap_threshold, discard_threshold)
+            annotations.append(
+                await self._process_image(path, data, frame.pts, gap_threshold, discard_threshold)
+            )
 
-        annotations = await asyncio.gather(
-            *[
-                process_frame(frame)
-                for frame in get_video_frames(
-                    path.path,
-                    frame_each_seconds=frame_each_seconds,
-                    number_of_frames=number_of_frames,
-                )
-            ]
-        )
         processed = []
         errors = []
         for annotated in annotations:

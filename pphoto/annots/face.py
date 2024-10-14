@@ -20,7 +20,7 @@ from pphoto.communication.server import RemoteExecutorQueue
 from pphoto.communication.types import FaceEmbeddingsRequest, FaceEmbeddingsWithMD5, RemoteAnnotatorRequest
 from pphoto.utils import Lazy, assert_never, log_error
 from pphoto.utils.files import supported_media_class, SupportedMediaClass
-from pphoto.utils.video import get_video_frames, VideoFrame
+from pphoto.utils.video import get_video_frames
 
 
 def _close_pool(pool: cfut.ProcessPoolExecutor) -> None:
@@ -170,22 +170,19 @@ class FaceEmbeddingsAnnotator:
     async def _process_video(
         self, path: PathWithMd5, frame_each_seconds: int, number_of_frames: int
     ) -> WithMD5[FaceEmbeddings]:
-        async def process_frame(frame: VideoFrame) -> WithMD5[FaceEmbeddings]:
+        annotations = []
+        for frame in get_video_frames(
+            path.path,
+            frame_each_seconds=frame_each_seconds,
+            number_of_frames=number_of_frames,
+        ):
+            # Intentionally doing this in serial, as otherwise we might fire too much annotation request (from each worker)
+            # and overwhelm the system
             buffer = io.BytesIO(b"")
             frame.image.save(buffer, format="jpeg")
             data = buffer.getvalue()
-            return await self._process_image(path, data, frame.pts)
+            annotations.append(await self._process_image(path, data, frame.pts))
 
-        annotations = await asyncio.gather(
-            *[
-                process_frame(frame)
-                for frame in get_video_frames(
-                    path.path,
-                    frame_each_seconds=frame_each_seconds,
-                    number_of_frames=number_of_frames,
-                )
-            ]
-        )
         processed = []
         errors = []
         for annotated in annotations:
