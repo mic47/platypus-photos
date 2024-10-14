@@ -215,7 +215,7 @@ def image_endpoint(
     hsh: t.Annotated[str, PathParam(pattern="^[0-9a-zA-Z]+$", min_length=7, max_length=40)],
     size: ImageSize,
     extension: t.Annotated[str, PathParam(pattern="^[0-9a-zA-Z]+$", min_length=1, max_length=10)],
-    position: t.Annotated[t.Optional[str], Query(pattern="^[0-9]+,[0-9]+,[0-9]+,[0-9]$")] = None,
+    position: t.Annotated[t.Optional[str], Query(pattern="^[0-9]+,[0-9]+,[0-9]+,[0-9]*$")] = None,
     frame: t.Optional[int] = None,
 ) -> t.Any:
     media_class = supported_media_class(f"file.{extension}")
