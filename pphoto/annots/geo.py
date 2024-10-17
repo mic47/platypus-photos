@@ -85,7 +85,10 @@ class Geolocator:
         self.last_api = time.time()
         country = None
         name = None
-        raw_add = ret.raw.get("address")
+        if ret.raw is not None:
+            raw_add = ret.raw.get("address")
+        else:
+            raw_add = None
         try:
             raw_data = json.dumps(ret.raw, ensure_ascii=False)
         # pylint: disable-next = broad-exception-caught

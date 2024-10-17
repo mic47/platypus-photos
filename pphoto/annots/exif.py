@@ -445,6 +445,8 @@ def date_from_video_tags(tags: UnparsedTags) -> t.Optional[Date]:
     datetime_base = tags.get_first(
         "QuickTime:MediaCreateDate", "QuickTime:TrackCreateDate", "QuickTime:CreateDate"
     )
+    if datetime_base is None:
+        return None
     datetime_parts = datetime_base.split(" ")
     if len(datetime_parts) != 2:
         return None
