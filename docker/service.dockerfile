@@ -27,7 +27,7 @@ WORKDIR /app
 RUN pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
 RUN pip install \
   transformers==4.45.2 \
-  ultralytics==8.3.8
+  ultralytics==8.3.12
 RUN pip install opencv-python-headless==4.10.0.84
 COPY download_models.py ./
 RUN python download_models.py
