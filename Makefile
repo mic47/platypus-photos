@@ -21,6 +21,7 @@ ci:
 	yarn
 	make gen
 	make cits
+	./check-docker-pip-versions.sh
 
 prepare-ci:
 	cp config.example.yaml config.yaml

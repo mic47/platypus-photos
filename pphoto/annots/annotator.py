@@ -137,7 +137,7 @@ class Annotator:
         WithMD5[GeoAddress],
         t.Optional[datetime.datetime],
     ]:
-        exif_item = self.exif.process_image(path)
+        exif_item = self.exif.process_file(path)
         manual_location = self.manual_location.get(path.md5)
         if (
             manual_location is not None
@@ -164,8 +164,8 @@ class Annotator:
     async def image_to_text(
         self, path: PathWithMd5
     ) -> t.Tuple[PathWithMd5, WithMD5[ImageClassification], WithMD5[FaceEmbeddings]]:
-        itt = await self.models.process_image(path)
-        fe = await self.face.process_image(path)
+        itt = await self.models.process_file(path)
+        fe = await self.face.process_file(path)
         # There might be manual annotations which needs to be processed too
         identities = self.manual_identities.get(path.md5)
         if identities is None or identities.payload is None or identities.payload.p is None:

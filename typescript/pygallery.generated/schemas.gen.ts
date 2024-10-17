@@ -1387,10 +1387,21 @@ export const PositionSchema = {
         bottom: {
             type: 'integer',
             title: 'Bottom'
+        },
+        pts: {
+            anyOf: [
+                {
+                    type: 'integer'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Pts'
         }
     },
     type: 'object',
-    required: ['left', 'top', 'right', 'bottom'],
+    required: ['left', 'top', 'right', 'bottom', 'pts'],
     title: 'Position'
 } as const;
 

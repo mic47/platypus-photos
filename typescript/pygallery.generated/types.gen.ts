@@ -312,6 +312,7 @@ export type Position = {
     top: number;
     right: number;
     bottom: number;
+    pts: (number | null);
 };
 
 export type PredictedLocation = {
@@ -429,6 +430,7 @@ export type ExportPhotosGetResponse = (unknown);
 
 export type ImageEndpointGetData = {
     extension: string;
+    frame?: (number | null);
     hsh: string;
     position?: (string | null);
     size: ImageSize;

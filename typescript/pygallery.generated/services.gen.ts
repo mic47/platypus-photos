@@ -30,6 +30,7 @@ export const exportPhotosGet = (data: ExportPhotosGetData): CancelablePromise<Ex
  * @param data.size
  * @param data.extension
  * @param data.position
+ * @param data.frame
  * @returns unknown photo
  * @throws ApiError
  */
@@ -42,7 +43,8 @@ export const imageEndpointGet = (data: ImageEndpointGetData): CancelablePromise<
         extension: data.extension
     },
     query: {
-        position: data.position
+        position: data.position,
+        frame: data.frame
     },
     errors: {
         422: 'Validation Error'

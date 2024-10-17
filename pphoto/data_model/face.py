@@ -33,28 +33,35 @@ class Position:
     top: int
     right: int
     bottom: int
+    pts: t.Optional[int]
 
     def to_json_dict(self) -> t.Any:
-        return {
+        x = {
             "left": self.left,
             "top": self.top,
             "right": self.right,
             "bottom": self.bottom,
         }
+        if self.pts is not None:
+            x["pts"] = self.pts
+        return x
 
     @staticmethod
     def from_json_dict(d: t.Dict[str, t.Any]) -> Position:
+        pts = d.get("pts")
         return Position(
             int(d["left"]),
             int(d["top"]),
             int(d["right"]),
             int(d["bottom"]),
+            None if pts is None else int(pts),
         )
 
     @staticmethod
-    def from_query_string(inp: str) -> t.Optional[Position]:
+    def from_query_string(inp: str, frame: int | None) -> t.Optional[Position]:
         splitted = inp.split(",")
-        if len(splitted) != 4:
+        length = len(splitted)
+        if length != 4:
             return None
         if any(not x.isnumeric() for x in splitted):
             return None
@@ -63,6 +70,7 @@ class Position:
             int(splitted[1]),
             int(splitted[2]),
             int(splitted[3]),
+            frame,
         )
 
 

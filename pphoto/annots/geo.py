@@ -6,7 +6,7 @@ import sys
 from geopy.geocoders import Nominatim
 from geopy.location import Location
 
-from pphoto.data_model.base import WithMD5, PathWithMd5
+from pphoto.data_model.base import WithMD5, PathWithMd5, Error
 from pphoto.data_model.geo import GeoAddress
 from pphoto.db.types import Cache, NoCache
 
@@ -76,7 +76,7 @@ class Geolocator:
                     # This is valid case of transient error, we raise exception
                     raise
                 print(
-                    f"Gelolocation request for {inp.path} {inp.md5} failed. Retrying ({retries_left} left)",
+                    f"Gelolocation request ({query}) for {inp.path} {inp.md5} failed. Retrying ({retries_left} left)",
                     e,
                     file=sys.stderr,
                 )
@@ -85,7 +85,12 @@ class Geolocator:
         self.last_api = time.time()
         country = None
         name = None
-        raw_add = ret.raw.get("address")
+        if ret is None:
+            return WithMD5(inp.md5, self._version, None, Error("NoAddressReturned", None, None))
+        if ret.raw is not None:
+            raw_add = ret.raw.get("address")
+        else:
+            raw_add = None
         try:
             raw_data = json.dumps(ret.raw, ensure_ascii=False)
         # pylint: disable-next = broad-exception-caught

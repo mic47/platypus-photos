@@ -15,7 +15,7 @@ from pphoto.data_model.text import (
     ImageClassification,
 )
 
-UNIX_CONNECTION_PATH = "unix-domain-socket"
+UNIX_CONNECTION_PATH = "data/unix-domain-socket"
 
 _t = t
 
@@ -44,6 +44,7 @@ class TextAnnotationRequest(dj.DataClassJsonMixin):
     t: _t.Literal["TextAnnotationRequest"]
     path: PathWithMd5
     data_base64: str
+    pts: _t.Optional[int]
     gap_threshold: float
     discard_threshold: float
 
@@ -54,6 +55,7 @@ class FaceEmbeddingsRequest(dj.DataClassJsonMixin):
     path: PathWithMd5
     for_positions: _t.Optional[_t.List[Position]]
     data_base64: str
+    pts: _t.Optional[int]
 
 
 @dc.dataclass

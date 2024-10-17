@@ -12,6 +12,7 @@ import {
     SearchQuery,
     SortParams,
 } from "./pygallery.generated";
+import { position_to_str } from "./utils.ts";
 
 interface FacesComponentProps {
     query: SearchQuery;
@@ -309,12 +310,12 @@ function FaceCluster({
         }
     };
     const clusterItems = faces.map((face) => {
-        const posStr = `${face.position.left},${face.position.top},${face.position.right},${face.position.bottom}`;
+        const posStr = position_to_str(face.position);
         return (
             <div key={`${face.md5}/${posStr}`} className="face_container">
                 <img
                     loading="lazy"
-                    src={`/img/original/${face.md5}.${face.extension}?position=${posStr}`}
+                    src={`/img/original/${face.md5}.${face.extension}?${posStr}`}
                     className="gallery_image"
                     alt={face.identity || "No identity assigned"}
                     title={face.identity || "No identity assigned"}

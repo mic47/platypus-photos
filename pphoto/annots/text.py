@@ -1,10 +1,12 @@
+from __future__ import annotations
+
 import asyncio
 import base64
+import concurrent.futures as cfut
 import datetime
 import io
 import os
 import itertools
-import multiprocessing
 import sys
 import traceback
 import typing as t
@@ -31,6 +33,8 @@ from pphoto.communication.types import (
 )
 from pphoto.communication.server import RemoteExecutorQueue
 from pphoto.utils import Lazy, assert_never
+from pphoto.utils.files import supported_media_class, SupportedMediaClass
+from pphoto.utils.video import get_video_frames
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
@@ -49,7 +53,7 @@ def remove_consecutive_words(sentence: str) -> str:
     return " ".join(out)
 
 
-def image_endpoint(models: "Models", image: TextAnnotationRequest) -> ImageClassificationWithMD5:
+def image_endpoint(models: Models, image: TextAnnotationRequest) -> ImageClassificationWithMD5:
     try:
         x = models.process_image_data(image)
         return ImageClassificationWithMD5("ImageClassificationWithMD5", x.md5, x.version, x.p, x.e)
@@ -123,20 +127,23 @@ def image_to_text_model() -> PipelineProtocol:
     return t.cast(PipelineProtocol, ret)
 
 
-def _close_pool(pool: "multiprocessing.pool.Pool") -> None:
-    pool.close()
-    pool.terminate()
+def _close_pool(pool: cfut.ProcessPoolExecutor) -> None:
+    pool.shutdown(wait=False, cancel_futures=False)
 
 
 _POOL_MODELS = Lazy(lambda: Models(NoCache(), remote=None))
 
 
-def process_image_in_pool(
-    path: PathWithMd5, gap_threshold: float, discard_threshold: float
+def _process_image_in_pool(
+    path: PathWithMd5,
+    data: t.Optional[bytes],
+    pts: t.Optional[int],
+    gap_threshold: float,
+    discard_threshold: float,
 ) -> WithMD5[ImageClassification]:
     return list(
         _POOL_MODELS.get().process_image_batch_impl(
-            ((x, None) for x in [path]), gap_threshold, discard_threshold
+            ((x, data, pts) for x in [path]), gap_threshold, discard_threshold
         )
     )[0]
 
@@ -148,10 +155,10 @@ class Models:
         self._classify_model = Lazy(lambda: yolo_model("yolov8x-cls.pt"))
         self._captioner = Lazy(image_to_text_model)
         self._version = ImageClassification.current_version()
-        ttl = datetime.timedelta(seconds=5 * 60)
+        ttl = datetime.timedelta(seconds=20 * 60)
         self._pool = Lazy(
             # pylint: disable-next = consider-using-with
-            lambda: multiprocessing.Pool(processes=1),
+            lambda: cfut.ProcessPoolExecutor(max_workers=1),
             ttl=ttl,
             destructor=_close_pool,
         )
@@ -173,44 +180,120 @@ class Models:
             return True
         return False
 
-    async def process_image(
-        self: "Models",
+    async def process_file(
+        self: Models,
         path: PathWithMd5,
         gap_threshold: float = 0.2,
         discard_threshold: float = 0.1,
+        frame_each_seconds: int = 3,
+        number_of_frames: int = 10,
     ) -> WithMD5[ImageClassification]:
+        """
+        Used externally to process file
+        """
         x = self._cache.get(path.md5)
-        if x is None or x.payload is None:
-            if os.path.getsize(path.path) > 100_000_000:
-                return self._cache.add(
-                    WithMD5(path.md5, self._version, None, Error("SkippingHugeFile", None, None))
+        if x is not None and x.payload is not None:
+            return x.payload
+        media_class = supported_media_class(path.path)
+        if media_class == SupportedMediaClass.IMAGE:
+            return self._cache.add(
+                await self._process_image(path, None, None, gap_threshold, discard_threshold)
+            )
+        if media_class == SupportedMediaClass.VIDEO:
+            return self._cache.add(
+                await self._process_video(
+                    path, gap_threshold, discard_threshold, frame_each_seconds, number_of_frames
                 )
-            if self._remote is not None and self._remote_can_be_available():
-                try:
+            )
+        if media_class is None:
+            return self._cache.add(
+                WithMD5(path.md5, self._version, None, Error("UnsupportedMediaFile", None, None))
+            )
+        assert_never(media_class)
+
+    async def _process_video(
+        self: Models,
+        path: PathWithMd5,
+        gap_threshold: float,
+        discard_threshold: float,
+        frame_each_seconds: int,
+        number_of_frames: int,
+    ) -> WithMD5[ImageClassification]:
+
+        annotations = []
+        for frame in get_video_frames(
+            path.path,
+            frame_each_seconds=frame_each_seconds,
+            number_of_frames=number_of_frames,
+        ):
+            # Intentionally doing this in serial, as otherwise we might fire too much annotation request (from each worker)
+            # and overwhelm the system
+            buffer = io.BytesIO(b"")
+            frame.image.save(buffer, format="jpeg")
+            data = buffer.getvalue()
+            annotations.append(
+                await self._process_image(path, data, frame.pts, gap_threshold, discard_threshold)
+            )
+
+        processed = []
+        errors = []
+        for annotated in annotations:
+            if annotated.e is not None:
+                errors.append(annotated.e)
+            if annotated.p is None:
+                continue
+            processed.append(annotated.p)
+        if processed:
+            return WithMD5(path.md5, self._version, _merge_image_classifications_for_video(processed), None)
+        if errors:
+            return WithMD5(path.md5, self._version, None, errors[0])
+        return WithMD5(
+            path.md5,
+            self._version,
+            None,
+            Error("NothingErrorOrSuccessWhileProcessingVideo", None, None),
+        )
+
+    async def _process_image(
+        self: Models,
+        path: PathWithMd5,
+        data: t.Optional[bytes],
+        pts: t.Optional[int],
+        gap_threshold: float,
+        discard_threshold: float,
+    ) -> WithMD5[ImageClassification]:
+        if data is None and os.path.getsize(path.path) > 100_000_000:
+            return WithMD5(path.md5, self._version, None, Error("SkippingHugeFile", None, None))
+        if self._remote is not None and self._remote_can_be_available():
+            try:
+                if data is None:
                     with open(path.path, "rb") as f:
                         data = base64.encodebytes(f.read())
-                    ret = await asyncio.wait_for(
-                        fetch_ann(
-                            self._remote,
-                            TextAnnotationRequest(
-                                "TextAnnotationRequest",
-                                path,
-                                data.decode("utf-8"),
-                                gap_threshold,
-                                discard_threshold,
-                            ),
+                else:
+                    data = base64.encodebytes(data)
+                ret = await asyncio.wait_for(
+                    fetch_ann(
+                        self._remote,
+                        TextAnnotationRequest(
+                            "TextAnnotationRequest",
+                            path,
+                            data.decode("utf-8"),
+                            pts,
+                            gap_threshold,
+                            discard_threshold,
                         ),
-                        600,
-                    )
-                    self._last_remote_request = datetime.datetime.now()
-                    return self._cache.add(ret)
-                # pylint: disable-next = bare-except
-                except:
-                    traceback.print_exc()
-        else:
-            return x.payload
-        p = self._pool.get().apply(process_image_in_pool, (path, gap_threshold, discard_threshold))
-        return self._cache.add(p)
+                    ),
+                    600,
+                )
+                self._last_remote_request = datetime.datetime.now()
+                return ret
+            # pylint: disable-next = bare-except
+            except:
+                traceback.print_exc()
+        p = await asyncio.get_running_loop().run_in_executor(
+            self._pool.get(), _process_image_in_pool, path, data, pts, gap_threshold, discard_threshold
+        )
+        return p
 
     def process_image_data(
         self,
@@ -218,27 +301,27 @@ class Models:
     ) -> WithMD5[ImageClassification]:
         return list(
             self.process_image_batch_impl(
-                [(request.path, base64.decodebytes(request.data_base64.encode("utf-8")))],
+                [(request.path, base64.decodebytes(request.data_base64.encode("utf-8")), request.pts)],
                 request.gap_threshold,
                 request.discard_threshold,
             )
         )[0]
 
     def process_image_batch_impl(
-        self: "Models",
-        paths: t.Iterable[t.Tuple[PathWithMd5, t.Optional[bytes]]],
+        self: Models,
+        paths: t.Iterable[t.Tuple[PathWithMd5, t.Optional[bytes], t.Optional[int]]],
         gap_threshold: float,
         discard_threshold: float,
     ) -> t.Iterable[WithMD5[ImageClassification]]:
         images = [
-            (path, Image.open(path.path) if data is None else Image.open(io.BytesIO(data)))
-            for path, data in paths
+            (path, Image.open(path.path) if data is None else Image.open(io.BytesIO(data)), pts)
+            for path, data, pts in paths
         ]
-        captions = self._captioner.get()([image for (_, image) in images])
-        results = self._predict_model.get()([img for (_, img) in images], verbose=False)
+        captions = self._captioner.get()([image for (_, image, _) in images])
+        results = self._predict_model.get()([img for (_, img, _) in images], verbose=False)
         boxes_to_classify = []
         all_input = list(zip(images, results, captions))
-        for (path, image), result, caption in all_input:
+        for (path, image, pts), result, caption in all_input:
             names = result.names
             for box_id, box in enumerate(result.boxes):
                 classification = names[int(box.cls[0])]
@@ -250,7 +333,7 @@ class Models:
                         image,
                         box_id,
                         caption,
-                        Box(classification, confidence, xyxy),
+                        Box(classification, confidence, xyxy, pts),
                     )
                 )
 
@@ -299,7 +382,7 @@ class Models:
                     classifications.append(Classification(names[index], float(conf)))
                 box_class.append(BoxClassification(box, classifications))
             yield WithMD5(path.md5, self._version, ImageClassification(list(captions), box_class), None)
-        for (path, image), captions, _ in all_input:
+        for (path, image, _), captions, _ in all_input:
             if path.path in visited:
                 continue
             visited.add(path.path)
@@ -309,3 +392,18 @@ class Models:
                 if gt is not None:
                     captions.add(remove_consecutive_words(gt))
             yield WithMD5(path.md5, self._version, ImageClassification(list(captions), []), None)
+
+
+def _merge_image_classifications_for_video(
+    classifications: t.Sequence[ImageClassification],
+) -> ImageClassification:
+    captions = []
+    used_captions = set()
+    for cls in classifications:
+        for cap in cls.captions:
+            if cap in used_captions:
+                continue
+            captions.append(cap)
+            used_captions.add(cap)
+
+    return ImageClassification(captions, [box for cls in classifications for box in cls.boxes], None)

@@ -1,17 +1,20 @@
+from __future__ import annotations
+
 from datetime import datetime, timedelta
 import sys
 import traceback
 import typing as t
 
 import exif
+import exiftool
 
 from pphoto.data_model.base import WithMD5, PathWithMd5, Error
-from pphoto.data_model.exif import ImageExif, Date, Camera, GPSCoord
+from pphoto.data_model.exif import ImageExif, Date, Camera, GPSCoord, VideoInfo
 from pphoto.db.types import Cache
-from pphoto.utils.files import SupportedMedia, supported_media
+from pphoto.utils.files import SupportedMedia, supported_media, supported_media_class, SupportedMediaClass
+from pphoto.utils import assert_never
 
-
-IGNORED_TAGS = [
+IGNORED_IMAGE_TAGS = [
     "aperture_value",
     "artist",
     "bits_per_sample",
@@ -84,7 +87,7 @@ IGNORED_TAGS = [
     "camera_owner_name",
 ]
 
-EXTRACT_TAGS = [
+EXTRACT_IMAGE_TAGS = [
     "body_serial_number",
     "datetime",
     "datetime_digitized",
@@ -112,6 +115,262 @@ EXTRACT_TAGS = [
     "software",
 ]
 
+IGNORED_VIDEO_TAGS = [
+    "Composite:Aperture",
+    "Composite:AvgBitrate",
+    "Composite:DriveMode",
+    "Composite:FocalLength35efl",
+    "Composite:GPSPosition",
+    "Composite:ImageSize",
+    "Composite:ISO",
+    "Composite:Lens",
+    "Composite:Lens35efl",
+    "Composite:LensID",
+    "Composite:LightValue",
+    "Composite:Megapixels",
+    "Composite:Rotation",
+    "Composite:ShootingMode",
+    "Composite:ShutterSpeed",
+    "Default",
+    "EXIF:ApertureValue",
+    "EXIF:ColorSpace",
+    "EXIF:ComponentsConfiguration",
+    "EXIF:CompressedBitsPerPixel",
+    "EXIF:CreateDate",
+    "EXIF:CustomRendered",
+    "EXIF:DateTimeOriginal",
+    "EXIF:DigitalZoomRatio",
+    "EXIF:ExifImageHeight",
+    "EXIF:ExifImageWidth",
+    "EXIF:ExifVersion",
+    "EXIF:ExposureCompensation",
+    "EXIF:ExposureMode",
+    "EXIF:ExposureTime",
+    "EXIF:FileSource",
+    "EXIF:Flash",
+    "EXIF:FlashpixVersion",
+    "EXIF:FNumber",
+    "EXIF:FocalLength",
+    "EXIF:ImageDescription",
+    "EXIF:InteropIndex",
+    "EXIF:InteropVersion",
+    "EXIF:Make",
+    "EXIF:MaxApertureValue",
+    "EXIF:MeteringMode",
+    "EXIF:Model",
+    "EXIF:ModifyDate",
+    "EXIF:Orientation",
+    "EXIF:OwnerName",
+    "EXIF:RelatedImageHeight",
+    "EXIF:RelatedImageWidth",
+    "EXIF:ResolutionUnit",
+    "EXIF:SceneCaptureType",
+    "EXIF:SensingMethod",
+    "EXIF:SensitivityType",
+    "EXIF:ShutterSpeedValue",
+    "ExifTool:ExifToolVersion",
+    "EXIF:UserComment",
+    "EXIF:WhiteBalance",
+    "EXIF:XResolution",
+    "EXIF:YCbCrPositioning",
+    "EXIF:YResolution",
+    "File:BitsPerSample",
+    "File:ColorComponents",
+    "File:Directory",
+    "File:EncodingProcess",
+    "File:ExifByteOrder",
+    "File:FileAccessDate",
+    "File:FileInodeChangeDate",
+    "File:FileModifyDate",
+    "File:FileName",
+    "File:FilePermissions",
+    "File:FileSize",
+    "File:FileType",
+    "File:FileTypeExtension",
+    "File:ImageHeight",
+    "File:ImageWidth",
+    "File:MIMEType",
+    "File:YCbCrSubSampling",
+    "MakerNotes:AEBBracketValue",
+    "MakerNotes:AESetting",
+    "MakerNotes:AFAreaHeights",
+    "MakerNotes:AFAreaMode",
+    "MakerNotes:AFAreaWidths",
+    "MakerNotes:AFAreaXPositions",
+    "MakerNotes:AFAreaYPositions",
+    "MakerNotes:AFImageHeight",
+    "MakerNotes:AFImageWidth",
+    "MakerNotes:AFPoint",
+    "MakerNotes:AFPointsInFocus",
+    "MakerNotes:AspectRatio",
+    "MakerNotes:AutoExposureBracketing",
+    "MakerNotes:AutoISO",
+    "MakerNotes:AutoRotate",
+    "MakerNotes:BaseISO",
+    "MakerNotes:BulbDuration",
+    "MakerNotes:CameraISO",
+    "MakerNotes:CameraTemperature",
+    "MakerNotes:CameraType",
+    "MakerNotes:CanonExposureMode",
+    "MakerNotes:CanonFirmwareVersion",
+    "MakerNotes:CanonFlashMode",
+    "MakerNotes:CanonImageHeight",
+    "MakerNotes:CanonImageSize",
+    "MakerNotes:CanonImageType",
+    "MakerNotes:CanonImageWidth",
+    "MakerNotes:CanonModelID",
+    "MakerNotes:Categories",
+    "MakerNotes:ContinuousDrive",
+    "MakerNotes:Contrast",
+    "MakerNotes:ControlMode",
+    "MakerNotes:CroppedImageHeight",
+    "MakerNotes:CroppedImageLeft",
+    "MakerNotes:CroppedImageTop",
+    "MakerNotes:CroppedImageWidth",
+    "MakerNotes:DateStampMode",
+    "MakerNotes:DaylightSavings",
+    "MakerNotes:DigitalZoom",
+    "MakerNotes:EasyMode",
+    "MakerNotes:ExposureCompensation",
+    "MakerNotes:ExposureTime",
+    "MakerNotes:FacesDetected",
+    "MakerNotes:FileNumber",
+    "MakerNotes:FirmwareRevision",
+    "MakerNotes:FlashBits",
+    "MakerNotes:FlashExposureComp",
+    "MakerNotes:FlashGuideNumber",
+    "MakerNotes:FlashOutput",
+    "MakerNotes:FNumber",
+    "MakerNotes:FocalUnits",
+    "MakerNotes:FocusContinuous",
+    "MakerNotes:FocusDistanceLower",
+    "MakerNotes:FocusDistanceUpper",
+    "MakerNotes:FocusMode",
+    "MakerNotes:FocusRange",
+    "MakerNotes:ImageStabilization",
+    "MakerNotes:ImageUniqueID",
+    "MakerNotes:IntelligentContrast",
+    "MakerNotes:LensType",
+    "MakerNotes:MacroMode",
+    "MakerNotes:ManualFlashOutput",
+    "MakerNotes:MaxAperture",
+    "MakerNotes:MaxFocalLength",
+    "MakerNotes:MeasuredEV",
+    "MakerNotes:MeteringMode",
+    "MakerNotes:MinAperture",
+    "MakerNotes:MinFocalLength",
+    "MakerNotes:MyColorMode",
+    "MakerNotes:NDFilter",
+    "MakerNotes:NumAFPoints",
+    "MakerNotes:OpticalZoomCode",
+    "MakerNotes:PrimaryAFPoint",
+    "MakerNotes:Quality",
+    "MakerNotes:RecordMode",
+    "MakerNotes:Saturation",
+    "MakerNotes:SelfTimer",
+    "MakerNotes:SelfTimer2",
+    "MakerNotes:SequenceNumber",
+    "MakerNotes:Sharpness",
+    "MakerNotes:SlowShutter",
+    "MakerNotes:SpotMeteringMode",
+    "MakerNotes:TargetAperture",
+    "MakerNotes:TargetExposureTime",
+    "MakerNotes:ThumbnailImage",
+    "MakerNotes:ThumbnailImageValidArea",
+    "MakerNotes:TimeZone",
+    "MakerNotes:TimeZoneCity",
+    "MakerNotes:ValidAFPoints",
+    "MakerNotes:VRDOffset",
+    "MakerNotes:WhiteBalance",
+    "MakerNotes:ZoomSourceWidth",
+    "MakerNotes:ZoomTargetWidth",
+    "QuickTime:AndroidCaptureFps",
+    "QuickTime:AndroidCaptureFPS",
+    "QuickTime:AndroidVersion",
+    "QuickTime:AudioBitsPerSample",
+    "QuickTime:AudioChannels",
+    "QuickTime:AudioFormat",
+    "QuickTime:AudioSampleRate",
+    "QuickTime:AverageBitrate",
+    "QuickTime:Balance",
+    "QuickTime:BitDepth",
+    "QuickTime:ColorPrimaries",
+    "QuickTime:ColorProfiles",
+    "QuickTime:CompatibleBrands",
+    "QuickTime:CompressorID",
+    "QuickTime:CompressorVersion",
+    "QuickTime:CurrentTime",
+    "QuickTime:GoogleHostHeader",
+    "QuickTime:GooglePingMessage",
+    "QuickTime:GooglePingURL",
+    "QuickTime:GoogleSourceData",
+    "QuickTime:GoogleStartTime",
+    "QuickTime:GoogleTrackDuration",
+    "QuickTime:GPSCoordinates",
+    "QuickTime:GraphicsMode",
+    "QuickTime:HandlerClass",
+    "QuickTime:HandlerDescription",
+    "QuickTime:HandlerType",
+    "QuickTime:HandlerVendorID",
+    "QuickTime:ImageHeight",
+    "QuickTime:ImageWidth",
+    "QuickTime:LayoutFlags",
+    "QuickTime:MajorBrand",
+    "QuickTime:Make",
+    "QuickTime:MatrixCoefficients",
+    "QuickTime:MatrixStructure",
+    "QuickTime:MaxBitrate",
+    "QuickTime:MediaDataOffset",
+    "QuickTime:MediaDataSize",
+    "QuickTime:MediaHeaderVersion",
+    "QuickTime:MediaLanguageCode",
+    "QuickTime:MediaModifyDate",
+    "QuickTime:MediaTimeScale",
+    "QuickTime:MinorVersion",
+    "QuickTime:Model",
+    "QuickTime:ModifyDate",
+    "QuickTime:MovieHeaderVersion",
+    "QuickTime:NextTrackID",
+    "QuickTime:OpColor",
+    "QuickTime:PixelAspectRatio",
+    "QuickTime:PlayMode",
+    "QuickTime:PosterTime",
+    "QuickTime:PreferredRate",
+    "QuickTime:PreferredVolume",
+    "QuickTime:PreviewDuration",
+    "QuickTime:PreviewTime",
+    "QuickTime:SelectionDuration",
+    "QuickTime:SelectionTime",
+    "QuickTime:SourceImageHeight",
+    "QuickTime:SourceImageWidth",
+    "QuickTime:TimeScale",
+    "QuickTime:TrackHeaderVersion",
+    "QuickTime:TrackID",
+    "QuickTime:TrackLayer",
+    "QuickTime:TrackModifyDate",
+    "QuickTime:TrackVolume",
+    "QuickTime:TransferCharacteristics",
+    "QuickTime:UserRating",
+    "QuickTime:VideoFullRangeFlag",
+    "QuickTime:XResolution",
+    "QuickTime:YResolution",
+    "SourceFile",
+]
+
+EXTRACT_VIDEO_TAGS = [
+    "Composite:GPSLatitude",
+    "Composite:GPSLongitude",
+    "MakerNotes:SamsungModel",
+    "QuickTime:Author",
+    "QuickTime:CreateDate",
+    "QuickTime:Duration",
+    "QuickTime:MediaCreateDate",
+    "QuickTime:MediaDuration",
+    "QuickTime:TrackCreateDate",
+    "QuickTime:TrackDuration",
+    "QuickTime:VideoFrameRate",
+]
+
 
 class UnparsedTags:
     def __init__(self) -> None:
@@ -127,13 +386,20 @@ class UnparsedTags:
         del self._d[key]
         return ret
 
+    def get_first(self, *keys: str) -> t.Any:
+        values = [self.get(key) for key in keys]
+        for value in values:
+            if value is not None or value != "":
+                return value
+        return None
+
     def all(self) -> t.Dict[str, t.Any]:
         ret = self._d
         self._d = {}
         return ret
 
 
-def camera_from_tags(tags: UnparsedTags) -> "Camera":
+def camera_from_image_tags(tags: UnparsedTags) -> Camera:
     return Camera(
         tags.get("make") or "",
         tags.get("model") or "",
@@ -142,7 +408,78 @@ def camera_from_tags(tags: UnparsedTags) -> "Camera":
     )
 
 
-def gpscoord_from_tags(tags: UnparsedTags) -> "t.Optional[GPSCoord]":
+def camera_from_video_tags(tags: UnparsedTags) -> Camera:
+    make, model = None, None
+    author = tags.get("QuickTime:Author")
+    samsung_model = tags.get("MakerNotes:SamsungModel")
+    if author is not None and isinstance(author, str):
+        x = author.lower().split(" ", maxsplit=1)
+        if len(x) == 2 and x[0] in ["samsung"]:
+            make, model = x
+    if model is None:
+        if samsung_model is not None and isinstance(samsung_model, str):
+            make = "samsung"
+            model = samsung_model.lower()
+    return Camera(
+        make or "",
+        model or "",
+        "",
+        "",
+    )
+
+
+def gpscoord_from_video_tags(tags: UnparsedTags) -> t.Optional[GPSCoord]:
+    latitude = tags.get("Composite:GPSLatitude")
+    longitude = tags.get("Composite:GPSLongitude")
+    if latitude is None or longitude is None:
+        return None
+    return GPSCoord(
+        latitude,
+        longitude,
+        None,
+        None,
+    )
+
+
+def date_from_video_tags(tags: UnparsedTags) -> t.Optional[Date]:
+    datetime_base = tags.get_first(
+        "QuickTime:MediaCreateDate", "QuickTime:TrackCreateDate", "QuickTime:CreateDate"
+    )
+    if datetime_base is None:
+        return None
+    datetime_parts = datetime_base.split(" ")
+    if len(datetime_parts) != 2:
+        return None
+    date_parts, time_parts = datetime_parts[0].split(":"), datetime_parts[1].split(":")
+    if len(date_parts) != 3 or len(time_parts) != 3:
+        return None
+    try:
+        date_ = datetime(
+            int(date_parts[0]),
+            int(date_parts[1]),
+            int(date_parts[2]),
+            int(time_parts[0]),
+            int(time_parts[1]),
+            int(time_parts[2]),
+        )
+
+        return Date(date_, date_.isoformat())
+    # pylint: disable-next = broad-exception-caught
+    except Exception as _:
+        return None
+
+
+def video_info_from_video_tags(tags: UnparsedTags) -> t.Optional[VideoInfo]:
+    frame_rate = tags.get("QuickTime:VideoFrameRate")
+    duration_seconds = tags.get_first(
+        "QuickTime:Duration", "QuickTime:MediaDuration", "QuickTime:TrackDuration"
+    )
+    if frame_rate is not None or duration_seconds is not None:
+        return VideoInfo(frame_rate, duration_seconds)
+    return None
+
+
+def gpscoord_from_image_tags(tags: UnparsedTags) -> t.Optional[GPSCoord]:
     # TODO: distinguish missing vs wrong
     altitude_ref = 1 if tags.get("gps_altitude_ref") == exif.GpsAltitudeRef.ABOVE_SEA_LEVEL else -1
     latitude_ref = 1 if tags.get("gps_latitude_ref") == "N" else -1
@@ -201,7 +538,7 @@ def loc_to_number(x: t.Any) -> t.Optional[float]:
     return float(ret)
 
 
-def date_from_tags(ut: UnparsedTags) -> t.Optional[Date]:
+def date_from_image_tags(ut: UnparsedTags) -> t.Optional[Date]:
     datetime_ = parse_datetime(ut.get("datetime"), ut.get("offset_time"))
     datetime_digitized = parse_datetime(ut.get("datetime_digitized"), ut.get("offset_time_digitized"))
     datetime_original = parse_datetime(ut.get("datetime_original"), ut.get("offset_time_original"))
@@ -236,20 +573,59 @@ class Exif:
     def __init__(self, cache: Cache[ImageExif]) -> None:
         self._cache = cache
         self._version = ImageExif.current_version()
+        self._exiftool = exiftool.ExifToolHelper()
 
-    def process_image(self, inp: PathWithMd5) -> WithMD5[ImageExif]:
+    def process_file(self, inp: PathWithMd5) -> WithMD5[ImageExif]:
         ret = self._cache.get(inp.md5)
         if ret is not None and ret.payload is not None:
             return ret.payload
-        if supported_media(inp.path) != SupportedMedia.JPEG:
+        media = supported_media(inp.path)
+        media_class = supported_media_class(inp.path)
+        if media_class is None or (
+            media_class != SupportedMediaClass.VIDEO
+            and (media_class == SupportedMediaClass.IMAGE and media != SupportedMedia.JPEG)
+        ):
             ex: WithMD5[ImageExif] = WithMD5(
                 inp.md5, self._version, None, Error("UnsupportedMedia", None, None)
             )
         else:
-            ex = self.process_image_impl(inp)
+            if media_class == SupportedMediaClass.IMAGE:
+                ex = self.process_image_impl(inp)
+            elif media_class == SupportedMediaClass.VIDEO:
+                ex = self.process_video_impl(inp)
+            else:
+                assert_never(media_class)
         return self._cache.add(ex)
 
-    def process_image_impl(self: "Exif", inp: PathWithMd5) -> WithMD5[ImageExif]:
+    def process_video_impl(self: Exif, inp: PathWithMd5) -> WithMD5[ImageExif]:
+        try:
+            video_tags = self._exiftool.get_metadata(inp.path, params=["-c", "%.10f"])[0]
+        # pylint: disable-next = broad-exception-caught
+        except Exception as e:
+            traceback.print_exc()
+            print("Error while processing exif path in ", inp, e, file=sys.stderr)
+            return WithMD5(inp.md5, self._version, None, Error.from_exception(e))
+        d = UnparsedTags()
+        for tag, value in video_tags.items():
+            if tag in IGNORED_VIDEO_TAGS:
+                continue
+            if value is None:
+                continue
+            if tag not in EXTRACT_VIDEO_TAGS:
+                print("ERR: UNKNOWN VIDEO TAG", tag, value, file=sys.stderr)
+            d.insert(tag, value)
+
+        gps = gpscoord_from_video_tags(d)
+        camera = camera_from_video_tags(d)
+        date = date_from_video_tags(d)
+        video_info = video_info_from_video_tags(d)
+
+        for tag, value in d.all().items():
+            print("ERR: unprocessed tag", tag, value, type(value), file=sys.stderr)
+
+        return WithMD5(inp.md5, self._version, ImageExif(gps, camera, date, video_info), None)
+
+    def process_image_impl(self: Exif, inp: PathWithMd5) -> WithMD5[ImageExif]:
         try:
             img = exif.Image(inp.path)
         # pylint: disable-next = broad-exception-caught
@@ -259,21 +635,21 @@ class Exif:
             return WithMD5(inp.md5, self._version, None, Error.from_exception(e))
         d = UnparsedTags()
         for tag in img.list_all():
-            if tag in IGNORED_TAGS:
+            if tag in IGNORED_IMAGE_TAGS:
                 continue
             # Just temporary until I find all the tags
             value = img.get(tag)
             if value is None:
                 continue
-            if tag not in EXTRACT_TAGS:
-                print("ERR: UNKNOWN TAG", tag, value, file=sys.stderr)
+            if tag not in EXTRACT_IMAGE_TAGS:
+                print("ERR: UNKNOWN IMAGE TAG", tag, value, file=sys.stderr)
             d.insert(tag, value)
 
-        gps = gpscoord_from_tags(d)
-        camera = camera_from_tags(d)
-        date = date_from_tags(d)
+        gps = gpscoord_from_image_tags(d)
+        camera = camera_from_image_tags(d)
+        date = date_from_image_tags(d)
 
         for tag, value in d.all().items():
             print("ERR: unprocessed tag", tag, value, type(value), file=sys.stderr)
 
-        return WithMD5(inp.md5, self._version, ImageExif(gps, camera, date), None)
+        return WithMD5(inp.md5, self._version, ImageExif(gps, camera, date, None), None)

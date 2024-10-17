@@ -14,6 +14,7 @@ import {
     makeClusterRequest,
     submitAnnotationRequest,
 } from "./faces.tsx";
+import { position_to_str } from "./utils.ts";
 
 export function AnnotableImage({
     md5,
@@ -368,6 +369,7 @@ class SquareSelector {
                                 this.selection.start.y,
                                 this.selection.end.y,
                             ),
+                            pts: null,
                         },
                         this.vbox,
                     ),
@@ -460,6 +462,7 @@ function scaleAndShiftPosition(position: Position, vbox: VBox): Position {
         top: vbox.offsetH + vbox.ratioH * position.top,
         right: vbox.offsetW + vbox.ratioW * position.right,
         bottom: vbox.offsetH + vbox.ratioH * position.bottom,
+        pts: position.pts,
     };
 }
 type Point = {
@@ -484,6 +487,7 @@ function unScaleAndShiftPosition(position: Position, vbox: VBox): Position {
         top: (position.top - vbox.offsetH) / vbox.ratioH,
         right: (position.right - vbox.offsetW) / vbox.ratioW,
         bottom: (position.bottom - vbox.offsetH) / vbox.ratioH,
+        pts: position.pts,
     };
 }
 function truncCeilPosition(p: Position): Position {
@@ -492,6 +496,7 @@ function truncCeilPosition(p: Position): Position {
         top: Math.trunc(p.top),
         right: Math.ceil(p.right),
         bottom: Math.ceil(p.bottom),
+        pts: p.pts,
     };
 }
 
@@ -550,14 +555,14 @@ function AnnotateFaceBox({
             });
         }
     };
-    const posStr = `${Math.trunc(face.position.left)},${Math.trunc(face.position.top)},${Math.ceil(face.position.right)},${Math.ceil(face.position.bottom)}`;
+    const posStr = position_to_str(face.position);
     return (
         <div style={{ position: "absolute", background: "#FFFFFFaa" }}>
             <div style={{ display: "flex" }}>
                 <div style={{ flex: "10%" }}>
                     <img
                         style={{ width: "7em", height: "7em" }}
-                        src={`/img/original/${face.md5}.${face.extension}?position=${posStr}`}
+                        src={`/img/original/${face.md5}.${face.extension}?${posStr}`}
                     />
                 </div>
                 <div style={{ flex: "90%" }}>

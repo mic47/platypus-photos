@@ -13,6 +13,9 @@ services:
       - ${GALLERY_CACHE}:/app/.cache
       - ${GALLERY_MOUNT_POINT}:${GALLERY_MOUNT_POINT}
       - ${PWD}/data:/app/data
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+
     ports:
       - "8000:8000"
     command: fastapi run pphoto/apps/gallery.py --workers ${GALLERY_WEB_WORKERS:-3}
@@ -24,6 +27,9 @@ services:
       dockerfile: docker/service.dockerfile
     environment:
       HOME: ${HOME}
+    volumes:
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
     command: python -m pphoto.apps.remote_annotator  --host ${GALLERY_REMOTE_HOST} --workers ${GALLERY_REMOTE_ANNOTATOR_WORKERS:-9}
 
   image-watcher:
@@ -37,6 +43,8 @@ services:
       - ${GALLERY_CONFIG}:/app/config.yaml:ro
       - ${GALLERY_MOUNT_POINT}:${GALLERY_MOUNT_POINT}
       - ${PWD}/data:/app/data
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
     ports: 
       - "8001:8001"
     command: python -m pphoto.apps.image_watcher  --image-to-text-workers ${GALLERY_WATCHER_WORKERS:-8}
