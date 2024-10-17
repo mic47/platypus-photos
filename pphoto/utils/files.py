@@ -17,6 +17,7 @@ class SupportedMedia(enum.Enum):
     AVI = 6
     WMV = 7
     WEBM = 8
+    BMP = 9
 
 
 class SupportedMediaClass(enum.Enum):
@@ -30,6 +31,7 @@ _EXTENSIONS = {
     "png": SupportedMedia.PNG,
     "gif": SupportedMedia.GIF,
     "webp": SupportedMedia.WEBP,
+    "bmp": SupportedMedia.BMP,
     "mp4": SupportedMedia.MP4,
     "mov": SupportedMedia.MOV,
     "avi": SupportedMedia.AVI,
@@ -51,6 +53,7 @@ def supported_media_class(path: str) -> t.Optional[SupportedMediaClass]:
         or media == SupportedMedia.PNG
         or media == SupportedMedia.GIF
         or media == SupportedMedia.WEBP
+        or media == SupportedMedia.BMP
     ):
         return SupportedMediaClass.IMAGE
     if (
