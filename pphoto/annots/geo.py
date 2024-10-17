@@ -6,7 +6,7 @@ import sys
 from geopy.geocoders import Nominatim
 from geopy.location import Location
 
-from pphoto.data_model.base import WithMD5, PathWithMd5
+from pphoto.data_model.base import WithMD5, PathWithMd5, Error
 from pphoto.data_model.geo import GeoAddress
 from pphoto.db.types import Cache, NoCache
 
@@ -85,6 +85,8 @@ class Geolocator:
         self.last_api = time.time()
         country = None
         name = None
+        if ret is None:
+            return WithMD5(inp.md5, self._version, None, Error("NoAddressReturned", None, None))
         if ret.raw is not None:
             raw_add = ret.raw.get("address")
         else:
