@@ -22,6 +22,7 @@ jobs:
       #  with:
       #    python-version: '3.10'
       #    cache: 'pip'
+      - run: python --version
       - run: pip install -r <(cat requirements.txt | grep -v '^\(transformers\|ultralytics\|face_recognition\)==')
       - run: pip freeze
       - run: make prepare-ci
