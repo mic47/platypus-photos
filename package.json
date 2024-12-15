@@ -20,7 +20,7 @@
   ],
   "dependencies": {
     "@hey-api/openapi-ts": "^0.53.11",
-    "@types/lodash": "^4.17.10",
+    "@types/lodash": "^4.17.13",
     "chart.js": "^4.4.4",
     "chartjs-adapter-date-fns": "^3.0.0",
     "date-fns": "^4.1.0",
