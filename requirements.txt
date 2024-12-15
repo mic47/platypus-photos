@@ -1,6 +1,6 @@
 av==13.1.0
 aiofiles==24.1.0
-asyncinotify==4.1.0
+asyncinotify==4.2.0
 asyncio==3.4.3
 dataclasses-json==0.6.7
 exif==1.6.0
