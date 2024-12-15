@@ -17,11 +17,11 @@ jobs:
     steps:
       - name: Check out repository code
         uses: actions/checkout@v4
-      # Uncomment this to enable cache. Currently it's small so it's not necessary and it slows down CI
-      # - uses: actions/setup-python@v5
-      #  with:
-      #    python-version: '3.10'
-      #    cache: 'pip'
+      - uses: actions/setup-python@v5
+       with:
+         python-version: '3.12'
+         # Uncomment this to enable cache. Currently it's small so it's not necessary and it slows down CI
+         # cache: 'pip'
       - run: python --version
       - run: pip install -r <(cat requirements.txt | grep -v '^\(transformers\|ultralytics\|face_recognition\)==')
       - run: pip freeze
