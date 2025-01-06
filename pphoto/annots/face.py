@@ -161,7 +161,7 @@ class FaceEmbeddingsAnnotator:
             return self._cache.add(await self._process_image(path, None, None))
         if media_class == SupportedMediaClass.VIDEO:
             return self._cache.add(await self._process_video(path, frame_each_seconds, number_of_frames))
-        if media_class is None:
+        if media_class is None or media_class == SupportedMediaClass.AUDIO:
             return self._cache.add(
                 WithMD5(path.md5, self._version, None, Error("UnsupportedMediaFile", None, None))
             )
