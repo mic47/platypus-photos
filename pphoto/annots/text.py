@@ -205,6 +205,10 @@ class Models:
                     path, gap_threshold, discard_threshold, frame_each_seconds, number_of_frames
                 )
             )
+        if media_class == SupportedMediaClass.AUDIO:
+            return self._cache.add(
+                await self._process_audio(path)
+            )
         if media_class is None:
             return self._cache.add(
                 WithMD5(path.md5, self._version, None, Error("UnsupportedMediaFile", None, None))

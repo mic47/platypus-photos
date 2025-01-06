@@ -115,7 +115,7 @@ EXTRACT_IMAGE_TAGS = [
     "software",
 ]
 
-IGNORED_VIDEO_TAGS = [
+IGNORED_EXIFTOOL_TAGS = [
     "Composite:Aperture",
     "Composite:AvgBitrate",
     "Composite:DriveMode",
@@ -357,7 +357,7 @@ IGNORED_VIDEO_TAGS = [
     "SourceFile",
 ]
 
-EXTRACT_VIDEO_TAGS = [
+EXTRACT_EXIFTOOL_TAGS = [
     "Composite:GPSLatitude",
     "Composite:GPSLongitude",
     "MakerNotes:SamsungModel",
@@ -408,7 +408,7 @@ def camera_from_image_tags(tags: UnparsedTags) -> Camera:
     )
 
 
-def camera_from_video_tags(tags: UnparsedTags) -> Camera:
+def camera_from_exiftool_tags(tags: UnparsedTags) -> Camera:
     make, model = None, None
     author = tags.get("QuickTime:Author")
     samsung_model = tags.get("MakerNotes:SamsungModel")
@@ -428,7 +428,7 @@ def camera_from_video_tags(tags: UnparsedTags) -> Camera:
     )
 
 
-def gpscoord_from_video_tags(tags: UnparsedTags) -> t.Optional[GPSCoord]:
+def gpscoord_from_exiftool_tags(tags: UnparsedTags) -> t.Optional[GPSCoord]:
     latitude = tags.get("Composite:GPSLatitude")
     longitude = tags.get("Composite:GPSLongitude")
     if latitude is None or longitude is None:
@@ -441,7 +441,7 @@ def gpscoord_from_video_tags(tags: UnparsedTags) -> t.Optional[GPSCoord]:
     )
 
 
-def date_from_video_tags(tags: UnparsedTags) -> t.Optional[Date]:
+def date_from_exiftool_tags(tags: UnparsedTags) -> t.Optional[Date]:
     datetime_base = tags.get_first(
         "QuickTime:MediaCreateDate", "QuickTime:TrackCreateDate", "QuickTime:CreateDate"
     )
@@ -469,7 +469,7 @@ def date_from_video_tags(tags: UnparsedTags) -> t.Optional[Date]:
         return None
 
 
-def video_info_from_video_tags(tags: UnparsedTags) -> t.Optional[VideoInfo]:
+def video_info_from_exiftool_tags(tags: UnparsedTags) -> t.Optional[VideoInfo]:
     frame_rate = tags.get("QuickTime:VideoFrameRate")
     duration_seconds = tags.get_first(
         "QuickTime:Duration", "QuickTime:MediaDuration", "QuickTime:TrackDuration"
@@ -583,6 +583,7 @@ class Exif:
         media_class = supported_media_class(inp.path)
         if media_class is None or (
             media_class != SupportedMediaClass.VIDEO
+            and media_class != SupportedMediaClass.AUDIO
             and (media_class == SupportedMediaClass.IMAGE and media != SupportedMedia.JPEG)
         ):
             ex: WithMD5[ImageExif] = WithMD5(
@@ -592,33 +593,35 @@ class Exif:
             if media_class == SupportedMediaClass.IMAGE:
                 ex = self.process_image_impl(inp)
             elif media_class == SupportedMediaClass.VIDEO:
-                ex = self.process_video_impl(inp)
+                ex = self.process_with_exiftool_impl(inp)
+            elif media_class == SupportedMediaClass.AUDIO:
+                ex = self.process_with_exiftool_impl(inp)
             else:
                 assert_never(media_class)
         return self._cache.add(ex)
 
-    def process_video_impl(self: Exif, inp: PathWithMd5) -> WithMD5[ImageExif]:
+    def process_with_exiftool_impl(self: Exif, inp: PathWithMd5) -> WithMD5[ImageExif]:
         try:
-            video_tags = self._exiftool.get_metadata(inp.path, params=["-c", "%.10f"])[0]
+            audio_tags = self._exiftool.get_metadata(inp.path, params=["-c", "%.10f"])[0]
         # pylint: disable-next = broad-exception-caught
         except Exception as e:
             traceback.print_exc()
             print("Error while processing exif path in ", inp, e, file=sys.stderr)
             return WithMD5(inp.md5, self._version, None, Error.from_exception(e))
         d = UnparsedTags()
-        for tag, value in video_tags.items():
-            if tag in IGNORED_VIDEO_TAGS:
+        for tag, value in audio_tags.items():
+            if tag in IGNORED_EXIFTOOL_TAGS:
                 continue
             if value is None:
                 continue
-            if tag not in EXTRACT_VIDEO_TAGS:
-                print("ERR: UNKNOWN VIDEO TAG", tag, value, file=sys.stderr)
+            if tag not in EXTRACT_EXIFTOOL_TAGS:
+                print("ERR: UNKNOWN EXIFTOOL TAG", tag, value, file=sys.stderr)
             d.insert(tag, value)
 
-        gps = gpscoord_from_video_tags(d)
-        camera = camera_from_video_tags(d)
-        date = date_from_video_tags(d)
-        video_info = video_info_from_video_tags(d)
+        gps = gpscoord_from_exiftool_tags(d)
+        camera = camera_from_exiftool_tags(d)
+        date = date_from_exiftool_tags(d)
+        video_info = video_info_from_exiftool_tags(d)
 
         for tag, value in d.all().items():
             print("ERR: unprocessed tag", tag, value, type(value), file=sys.stderr)
