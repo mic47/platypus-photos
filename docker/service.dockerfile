@@ -35,6 +35,7 @@ RUN python download_models.py
 # Install rest system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
   libimage-exiftool-perl \
+  ffmpeg \
   && \
   apt-get clean && rm -rf /var/lib/apt/lists/*
 
