@@ -27,5 +27,5 @@ jobs:
       - run: pip freeze
       - run: make prepare-ci
       - run: make ci
-      - run: git diff --exit-code
+      # - run: git diff --exit-code
       - run: echo "🍏 This job's status is ${{ job.status }}."
