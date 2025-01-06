@@ -8,7 +8,7 @@ face_recognition==1.3.0
 fastapi[standard]==0.115.2
 geopy==2.4.1
 hypothesis==6.115.3
-numpy==1.26.4
+numpy==2.2.1
 opencv-python-headless==4.10.0.84
 pillow==11.0.0
 pyexiftool==0.5.6
