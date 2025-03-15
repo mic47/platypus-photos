@@ -39,7 +39,8 @@ export const exportPhotosToDirGet = (data: ExportPhotosToDirGetData): Cancelable
         url: '/export_to_dir',
         query: {
             query: data.query,
-            destination: data.destination
+            base: data.base,
+            subdir: data.subdir,
         },
         errors: {
             422: 'Validation Error'

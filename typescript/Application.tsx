@@ -30,6 +30,7 @@ import { SystemStatusComponent } from "./system_status";
 import { MapView } from "./map";
 import { DatesComponent } from "./dates_chart";
 import { FacesComponent } from "./faces";
+import { ExportFormComponent } from "./exporter";
 
 interface ApplicationProps {
     searchQuerySync: TypedUrlSync<SearchQuery>;
@@ -154,19 +155,7 @@ export function Application({
                 <SystemStatusComponent intervalSeconds={10} />
             </Switchable>
             <Switchable switchedOn={activeTabs.export.active}>
-                <form action="/export" method="get">
-                    <input
-                        type="hidden"
-                        name="query"
-                        value={JSON.stringify(searchQueryWithTs.q)}
-                    />
-                    <input
-                        type="submit"
-                        name="button"
-                        value="💾 Export current query ⚠️"
-                    />
-                </form>
-                <br />
+                <ExportFormComponent query={searchQueryWithTs.q} />
             </Switchable>
             <Switchable switchedOn={activeTabs.query.active}>
                 <InputFormView
