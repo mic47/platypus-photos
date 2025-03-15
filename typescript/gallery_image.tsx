@@ -215,7 +215,7 @@ export function GalleryImage({
         );
         timeCrumb = <span className="date">{time}</span>;
     }
-    const addressCrumb: JSX.Element[] = [];
+    const addressCrumb: React.JSX.Element[] = [];
     [
         { address: omg.address.name, key: "addr_name" },
         { address: omg.address.country, key: "addr_cou" },
@@ -237,7 +237,7 @@ export function GalleryImage({
             </span>,
         );
     });
-    const identityCrumbs: JSX.Element[] = [];
+    const identityCrumbs: React.JSX.Element[] = [];
     omg.identities.forEach((identity) => {
         identityCrumbs.push(
             <span className="identity" key={identity}>
@@ -257,7 +257,7 @@ export function GalleryImage({
         1,
         Math.max(1.0, ...Object.values(omg.tags || {})),
     );
-    const tagsCrumbs: JSX.Element[] = [];
+    const tagsCrumbs: React.JSX.Element[] = [];
     Object.entries(omg.tags || {}).forEach(([tag, score]) => {
         const tag_class = classifyTag(score / max_tag);
         if (tag_class === null) {

@@ -104,7 +104,7 @@ export function AnnotableImage({
         const interval = setInterval(() => update(), 100);
         return () => clearInterval(interval);
     }, [imgRef, imgDims]);
-    let featuresSvgContent: Array<JSX.Element> = [];
+    let featuresSvgContent: Array<React.JSX.Element> = [];
     if (imgRef.current !== null && imgDims !== null) {
         if (imgRef.current.src.match("/original/") === null) {
             console.log("skipping because loaded old url", imgRef.current.src);
