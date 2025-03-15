@@ -10,3 +10,7 @@ if __name__ == "__main__":
 
     for model in ["yolov8x.pt", "yolov8x-cls.pt"]:
         ultralytics.YOLO(model)
+
+    # pylint: disable-next = import-outside-toplevel,import-error
+    import whisper
+    whisper.load_model("turbo")
