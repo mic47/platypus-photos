@@ -60,12 +60,21 @@
             }
           },
           {
-            "name": "destination",
+            "name": "base",
             "in": "query",
             "required": true,
             "schema": {
               "type": "string",
-              "title": "Destination"
+              "title": "Base"
+            }
+          },
+          {
+            "name": "subdir",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Subdir"
             }
           }
         ],

@@ -429,8 +429,9 @@ export type ExportPhotosGetData = {
 export type ExportPhotosGetResponse = (unknown);
 
 export type ExportPhotosToDirGetData = {
-    destination: string;
+    base: string;
     query: string;
+    subdir: string;
 };
 
 export type ExportPhotosToDirGetResponse = (unknown);

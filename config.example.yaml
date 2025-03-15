@@ -9,6 +9,9 @@ input_directories:
 watched_directories:
   - ~/Pictures
 
+export_directories:
+  DownloadsText: ~/Downloads/pphotos-export
+
 directory_matching:
   date_directory_filters:
     - /home/user/Pictures/(?P<year>20[0-9][0-9])/(?P<month>[01][0-9])/(?P<day>[0123][0-9])/*jpg

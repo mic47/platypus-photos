@@ -23,7 +23,7 @@ from fastapi.staticfiles import StaticFiles
 
 from pphoto.annots.geo import Geolocator
 from pphoto.communication.client import get_system_status, refresh_jobs, SystemStatus
-from pphoto.data_model.config import DBFilesConfig
+from pphoto.data_model.config import DBFilesConfig, Config
 from pphoto.data_model.base import PathWithMd5
 from pphoto.data_model.face import Position
 from pphoto.data_model.manual import ManualIdentity, IdentitySkipReason
@@ -48,7 +48,7 @@ from pphoto.gallery.image import make_image_address
 from pphoto.gallery.url import SearchQuery, GalleryPaging, SortParams, SortBy, SortOrder
 from pphoto.gallery.unicode import flag
 from pphoto.file_mgmt.archive import non_repeating_dirs, tar_stream, copy_stream
-from pphoto.utils.files import pathify, supported_media_class, SupportedMediaClass
+from pphoto.utils.files import pathify, supported_media_class, SupportedMediaClass, expand_vars_in_path
 from pphoto.utils.video import get_video_frame
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
@@ -73,6 +73,8 @@ DB = Lazy(
         JobsConnection(DBFilesConfig().jobs_db, check_same_thread=False),
     )
 )
+
+CONFIG = Lazy(lambda: Config.load("config.yaml"))
 
 
 @app.on_event("startup")
@@ -159,15 +161,21 @@ def export_photos(query: str) -> StreamingResponse:
         }
     },
 )
-def export_photos_to_dir(query: str, destination: str) -> StreamingResponse:
-    # TODO: validate that the destination is in valid prefixes, that are in config
+def export_photos_to_dir(query: str, base: str, subdir: str) -> StreamingResponse:
+    config = CONFIG.get()
+    base = expand_vars_in_path(config.export_directories[base])
+    destination = os.path.realpath(f"{base}/{subdir}")
+    # Make sure that it's still allowed directory
+    if not destination.startswith(base + "/"):
+        # pylint: disable-next = broad-exception-raised
+        raise Exception("Directory is not allowed")
     db = DB.get()
     actual_query = SearchQuery.from_json(query)
     filename = pathify(actual_query.to_user_string().replace("/", "_").replace(":", "_"))
     txt = copy_stream(non_repeating_dirs(destination, image_iterator(db, actual_query), use_geo=False))
     return StreamingResponse(
         content=txt,
-        headers={"Content-Disposition": f'attachment; filename*="{filename}.tar"'},
+        headers={"Content-Disposition": f'attachment; filename*="export-{filename}.txt"'},
         media_type="text/plain",
     )
 

@@ -49,6 +49,7 @@ class Config(DataClassJsonMixin):
     input_directories: t.List[str]
     watched_directories: t.List[str]
     directory_matching: DirectoryMatchingConfig
+    export_directories: t.Dict[str, str]
 
     @staticmethod
     def load(file: str) -> "Config":
@@ -67,4 +68,5 @@ class Config(DataClassJsonMixin):
         self.input_directories = [expand_vars_in_path(x) for x in self.input_directories]
         self.watched_directories = [expand_vars_in_path(x) for x in self.watched_directories]
         self.directory_matching = self.directory_matching.resolve_vars()
+        self.export_directories = {k: expand_vars_in_path(x) for k, x in self.export_directories.items()}
         return self

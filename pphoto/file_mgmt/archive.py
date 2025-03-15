@@ -73,7 +73,7 @@ def tar_stream(paths: t.Iterable[FileToStore]) -> t.Iterable[bytes]:
 def copy_stream(paths: t.Iterable[FileToStore]) -> t.Iterable[bytes]:
     for path in paths:
         copy_file_with_mkdir(path.og_path, path.new_path)
-        yield b"f{path.og_path} -> {path.new_path}\n"
+        yield f"{path.og_path} -> {path.new_path}\n".encode()
 
 
 def copy_file_with_mkdir(source_file: str, destination_path: str) -> None:

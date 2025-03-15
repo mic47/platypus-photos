@@ -27,7 +27,8 @@ export const exportPhotosGet = (data: ExportPhotosGetData): CancelablePromise<Ex
  * Export Photos To Dir
  * @param data The data for the request.
  * @param data.query
- * @param data.destination
+ * @param data.base
+ * @param data.subdir
  * @returns unknown txt file with list of copied files
  * @throws ApiError
  */
@@ -36,7 +37,8 @@ export const exportPhotosToDirGet = (data: ExportPhotosToDirGetData): Cancelable
     url: '/export_to_dir',
     query: {
         query: data.query,
-        destination: data.destination
+        base: data.base,
+        subdir: data.subdir
     },
     errors: {
         422: 'Validation Error'
