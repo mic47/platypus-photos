@@ -428,6 +428,13 @@ export type ExportPhotosGetData = {
 
 export type ExportPhotosGetResponse = (unknown);
 
+export type ExportPhotosToDirGetData = {
+    destination: string;
+    query: string;
+};
+
+export type ExportPhotosToDirGetResponse = (unknown);
+
 export type ImageEndpointGetData = {
     extension: string;
     frame?: (number | null);

@@ -45,6 +45,55 @@
         }
       }
     },
+    "/export_to_dir": {
+      "get": {
+        "summary": "Export Photos To Dir",
+        "operationId": "export_photos_to_dir-GET",
+        "parameters": [
+          {
+            "name": "query",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Query"
+            }
+          },
+          {
+            "name": "destination",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Destination"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "txt file with list of copied files",
+            "content": {
+              "application/json": {
+                "schema": {}
+              },
+              "text/plain": {
+                "example": "No example available."
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/img/{size}/{hsh}.{extension}": {
       "get": {
         "summary": "Image Endpoint",

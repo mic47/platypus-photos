@@ -3,7 +3,7 @@
 import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
-import type { ExportPhotosGetData, ExportPhotosGetResponse, ImageEndpointGetData, ImageEndpointGetResponse, LocationClustersEndpointPostData, LocationClustersEndpointPostResponse, LocationBoundsEndpointPostData, LocationBoundsEndpointPostResponse, DateClustersEndpointPostData, DateClustersEndpointPostResponse, MassManualAnnotationEndpointPostData, MassManualAnnotationEndpointPostResponse, ManualIdentityAnnotationEndpointPostData, ManualIdentityAnnotationEndpointPostResponse, FindLocationPostData, FindLocationPostResponse, JobProgressStatePostData, JobProgressStatePostResponse, RemoteJobsGetResponse, SystemStatusGetResponse, GetAddressPostData, GetAddressPostResponse, MatchingDirectoriesPostData, MatchingDirectoriesPostResponse, ImagePagePostData, ImagePagePostResponse, TopIdentitiesPostResponse, FacesOnPagePostData, FacesOnPagePostResponse, FaceFeaturesForImagePostData, FaceFeaturesForImagePostResponse, AggregateImagesPostData, AggregateImagesPostResponse, ReadIndexGetResponse, ReadIndexGet1Response } from './types.gen';
+import type { ExportPhotosGetData, ExportPhotosGetResponse, ExportPhotosToDirGetData, ExportPhotosToDirGetResponse, ImageEndpointGetData, ImageEndpointGetResponse, LocationClustersEndpointPostData, LocationClustersEndpointPostResponse, LocationBoundsEndpointPostData, LocationBoundsEndpointPostResponse, DateClustersEndpointPostData, DateClustersEndpointPostResponse, MassManualAnnotationEndpointPostData, MassManualAnnotationEndpointPostResponse, ManualIdentityAnnotationEndpointPostData, ManualIdentityAnnotationEndpointPostResponse, FindLocationPostData, FindLocationPostResponse, JobProgressStatePostData, JobProgressStatePostResponse, RemoteJobsGetResponse, SystemStatusGetResponse, GetAddressPostData, GetAddressPostResponse, MatchingDirectoriesPostData, MatchingDirectoriesPostResponse, ImagePagePostData, ImagePagePostResponse, TopIdentitiesPostResponse, FacesOnPagePostData, FacesOnPagePostResponse, FaceFeaturesForImagePostData, FaceFeaturesForImagePostResponse, AggregateImagesPostData, AggregateImagesPostResponse, ReadIndexGetResponse, ReadIndexGet1Response } from './types.gen';
 
 /**
  * Export Photos
@@ -17,6 +17,26 @@ export const exportPhotosGet = (data: ExportPhotosGetData): CancelablePromise<Ex
     url: '/export',
     query: {
         query: data.query
+    },
+    errors: {
+        422: 'Validation Error'
+    }
+}); };
+
+/**
+ * Export Photos To Dir
+ * @param data The data for the request.
+ * @param data.query
+ * @param data.destination
+ * @returns unknown txt file with list of copied files
+ * @throws ApiError
+ */
+export const exportPhotosToDirGet = (data: ExportPhotosToDirGetData): CancelablePromise<ExportPhotosToDirGetResponse> => { return __request(OpenAPI, {
+    method: 'GET',
+    url: '/export_to_dir',
+    query: {
+        query: data.query,
+        destination: data.destination
     },
     errors: {
         422: 'Validation Error'

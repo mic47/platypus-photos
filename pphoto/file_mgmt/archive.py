@@ -1,8 +1,11 @@
 import datetime
 import dataclasses
 import io
+import os
 import tarfile
 import typing as t
+
+import shutil
 
 from pphoto.file_mgmt.paths import resolve_dir, resolve_path, HaveNameAndCountry
 
@@ -65,3 +68,15 @@ def tar_stream(paths: t.Iterable[FileToStore]) -> t.Iterable[bytes]:
             tar.add(path.og_path, arcname=path.new_path, recursive=False)
             yield output.extract_bytes()
     yield output.extract_bytes()
+
+
+def copy_stream(paths: t.Iterable[FileToStore]) -> t.Iterable[bytes]:
+    for path in paths:
+        copy_file_with_mkdir(path.og_path, path.new_path)
+        yield b"f{path.og_path} -> {path.new_path}\n"
+
+
+def copy_file_with_mkdir(source_file: str, destination_path: str) -> None:
+    destination_dir = os.path.dirname(destination_path)
+    os.makedirs(destination_dir, exist_ok=True)
+    shutil.copy(source_file, destination_path)
