@@ -35,7 +35,7 @@ def resolve_dir(
     return path
 
 
-def resolve_path(directory: str, og_path: str) -> str:
+def resolve_path(directory: str, og_path: str, path_exists: t.Callable[[str], bool] = os.path.exists) -> str:
     path = directory
     filename = os.path.basename(og_path)
     splitted = filename.rsplit(".", maxsplit=1)
@@ -45,7 +45,7 @@ def resolve_path(directory: str, og_path: str) -> str:
     count = 0
     while True:
         final_path = f"{path}/{basefile}{insert}.{extension}"
-        if not os.path.exists(final_path):
+        if not path_exists(final_path):
             break
         insert = f"_{count:03d}"
         count += 1

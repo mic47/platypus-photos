@@ -158,12 +158,12 @@ def export_photos(query: str) -> StreamingResponse:
                     continue
                 yield (filename, omg.date, omg.address)
 
-    pretty = pathify(actual_query.to_user_string().replace("/", "_"))
+    pretty = pathify(actual_query.to_user_string().replace("/", "_").replace(":", "_"))
     if pretty:
         filename = f"export-{pretty}"
     else:
         filename = "export"
-    tar = tar_stream(non_repeating_dirs(filename, image_iterator(actual_query)))
+    tar = tar_stream(non_repeating_dirs(filename, image_iterator(actual_query), use_geo=False))
     return StreamingResponse(
         content=tar,
         headers={"Content-Disposition": f'attachment; filename*="{filename}.tar"'},
