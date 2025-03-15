@@ -422,6 +422,8 @@ export type ValidationError = {
     type: string;
 };
 
+export type ConfigExportDirsEndpointGetResponse = (Array<(string)>);
+
 export type ExportPhotosGetData = {
     query: string;
 };

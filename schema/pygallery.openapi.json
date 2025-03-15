@@ -5,6 +5,28 @@
     "version": "0.1.0"
   },
   "paths": {
+    "/api/config_export_dirs": {
+      "get": {
+        "summary": "Config Export Dirs Endpoint",
+        "operationId": "config_export_dirs_endpoint-GET",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array",
+                  "title": "Response Config Export Dirs Endpoint-Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/export": {
       "get": {
         "summary": "Export Photos",

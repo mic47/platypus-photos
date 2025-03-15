@@ -126,6 +126,12 @@ def get_cache_file(
     return f".cache/{size}/{hsh[0]}/{hsh[1]}/{hsh[2]}/{hsh[3:]}{infix}.{extension}"
 
 
+@app.get("/api/config_export_dirs")
+def config_export_dirs_endpoint() -> t.List[str]:
+    config = CONFIG.get()
+    return sorted(list(config.export_directories.keys()))
+
+
 @app.get(
     "/export",
     responses={
