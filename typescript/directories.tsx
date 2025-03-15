@@ -4,7 +4,7 @@ import {
     DirectoryStats,
     SearchQuery,
 } from "./pygallery.generated/types.gen.ts";
-import * as pygallery_service from "./pygallery.generated/services.gen.ts";
+import * as pygallery_service from "./pygallery.generated/sdk.gen.ts";
 import { round, timestamp_to_pretty_datetime } from "./utils.ts";
 import { MaybeA } from "./jsx/maybea.tsx";
 import { UpdateCallbacks } from "./types.ts";

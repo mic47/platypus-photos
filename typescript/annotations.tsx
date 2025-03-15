@@ -17,7 +17,7 @@ import {
     TextAnnotationOverride,
 } from "./pygallery.generated/types.gen.ts";
 import { impissible, noop, null_if_empty } from "./utils.ts";
-import * as pygallery_service from "./pygallery.generated/services.gen.ts";
+import * as pygallery_service from "./pygallery.generated/sdk.gen.ts";
 import { shift_float_params } from "./input.tsx";
 import { DirectoryTable } from "./directories.tsx";
 import { UpdateCallbacks } from "./types.ts";

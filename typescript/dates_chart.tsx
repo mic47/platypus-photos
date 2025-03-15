@@ -12,7 +12,7 @@ import {
     SearchQuery,
 } from "./pygallery.generated/types.gen.ts";
 
-import * as pygallery_service from "./pygallery.generated/services.gen.ts";
+import * as pygallery_service from "./pygallery.generated/sdk.gen.ts";
 import { UpdateCallbacks } from "./types.ts";
 
 interface DatesComponentProps {
