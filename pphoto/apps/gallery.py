@@ -144,7 +144,9 @@ def export_photos(query: str) -> StreamingResponse:
         filename = f"export-{pretty}"
     else:
         filename = "export"
-    tar = tar_stream(non_repeating_dirs(filename, image_iterator(db, actual_query), use_geo=False))
+    tar = tar_stream(
+        non_repeating_dirs(filename, image_iterator(db, actual_query), use_geo=False, use_filesystem=False)
+    )
     return StreamingResponse(
         content=tar,
         headers={"Content-Disposition": f'attachment; filename*="{filename}.tar"'},
@@ -169,10 +171,15 @@ def export_photos_to_dir(query: str, base: str, subdir: str) -> StreamingRespons
     if not destination.startswith(base + "/"):
         # pylint: disable-next = broad-exception-raised
         raise Exception("Directory is not allowed")
+    if os.path.exists(destination):
+        # pylint: disable-next = broad-exception-raised
+        raise Exception("Directory already exists")
     db = DB.get()
     actual_query = SearchQuery.from_json(query)
+    txt = copy_stream(
+        non_repeating_dirs(destination, image_iterator(db, actual_query), use_geo=False, use_filesystem=True)
+    )
     filename = pathify(actual_query.to_user_string().replace("/", "_").replace(":", "_"))
-    txt = copy_stream(non_repeating_dirs(destination, image_iterator(db, actual_query), use_geo=False))
     return StreamingResponse(
         content=txt,
         headers={"Content-Disposition": f'attachment; filename*="export-{filename}.txt"'},

@@ -20,6 +20,7 @@ def non_repeating_dirs(
     photos_dir: str,
     paths: t.Iterable[t.Tuple[str, t.Optional[datetime.datetime], t.Optional[HaveNameAndCountry]]],
     use_geo: bool,
+    use_filesystem: bool,
 ) -> t.Iterable[FileToStore]:
     last_dir = None
     used_dirs: t.Dict[str, int] = {}
@@ -37,7 +38,11 @@ def non_repeating_dirs(
         else:
             actual_directory = directory
         last_dir = directory
-        final_path = resolve_path(actual_directory, path, path_exists=lambda path: path in used_final_paths)
+        final_path = resolve_path(
+            actual_directory,
+            path,
+            path_exists=os.path.exists if use_filesystem else lambda path: path in used_final_paths,
+        )
         used_final_paths.add(final_path)
         yield FileToStore(path, final_path)
 
