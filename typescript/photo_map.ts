@@ -4,7 +4,7 @@ import { flushSync } from "react-dom";
 import * as L from "leaflet";
 
 import { SearchQuery } from "./pygallery.generated/types.gen.ts";
-import * as pygallery_service from "./pygallery.generated/services.gen.ts";
+import * as pygallery_service from "./pygallery.generated/sdk.gen.ts";
 import {
     LocalMarkerLocationPopup,
     LocationClusterPopup,

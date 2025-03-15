@@ -1,7 +1,7 @@
 import React from "react";
 
 import { SearchQuery } from "./pygallery.generated/types.gen";
-import * as pygallery_service from "./pygallery.generated/services.gen.ts";
+import * as pygallery_service from "./pygallery.generated/sdk.gen.ts";
 
 interface ExportFormComponentProps {
     query: SearchQuery;

@@ -9,7 +9,7 @@ import {
     SortParams,
 } from "./pygallery.generated/types.gen.ts";
 import { CheckboxesParams, CheckboxSync } from "./state.ts";
-import * as pygallery_service from "./pygallery.generated/services.gen.ts";
+import * as pygallery_service from "./pygallery.generated/sdk.gen.ts";
 import { GalleryImage, ImageCallbacks } from "./gallery_image.tsx";
 import { AggregateInfoView } from "./aggregate_info.tsx";
 import { AnnotationOverlayRequest } from "./annotations.tsx";

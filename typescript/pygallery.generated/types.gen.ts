@@ -72,6 +72,12 @@ export type FaceIdentifier = {
     position: Position;
 };
 
+export type FacesResponse = {
+    has_next_page: boolean;
+    faces: Array<FaceWithMeta>;
+    top_identities: Array<IdentityRowPayload>;
+};
+
 export type FaceWithMeta = {
     position: Position;
     md5: string;
@@ -79,12 +85,6 @@ export type FaceWithMeta = {
     identity: (string | null);
     skip_reason: (IdentitySkipReason | null);
     embedding: Array<(number)>;
-};
-
-export type FacesResponse = {
-    has_next_page: boolean;
-    faces: Array<FaceWithMeta>;
-    top_identities: Array<IdentityRowPayload>;
 };
 
 export type FoundLocation = {
@@ -218,19 +218,6 @@ export type JobProgressStateResponse = {
     eta_str: (string | null);
 };
 
-export type LocClusterParams = {
-    nw: LocPoint;
-    se: LocPoint;
-    url: SearchQuery;
-    res: LocPoint;
-    of?: number;
-};
-
-export type LocPoint = {
-    latitude: number;
-    longitude: number;
-};
-
 export type LocationBounds = {
     nw: LocPoint;
     se: LocPoint;
@@ -257,6 +244,19 @@ export type LocationQueryFixedLocation = {
 };
 
 export type t3 = 'FixedLocation';
+
+export type LocClusterParams = {
+    nw: LocPoint;
+    se: LocPoint;
+    url: SearchQuery;
+    res: LocPoint;
+    of?: number;
+};
+
+export type LocPoint = {
+    latitude: number;
+    longitude: number;
+};
 
 export type ManualIdentityClusterRequest_Input = {
     identity: (string | null);
@@ -334,8 +334,6 @@ export type ReferenceStats = {
     seconds: number;
 };
 
-export type RemoteJobType = 'mass_manual_annotation' | 'face_cluster_annotation';
-
 export type RemoteJob_bytes_ = {
     id_: number;
     type_: RemoteJobType;
@@ -347,6 +345,8 @@ export type RemoteJob_bytes_ = {
     example_path_md5: (string | null);
     example_path_extension: (string | null);
 };
+
+export type RemoteJobType = 'mass_manual_annotation' | 'face_cluster_annotation';
 
 export type SearchQuery = {
     tag?: string;

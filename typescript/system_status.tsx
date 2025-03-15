@@ -1,6 +1,6 @@
 import React from "react";
 
-import * as pygallery_service from "./pygallery.generated/services.gen.ts";
+import * as pygallery_service from "./pygallery.generated/sdk.gen.ts";
 import { pretty_print_duration } from "./utils.ts";
 import { SystemStatus as ServerSystemStatus } from "./pygallery.generated/types.gen.ts";
 

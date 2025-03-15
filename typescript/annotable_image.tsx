@@ -8,7 +8,7 @@ import {
     ManualIdentityClusterRequest_Input,
     Position,
 } from "./pygallery.generated";
-import * as pygallery_service from "./pygallery.generated/services.gen.ts";
+import * as pygallery_service from "./pygallery.generated/sdk.gen.ts";
 import {
     IdentityAnnotation,
     makeClusterRequest,
