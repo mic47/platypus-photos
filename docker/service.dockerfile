@@ -1,4 +1,4 @@
-FROM node:22.6.0 AS typescript
+FROM node:22.14.0 AS typescript
 
 RUN mkdir /app
 WORKDIR /app
