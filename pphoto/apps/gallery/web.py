@@ -26,7 +26,6 @@ from pphoto.gallery.db import Image as ImageRow
 from pphoto.gallery.url import SearchQuery, GalleryPaging, SortParams
 
 from .common import (
-    custom_generate_unique_id,
     DateWithLoc,
     DB,
     forward_backward,

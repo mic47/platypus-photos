@@ -33,6 +33,7 @@ app.include_router(geo_router)
 app.include_router(media_router)
 app.include_router(web_router)
 
+
 @app.on_event("startup")
 async def on_startup() -> None:
     asyncio.create_task(check_db_connection())
