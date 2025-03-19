@@ -422,6 +422,28 @@ export type ValidationError = {
     type: string;
 };
 
+export type MassManualAnnotationEndpointPostData = {
+    requestBody: MassLocationAndTextAnnotation_Input;
+};
+
+export type MassManualAnnotationEndpointPostResponse = (number);
+
+export type ManualIdentityAnnotationEndpointPostData = {
+    requestBody: Array<ManualIdentityClusterRequest_Input>;
+};
+
+export type ManualIdentityAnnotationEndpointPostResponse = (number);
+
+export type JobProgressStatePostData = {
+    requestBody: JobProgressRequest;
+};
+
+export type JobProgressStatePostResponse = (JobProgressStateResponse);
+
+export type RemoteJobsGetResponse = (Array<JobDescription>);
+
+export type SystemStatusGetResponse = (SystemStatus);
+
 export type ConfigExportDirsEndpointGetResponse = (Array<(string)>);
 
 export type ExportPhotosGetData = {
@@ -437,6 +459,18 @@ export type ExportPhotosToDirGetData = {
 };
 
 export type ExportPhotosToDirGetResponse = (unknown);
+
+export type FindLocationPostData = {
+    req: string;
+};
+
+export type FindLocationPostResponse = (MapSearchResponse);
+
+export type GetAddressPostData = {
+    requestBody: GetAddressRequest;
+};
+
+export type GetAddressPostResponse = (ImageAddress);
 
 export type ImageEndpointGetData = {
     extension: string;
@@ -466,39 +500,11 @@ export type DateClustersEndpointPostData = {
 
 export type DateClustersEndpointPostResponse = (Array<DateCluster>);
 
-export type MassManualAnnotationEndpointPostData = {
-    requestBody: MassLocationAndTextAnnotation_Input;
+export type ImagePagePostData = {
+    requestBody: GalleryRequest;
 };
 
-export type MassManualAnnotationEndpointPostResponse = (number);
-
-export type ManualIdentityAnnotationEndpointPostData = {
-    requestBody: Array<ManualIdentityClusterRequest_Input>;
-};
-
-export type ManualIdentityAnnotationEndpointPostResponse = (number);
-
-export type FindLocationPostData = {
-    req: string;
-};
-
-export type FindLocationPostResponse = (MapSearchResponse);
-
-export type JobProgressStatePostData = {
-    requestBody: JobProgressRequest;
-};
-
-export type JobProgressStatePostResponse = (JobProgressStateResponse);
-
-export type RemoteJobsGetResponse = (Array<JobDescription>);
-
-export type SystemStatusGetResponse = (SystemStatus);
-
-export type GetAddressPostData = {
-    requestBody: GetAddressRequest;
-};
-
-export type GetAddressPostResponse = (ImageAddress);
+export type ImagePagePostResponse = (ImageResponse);
 
 export type MatchingDirectoriesPostData = {
     requestBody: SearchQuery;
@@ -506,13 +512,13 @@ export type MatchingDirectoriesPostData = {
 
 export type MatchingDirectoriesPostResponse = (Array<DirectoryStats>);
 
-export type ImagePagePostData = {
-    requestBody: GalleryRequest;
+export type TopIdentitiesPostResponse = (Array<IdentityRowPayload>);
+
+export type AggregateImagesPostData = {
+    requestBody: AggregateQuery;
 };
 
-export type ImagePagePostResponse = (ImageResponse);
-
-export type TopIdentitiesPostResponse = (Array<IdentityRowPayload>);
+export type AggregateImagesPostResponse = (ImageAggregation);
 
 export type FacesOnPagePostData = {
     requestBody: GalleryRequest;
@@ -525,12 +531,6 @@ export type FaceFeaturesForImagePostData = {
 };
 
 export type FaceFeaturesForImagePostResponse = (Array<FaceWithMeta>);
-
-export type AggregateImagesPostData = {
-    requestBody: AggregateQuery;
-};
-
-export type AggregateImagesPostResponse = (ImageAggregation);
 
 export type ReadIndexGetResponse = (unknown);
 

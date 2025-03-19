@@ -5,7 +5,167 @@
     "version": "0.1.0"
   },
   "paths": {
-    "/api/config_export_dirs": {
+    "/api/annotations/mass_manual_annotation": {
+      "post": {
+        "summary": "Mass Manual Annotation Endpoint",
+        "operationId": "mass_manual_annotation_endpoint-POST",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MassLocationAndTextAnnotation-Input"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "integer",
+                  "title": "Response Mass Manual Annotation Endpoint-Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/annotations/manual_identity_annotation": {
+      "post": {
+        "summary": "Manual Identity Annotation Endpoint",
+        "operationId": "manual_identity_annotation_endpoint-POST",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "items": {
+                  "$ref": "#/components/schemas/ManualIdentityClusterRequest-Input"
+                },
+                "type": "array",
+                "title": "Clusters"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "integer",
+                  "title": "Response Manual Identity Annotation Endpoint-Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/annotations/job_progress_state": {
+      "post": {
+        "summary": "Job Progress State",
+        "operationId": "job_progress_state-POST",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JobProgressRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobProgressStateResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/annotations/remote_jobs": {
+      "get": {
+        "summary": "Remote Jobs",
+        "operationId": "remote_jobs-GET",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/JobDescription"
+                  },
+                  "type": "array",
+                  "title": "Response Remote Jobs-Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/annotations/system_status": {
+      "get": {
+        "summary": "System Status",
+        "operationId": "system_status-GET",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SystemStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/export/config_export_dirs": {
       "get": {
         "summary": "Config Export Dirs Endpoint",
         "operationId": "config_export_dirs_endpoint-GET",
@@ -27,7 +187,7 @@
         }
       }
     },
-    "/export": {
+    "/api/export/tar": {
       "get": {
         "summary": "Export Photos",
         "operationId": "export_photos-GET",
@@ -67,7 +227,7 @@
         }
       }
     },
-    "/export_to_dir": {
+    "/api/export/dir": {
       "get": {
         "summary": "Export Photos To Dir",
         "operationId": "export_photos_to_dir-GET",
@@ -109,6 +269,83 @@
               },
               "text/plain": {
                 "example": "No example available."
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/export/map_search": {
+      "post": {
+        "summary": "Find Location",
+        "operationId": "find_location-POST",
+        "parameters": [
+          {
+            "name": "req",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Req"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MapSearchResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/export/get_address": {
+      "post": {
+        "summary": "Get Address",
+        "operationId": "get_address-POST",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GetAddressRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImageAddress"
+                }
               }
             }
           },
@@ -223,7 +460,7 @@
         }
       }
     },
-    "/api/location_clusters": {
+    "/api/web/location_clusters": {
       "post": {
         "summary": "Location Clusters Endpoint",
         "operationId": "location_clusters_endpoint-POST",
@@ -265,7 +502,7 @@
         }
       }
     },
-    "/api/bounds": {
+    "/api/web/bounds": {
       "post": {
         "summary": "Location Bounds Endpoint",
         "operationId": "location_bounds_endpoint-POST",
@@ -311,7 +548,7 @@
         }
       }
     },
-    "/api/date_clusters": {
+    "/api/web/date_clusters": {
       "post": {
         "summary": "Date Clusters Endpoint",
         "operationId": "date_clusters_endpoint-POST",
@@ -353,15 +590,15 @@
         }
       }
     },
-    "/api/mass_manual_annotation": {
+    "/api/web/images": {
       "post": {
-        "summary": "Mass Manual Annotation Endpoint",
-        "operationId": "mass_manual_annotation_endpoint-POST",
+        "summary": "Image Page",
+        "operationId": "image_page-POST",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/MassLocationAndTextAnnotation-Input"
+                "$ref": "#/components/schemas/GalleryRequest"
               }
             }
           },
@@ -373,8 +610,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "integer",
-                  "title": "Response Mass Manual Annotation Endpoint-Post"
+                  "$ref": "#/components/schemas/ImageResponse"
                 }
               }
             }
@@ -392,205 +628,7 @@
         }
       }
     },
-    "/api/manual_identity_annotation": {
-      "post": {
-        "summary": "Manual Identity Annotation Endpoint",
-        "operationId": "manual_identity_annotation_endpoint-POST",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "items": {
-                  "$ref": "#/components/schemas/ManualIdentityClusterRequest-Input"
-                },
-                "type": "array",
-                "title": "Clusters"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "integer",
-                  "title": "Response Manual Identity Annotation Endpoint-Post"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/map_search": {
-      "post": {
-        "summary": "Find Location",
-        "operationId": "find_location-POST",
-        "parameters": [
-          {
-            "name": "req",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Req"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/MapSearchResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/job_progress_state": {
-      "post": {
-        "summary": "Job Progress State",
-        "operationId": "job_progress_state-POST",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/JobProgressRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/JobProgressStateResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/remote_jobs": {
-      "get": {
-        "summary": "Remote Jobs",
-        "operationId": "remote_jobs-GET",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/JobDescription"
-                  },
-                  "type": "array",
-                  "title": "Response Remote Jobs-Get"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/system_status": {
-      "get": {
-        "summary": "System Status",
-        "operationId": "system_status-GET",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SystemStatus"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/get_address": {
-      "post": {
-        "summary": "Get Address",
-        "operationId": "get_address-POST",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/GetAddressRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ImageAddress"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/directories": {
+    "/api/web/directories": {
       "post": {
         "summary": "Matching Directories",
         "operationId": "matching_directories-POST",
@@ -632,45 +670,7 @@
         }
       }
     },
-    "/api/images": {
-      "post": {
-        "summary": "Image Page",
-        "operationId": "image_page-POST",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/GalleryRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ImageResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/top_identities": {
+    "/api/web/top_identities": {
       "post": {
         "summary": "Top Identities",
         "operationId": "top_identities-POST",
@@ -692,7 +692,45 @@
         }
       }
     },
-    "/api/faces": {
+    "/api/web/aggregate": {
+      "post": {
+        "summary": "Aggregate Images",
+        "operationId": "aggregate_images-POST",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AggregateQuery"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImageAggregation"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/web/faces": {
       "post": {
         "summary": "Faces On Page",
         "operationId": "faces_on_page-POST",
@@ -730,7 +768,7 @@
         }
       }
     },
-    "/api/face": {
+    "/api/web/face": {
       "post": {
         "summary": "Face Features For Image",
         "operationId": "face_features_for_image-POST",
@@ -755,44 +793,6 @@
                   },
                   "type": "array",
                   "title": "Response Face Features For Image-Post"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/aggregate": {
-      "post": {
-        "summary": "Aggregate Images",
-        "operationId": "aggregate_images-POST",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AggregateQuery"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ImageAggregation"
                 }
               }
             }

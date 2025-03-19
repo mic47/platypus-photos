@@ -9,7 +9,7 @@ from fastapi.openapi.utils import get_openapi
 from pphoto.gallery.url import SearchQuery, GalleryPaging, SortParams
 from pphoto.gallery.unicode import UnicodeEmojiData
 
-from pphoto.apps.gallery import app as gallery_app
+from pphoto.apps.gallery.app import app as gallery_app
 
 
 @dataclass
