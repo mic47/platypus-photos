@@ -29,7 +29,7 @@ disable = '''
 
 [tool.vulture]
 
-ignore_decorators = ["@app.*"]
+ignore_decorators = ["@router.*", "@app.*"]
 ignore_names = ["LOAD_TRUNCATED_IMAGES", "ASC", "skip_frame"]
 exclude=["*/playground/*", "*/pyenv/*.py"]
 
