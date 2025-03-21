@@ -422,6 +422,8 @@ export type ValidationError = {
     type: string;
 };
 
+export type RecentLocationClustersFromManualAnnotationsEndpointGetResponse = (Array<LocationCluster>);
+
 export type MassManualAnnotationEndpointPostData = {
     requestBody: MassLocationAndTextAnnotation_Input;
 };

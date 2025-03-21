@@ -315,64 +315,64 @@ export class PhotoMap {
             ...bounds_query,
             ...non_bounds,
         };
-        pygallery_service
-            .locationClustersEndpointPost({ requestBody: query_final })
-            .then((clusters) => {
-                if (timestamp < this.last_update_timestamp) {
-                    return;
+        Promise.all([
+            pygallery_service.recentLocationClustersFromManualAnnotationsEndpointGet(),
+            pygallery_service.locationClustersEndpointPost({
+                requestBody: query_final,
+            }),
+        ]).then(([c1, c2]) => {
+            const clusters = [...c1, ...c2];
+            if (timestamp < this.last_update_timestamp) {
+                return;
+            }
+            if (change_view) {
+                this.update_bounds(location_url_json);
+            }
+            this.last_update_timestamp = timestamp;
+            const new_markers: { [key: string]: L.Marker } = {};
+            for (let i = 0; i < clusters.length; i++) {
+                const cluster = clusters[i];
+                const existing = this.markers[cluster.example_path_md5];
+                if (existing !== undefined) {
+                    new_markers[cluster.example_path_md5] = existing;
+                    delete this.markers[cluster.example_path_md5];
+                    continue;
                 }
-                if (change_view) {
-                    this.update_bounds(location_url_json);
-                }
-                this.last_update_timestamp = timestamp;
-                const new_markers: { [key: string]: L.Marker } = {};
-                for (let i = 0; i < clusters.length; i++) {
-                    const cluster = clusters[i];
-                    const existing = this.markers[cluster.example_path_md5];
-                    if (existing !== undefined) {
-                        new_markers[cluster.example_path_md5] = existing;
-                        delete this.markers[cluster.example_path_md5];
-                        continue;
-                    }
-                    const marker = L.marker([
-                        cluster.position.latitude,
-                        cluster.position.longitude,
-                    ]).addTo(this.map);
-                    const element = document.createElement("div");
-                    const root = createRoot(element);
-                    flushSync(() => {
-                        root.render(
-                            LocationClusterPopup({
-                                cluster,
-                                callbacks: {
-                                    update_url: (update) =>
-                                        this.searchQueryCallbacks.update(
-                                            update,
-                                        ),
-                                    annotation_overlay: (
-                                        latitude: number,
-                                        longitude: number,
-                                    ) =>
-                                        this.callbacks.annotation_overlay(
-                                            this.searchQuery,
-                                            latitude,
-                                            longitude,
-                                        ),
-                                },
-                            }),
-                        );
-                    });
-                    marker.bindPopup(element);
-                    new_markers[cluster.example_path_md5] = marker;
-                }
-                Object.values(this.markers).forEach((m) => m.remove());
-                Object.keys(this.markers).forEach(
-                    (m) => delete this.markers[m],
-                );
-                Object.entries(new_markers).forEach(
-                    (m) => (this.markers[m[0]] = m[1]),
-                );
-            });
+                const marker = L.marker([
+                    cluster.position.latitude,
+                    cluster.position.longitude,
+                ]).addTo(this.map);
+                const element = document.createElement("div");
+                const root = createRoot(element);
+                flushSync(() => {
+                    root.render(
+                        LocationClusterPopup({
+                            cluster,
+                            callbacks: {
+                                update_url: (update) =>
+                                    this.searchQueryCallbacks.update(update),
+                                annotation_overlay: (
+                                    latitude: number,
+                                    longitude: number,
+                                ) =>
+                                    this.callbacks.annotation_overlay(
+                                        this.searchQuery,
+                                        latitude,
+                                        longitude,
+                                    ),
+                            },
+                        }),
+                    );
+                });
+                marker.bindPopup(element);
+                new_markers[cluster.example_path_md5] = marker;
+            }
+            Object.values(this.markers).forEach((m) => m.remove());
+            Object.keys(this.markers).forEach((m) => delete this.markers[m]);
+            Object.entries(new_markers).forEach(
+                (m) => (this.markers[m[0]] = m[1]),
+            );
+        });
     }
     zoom_to(latitude: number, longitude: number) {
         this.map.flyTo([latitude, longitude], 13, { duration: 1 });

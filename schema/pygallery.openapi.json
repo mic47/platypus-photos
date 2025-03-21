@@ -5,6 +5,28 @@
     "version": "0.1.0"
   },
   "paths": {
+    "/api/annotations/recent_location_clusters_from_manual_annotations": {
+      "get": {
+        "summary": "Recent Location Clusters From Manual Annotations Endpoint",
+        "operationId": "recent_location_clusters_from_manual_annotations_endpoint-GET",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/LocationCluster"
+                  },
+                  "type": "array",
+                  "title": "Response Recent Location Clusters From Manual Annotations Endpoint-Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/annotations/mass_manual_annotation": {
       "post": {
         "summary": "Mass Manual Annotation Endpoint",

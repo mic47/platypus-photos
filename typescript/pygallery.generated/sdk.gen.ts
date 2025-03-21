@@ -3,7 +3,19 @@
 import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
-import type { MassManualAnnotationEndpointPostData, MassManualAnnotationEndpointPostResponse, ManualIdentityAnnotationEndpointPostData, ManualIdentityAnnotationEndpointPostResponse, JobProgressStatePostData, JobProgressStatePostResponse, RemoteJobsGetResponse, SystemStatusGetResponse, ConfigExportDirsEndpointGetResponse, ExportPhotosGetData, ExportPhotosGetResponse, ExportPhotosToDirGetData, ExportPhotosToDirGetResponse, FindLocationPostData, FindLocationPostResponse, GetAddressPostData, GetAddressPostResponse, ImageEndpointGetData, ImageEndpointGetResponse, LocationClustersEndpointPostData, LocationClustersEndpointPostResponse, LocationBoundsEndpointPostData, LocationBoundsEndpointPostResponse, DateClustersEndpointPostData, DateClustersEndpointPostResponse, ImagePagePostData, ImagePagePostResponse, MatchingDirectoriesPostData, MatchingDirectoriesPostResponse, TopIdentitiesPostResponse, AggregateImagesPostData, AggregateImagesPostResponse, FacesOnPagePostData, FacesOnPagePostResponse, FaceFeaturesForImagePostData, FaceFeaturesForImagePostResponse, ReadIndexGetResponse, ReadIndexGet1Response } from './types.gen';
+import type { RecentLocationClustersFromManualAnnotationsEndpointGetResponse, MassManualAnnotationEndpointPostData, MassManualAnnotationEndpointPostResponse, ManualIdentityAnnotationEndpointPostData, ManualIdentityAnnotationEndpointPostResponse, JobProgressStatePostData, JobProgressStatePostResponse, RemoteJobsGetResponse, SystemStatusGetResponse, ConfigExportDirsEndpointGetResponse, ExportPhotosGetData, ExportPhotosGetResponse, ExportPhotosToDirGetData, ExportPhotosToDirGetResponse, FindLocationPostData, FindLocationPostResponse, GetAddressPostData, GetAddressPostResponse, ImageEndpointGetData, ImageEndpointGetResponse, LocationClustersEndpointPostData, LocationClustersEndpointPostResponse, LocationBoundsEndpointPostData, LocationBoundsEndpointPostResponse, DateClustersEndpointPostData, DateClustersEndpointPostResponse, ImagePagePostData, ImagePagePostResponse, MatchingDirectoriesPostData, MatchingDirectoriesPostResponse, TopIdentitiesPostResponse, AggregateImagesPostData, AggregateImagesPostResponse, FacesOnPagePostData, FacesOnPagePostResponse, FaceFeaturesForImagePostData, FaceFeaturesForImagePostResponse, ReadIndexGetResponse, ReadIndexGet1Response } from './types.gen';
+
+/**
+ * Recent Location Clusters From Manual Annotations Endpoint
+ * @returns LocationCluster Successful Response
+ * @throws ApiError
+ */
+export const recentLocationClustersFromManualAnnotationsEndpointGet = (): CancelablePromise<RecentLocationClustersFromManualAnnotationsEndpointGetResponse> => {
+    return __request(OpenAPI, {
+        method: 'GET',
+        url: '/api/annotations/recent_location_clusters_from_manual_annotations'
+    });
+};
 
 /**
  * Mass Manual Annotation Endpoint

@@ -3,7 +3,6 @@ from __future__ import annotations
 import itertools
 import typing as t
 import os
-from datetime import datetime, timedelta
 from dataclasses import dataclass
 
 
@@ -16,9 +15,7 @@ from pphoto.db.types_date import DateCluster, DateClusterGroupBy
 from pphoto.db.types_directory import DirectoryStats
 from pphoto.db.types_image import ImageAggregation
 from pphoto.db.types_identity import IdentityRowPayload
-from pphoto.utils import assert_never
 from pphoto.remote_jobs.types import (
-    RemoteJobType,
     ManualLocation,
 )
 
@@ -29,7 +26,6 @@ from .common import (
     DateWithLoc,
     DB,
     forward_backward,
-    mass_manual_annotation_from_json,
     PredictedLocation,
     predict_location,
 )
@@ -56,41 +52,6 @@ def location_clusters_endpoint(params: LocClusterParams) -> t.List[LocationClust
         params.res.longitude,
         params.of,
     )
-    jobs = DB.get().jobs.get_jobs(skip_finished=False, since=datetime.now() - timedelta(days=1))
-    # TODO: remove this into separate API
-    for job in jobs:
-        if job.type_ == RemoteJobType.MASS_MANUAL_ANNOTATION:
-            try:
-                og_req = mass_manual_annotation_from_json(job.original_request)
-                # pylint: disable-next = consider-using-in
-                if og_req.location.t == "InterpolatedLocation" or og_req.location.t == "FixedLocation":
-                    point = LocPoint(og_req.location.location.latitude, og_req.location.location.longitude)
-                    clusters.append(
-                        LocationCluster(
-                            job.example_path_md5 or "missing",
-                            job.example_path_extension or "jpg",
-                            og_req.text.text.description,
-                            job.total,
-                            og_req.location.location.address_name,
-                            og_req.location.location.address_country,
-                            og_req.query.tsfrom,
-                            og_req.query.tsto,
-                            point,
-                            point,
-                            point,
-                        )
-                    )
-                elif og_req.location.t == "NoLocation":
-                    pass
-                else:
-                    assert_never(og_req.location.t)
-            # pylint: disable-next = broad-exception-caught
-            except Exception:
-                continue
-        elif job.type_ == RemoteJobType.FACE_CLUSTER_ANNOTATION:
-            pass
-        else:
-            assert_never(job.type_)
     return clusters
 
 

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import enum
 import json
 import typing as t
 from datetime import datetime, timedelta
@@ -19,9 +20,11 @@ from pphoto.remote_jobs.types import (
     ManualLocation,
     ManualAnnotationTask,
     ManualDate,
+    TextAnnotation,
 )
 
 from pphoto.gallery.db import ImageSqlDB, Image as ImageRow
+from pphoto.db.types_location import LocationCluster, LocPoint
 from pphoto.gallery.url import SearchQuery, GalleryPaging, SortParams, SortBy, SortOrder
 from pphoto.gallery.unicode import flag
 
@@ -30,18 +33,79 @@ from .common import (
     forward_backward,
     DateWithLoc,
     predict_location,
-    MassLocationAndTextAnnotation,
-    LocationTypes,
-    ManualLocationOverride,
-    DateTypes,
-    TextAnnotationOverride,
-    mass_manual_annotation_from_json,
 )
 
 router = APIRouter(prefix="/api/annotations")
 
 
-MassManualAnnotation = MassLocationAndTextAnnotation
+class ManualLocationOverride(enum.Enum):
+    NO_LOCATION_NO_MANUAL = "NoLocNoMan"
+    NO_LOCATION_YES_MANUAL = "NoLocYeMan"
+    YES_LOCATION_NO_MANUAL = "YeLocNoMan"
+    YES_LOCATION_YES_MANUAL = "YeLocYeMan"
+
+
+class TextAnnotationOverride(enum.Enum):
+    EXTEND_MANUAL = "ExMan"
+    NO_MANUAL = "NoMan"
+    YES_MANUAL = "YeMan"
+
+
+@dataclass
+class LocationQueryFixedLocation(DataClassJsonMixin):
+    t: t.Literal["FixedLocation"]
+    location: ManualLocation
+    override: ManualLocationOverride
+
+
+@dataclass
+class MassManualAnnotationDeprecated(DataClassJsonMixin):
+    query: SearchQuery
+    location: ManualLocation
+    location_override: ManualLocationOverride
+    text: TextAnnotation
+    text_override: TextAnnotationOverride
+
+
+@dataclass
+class TextQueryFixedText(DataClassJsonMixin):
+    t: t.Literal["FixedText"]
+    text: TextAnnotation
+    override: TextAnnotationOverride
+    loc_only: bool
+
+
+@dataclass
+class AnnotationOverlayInterpolateLocation(DataClassJsonMixin):
+    t: t.Literal["InterpolatedLocation"]
+    location: ManualLocation  # Actually not manual location, it's just sample. But structurally same type
+
+
+@dataclass
+class AnnotationOverlayNoLocation(DataClassJsonMixin):
+    t: t.Literal["NoLocation"]
+
+
+@dataclass
+class TransDate(DataClassJsonMixin):
+    t: t.Literal["TransDate"]
+    adjust_dates: bool
+
+
+LocationTypes = (
+    LocationQueryFixedLocation | AnnotationOverlayInterpolateLocation | AnnotationOverlayNoLocation
+)
+TextTypes = TextQueryFixedText
+DateTypes = TransDate
+
+
+@dataclass
+class MassLocationAndTextAnnotation(DataClassJsonMixin):
+    t: t.Literal["MassLocAndTxt"]
+    query: SearchQuery
+    location: LocationTypes
+    text: TextTypes
+    date: DateTypes
 
 
 @dataclass
@@ -129,8 +193,48 @@ def date_tasks_recipes(
     return transformed_date_recipe
 
 
+@router.get("/recent_location_clusters_from_manual_annotations")
+async def recent_location_clusters_from_manual_annotations_endpoint() -> t.List[LocationCluster]:
+    clusters = []
+    jobs = DB.get().jobs.get_jobs(skip_finished=False, since=datetime.now() - timedelta(days=1))
+    for job in jobs:
+        if job.type_ == RemoteJobType.MASS_MANUAL_ANNOTATION:
+            try:
+                og_req = mass_manual_annotation_from_json(job.original_request)
+                # pylint: disable-next = consider-using-in
+                if og_req.location.t == "InterpolatedLocation" or og_req.location.t == "FixedLocation":
+                    point = LocPoint(og_req.location.location.latitude, og_req.location.location.longitude)
+                    clusters.append(
+                        LocationCluster(
+                            job.example_path_md5 or "missing",
+                            job.example_path_extension or "jpg",
+                            og_req.text.text.description,
+                            job.total,
+                            og_req.location.location.address_name,
+                            og_req.location.location.address_country,
+                            og_req.query.tsfrom,
+                            og_req.query.tsto,
+                            point,
+                            point,
+                            point,
+                        )
+                    )
+                elif og_req.location.t == "NoLocation":
+                    pass
+                else:
+                    assert_never(og_req.location.t)
+            # pylint: disable-next = broad-exception-caught
+            except Exception:
+                continue
+        elif job.type_ == RemoteJobType.FACE_CLUSTER_ANNOTATION:
+            pass
+        else:
+            assert_never(job.type_)
+    return clusters
+
+
 @router.post("/mass_manual_annotation")
-async def mass_manual_annotation_endpoint(params: MassManualAnnotation) -> int:
+async def mass_manual_annotation_endpoint(params: MassLocationAndTextAnnotation) -> int:
     db = DB.get()
 
     all_images = Lazy(
@@ -390,3 +494,35 @@ def remote_jobs() -> t.List[JobDescription]:
 @router.get("/system_status")
 async def system_status(_request: Request) -> SystemStatus:
     return await get_system_status()
+
+
+def mass_manual_annotation_migrate(params: MassManualAnnotationDeprecated) -> MassLocationAndTextAnnotation:
+    return MassLocationAndTextAnnotation(
+        "MassLocAndTxt",
+        params.query,
+        LocationQueryFixedLocation(
+            "FixedLocation",
+            params.location,
+            params.location_override,
+        ),
+        TextQueryFixedText(
+            "FixedText",
+            params.text,
+            params.text_override,
+            False,
+        ),
+        TransDate(
+            "TransDate",
+            False,
+        ),
+    )
+
+
+def mass_manual_annotation_from_json(j: bytes) -> MassLocationAndTextAnnotation:
+    d = json.loads(j)
+    type_ = d.get("t")
+    if type_ is None:
+        return mass_manual_annotation_migrate(MassManualAnnotationDeprecated.from_dict(d))
+    if type_ == "MassLocAndTxt":
+        return MassLocationAndTextAnnotation.from_dict(d)
+    raise NotImplementedError

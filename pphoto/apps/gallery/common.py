@@ -1,12 +1,9 @@
 from __future__ import annotations
 
-import enum
-import json
 from datetime import datetime
 from dataclasses import dataclass
 import typing as t
 
-from dataclasses_json import DataClassJsonMixin
 from geopy.distance import distance
 
 from fastapi.routing import APIRoute
@@ -15,12 +12,7 @@ from pphoto.data_model.config import DBFilesConfig, Config
 from pphoto.db.connection import PhotosConnection, GalleryConnection, JobsConnection
 from pphoto.db.types_location import LocPoint
 from pphoto.gallery.db import ImageSqlDB, Image as ImageRow
-from pphoto.gallery.url import SearchQuery
 from pphoto.utils import Lazy
-from pphoto.remote_jobs.types import (
-    ManualLocation,
-    TextAnnotation,
-)
 
 DB = Lazy(
     lambda: ImageSqlDB(
@@ -133,105 +125,3 @@ def predict_location(
             ReferenceStats(0.0, next_loc.timedist(omg.date)),
         )
     return None
-
-
-class ManualLocationOverride(enum.Enum):
-    NO_LOCATION_NO_MANUAL = "NoLocNoMan"
-    NO_LOCATION_YES_MANUAL = "NoLocYeMan"
-    YES_LOCATION_NO_MANUAL = "YeLocNoMan"
-    YES_LOCATION_YES_MANUAL = "YeLocYeMan"
-
-
-class TextAnnotationOverride(enum.Enum):
-    EXTEND_MANUAL = "ExMan"
-    NO_MANUAL = "NoMan"
-    YES_MANUAL = "YeMan"
-
-
-@dataclass
-class LocationQueryFixedLocation(DataClassJsonMixin):
-    t: t.Literal["FixedLocation"]
-    location: ManualLocation
-    override: ManualLocationOverride
-
-
-@dataclass
-class MassManualAnnotationDeprecated(DataClassJsonMixin):
-    query: SearchQuery
-    location: ManualLocation
-    location_override: ManualLocationOverride
-    text: TextAnnotation
-    text_override: TextAnnotationOverride
-
-
-@dataclass
-class TextQueryFixedText(DataClassJsonMixin):
-    t: t.Literal["FixedText"]
-    text: TextAnnotation
-    override: TextAnnotationOverride
-    loc_only: bool
-
-
-@dataclass
-class AnnotationOverlayInterpolateLocation(DataClassJsonMixin):
-    t: t.Literal["InterpolatedLocation"]
-    location: ManualLocation  # Actually not manual location, it's just sample. But structurally same type
-
-
-@dataclass
-class AnnotationOverlayNoLocation(DataClassJsonMixin):
-    t: t.Literal["NoLocation"]
-
-
-@dataclass
-class TransDate(DataClassJsonMixin):
-    t: t.Literal["TransDate"]
-    adjust_dates: bool
-
-
-LocationTypes = (
-    LocationQueryFixedLocation | AnnotationOverlayInterpolateLocation | AnnotationOverlayNoLocation
-)
-TextTypes = TextQueryFixedText
-DateTypes = TransDate
-
-
-@dataclass
-class MassLocationAndTextAnnotation(DataClassJsonMixin):
-    t: t.Literal["MassLocAndTxt"]
-    query: SearchQuery
-    location: LocationTypes
-    text: TextTypes
-    date: DateTypes
-
-
-def mass_manual_annotation_migrate(params: MassManualAnnotationDeprecated) -> MassLocationAndTextAnnotation:
-    return MassLocationAndTextAnnotation(
-        "MassLocAndTxt",
-        params.query,
-        LocationQueryFixedLocation(
-            "FixedLocation",
-            params.location,
-            params.location_override,
-        ),
-        TextQueryFixedText(
-            "FixedText",
-            params.text,
-            params.text_override,
-            False,
-        ),
-        TransDate(
-            "TransDate",
-            False,
-        ),
-    )
-
-
-def mass_manual_annotation_from_json(j: bytes) -> MassLocationAndTextAnnotation:
-    d = json.loads(j)
-    type_ = d.get("t")
-    if type_ is None:
-        return mass_manual_annotation_migrate(MassManualAnnotationDeprecated.from_dict(d))
-    if type_ == "MassLocAndTxt":
-        return MassLocationAndTextAnnotation.from_dict(d)
-    raise NotImplementedError
