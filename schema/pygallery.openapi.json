@@ -1567,6 +1567,27 @@
             "type": "array",
             "title": "Identities"
           },
+          "dimension": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ImageDims"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "file_size": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File Size"
+          },
           "version": {
             "type": "integer",
             "title": "Version"
@@ -1590,6 +1611,8 @@
           "camera",
           "software",
           "identities",
+          "dimension",
+          "file_size",
           "version"
         ],
         "title": "Image"
@@ -1690,6 +1713,24 @@
           "identities"
         ],
         "title": "ImageAggregation"
+      },
+      "ImageDims": {
+        "properties": {
+          "width": {
+            "type": "integer",
+            "title": "Width"
+          },
+          "height": {
+            "type": "integer",
+            "title": "Height"
+          }
+        },
+        "type": "object",
+        "required": [
+          "width",
+          "height"
+        ],
+        "title": "ImageDims"
       },
       "ImageResponse": {
         "properties": {

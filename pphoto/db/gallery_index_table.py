@@ -25,6 +25,7 @@ from pphoto.db.types_directory import (
 )
 from pphoto.db.types_image import (
     Image,
+    ImageDims,
     ImageAddress,
     ImageAggregation,
 )
@@ -113,6 +114,21 @@ ALTER TABLE gallery_index ADD COLUMN extension TEXT NOT NULL DEFAULT "jpg"
 ALTER TABLE gallery_index ADD COLUMN identity TEXT
         """
         )
+        self._con.execute_add_column(
+            """
+ALTER TABLE gallery_index ADD COLUMN width INTEGER
+        """
+        )
+        self._con.execute_add_column(
+            """
+ALTER TABLE gallery_index ADD COLUMN height INTEGER
+        """
+        )
+        self._con.execute_add_column(
+            """
+ALTER TABLE gallery_index ADD COLUMN file_size INTEGER
+        """
+        )
         for columns in [
             ["md5"],
             ["feature_last_update"],
@@ -141,7 +157,7 @@ ALTER TABLE gallery_index ADD COLUMN identity TEXT
         tags = sorted(list((omg.tags or {}).items()))
         self._con.execute(
             """
-INSERT INTO gallery_index VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?)
+INSERT INTO gallery_index VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT(md5) DO UPDATE SET
   feature_last_update=excluded.feature_last_update,
   timestamp=excluded.timestamp,
@@ -160,6 +176,9 @@ ON CONFLICT(md5) DO UPDATE SET
   camera=excluded.camera,
   software=excluded.software,
   extension=excluded.extension,
+  width=excluded.width,
+  height=excluded.height,
+  file_size=excluded.file_size,
   identity=excluded.identity
 WHERE
   excluded.version > gallery_index.version
@@ -187,6 +206,9 @@ WHERE
                 omg.software,
                 omg.extension,
                 f',{",".join(omg.identities)},',
+                None if omg.dimension is None else omg.dimension.width,
+                None if omg.dimension is None else omg.dimension.height,
+                omg.file_size,
             ),
         )
         self._con.commit()
@@ -677,7 +699,7 @@ SELECT "cam", camera, COUNT(1) FROM matched_images GROUP BY camera
             query,
             variables,
         ) = self._matching_query(
-            "md5, extension, #as#timestamp#, #timestamp_transformed#, tags, tags_probs, classifications, address_country, address_name, address_full, feature_last_update, latitude, longitude, altitude, version, manual_features, being_annotated, camera, software, identity",
+            "md5, extension, #as#timestamp#, #timestamp_transformed#, tags, tags_probs, classifications, address_country, address_name, address_full, feature_last_update, latitude, longitude, altitude, version, manual_features, being_annotated, camera, software, identity, width, height, file_size",
             url,
         )
         sort_by = None
@@ -718,6 +740,9 @@ SELECT "cam", camera, COUNT(1) FROM matched_images GROUP BY camera
             camera,
             software,
             identity,
+            width,
+            height,
+            file_size,
         ) in items[: gallery_paging.paging]:
             output.append(
                 Image(
@@ -753,6 +778,8 @@ SELECT "cam", camera, COUNT(1) FROM matched_images GROUP BY camera
                     camera,
                     software,
                     [x for x in identity.split(",") if x] if identity is not None else [],
+                    None if width is None or height is None else ImageDims(width, height),
+                    file_size,
                     version,
                 )
             )

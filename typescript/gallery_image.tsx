@@ -350,6 +350,12 @@ export function GalleryImage({
             );
         });
     }
+    const width_em =
+        omg.dimension == null
+            ? 15
+            : Math.round((15 / omg.dimension.height) * omg.dimension.width) / 1;
+    const gallery_item_width = isOverlay ? "100%" : `${width_em}em`;
+    const gallery_container_width = isOverlay ? "initial" : `${width_em}em`;
 
     const img = (
         <img
@@ -362,7 +368,7 @@ export function GalleryImage({
         />
     );
     return (
-        <div className={className}>
+        <div className={className} style={{ width: gallery_item_width }}>
             <span id={`i${index}`}></span>
             {movementUx}
             {timeUx}
@@ -370,13 +376,14 @@ export function GalleryImage({
             {predictedLocation}
             <div
                 className="gallery_container"
+                style={{ width: gallery_container_width }}
                 onClick={() => {
                     if (callbacks !== null) {
                         callbacks.updateOverlayIndex(index);
                     }
                 }}
             >
-                {overlay_index === index ? (
+                {isOverlay ? (
                     <AnnotableImage
                         md5={omg.md5}
                         extension={omg.extension}

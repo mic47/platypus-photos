@@ -21,6 +21,12 @@ class ImageAddress:
 
 
 @dataclass
+class ImageDims:
+    width: int
+    height: int
+
+
+@dataclass
 class Image:
     md5: str
     extension: str
@@ -38,8 +44,10 @@ class Image:
     camera: t.Optional[str]
     software: t.Optional[str]
     identities: t.List[str]
+    dimension: t.Optional[ImageDims]
+    file_size: t.Optional[int]
     version: int
 
     @staticmethod
     def current_version() -> int:
-        return 7
+        return 8

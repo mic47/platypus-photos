@@ -4,11 +4,12 @@ from datetime import datetime
 import itertools
 import typing as t
 
+from pphoto.data_model.dimensions import ImageDimensions
 from pphoto.data_model.exif import ImageExif
 from pphoto.data_model.geo import GeoAddress
 from pphoto.data_model.text import ImageClassification
 from pphoto.data_model.manual import ManualText, ManualLocation, ManualDate, ManualIdentities
-from pphoto.db.types_image import Image, ImageAddress
+from pphoto.db.types_image import Image, ImageAddress, ImageDims
 
 
 def make_image_address(
@@ -35,6 +36,7 @@ def make_image(
     md5: str,
     extension: str,
     exif: t.Optional[ImageExif],
+    dimensions: t.Optional[ImageDimensions],
     address: t.Optional[GeoAddress],
     text_classification: t.Optional[ImageClassification],
     manual_location: t.Optional[ManualLocation],
@@ -145,5 +147,7 @@ def make_image(
             if manual_identities is not None
             else []
         ),
+        None if dimensions is None else ImageDims(dimensions.width, dimensions.height),
+        None if dimensions is None else dimensions.file_size,
         Image.current_version(),
     )

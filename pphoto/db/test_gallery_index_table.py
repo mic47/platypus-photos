@@ -5,7 +5,7 @@ import unittest
 from pphoto.db.connection import GalleryConnection
 from pphoto.db.directories_table import DirectoriesTable
 from pphoto.db.gallery_index_table import GalleryIndexTable, WrongAggregateTypeReturned
-from pphoto.db.types_image import Image, ImageAddress, ImageAggregation
+from pphoto.db.types_image import Image, ImageAddress, ImageAggregation, ImageDims
 from pphoto.db.types_location import LocPoint, LocationCluster, LocationBounds
 from pphoto.gallery.url import SearchQuery, GalleryPaging, SortParams
 
@@ -31,6 +31,8 @@ def _image(
     camera: t.Optional[str] = "olympus e-510",
     identity: t.Optional[t.List[str]] = None,
     extension: str = "jpg",
+    dimensions: t.Optional[ImageDims] = ImageDims(1024, 768),
+    file_size: t.Optional[int] = 1234,
 ) -> Image:
     if tags is None:
         tags = {"foo": 0.3, "bar": 1.457}
@@ -57,6 +59,8 @@ def _image(
         camera,
         "Microsoft Word",
         identity,
+        dimensions,
+        file_size,
         version,
     )
 
