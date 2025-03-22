@@ -9,7 +9,7 @@ fastapi[standard]==0.115.6
 ffmpeg-python==0.2.0
 geopy==2.4.1
 hypothesis==6.123.2
-numpy==1.26.4
+numpy==2.0.2
 opencv-python-headless==4.10.0.84
 pillow==11.0.0
 pyexiftool==0.5.6
