@@ -142,6 +142,8 @@ export type Image = {
     camera: (string | null);
     software: (string | null);
     identities: Array<(string)>;
+    dimension: (ImageDims | null);
+    file_size: (number | null);
     version: number;
 };
 
@@ -168,6 +170,11 @@ export type ImageAggregation = {
     identities: {
         [key: string]: (number);
     };
+};
+
+export type ImageDims = {
+    width: number;
+    height: number;
 };
 
 export type ImageResponse = {

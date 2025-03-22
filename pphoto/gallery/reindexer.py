@@ -7,6 +7,7 @@ import typing as t
 
 from pphoto.annots.date import PathDateExtractor
 from pphoto.data_model.base import WithMD5, StorableData
+from pphoto.data_model.dimensions import ImageDimensions
 from pphoto.data_model.exif import ImageExif
 from pphoto.data_model.geo import GeoAddress
 from pphoto.data_model.text import ImageClassification
@@ -41,6 +42,7 @@ class Reindexer:
         self._files_table = FilesTable(self._p_con)
         self._directories_table = DirectoriesTable(self._g_con)
         self._exif = SQLiteCache(self._features_table, ImageExif, ImageExif.from_json_bytes)
+        self._dimensions = SQLiteCache(self._features_table, ImageDimensions, ImageDimensions.from_json_bytes)
         self._address = SQLiteCache(self._features_table, GeoAddress, GeoAddress.from_json_bytes)
         self._text_classification = SQLiteCache(
             self._features_table, ImageClassification, ImageClassification.from_json_bytes
@@ -155,6 +157,7 @@ class Reindexer:
             return x.payload.p
 
         exif = extract_data(self._exif.get(md5))
+        dimensions = extract_data(self._dimensions.get(md5))
         addr = extract_data(self._address.get(md5))
         text_cls = extract_data(self._text_classification.get(md5))
         manual_location = extract_data(self._manual_location.get(md5))
@@ -182,6 +185,7 @@ class Reindexer:
             md5,
             top_extension,
             exif,
+            dimensions,
             addr,
             text_cls,
             manual_location,

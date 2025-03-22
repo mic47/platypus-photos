@@ -55,6 +55,7 @@ class Dimensions:
         except Exception as e:
             traceback.print_exc()
             print("Error while processing dimensions path in ", inp, e, file=sys.stderr)
+            return WithMD5(inp.md5, self._version, None, Error.from_exception(e))
 
         return WithMD5(inp.md5, self._version, ImageDimensions(width, height, file_size), None)
 
@@ -69,5 +70,6 @@ class Dimensions:
         except Exception as e:
             traceback.print_exc()
             print("Error while processing dimensions path in ", inp, e, file=sys.stderr)
+            return WithMD5(inp.md5, self._version, None, Error.from_exception(e))
 
         return WithMD5(inp.md5, self._version, ImageDimensions(width, height, file_size), None)
