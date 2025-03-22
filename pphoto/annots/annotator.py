@@ -2,12 +2,14 @@ import datetime
 import typing as t
 
 from pphoto.annots.date import PathDateExtractor
+from pphoto.annots.dimensions import Dimensions
 from pphoto.annots.exif import Exif, ImageExif
 from pphoto.annots.face import FaceEmbeddingsAnnotator
 from pphoto.annots.geo import Geolocator, GeoAddress
 from pphoto.annots.text import Models, ImageClassification
 from pphoto.data_model.config import DirectoryMatchingConfig, DBFilesConfig
 from pphoto.data_model.base import WithMD5, PathWithMd5, Error, StorableData
+from pphoto.data_model.dimensions import ImageDimensions
 from pphoto.data_model.manual import (
     ManualLocation,
     ManualText,
@@ -47,6 +49,10 @@ class Annotator:
         self.face = FaceEmbeddingsAnnotator(face_embeddings_cache, remote_annotator_queue)
         exif_cache = SQLiteCache(features, ImageExif, ImageExif.from_json_bytes, files_config.exif_jsonl)
         self.exif = Exif(exif_cache)
+        dimm_cache = SQLiteCache(
+            features, ImageDimensions, ImageDimensions.from_json_bytes, files_config.dimm_jsonl
+        )
+        self.dimensions = Dimensions(dimm_cache)
         self.manual_location = SQLiteCache(
             features, ManualLocation, ManualLocation.from_json_bytes, files_config.manual_location_jsonl
         )
@@ -64,7 +70,7 @@ class Annotator:
             features, GeoAddress, GeoAddress.from_json_bytes, files_config.geo_address_jsonl
         )
         self.geolocator = Geolocator(geolocator_cache)
-        self.cheap_features_types: t.List[t.Type[StorableData]] = [ImageExif, GeoAddress]
+        self.cheap_features_types: t.List[t.Type[StorableData]] = [ImageExif, ImageDimensions, GeoAddress]
         self.image_to_text_types: t.List[t.Type[StorableData]] = [ImageClassification, FaceEmbeddings]
 
     def update_manual_identity(
@@ -134,10 +140,12 @@ class Annotator:
     def cheap_features(self, path: PathWithMd5, recompute_location: bool) -> t.Tuple[
         PathWithMd5,
         WithMD5[ImageExif],
+        WithMD5[ImageDimensions],
         WithMD5[GeoAddress],
         t.Optional[datetime.datetime],
     ]:
         exif_item = self.exif.process_file(path)
+        dimensions_item = self.dimensions.process_file(path)
         manual_location = self.manual_location.get(path.md5)
         if (
             manual_location is not None
@@ -159,7 +167,7 @@ class Annotator:
                 WithMD5(path.md5, GeoAddress.current_version(), None, Error("DependencyMissing", None, None))
             )
         path_date = self.path_to_date.extract_date(path.path)
-        return (path, exif_item, geo, path_date)
+        return (path, exif_item, dimensions_item, geo, path_date)
 
     async def image_to_text(
         self, path: PathWithMd5

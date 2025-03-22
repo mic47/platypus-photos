@@ -94,7 +94,7 @@ class Jobs:
                 os.remove(path)
             return None
         # Do cheap annotation
-        (_path, exif, geo, path_date) = self._annotator.cheap_features(
+        (_path, exif, _dimensions, geo, path_date) = self._annotator.cheap_features(
             path_with_md5, recompute_location=False
         )
         date = (None if exif.p is None or exif.p.date is None else exif.p.date.datetime) or path_date
@@ -125,7 +125,7 @@ class Jobs:
 
     def cheap_features(self, path: PathWithMd5, recompute_location: bool) -> None:
         # Annotate features
-        (path, exif, geo, path_date) = self._annotator.cheap_features(
+        (path, exif, _dimensions, geo, path_date) = self._annotator.cheap_features(
             path, recompute_location=recompute_location
         )
 

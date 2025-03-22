@@ -13,6 +13,7 @@ class DBFilesConfig:
     image_to_text_jsonl: str = "data/output-image-to-text.jsonl"
     face_embeddings_jsonl: str = "data/output-face-embeddings.jsonl"
     exif_jsonl: str = "data/output-exif.jsonl"
+    dimm_jsonl: str = "data/output-dimmensions.jsonl"
     geo_address_jsonl: str = "data/output-geo.jsonl"
     manual_location_jsonl: str = "data/output-manual-location.jsonl"
     manual_identity_jsonl: str = "data/output-manual-identity.jsonl"
