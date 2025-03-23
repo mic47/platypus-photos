@@ -47,6 +47,7 @@ export type ImageCallbacks = {
 export type GalleryImageFeatures = {
     showDiffInfo?: boolean;
     showMetadata?: boolean;
+    showTimeSelection?: boolean;
 };
 
 export function GalleryImage({
@@ -61,6 +62,7 @@ export function GalleryImage({
     callbacks: callbacksOG,
     showDiffInfo,
     showMetadata,
+    showTimeSelection,
 }: GalleryImageProps & GalleryImageFeatures) {
     const imgRef = React.useRef<null | HTMLImageElement>(null);
 
@@ -84,7 +86,10 @@ export function GalleryImage({
             : Math.round((15 / omg.dimension.height) * omg.dimension.width) / 1;
     const gallery_item_width = isOverlay ? "100%" : `${width_em}em`;
     const height_em =
-        16 + (showDiffInfo === true ? 2 : 0) + (showMetadata === true ? 7 : 0);
+        15 +
+        (showTimeSelection === true ? 1 : 0) +
+        (showDiffInfo === true ? 2 : 0) +
+        (showMetadata === true ? 7 : 0);
     const gallery_item_height = isOverlay ? "100%" : `${height_em}em`;
 
     const gallery_container_width = isOverlay ? "initial" : `${width_em}em`;
@@ -118,7 +123,10 @@ export function GalleryImage({
                     callbacks={callbacks}
                 />
             ) : null}
-            {timestamp !== null && !isOverlay && callbacks !== null ? (
+            {showTimeSelection &&
+            timestamp !== null &&
+            !isOverlay &&
+            callbacks !== null ? (
                 <TimeUx
                     timestamp={timestamp}
                     timeicon={timeicon}

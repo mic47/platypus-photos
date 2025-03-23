@@ -264,6 +264,9 @@ function GalleryView({
                     checkboxes["LocPredCheck"] === true ||
                     checkboxes["ShowDiffCheck"] === true
                 }
+                showTimeSelection={
+                    checkboxes["ShowTimeSelectionCheck"] === true
+                }
                 showMetadata={checkboxes["ShowMetadataCheck"] === true}
                 callbacks={callbacks}
             />
@@ -304,6 +307,15 @@ function GalleryView({
                     Next Page
                 </a>
             </span>
+            <input
+                type="checkbox"
+                id="ShowTimeSelectionCheck"
+                checked={checkboxes["ShowTimeSelection"]}
+                onClick={(event) =>
+                    callbacks.update_checkbox_from_element(event.currentTarget)
+                }
+            />
+            Show Time Selection
             <input
                 type="checkbox"
                 id="ShowDiffCheck"
