@@ -269,10 +269,7 @@ export function init_fun(divId: string) {
     const pagingSync = new TypedUrlSync(paging_fields, parse_gallery_paging);
     const sortSync = new TypedUrlSync(sort_fields, parse_sort_params);
     const galleryUrlSync = new TypedUrlSync(["oi"], parse_gallery_url);
-    const tabBarSync = new URLSetSync(
-        "tb",
-        new Set(["query", "map", "gallery"]),
-    );
+    const tabBarSync = new URLSetSync("tb", new Set(["gallery"]));
 
     const element = document.getElementById(divId);
     if (element === null) {
