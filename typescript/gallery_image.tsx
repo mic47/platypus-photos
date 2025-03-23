@@ -21,9 +21,7 @@ import { AnnotableImage } from "./annotable_image";
 interface GalleryImageProps {
     image: ImageWithMeta;
     sort: SortParams;
-    paging: GalleryPaging;
     previous_timestamp: number | null;
-    has_next_page: boolean;
     isOverlay: boolean;
     index: number;
     showLocationIterpolation: boolean;
@@ -53,9 +51,7 @@ export type GalleryImageFeatures = {
 export function GalleryImage({
     image: { omg, predicted_location, paths },
     sort,
-    paging,
     previous_timestamp,
-    has_next_page,
     isOverlay,
     index,
     showLocationIterpolation,
@@ -63,7 +59,8 @@ export function GalleryImage({
     showDiffInfo,
     showMetadata,
     showTimeSelection,
-}: GalleryImageProps & GalleryImageFeatures) {
+    children,
+}: React.PropsWithChildren<GalleryImageProps & GalleryImageFeatures>) {
     const imgRef = React.useRef<null | HTMLImageElement>(null);
 
     const callbacks = callbacksOG === null ? null : { ...callbacksOG };
@@ -114,14 +111,7 @@ export function GalleryImage({
             className={className}
             style={{ width: gallery_item_width, height: gallery_item_height }}
         >
-            {isOverlay && callbacks !== null ? (
-                <OverlayMovementUx
-                    index={index}
-                    paging={paging}
-                    has_next_page={has_next_page}
-                    callbacks={callbacks}
-                />
-            ) : null}
+            {children}
             {showTimeSelection &&
             timestamp !== null &&
             !isOverlay &&
@@ -487,37 +477,6 @@ function TimeUx({
             {iconsToShow} {nextLink}
         </>
     );
-}
-function OverlayMovementUx({
-    index,
-    paging,
-    has_next_page,
-    callbacks,
-}: {
-    index: number;
-    paging: GalleryPaging;
-    has_next_page: boolean;
-    callbacks: ImageCallbacks;
-}) {
-    const movement = (
-        <>
-            <a href="#" onClick={() => callbacks.prev_item(index, paging)}>
-                prev
-            </a>{" "}
-            <a href="#" onClick={() => callbacks.close_overlay()}>
-                close
-            </a>{" "}
-            <a
-                href="#"
-                onClick={() =>
-                    callbacks.next_item(index, has_next_page, paging)
-                }
-            >
-                next
-            </a>
-        </>
-    );
-    return <div>{movement}</div>;
 }
 
 function predicted_location_to_string(predicted: PredictedLocation): string {

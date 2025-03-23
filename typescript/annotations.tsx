@@ -267,9 +267,7 @@ function AnnotationOverlayView({
                       image={{ omg, paths, predicted_location: null }}
                       index={index}
                       sort={{ order: "ASC", sort_by: "RANDOM" }}
-                      paging={paging}
                       previous_timestamp={null}
-                      has_next_page={false}
                       isOverlay={false}
                       showLocationIterpolation={false}
                       callbacks={null}

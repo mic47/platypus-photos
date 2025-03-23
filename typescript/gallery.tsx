@@ -251,12 +251,10 @@ function GalleryView({
             <GalleryImage
                 image={data.omgs[overlay_index]}
                 sort={sort}
-                paging={paging}
                 previous_timestamp={
                     prev_date === null ? null : Date.parse(prev_date) / 1000
                 }
                 isOverlay={true}
-                has_next_page={data.has_next_page}
                 index={overlay_index}
                 showLocationIterpolation={checkboxes["LocPredCheck"] === true}
                 showDiffInfo={
@@ -268,7 +266,16 @@ function GalleryView({
                 }
                 showMetadata={checkboxes["ShowMetadataCheck"] === true}
                 callbacks={callbacks}
-            />
+            >
+                {callbacks !== null ? (
+                    <OverlayMovementUx
+                        index={overlay_index}
+                        paging={paging}
+                        has_next_page={data.has_next_page}
+                        callbacks={callbacks}
+                    />
+                ) : null}
+            </GalleryImage>
         );
     const galleryItems = data.omgs.map((image, index) => {
         const ret = (
@@ -276,12 +283,10 @@ function GalleryView({
                 key={image.omg.md5}
                 image={image}
                 sort={sort}
-                paging={paging}
                 previous_timestamp={
                     prev_date === null ? null : Date.parse(prev_date) / 1000
                 }
                 isOverlay={false}
-                has_next_page={data.has_next_page}
                 index={index}
                 showLocationIterpolation={checkboxes["LocPredCheck"] === true}
                 showDiffInfo={
@@ -394,4 +399,36 @@ function GalleryView({
             </div>
         </>
     );
+}
+
+function OverlayMovementUx({
+    index,
+    paging,
+    has_next_page,
+    callbacks,
+}: {
+    index: number;
+    paging: GalleryPaging;
+    has_next_page: boolean;
+    callbacks: ImageCallbacks;
+}) {
+    const movement = (
+        <>
+            <a href="#" onClick={() => callbacks.prev_item(index, paging)}>
+                prev
+            </a>{" "}
+            <a href="#" onClick={() => callbacks.close_overlay()}>
+                close
+            </a>{" "}
+            <a
+                href="#"
+                onClick={() =>
+                    callbacks.next_item(index, has_next_page, paging)
+                }
+            >
+                next
+            </a>
+        </>
+    );
+    return <div>{movement}</div>;
 }
