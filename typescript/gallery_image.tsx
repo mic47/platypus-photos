@@ -6,6 +6,8 @@ import {
     PredictedLocation,
     SearchQuery,
     SortParams,
+    Image,
+    PathSplit,
 } from "./pygallery.generated";
 import {
     append_flag,
@@ -42,6 +44,11 @@ export type ImageCallbacks = {
     updateOverlayIndex: (index: number | null) => void;
 };
 
+export type GalleryImageFeatures = {
+    showDiffInfo?: boolean;
+    showMetadata?: boolean;
+};
+
 export function GalleryImage({
     image: { omg, predicted_location, paths },
     sort,
@@ -52,7 +59,9 @@ export function GalleryImage({
     index,
     showLocationIterpolation,
     callbacks: callbacksOG,
-}: GalleryImageProps) {
+    showDiffInfo,
+    showMetadata,
+}: GalleryImageProps & GalleryImageFeatures) {
     const imgRef = React.useRef<null | HTMLImageElement>(null);
 
     const callbacks = callbacksOG === null ? null : { ...callbacksOG };
@@ -69,123 +78,116 @@ export function GalleryImage({
         timeicon = time_to_clock(timestamp);
     }
 
-    let movementUx = null;
-    if (isOverlay && callbacks !== null) {
-        const movement = (
-            <>
-                <a href="#" onClick={() => callbacks.prev_item(index, paging)}>
-                    prev
-                </a>{" "}
-                <a href="#" onClick={() => callbacks.close_overlay()}>
-                    close
-                </a>{" "}
-                <a
-                    href="#"
-                    onClick={() =>
-                        callbacks.next_item(index, has_next_page, paging)
-                    }
-                >
-                    next
-                </a>
-            </>
-        );
-        movementUx = <div>{movement}</div>;
-    }
+    const width_em =
+        omg.dimension == null
+            ? 15
+            : Math.round((15 / omg.dimension.height) * omg.dimension.width) / 1;
+    const gallery_item_width = isOverlay ? "100%" : `${width_em}em`;
+    const height_em =
+        16 + (showDiffInfo === true ? 2 : 0) + (showMetadata === true ? 7 : 0);
+    const gallery_item_height = isOverlay ? "100%" : `${height_em}em`;
 
-    let timeUx = null;
-    if (timestamp !== null && !isOverlay && callbacks !== null) {
-        let prevLink = null;
-        let nextLink = null;
-        if (sort.order === "ASC") {
-            prevLink = (
-                <a
-                    href="#"
-                    onClick={() =>
-                        callbacks.update_url({ tsto: timestamp + 0.01 })
+    const gallery_container_width = isOverlay ? "initial" : `${width_em}em`;
+    const gallery_container_height = isOverlay
+        ? showMetadata === true
+            ? "90%"
+            : "100%"
+        : "15em";
+
+    const img = (
+        <img
+            ref={imgRef}
+            loading="lazy"
+            src={`/img/${isOverlay ? "original" : "preview"}/${omg.md5}.${omg.extension}`}
+            className="gallery_image"
+            alt={omg.classifications || ""}
+            title={omg.classifications || ""}
+        />
+    );
+    return (
+        <div
+            className={className}
+            style={{ width: gallery_item_width, height: gallery_item_height }}
+        >
+            <span id={`i${index}`}></span>
+            {isOverlay && callbacks !== null ? (
+                <MovementUx
+                    index={index}
+                    paging={paging}
+                    has_next_page={has_next_page}
+                    callbacks={callbacks}
+                />
+            ) : null}
+            {timestamp !== null && !isOverlay && callbacks !== null ? (
+                <TimeUx
+                    timestamp={timestamp}
+                    timeicon={timeicon}
+                    iconsToShow={iconsToShow}
+                    sort={sort}
+                    callbacks={callbacks}
+                />
+            ) : (
+                <>{iconsToShow}</>
+            )}
+            {showDiffInfo === true ? (
+                <DiffInfo
+                    timestamp={timestamp}
+                    previous_timestamp={previous_timestamp}
+                    predicted_location={predicted_location}
+                    showLocationInterpolation={showLocationIterpolation}
+                    timeicon={timeicon}
+                />
+            ) : null}
+            <div
+                className="gallery_container"
+                style={{
+                    width: gallery_container_width,
+                    height: gallery_container_height,
+                }}
+                onClick={() => {
+                    if (callbacks !== null) {
+                        callbacks.updateOverlayIndex(index);
                     }
-                >
-                    ⬅️ to
-                </a>
-            );
-        } else {
-            prevLink = (
-                <a
-                    href="#"
-                    onClick={() =>
-                        callbacks.update_url({ tsfrom: timestamp - 0.01 })
-                    }
-                >
-                    ⬅️ from
-                </a>
-            );
-        }
-        if (sort.order == "ASC") {
-            nextLink = (
-                <a
-                    href="#"
-                    onClick={() =>
-                        callbacks.update_url({ tsfrom: timestamp - 0.01 })
-                    }
-                >
-                    from ➡️
-                </a>
-            );
-        } else {
-            nextLink = (
-                <a
-                    href="#"
-                    onClick={() =>
-                        callbacks.update_url({ tsto: timestamp + 0.01 })
-                    }
-                >
-                    to ➡️
-                </a>
-            );
-        }
-        timeUx = (
-            <>
-                {prevLink} {timeicon}
-                {iconsToShow} {nextLink}
-            </>
-        );
-    } else {
-        timeUx = <>{iconsToShow}</>;
-    }
-    let diffDate = null;
-    if (previous_timestamp !== null && timestamp !== null) {
-        const diff_date = format_seconds_to_duration(
-            Math.abs(previous_timestamp - timestamp),
-        );
-        diffDate = (
-            <>
-                {timeicon === null ? null : <br />}⏱️{diff_date}
-            </>
-        );
-    }
-    let predictedLocation = null;
-    if (predicted_location !== null && showLocationIterpolation) {
-        let cls = "LocPredView";
-        if (
-            predicted_location.earlier === null ||
-            predicted_location.later === null
-        ) {
-            cls += "onesided";
-        }
-        if (
-            (predicted_location.earlier?.distance_m || 0) > 1000 ||
-            (predicted_location.later?.distance_m || 0) > 1000 ||
-            (predicted_location.earlier?.seconds || 0) > 3600 ||
-            (predicted_location.later?.seconds || 0) > 3600
-        ) {
-            cls += "suspicious";
-        }
-        predictedLocation = (
-            <div className={cls}>
-                {predicted_location_to_string(predicted_location)}
+                }}
+            >
+                {isOverlay ? (
+                    <AnnotableImage
+                        md5={omg.md5}
+                        extension={omg.extension}
+                        imgRef={imgRef}
+                    >
+                        {img}
+                    </AnnotableImage>
+                ) : (
+                    img
+                )}
             </div>
-        );
-    }
+            {showMetadata ? (
+                <MetadataInfo
+                    omg={omg}
+                    paths={paths}
+                    isOverlay={isOverlay}
+                    timestamp={timestamp}
+                    callbacks={callbacks}
+                />
+            ) : null}
+        </div>
+    );
+}
 
+function MetadataInfo({
+    omg,
+    paths,
+    isOverlay,
+    timestamp,
+    callbacks,
+}: {
+    omg: Image;
+    paths: PathSplit[];
+    isOverlay: boolean;
+    timestamp: number | null;
+    callbacks: ImageCallbacks | null;
+}) {
     let dateCrumb = null;
     let timeCrumb = null;
     if (timestamp !== null) {
@@ -349,62 +351,166 @@ export function GalleryImage({
             );
         });
     }
-    const width_em =
-        omg.dimension == null
-            ? 15
-            : Math.round((15 / omg.dimension.height) * omg.dimension.width) / 1;
-    const gallery_item_width = isOverlay ? "100%" : `${width_em}em`;
-    const gallery_container_width = isOverlay ? "initial" : `${width_em}em`;
-
-    const img = (
-        <img
-            ref={imgRef}
-            loading="lazy"
-            src={`/img/${isOverlay ? "original" : "preview"}/${omg.md5}.${omg.extension}`}
-            className="gallery_image"
-            alt={omg.classifications || ""}
-            title={omg.classifications || ""}
-        />
-    );
     return (
-        <div className={className} style={{ width: gallery_item_width }}>
-            <span id={`i${index}`}></span>
-            {movementUx}
-            {timeUx}
-            {diffDate}
-            {predictedLocation}
-            <div
-                className="gallery_container"
-                style={{ width: gallery_container_width }}
-                onClick={() => {
-                    if (callbacks !== null) {
-                        callbacks.updateOverlayIndex(index);
-                    }
-                }}
-            >
-                {isOverlay ? (
-                    <AnnotableImage
-                        md5={omg.md5}
-                        extension={omg.extension}
-                        imgRef={imgRef}
-                    >
-                        {img}
-                    </AnnotableImage>
-                ) : (
-                    img
-                )}
-            </div>
-            <div className="overflow">
-                {dateCrumb}
-                {timeCrumb}
-                {identityCrumbs}
-                {addressCrumb}
-                {tagsCrumbs}
-                {cameraCrumb}
-                {extraImageJsx}
-            </div>
+        <div className="overflow">
+            {dateCrumb}
+            {timeCrumb}
+            {identityCrumbs}
+            {addressCrumb}
+            {tagsCrumbs}
+            {cameraCrumb}
+            {extraImageJsx}
         </div>
     );
+}
+
+function DiffInfo({
+    timestamp,
+    previous_timestamp,
+    predicted_location,
+    showLocationInterpolation,
+    timeicon,
+}: {
+    timestamp: number | null;
+    previous_timestamp: number | null;
+    predicted_location: PredictedLocation | null;
+    showLocationInterpolation: boolean;
+    timeicon: string | null;
+}) {
+    let diffDate = null;
+    if (previous_timestamp !== null && timestamp !== null) {
+        const diff_date = format_seconds_to_duration(
+            Math.abs(previous_timestamp - timestamp),
+        );
+        diffDate = (
+            <>
+                {timeicon === null ? null : <br />}⏱️{diff_date}
+            </>
+        );
+    }
+    let predictedLocation = null;
+    if (predicted_location !== null && showLocationInterpolation) {
+        let cls = "LocPredView";
+        if (
+            predicted_location.earlier === null ||
+            predicted_location.later === null
+        ) {
+            cls += "onesided";
+        }
+        if (
+            (predicted_location.earlier?.distance_m || 0) > 1000 ||
+            (predicted_location.later?.distance_m || 0) > 1000 ||
+            (predicted_location.earlier?.seconds || 0) > 3600 ||
+            (predicted_location.later?.seconds || 0) > 3600
+        ) {
+            cls += "suspicious";
+        }
+        predictedLocation = (
+            <div className={cls}>
+                {predicted_location_to_string(predicted_location)}
+            </div>
+        );
+    }
+    return (
+        <>
+            {diffDate} {predictedLocation}
+        </>
+    );
+}
+function TimeUx({
+    timestamp,
+    timeicon,
+    iconsToShow,
+    sort,
+    callbacks,
+}: {
+    timestamp: number;
+    timeicon: string | null;
+    iconsToShow: string[];
+    sort: SortParams;
+    callbacks: ImageCallbacks;
+}) {
+    let prevLink = null;
+    let nextLink = null;
+    if (sort.order === "ASC") {
+        prevLink = (
+            <a
+                href="#"
+                onClick={() => callbacks.update_url({ tsto: timestamp + 0.01 })}
+            >
+                ⬅️ to
+            </a>
+        );
+    } else {
+        prevLink = (
+            <a
+                href="#"
+                onClick={() =>
+                    callbacks.update_url({ tsfrom: timestamp - 0.01 })
+                }
+            >
+                ⬅️ from
+            </a>
+        );
+    }
+    if (sort.order == "ASC") {
+        nextLink = (
+            <a
+                href="#"
+                onClick={() =>
+                    callbacks.update_url({ tsfrom: timestamp - 0.01 })
+                }
+            >
+                from ➡️
+            </a>
+        );
+    } else {
+        nextLink = (
+            <a
+                href="#"
+                onClick={() => callbacks.update_url({ tsto: timestamp + 0.01 })}
+            >
+                to ➡️
+            </a>
+        );
+    }
+    return (
+        <>
+            {prevLink} {timeicon}
+            {iconsToShow} {nextLink}
+        </>
+    );
+}
+function MovementUx({
+    index,
+    paging,
+    has_next_page,
+    callbacks,
+}: {
+    index: number;
+    paging: GalleryPaging;
+    has_next_page: boolean;
+    callbacks: ImageCallbacks;
+}) {
+    const movement = (
+        <>
+            <a href="#" onClick={() => callbacks.prev_item(index, paging)}>
+                prev
+            </a>{" "}
+            <a href="#" onClick={() => callbacks.close_overlay()}>
+                close
+            </a>{" "}
+            <a
+                href="#"
+                onClick={() =>
+                    callbacks.next_item(index, has_next_page, paging)
+                }
+            >
+                next
+            </a>
+        </>
+    );
+    return <div>{movement}</div>;
 }
 
 function predicted_location_to_string(predicted: PredictedLocation): string {

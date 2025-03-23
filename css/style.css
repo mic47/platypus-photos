@@ -7,7 +7,6 @@ body {
 }
 .gallery_item {
   float: left;
-  height: 25em;
   background-color: #CCCCFF;
   margin: 0.1em;
   border: 1px solid #fff;
@@ -18,16 +17,12 @@ div.gallery_item:hover {
 }
 .gallery_container {
   display: flex;
-  height: 15em;
   justify-content: center;
 
 }
 .overlay .gallery_container {
   display: flex;
   justify-content: center;
-  height: initial;
-  max-height: 90%;
-  height: 90%;
 }
 .gallery_item_fs{
   display: none;
@@ -37,11 +32,9 @@ div.gallery_item:hover {
 }
 .gallery_image {
   object-fit: contain;
-  max-height: 15em;
 }
 .overlay .gallery_image {
   object-fit: contain;
-  max-height: 100%;
 }
 .gallery_feature {
   position: absolute;

@@ -260,6 +260,11 @@ function GalleryView({
                 has_next_page={data.has_next_page}
                 index={index}
                 showLocationIterpolation={checkboxes["LocPredCheck"] === true}
+                showDiffInfo={
+                    checkboxes["LocPredCheck"] === true ||
+                    checkboxes["ShowDiffCheck"] === true
+                }
+                showMetadata={checkboxes["ShowMetadataCheck"] === true}
                 callbacks={callbacks}
             />
         );
@@ -299,6 +304,24 @@ function GalleryView({
                     Next Page
                 </a>
             </span>
+            <input
+                type="checkbox"
+                id="ShowDiffCheck"
+                checked={checkboxes["ShowDiffCheck"]}
+                onClick={(event) =>
+                    callbacks.update_checkbox_from_element(event.currentTarget)
+                }
+            />
+            Show Diff
+            <input
+                type="checkbox"
+                id="ShowMetadataCheck"
+                checked={checkboxes["ShowMetadataCheck"]}
+                onClick={(event) =>
+                    callbacks.update_checkbox_from_element(event.currentTarget)
+                }
+            />
+            Show Metadata
             <input
                 type="checkbox"
                 id="LocPredCheck"
