@@ -33,7 +33,7 @@ export type ImageCallbacks = {
     prev_item: (index: number) => void;
     close_overlay: () => void;
     next_item: (index: number, has_next_page: boolean) => void;
-    updateOverlayMd5: (index: string | null) => void;
+    updateOverlayMd5: (md5: string | null) => void;
 };
 
 export type GalleryImageFeatures = {
