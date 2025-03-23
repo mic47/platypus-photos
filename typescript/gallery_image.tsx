@@ -30,9 +30,6 @@ export type ImageCallbacks = {
     update_url: (update: SearchQuery) => void;
     update_url_add_tag: (tag: string) => void;
     update_url_add_identity: (tag: string) => void;
-    prev_item: (index: number) => void;
-    close_overlay: () => void;
-    next_item: (index: number, has_next_page: boolean) => void;
     updateOverlayMd5: (md5: string | null) => void;
 };
 

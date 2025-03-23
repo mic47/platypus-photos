@@ -223,6 +223,8 @@ export function GalleryComponent({
                 });
             }
         },
+    };
+    const overlayMovementCallbacks = {
         close_overlay: () => {
             updateOverlayIndex(null);
         },
@@ -259,6 +261,7 @@ export function GalleryComponent({
                 checkboxes={checkboxes}
                 overlay_index={overlayIndex}
                 callbacks={callbacks}
+                overlayMovementCallbacks={overlayMovementCallbacks}
             />
         </>
     );
@@ -280,6 +283,7 @@ interface GalleryViewProps {
         annotation_overlay_interpolated: (location: ManualLocation) => void;
         update_checkbox_from_element: (element: HTMLInputElement) => void;
     };
+    overlayMovementCallbacks: OverlayMovementCallbacks;
 }
 function GalleryView({
     sort,
@@ -287,6 +291,7 @@ function GalleryView({
     checkboxes,
     overlay_index,
     callbacks,
+    overlayMovementCallbacks,
 }: GalleryViewProps) {
     let prev_date: string | null = null;
     const overlayItem =
@@ -314,7 +319,7 @@ function GalleryView({
                         index={overlay_index}
                         md5={data.omgs[overlay_index].omg.md5}
                         has_next_page={data.has_next_page}
-                        callbacks={callbacks}
+                        callbacks={overlayMovementCallbacks}
                     />
                 ) : null}
             </GalleryImage>
@@ -403,6 +408,12 @@ function GalleryView({
     );
 }
 
+type OverlayMovementCallbacks = {
+    prev_item: (index: number) => void;
+    close_overlay: () => void;
+    next_item: (index: number, has_next_page: boolean) => void;
+};
+
 function OverlayMovementUx({
     index,
     md5,
@@ -412,11 +423,17 @@ function OverlayMovementUx({
     index: number;
     md5: string;
     has_next_page: boolean;
-    callbacks: ImageCallbacks;
+    callbacks: OverlayMovementCallbacks;
 }) {
     const movement = (
         <>
-            <a href={`#i${md5}`} onClick={() => callbacks.prev_item(index)}>
+            <a
+                href={`#i${md5}`}
+                onClick={(event) => {
+                    event.preventDefault();
+                    callbacks.prev_item(index);
+                }}
+            >
                 prev
             </a>{" "}
             <a href={`#i${md5}`} onClick={() => callbacks.close_overlay()}>
@@ -424,7 +441,10 @@ function OverlayMovementUx({
             </a>{" "}
             <a
                 href={`#i${md5}`}
-                onClick={() => callbacks.next_item(index, has_next_page)}
+                onClick={(event) => {
+                    event.preventDefault();
+                    callbacks.next_item(index, has_next_page);
+                }}
             >
                 next
             </a>
