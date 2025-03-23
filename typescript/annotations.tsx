@@ -270,7 +270,7 @@ function AnnotationOverlayView({
                       paging={paging}
                       previous_timestamp={null}
                       has_next_page={false}
-                      overlay_index={null}
+                      isOverlay={false}
                       showLocationIterpolation={false}
                       callbacks={null}
                   />

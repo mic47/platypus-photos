@@ -22,7 +22,7 @@ interface GalleryImageProps {
     paging: GalleryPaging;
     previous_timestamp: number | null;
     has_next_page: boolean;
-    overlay_index: number | null;
+    isOverlay: boolean;
     index: number;
     showLocationIterpolation: boolean;
     callbacks: ImageCallbacks | null;
@@ -48,7 +48,7 @@ export function GalleryImage({
     paging,
     previous_timestamp,
     has_next_page,
-    overlay_index,
+    isOverlay,
     index,
     showLocationIterpolation,
     callbacks: callbacksOG,
@@ -57,7 +57,6 @@ export function GalleryImage({
 
     const callbacks = callbacksOG === null ? null : { ...callbacksOG };
 
-    const isOverlay = index === overlay_index;
     const className = isOverlay ? "gallery_item overlay" : "gallery_item";
 
     const iconsToShow = [];

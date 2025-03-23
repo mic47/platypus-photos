@@ -256,7 +256,7 @@ function GalleryView({
                 previous_timestamp={
                     prev_date === null ? null : Date.parse(prev_date) / 1000
                 }
-                overlay_index={overlay_index}
+                isOverlay={overlay_index === index}
                 has_next_page={data.has_next_page}
                 index={index}
                 showLocationIterpolation={checkboxes["LocPredCheck"] === true}
