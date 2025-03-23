@@ -50,13 +50,16 @@ export function GalleryComponent({
     checkboxSync,
     submit_annotations,
 }: GalleryComponentProps) {
-    const [data, updateData] = React.useState<[SearchQuery, ImageResponse]>([
+    const [data, updateData] = React.useState<
+        [SearchQuery, ImageResponse, Map<string, number>]
+    >([
         query,
         {
             omgs: [],
             has_next_page: false,
             some_location: null,
         },
+        new Map(),
     ]);
     const [aggr, updateAggr] = React.useState<{
         aggr: ImageAggregation;
@@ -97,7 +100,11 @@ export function GalleryComponent({
             })
             .then((data) => {
                 if (!ignore) {
-                    updateData([query, data]);
+                    const md5ToIndex = new Map();
+                    data.omgs.forEach((image, index) => {
+                        md5ToIndex.set(image.omg.md5, index);
+                    });
+                    updateData([query, data, md5ToIndex]);
                 }
             });
         return () => {
@@ -123,8 +130,18 @@ export function GalleryComponent({
             ignore = true;
         };
     }, [query, paging]);
+    const md5ToIndex = data[2];
     const callbacks = {
-        updateOverlayIndex,
+        updateOverlayMd5: (md5: string | null) => {
+            if (md5 !== null) {
+                const index = md5ToIndex.get(md5);
+                if (index !== undefined) {
+                    updateOverlayIndex(index);
+                    return;
+                }
+            }
+            updateOverlayIndex(null);
+        },
         prev_page: (paging: GalleryPaging) => {
             if (paging.page !== undefined && paging.page > 0) {
                 pagingCallbacks.update({ page: paging.page - 1 });
@@ -255,7 +272,6 @@ function GalleryView({
                     prev_date === null ? null : Date.parse(prev_date) / 1000
                 }
                 isOverlay={true}
-                index={overlay_index}
                 showLocationIterpolation={checkboxes["LocPredCheck"] === true}
                 showDiffInfo={
                     checkboxes["LocPredCheck"] === true ||
@@ -277,7 +293,7 @@ function GalleryView({
                 ) : null}
             </GalleryImage>
         );
-    const galleryItems = data.omgs.map((image, index) => {
+    const galleryItems = data.omgs.map((image) => {
         const ret = (
             <GalleryImage
                 key={image.omg.md5}
@@ -287,7 +303,6 @@ function GalleryView({
                     prev_date === null ? null : Date.parse(prev_date) / 1000
                 }
                 isOverlay={false}
-                index={index}
                 showLocationIterpolation={checkboxes["LocPredCheck"] === true}
                 showDiffInfo={
                     checkboxes["LocPredCheck"] === true ||

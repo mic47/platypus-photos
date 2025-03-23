@@ -23,7 +23,6 @@ interface GalleryImageProps {
     sort: SortParams;
     previous_timestamp: number | null;
     isOverlay: boolean;
-    index: number;
     showLocationIterpolation: boolean;
     callbacks: ImageCallbacks | null;
 }
@@ -39,7 +38,7 @@ export type ImageCallbacks = {
         has_next_page: boolean,
         paging: GalleryPaging,
     ) => void;
-    updateOverlayIndex: (index: number | null) => void;
+    updateOverlayMd5: (index: string | null) => void;
 };
 
 export type GalleryImageFeatures = {
@@ -53,7 +52,6 @@ export function GalleryImage({
     sort,
     previous_timestamp,
     isOverlay,
-    index,
     showLocationIterpolation,
     callbacks: callbacksOG,
     showDiffInfo,
@@ -143,7 +141,7 @@ export function GalleryImage({
                 }}
                 onClick={() => {
                     if (callbacks !== null) {
-                        callbacks.updateOverlayIndex(index);
+                        callbacks.updateOverlayMd5(omg.md5);
                     }
                 }}
             >
