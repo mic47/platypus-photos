@@ -31,6 +31,8 @@ import { MapView } from "./map";
 import { DatesComponent } from "./dates_chart";
 import { FacesComponent } from "./faces";
 import { ExportFormComponent } from "./exporter";
+import { QueryCallbacks } from "./types";
+import { AggregateInfoComponent } from "./aggregate_info";
 
 interface ApplicationProps {
     searchQuerySync: TypedUrlSync<SearchQuery>;
@@ -93,6 +95,29 @@ export function Application({
             updateGalleryUrl({ ...newData });
         },
     };
+    const updateQueryCallbacks: QueryCallbacks = {
+        update_url: (update: SearchQuery) => {
+            queryCallbacks.update(update);
+        },
+        update_url_add_tag: (tag: string) => {
+            const old_tag = searchQueryWithTs.q["tag"];
+            if (old_tag === undefined || old_tag === null) {
+                queryCallbacks.update({ tag: tag });
+            } else {
+                queryCallbacks.update({ tag: `${old_tag},${tag}` });
+            }
+        },
+        update_url_add_identity: (identity: string) => {
+            const old_identity = searchQueryWithTs.q["identity"];
+            if (old_identity === undefined || old_identity === null) {
+                queryCallbacks.update({ identity: identity });
+            } else {
+                queryCallbacks.update({
+                    identity: `${old_identity},${identity}`,
+                });
+            }
+        },
+    };
     /* Annotation Overlay State */
     const [annotationRequest, updateAnnotationRequest] =
         React.useState<null | AnnotationOverlayRequest>(null);
@@ -102,6 +127,7 @@ export function Application({
         return Object.fromEntries(
             [
                 ["query", "Query ⌨️"],
+                ["stats", "Stats 📊"],
                 ["dates", "Dates Chart 📆📈"],
                 ["directories", "Directories 📂"],
                 ["map", "Map 🗺️"],
@@ -207,12 +233,18 @@ export function Application({
                     sort={sort}
                 />
             </Switchable>
+            <Switchable switchedOn={activeTabs.stats.active}>
+                <AggregateInfoComponent
+                    query={searchQueryWithTs.q}
+                    callbacks={updateQueryCallbacks}
+                />
+            </Switchable>
             <Switchable switchedOn={activeTabs.gallery.active}>
                 <GalleryComponent
                     query={searchQueryWithTs.q}
                     paging={paging}
                     sort={sort}
-                    queryCallbacks={queryCallbacks}
+                    queryCallbacks={updateQueryCallbacks}
                     checkboxSync={checkboxSync}
                     galleryUrl={galleryUrl}
                     galleryUrlCallbacks={galleryUrlCallbacks}

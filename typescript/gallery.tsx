@@ -2,7 +2,6 @@ import React from "react";
 
 import {
     GalleryPaging,
-    ImageAggregation,
     ImageResponse,
     ManualLocation,
     SearchQuery,
@@ -11,9 +10,8 @@ import {
 import { CheckboxesParams, CheckboxSync } from "./state.ts";
 import * as pygallery_service from "./pygallery.generated/sdk.gen.ts";
 import { GalleryImage, ImageCallbacks } from "./gallery_image.tsx";
-import { AggregateInfoView } from "./aggregate_info.tsx";
 import { AnnotationOverlayRequest } from "./annotations.tsx";
-import { UpdateCallbacks } from "./types";
+import { UpdateCallbacks, QueryCallbacks } from "./types";
 
 export type GalleryUrlParams = {
     oi: null | number;
@@ -26,7 +24,7 @@ export function parse_gallery_url(data: {
 }
 interface GalleryComponentProps {
     query: SearchQuery;
-    queryCallbacks: UpdateCallbacks<SearchQuery>;
+    queryCallbacks: QueryCallbacks;
     paging: GalleryPaging;
     sort: SortParams;
     galleryUrl: GalleryUrlParams;
@@ -76,20 +74,6 @@ export function GalleryComponent({
             window.removeEventListener("scroll", handleScroll);
         };
     }, [query, paging, data.lastFetchedPage, data.response.has_next_page]);
-    const [aggr, updateAggr] = React.useState<{
-        aggr: ImageAggregation;
-        paging: GalleryPaging;
-    }>({
-        aggr: {
-            total: 0,
-            address: {},
-            tag: {},
-            classification: {},
-            cameras: {},
-            identities: {},
-        },
-        paging,
-    });
 
     // OI should go outside?
     const [overlayIndex, updateOverlayIndex] = React.useState<null | number>(
@@ -148,25 +132,6 @@ export function GalleryComponent({
         };
     }, [query, paging, sort, pageToFetch]);
     React.useEffect(() => {
-        let ignore = false;
-        const requestBody = {
-            query,
-        };
-        const copiedPaging = { ...paging };
-        pygallery_service
-            .aggregateImagesPost({
-                requestBody,
-            })
-            .then((data) => {
-                if (!ignore) {
-                    updateAggr({ aggr: data, paging: copiedPaging });
-                }
-            });
-        return () => {
-            ignore = true;
-        };
-    }, [query, paging]);
-    React.useEffect(() => {
         if (
             overlayIndex !== null &&
             data.response.omgs.length <= overlayIndex
@@ -199,27 +164,7 @@ export function GalleryComponent({
             checkboxSync.update_from_element(element);
             updateCheckboxes(checkboxSync.get());
         },
-        update_url: (update: SearchQuery) => {
-            queryCallbacks.update(update);
-        },
-        update_url_add_tag: (tag: string) => {
-            const old_tag = query["tag"];
-            if (old_tag === undefined || old_tag === null) {
-                queryCallbacks.update({ tag: tag });
-            } else {
-                queryCallbacks.update({ tag: `${old_tag},${tag}` });
-            }
-        },
-        update_url_add_identity: (identity: string) => {
-            const old_identity = query["identity"];
-            if (old_identity === undefined || old_identity === null) {
-                queryCallbacks.update({ identity: identity });
-            } else {
-                queryCallbacks.update({
-                    identity: `${old_identity},${identity}`,
-                });
-            }
-        },
+        ...queryCallbacks,
     };
     const overlayMovementCallbacks = {
         close_overlay: () => {
@@ -242,21 +187,14 @@ export function GalleryComponent({
         },
     };
     return (
-        <>
-            <AggregateInfoView
-                aggr={aggr.aggr}
-                show_links={true}
-                callbacks={callbacks}
-            />
-            <GalleryView
-                sort={sort}
-                data={data.response}
-                checkboxes={checkboxes}
-                overlay_index={overlayIndex}
-                callbacks={callbacks}
-                overlayMovementCallbacks={overlayMovementCallbacks}
-            />
-        </>
+        <GalleryView
+            sort={sort}
+            data={data.response}
+            checkboxes={checkboxes}
+            overlay_index={overlayIndex}
+            callbacks={callbacks}
+            overlayMovementCallbacks={overlayMovementCallbacks}
+        />
     );
 }
 

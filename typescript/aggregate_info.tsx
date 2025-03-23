@@ -2,15 +2,56 @@ import React from "react";
 
 import { ImageAggregation, SearchQuery } from "./pygallery.generated/types.gen";
 import { append_flag } from "./utils";
+import { QueryCallbacks } from "./types";
+import * as pygallery_service from "./pygallery.generated/sdk.gen.ts";
 
+interface AggregateInfoComponentProps {
+    query: SearchQuery;
+    callbacks: QueryCallbacks;
+}
+
+export function AggregateInfoComponent({
+    query,
+    callbacks,
+}: AggregateInfoComponentProps) {
+    const [aggr, updateAggr] = React.useState<ImageAggregation>({
+        total: 0,
+        address: {},
+        tag: {},
+        classification: {},
+        cameras: {},
+        identities: {},
+    });
+    React.useEffect(() => {
+        let ignore = false;
+        const requestBody = {
+            query,
+        };
+        pygallery_service
+            .aggregateImagesPost({
+                requestBody,
+            })
+            .then((data) => {
+                if (!ignore) {
+                    updateAggr(data);
+                }
+            });
+        return () => {
+            ignore = true;
+        };
+    }, [query]);
+    return (
+        <AggregateInfoView
+            aggr={aggr}
+            show_links={true}
+            callbacks={callbacks}
+        />
+    );
+}
 interface AggregateInfoViewProps {
     aggr: ImageAggregation;
     show_links: boolean;
-    callbacks: {
-        update_url_add_tag: (tag: string) => void;
-        update_url_add_identity: (identity: string) => void;
-        update_url: (update: SearchQuery) => void;
-    };
+    callbacks: QueryCallbacks;
 }
 
 export function AggregateInfoView({
