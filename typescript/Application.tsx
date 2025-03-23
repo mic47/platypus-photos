@@ -150,7 +150,9 @@ export function Application({
             <Switchable switchedOn={activeTabs.query.active}>
                 <InputFormView
                     query={searchQueryWithTs}
+                    sort={sort}
                     callbacks={queryCallbacks}
+                    sortCallbacks={sortCallbacks}
                     submitAnnotations={(request) =>
                         updateAnnotationRequest(request)
                     }
@@ -211,7 +213,6 @@ export function Application({
                     paging={paging}
                     sort={sort}
                     queryCallbacks={queryCallbacks}
-                    sortCallbacks={sortCallbacks}
                     checkboxSync={checkboxSync}
                     galleryUrl={galleryUrl}
                     galleryUrlCallbacks={galleryUrlCallbacks}

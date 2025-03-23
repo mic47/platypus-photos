@@ -1,8 +1,10 @@
 import React, { FormEvent } from "react";
 
-import { SearchQuery } from "./pygallery.generated/types.gen";
+import { SearchQuery, SortParams } from "./pygallery.generated/types.gen";
 import { update_search_query_value } from "./state.ts";
 import { AnnotationOverlayRequest } from "./annotations.tsx";
+import { SortFormView } from "./sort_form.tsx";
+import { UpdateCallbacks } from "./types.ts";
 
 export type WithTs<T> = {
     q: T;
@@ -11,13 +13,17 @@ export type WithTs<T> = {
 
 interface InputFormViewProps {
     query: WithTs<SearchQuery>;
+    sort: SortParams;
     callbacks: Callbacks;
+    sortCallbacks: UpdateCallbacks<SortParams>;
     submitAnnotations: (request: AnnotationOverlayRequest) => void;
 }
 
 export function InputFormView({
     query,
+    sort,
     callbacks,
+    sortCallbacks,
     submitAnnotations,
 }: InputFormViewProps) {
     function update(form: FormEvent<HTMLFormElement>) {
@@ -155,6 +161,10 @@ export function InputFormView({
             />{" "}
             Skip photos being annoted 🏗️.
             <br />
+            <SortFormView
+                sort={sort}
+                update_sort={(update) => sortCallbacks.update(update)}
+            />
         </>
     );
 }

@@ -13,7 +13,6 @@ import * as pygallery_service from "./pygallery.generated/sdk.gen.ts";
 import { GalleryImage, ImageCallbacks } from "./gallery_image.tsx";
 import { AggregateInfoView } from "./aggregate_info.tsx";
 import { AnnotationOverlayRequest } from "./annotations.tsx";
-import { SortFormView } from "./sort_form.tsx";
 import { UpdateCallbacks } from "./types";
 
 export type GalleryUrlParams = {
@@ -30,7 +29,6 @@ interface GalleryComponentProps {
     queryCallbacks: UpdateCallbacks<SearchQuery>;
     paging: GalleryPaging;
     sort: SortParams;
-    sortCallbacks: UpdateCallbacks<SortParams>;
     galleryUrl: GalleryUrlParams;
     galleryUrlCallbacks: UpdateCallbacks<GalleryUrlParams>;
     submit_annotations: (request: AnnotationOverlayRequest) => void;
@@ -42,7 +40,6 @@ export function GalleryComponent({
     paging,
     sort,
     queryCallbacks,
-    sortCallbacks,
     galleryUrl,
     galleryUrlCallbacks,
     checkboxSync,
@@ -246,10 +243,6 @@ export function GalleryComponent({
     };
     return (
         <>
-            <SortFormView
-                sort={sort}
-                update_sort={(update) => sortCallbacks.update(update)}
-            />
             <AggregateInfoView
                 aggr={aggr.aggr}
                 show_links={true}
