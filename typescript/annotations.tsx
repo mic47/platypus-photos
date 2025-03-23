@@ -169,7 +169,6 @@ export function AnnotationOverlayComponent({
             images={images === null ? null : images.omgs}
             aggr={aggr}
             directories={directories}
-            paging={paging}
             error={error}
             callbacks={{
                 close: () => resetAll(),
@@ -209,7 +208,6 @@ interface AnnotationOverlayViewProps {
     images: ImageWithMeta[] | null;
     aggr: ImageAggregation | null;
     directories: DirectoryStats[] | null;
-    paging: GalleryPaging;
     error: ERROR | null;
     callbacks: {
         close: () => void;
@@ -226,7 +224,6 @@ function AnnotationOverlayView({
     images,
     aggr,
     directories,
-    paging,
     error,
     callbacks: { close, submit },
 }: AnnotationOverlayViewProps) {
@@ -368,13 +365,11 @@ function AnnotationOverlayView({
                 ) : (
                     <AggregateInfoView
                         aggr={aggr}
-                        paging={paging}
                         show_links={false}
                         callbacks={{
                             update_url_add_tag: noop,
                             update_url_add_identity: noop,
                             update_url: noop,
-                            set_page: noop,
                         }}
                     />
                 )}

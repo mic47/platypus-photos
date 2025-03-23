@@ -1,36 +1,23 @@
 import React from "react";
 
-import {
-    GalleryPaging,
-    ImageAggregation,
-    SearchQuery,
-} from "./pygallery.generated/types.gen";
+import { ImageAggregation, SearchQuery } from "./pygallery.generated/types.gen";
 import { append_flag } from "./utils";
 
 interface AggregateInfoViewProps {
     aggr: ImageAggregation;
-    paging: GalleryPaging;
     show_links: boolean;
     callbacks: {
         update_url_add_tag: (tag: string) => void;
         update_url_add_identity: (identity: string) => void;
         update_url: (update: SearchQuery) => void;
-        set_page: (page: number) => void;
     };
 }
 
 export function AggregateInfoView({
     aggr,
-    paging,
     show_links,
-    callbacks: {
-        update_url_add_tag,
-        update_url_add_identity,
-        update_url,
-        set_page,
-    },
+    callbacks: { update_url_add_tag, update_url_add_identity, update_url },
 }: AggregateInfoViewProps) {
-    const num_pages = Math.ceil(aggr.total / (paging.paging || 100));
     const tags = Object.entries(aggr.tag)
         .sort(([, a], [, b]) => b - a)
         .slice(0, 15)
@@ -146,24 +133,6 @@ export function AggregateInfoView({
                 ];
             }
         });
-    const pages = [...Array(num_pages).keys()]
-        .filter((page) => page <= 10 || page >= num_pages - 10)
-        .flatMap((page) => {
-            if (page !== 10) {
-                if (page === paging.page) {
-                    return <b key={page}> {page} </b>;
-                } else {
-                    return [
-                        <a key={page} href="#" onClick={() => set_page(page)}>
-                            {page}
-                        </a>,
-                        " ",
-                    ];
-                }
-            } else {
-                return [" ... "];
-            }
-        });
     return (
         <div>
             Found {aggr.total} matches.
@@ -177,13 +146,6 @@ export function AggregateInfoView({
             Top locs: {locs}
             <br />
             Cameras: {cameras}
-            <br />
-            {show_links === false ? null : (
-                <>
-                    Go to page: {pages}
-                    <br />
-                </>
-            )}
         </div>
     );
 }
