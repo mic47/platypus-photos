@@ -425,8 +425,8 @@ function OverlayMovementUx({
     has_next_page: boolean;
     callbacks: OverlayMovementCallbacks;
 }) {
-    const movement = (
-        <>
+    return (
+        <div>
             <a
                 href={`#i${md5}`}
                 onClick={(event) => {
@@ -448,7 +448,6 @@ function OverlayMovementUx({
             >
                 next
             </a>
-        </>
+        </div>
     );
-    return <div>{movement}</div>;
 }
