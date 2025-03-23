@@ -56,7 +56,6 @@ IGNORED_IMAGE_TAGS = [
     "light_source",
     "max_aperture_value",
     "metering_mode",
-    "orientation",
     "photographic_sensitivity",
     "photometric_interpretation",
     "pixel_x_dimension",
@@ -112,6 +111,7 @@ EXTRACT_IMAGE_TAGS = [
     "offset_time",
     "offset_time_digitized",
     "offset_time_original",
+    "orientation",
     "software",
 ]
 
@@ -577,7 +577,7 @@ class Exif:
 
     def process_file(self, inp: PathWithMd5) -> WithMD5[ImageExif]:
         ret = self._cache.get(inp.md5)
-        if ret is not None and ret.payload is not None:
+        if ret is not None and ret.payload is not None and ret.version == self._version:
             return ret.payload
         media = supported_media(inp.path)
         media_class = supported_media_class(inp.path)
@@ -623,7 +623,8 @@ class Exif:
         for tag, value in d.all().items():
             print("ERR: unprocessed tag", tag, value, type(value), file=sys.stderr)
 
-        return WithMD5(inp.md5, self._version, ImageExif(gps, camera, date, video_info), None)
+        orientation = None  # Not extracted for videos
+        return WithMD5(inp.md5, self._version, ImageExif(gps, camera, date, orientation, video_info), None)
 
     def process_image_impl(self: Exif, inp: PathWithMd5) -> WithMD5[ImageExif]:
         try:
@@ -648,8 +649,10 @@ class Exif:
         gps = gpscoord_from_image_tags(d)
         camera = camera_from_image_tags(d)
         date = date_from_image_tags(d)
+        maybe_orientation = d.get("orientation")
+        orientation = None if maybe_orientation is None else int(maybe_orientation)
 
         for tag, value in d.all().items():
             print("ERR: unprocessed tag", tag, value, type(value), file=sys.stderr)
 
-        return WithMD5(inp.md5, self._version, ImageExif(gps, camera, date, None), None)
+        return WithMD5(inp.md5, self._version, ImageExif(gps, camera, date, orientation, None), None)

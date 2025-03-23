@@ -109,6 +109,7 @@ class ImageExif(StorableData):
     gps: t.Optional[GPSCoord]
     camera: Camera
     date: t.Optional[Date]
+    orientation: t.Optional[int]
     video_info: t.Optional[VideoInfo] = field(default=None)
 
     def to_json_dict(self) -> t.Any:
@@ -116,6 +117,7 @@ class ImageExif(StorableData):
             "gps": None if self.gps is None else self.gps.to_json_dict(),
             "camera": self.camera.to_json_dict(),
             "date": None if self.date is None else self.date.to_json_dict(),
+            "orientation": self.orientation,
             "video_info": None if self.video_info is None else self.video_info.to_json_dict(),
         }
 
@@ -128,6 +130,7 @@ class ImageExif(StorableData):
             None if gps is None else GPSCoord.from_json_dict(gps),
             Camera.from_json_dict(d["camera"]),
             None if date is None else Date.from_json_dict(date),
+            d.get("orientation"),
             None if video_info is None else VideoInfo.from_json_dict(video_info),
         )
 
@@ -137,4 +140,4 @@ class ImageExif(StorableData):
 
     @staticmethod
     def current_version() -> int:
-        return 0
+        return 1

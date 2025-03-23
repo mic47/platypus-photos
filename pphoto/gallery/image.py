@@ -32,6 +32,7 @@ def make_image_address(
     return ImageAddress(country, name, full)
 
 
+# pylint: disable-next=R0915
 def make_image(
     md5: str,
     extension: str,
@@ -47,6 +48,9 @@ def make_image(
     max_last_update: float,
 ) -> Image:
     date = None
+    rotate_image = False
+    if exif is not None and exif.orientation is not None and exif.orientation > 4:
+        rotate_image = True
     if exif is not None and exif.date is not None:
         date = exif.date.datetime
     date = (
@@ -147,7 +151,15 @@ def make_image(
             if manual_identities is not None
             else []
         ),
-        None if dimensions is None else ImageDims(dimensions.width, dimensions.height),
+        (
+            None
+            if dimensions is None
+            else (
+                ImageDims(dimensions.height, dimensions.width)
+                if rotate_image
+                else ImageDims(dimensions.width, dimensions.height)
+            )
+        ),
         None if dimensions is None else dimensions.file_size,
         Image.current_version(),
     )
