@@ -114,9 +114,8 @@ export function GalleryImage({
             className={className}
             style={{ width: gallery_item_width, height: gallery_item_height }}
         >
-            <span id={`i${index}`}></span>
             {isOverlay && callbacks !== null ? (
-                <MovementUx
+                <OverlayMovementUx
                     index={index}
                     paging={paging}
                     has_next_page={has_next_page}
@@ -489,7 +488,7 @@ function TimeUx({
         </>
     );
 }
-function MovementUx({
+function OverlayMovementUx({
     index,
     paging,
     has_next_page,

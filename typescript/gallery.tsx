@@ -246,6 +246,30 @@ function GalleryView({
     callbacks,
 }: GalleryViewProps) {
     let prev_date: string | null = null;
+    const overlayItem =
+        overlay_index === null || overlay_index >= data.omgs.length ? null : (
+            <GalleryImage
+                image={data.omgs[overlay_index]}
+                sort={sort}
+                paging={paging}
+                previous_timestamp={
+                    prev_date === null ? null : Date.parse(prev_date) / 1000
+                }
+                isOverlay={true}
+                has_next_page={data.has_next_page}
+                index={overlay_index}
+                showLocationIterpolation={checkboxes["LocPredCheck"] === true}
+                showDiffInfo={
+                    checkboxes["LocPredCheck"] === true ||
+                    checkboxes["ShowDiffCheck"] === true
+                }
+                showTimeSelection={
+                    checkboxes["ShowTimeSelectionCheck"] === true
+                }
+                showMetadata={checkboxes["ShowMetadataCheck"] === true}
+                callbacks={callbacks}
+            />
+        );
     const galleryItems = data.omgs.map((image, index) => {
         const ret = (
             <GalleryImage
@@ -256,7 +280,7 @@ function GalleryView({
                 previous_timestamp={
                     prev_date === null ? null : Date.parse(prev_date) / 1000
                 }
-                isOverlay={overlay_index === index}
+                isOverlay={false}
                 has_next_page={data.has_next_page}
                 index={index}
                 showLocationIterpolation={checkboxes["LocPredCheck"] === true}
@@ -344,7 +368,9 @@ function GalleryView({
             />
             Show Location Interpolation
             {locInterpolation}
-            <div>{galleryItems}</div>
+            <div>
+                {overlayItem} {galleryItems}
+            </div>
             <br />
             <div
                 style={{ float: "left", background: "#CCCCCC", height: "10em" }}
