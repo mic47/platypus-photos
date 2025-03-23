@@ -57,9 +57,7 @@ export function Application({
         () => searchQuerySync.update(searchQueryWithTs.q),
         [searchQueryWithTs.q],
     );
-    const [paging, updatePaging] = React.useState<GalleryPaging>(
-        pagingSync.get_parsed(),
-    );
+    const paging = React.useState<GalleryPaging>(pagingSync.get_parsed())[0];
     React.useEffect(() => pagingSync.update(paging), [paging]);
     const [sort, updateSort] = React.useState<SortParams>(
         sortSync.get_parsed(),
@@ -78,14 +76,6 @@ export function Application({
         },
         replace: (newState: SearchQuery) =>
             updateSearchQueryWithTs({ q: { ...newState }, ts: Date.now() }),
-    };
-    const pagingCallbacks = {
-        update: (update: GalleryPaging) => {
-            updatePaging({ ...paging, ...update });
-        },
-        replace: (newData: GalleryPaging) => {
-            updatePaging({ ...newData });
-        },
     };
     const sortCallbacks = {
         update: (update: SortParams) => {
@@ -169,7 +159,6 @@ export function Application({
             <AnnotationOverlayComponent
                 request={annotationRequest}
                 queryCallbacks={queryCallbacks}
-                pagingCallbacks={pagingCallbacks}
                 reset={() => updateAnnotationRequest(null)}
             />
             <Switchable switchedOn={activeTabs.dates.active}>
@@ -222,7 +211,6 @@ export function Application({
                     paging={paging}
                     sort={sort}
                     queryCallbacks={queryCallbacks}
-                    pagingCallbacks={pagingCallbacks}
                     sortCallbacks={sortCallbacks}
                     checkboxSync={checkboxSync}
                     galleryUrl={galleryUrl}

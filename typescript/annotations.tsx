@@ -6,7 +6,6 @@ import {
     AnnotationOverlayInterpolateLocation,
     AnnotationOverlayNoLocation,
     DirectoryStats,
-    GalleryPaging,
     ImageAggregation,
     ImageResponse,
     ImageWithMeta,
@@ -70,14 +69,12 @@ export function getFixedLocationAnnotationOverlayRequest(
 interface AnnotationOverlayComponentProps {
     request: null | AnnotationOverlayRequest;
     queryCallbacks: UpdateCallbacks<SearchQuery>;
-    pagingCallbacks: UpdateCallbacks<GalleryPaging>;
     reset: () => void;
 }
 
 export function AnnotationOverlayComponent({
     request,
     queryCallbacks,
-    pagingCallbacks,
     reset,
 }: AnnotationOverlayComponentProps) {
     const [images, updateImages] = React.useState<null | ImageResponse>(null);
@@ -190,7 +187,6 @@ export function AnnotationOverlayComponent({
                                     "tsto",
                                     advance_in_time,
                                 );
-                                pagingCallbacks.update({ page: 0 });
                             }
                             resetAll();
                         })

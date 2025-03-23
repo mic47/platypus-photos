@@ -29,7 +29,6 @@ interface GalleryComponentProps {
     query: SearchQuery;
     queryCallbacks: UpdateCallbacks<SearchQuery>;
     paging: GalleryPaging;
-    pagingCallbacks: UpdateCallbacks<GalleryPaging>;
     sort: SortParams;
     sortCallbacks: UpdateCallbacks<SortParams>;
     galleryUrl: GalleryUrlParams;
@@ -43,7 +42,6 @@ export function GalleryComponent({
     paging,
     sort,
     queryCallbacks,
-    pagingCallbacks,
     sortCallbacks,
     galleryUrl,
     galleryUrlCallbacks,
@@ -60,12 +58,10 @@ export function GalleryComponent({
         md5ToIndex: new Map(),
         lastFetchedPage: -1,
     });
-    const [pageToFetch, updatePageToFetch] = React.useState<
-        [SearchQuery, GalleryPaging, number]
-    >([query, paging, 0]);
+    const [pageToFetch, updatePageToFetch] = React.useState<number>(0);
     React.useEffect(() => {
         // If query or paging changes, refetch,
-        updatePageToFetch([query, paging, 0]);
+        updatePageToFetch(0);
     }, [query, paging]);
     const handleScroll = () => {
         const bottom =
@@ -73,11 +69,10 @@ export function GalleryComponent({
             document.documentElement.scrollHeight - 200;
         if (bottom) {
             if (data.response.has_next_page) {
-                updatePageToFetch([query, paging, data.lastFetchedPage + 1]);
+                updatePageToFetch(data.lastFetchedPage + 1);
             }
         }
     };
-
     React.useEffect(() => {
         window.addEventListener("scroll", handleScroll);
         return () => {
@@ -114,7 +109,7 @@ export function GalleryComponent({
         let ignore = false;
         const requestBody = {
             query,
-            paging: { paging: paging.paging, page: pageToFetch[2] },
+            paging: { paging: paging.paging, page: pageToFetch },
             sort,
         };
         pygallery_service
@@ -124,7 +119,7 @@ export function GalleryComponent({
             .then(({ has_next_page, omgs, some_location }) => {
                 if (!ignore) {
                     const response =
-                        pageToFetch[2] > 0
+                        pageToFetch > 0
                             ? { ...data.response }
                             : {
                                   has_next_page,
@@ -139,7 +134,7 @@ export function GalleryComponent({
                     response.omgs = [...response.omgs, ...omgs];
                     // This is ok, as md5ToIndex is not used as dependency for useEffect
                     const md5ToIndex =
-                        pageToFetch[2] > 0 ? data.md5ToIndex : new Map();
+                        pageToFetch > 0 ? data.md5ToIndex : new Map();
                     response.omgs.forEach((image, index) => {
                         md5ToIndex.set(image.omg.md5, index);
                     });
@@ -147,14 +142,14 @@ export function GalleryComponent({
                         query,
                         response,
                         md5ToIndex,
-                        lastFetchedPage: pageToFetch[2],
+                        lastFetchedPage: pageToFetch,
                     });
                 }
             });
         return () => {
             ignore = true;
         };
-    }, [query, paging, sort, pageToFetch[2]]);
+    }, [query, paging, sort, pageToFetch]);
     React.useEffect(() => {
         let ignore = false;
         const requestBody = {
@@ -174,6 +169,14 @@ export function GalleryComponent({
             ignore = true;
         };
     }, [query, paging]);
+    React.useEffect(() => {
+        if (
+            overlayIndex !== null &&
+            data.response.omgs.length <= overlayIndex
+        ) {
+            updatePageToFetch(data.lastFetchedPage + 1);
+        }
+    }, [overlayIndex, data.lastFetchedPage]);
     const md5ToIndex = data.md5ToIndex;
     const callbacks = {
         updateOverlayMd5: (md5: string | null) => {
@@ -223,28 +226,19 @@ export function GalleryComponent({
         close_overlay: () => {
             updateOverlayIndex(null);
         },
-        prev_item: (index: number, paging: GalleryPaging) => {
+        prev_item: (index: number) => {
             const newIndex = index - 1;
             if (newIndex >= 0) {
                 updateOverlayIndex(newIndex);
-            } else if (paging.page !== undefined && paging.page > 0) {
-                const newPage = paging.page - 1;
-                const newIndex = (paging.paging || 100) - 1;
-                pagingCallbacks.update({ page: newPage });
-                updateOverlayIndex(newIndex);
             }
         },
-        next_item: (
-            index: number,
-            has_next_page: boolean,
-            paging: GalleryPaging,
-        ) => {
+        next_item: (index: number, has_next_page: boolean) => {
             const newIndex = index + 1;
-            if (newIndex < (paging.paging || 100)) {
+            if (newIndex < data.response.omgs.length) {
                 updateOverlayIndex(newIndex);
             } else if (has_next_page) {
-                pagingCallbacks.update({ page: (paging.page || 0) + 1 });
-                updateOverlayIndex(0);
+                updatePageToFetch(data.lastFetchedPage + 1);
+                updateOverlayIndex(newIndex);
             }
         },
     };
@@ -261,7 +255,6 @@ export function GalleryComponent({
             />
             <GalleryView
                 sort={sort}
-                paging={paging}
                 data={data.response}
                 checkboxes={checkboxes}
                 overlay_index={overlayIndex}
@@ -280,7 +273,6 @@ type GalleryComponentFetchState = {
 
 interface GalleryViewProps {
     sort: SortParams;
-    paging: GalleryPaging;
     data: ImageResponse;
     checkboxes: CheckboxesParams;
     overlay_index: number | null;
@@ -291,7 +283,6 @@ interface GalleryViewProps {
 }
 function GalleryView({
     sort,
-    paging,
     data,
     checkboxes,
     overlay_index,
@@ -321,7 +312,7 @@ function GalleryView({
                 {callbacks !== null ? (
                     <OverlayMovementUx
                         index={overlay_index}
-                        paging={paging}
+                        md5={data.omgs[overlay_index].omg.md5}
                         has_next_page={data.has_next_page}
                         callbacks={callbacks}
                     />
@@ -414,28 +405,26 @@ function GalleryView({
 
 function OverlayMovementUx({
     index,
-    paging,
+    md5,
     has_next_page,
     callbacks,
 }: {
     index: number;
-    paging: GalleryPaging;
+    md5: string;
     has_next_page: boolean;
     callbacks: ImageCallbacks;
 }) {
     const movement = (
         <>
-            <a href="#" onClick={() => callbacks.prev_item(index, paging)}>
+            <a href={`#i${md5}`} onClick={() => callbacks.prev_item(index)}>
                 prev
             </a>{" "}
-            <a href="#" onClick={() => callbacks.close_overlay()}>
+            <a href={`#i${md5}`} onClick={() => callbacks.close_overlay()}>
                 close
             </a>{" "}
             <a
-                href="#"
-                onClick={() =>
-                    callbacks.next_item(index, has_next_page, paging)
-                }
+                href={`#i${md5}`}
+                onClick={() => callbacks.next_item(index, has_next_page)}
             >
                 next
             </a>

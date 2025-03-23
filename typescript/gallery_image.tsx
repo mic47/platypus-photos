@@ -1,7 +1,6 @@
 import React from "react";
 
 import {
-    GalleryPaging,
     ImageWithMeta,
     PredictedLocation,
     SearchQuery,
@@ -31,13 +30,9 @@ export type ImageCallbacks = {
     update_url: (update: SearchQuery) => void;
     update_url_add_tag: (tag: string) => void;
     update_url_add_identity: (tag: string) => void;
-    prev_item: (index: number, paging: GalleryPaging) => void;
+    prev_item: (index: number) => void;
     close_overlay: () => void;
-    next_item: (
-        index: number,
-        has_next_page: boolean,
-        paging: GalleryPaging,
-    ) => void;
+    next_item: (index: number, has_next_page: boolean) => void;
     updateOverlayMd5: (index: string | null) => void;
 };
 
@@ -109,6 +104,7 @@ export function GalleryImage({
             className={className}
             style={{ width: gallery_item_width, height: gallery_item_height }}
         >
+            <span id={`i${omg.md5}`}></span>
             {children}
             {showTimeSelection &&
             timestamp !== null &&
