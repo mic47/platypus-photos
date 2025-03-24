@@ -4,7 +4,6 @@ import React from "react";
 import data_model from "./data_model.generated.json";
 
 import {
-    CheckboxSync,
     TypedUrlSync,
     URLSetSync,
     parse_gallery_paging,
@@ -40,8 +39,34 @@ interface ApplicationProps {
     sortSync: TypedUrlSync<SortParams>;
     galleryUrlSync: TypedUrlSync<GalleryUrlParams>;
     tabBarSync: URLSetSync;
-    checkboxSync: CheckboxSync;
 }
+
+const checkboxesConfig = {
+    ShowMetadataCheck: {
+        shortcut: "m",
+        activated: false,
+    },
+    ShowTimeSelectionCheck: {
+        shortcut: "t",
+        activated: false,
+    },
+    ShowDiffCheck: {
+        shortcut: "d",
+        activated: false,
+    },
+    LocPredCheck: {
+        shortcut: "l",
+        activated: false,
+    },
+};
+type ValidCheckboxes = keyof typeof checkboxesConfig;
+const checkboxesShortcuts: {
+    [shortcut: string]: ValidCheckboxes;
+} = Object.fromEntries(
+    Object.entries(checkboxesConfig).map(([key, value]) => {
+        return [value.shortcut, key as ValidCheckboxes];
+    }),
+);
 
 export function Application({
     searchQuerySync,
@@ -49,7 +74,6 @@ export function Application({
     sortSync,
     galleryUrlSync,
     tabBarSync,
-    checkboxSync,
 }: ApplicationProps) {
     /* URL Params State */
     const [searchQueryWithTs, updateSearchQueryWithTs] = React.useState<
@@ -147,6 +171,49 @@ export function Application({
         latitude: number;
         longitude: number;
     }>(null);
+
+    const [checkboxes, updateCheckboxes] = React.useState<{
+        [cb: string]: boolean;
+    }>(
+        Object.fromEntries(
+            Object.entries(checkboxesConfig).map(([key, value]) => {
+                return [key, value.activated];
+            }),
+        ),
+    );
+    function flipCheckbox(checkbox: string | undefined) {
+        if (checkbox === undefined) {
+            return;
+        }
+        const value = (checkboxes as { [name: string]: boolean })[checkbox];
+        if (value === undefined) {
+            return;
+        }
+        const newc = { ...checkboxes };
+        newc[checkbox] = !value;
+        updateCheckboxes(newc);
+    }
+    function updateCheckboxFromMouseEvent(
+        event: React.MouseEvent<HTMLInputElement, MouseEvent>,
+    ) {
+        const element = event.currentTarget;
+        const newc = { ...checkboxes };
+        newc[element.id] = element.checked;
+        updateCheckboxes(newc);
+    }
+    React.useEffect(() => {
+        const handleKeyPress = (e: KeyboardEvent) => {
+            const checkbox = checkboxesShortcuts[e.key];
+            if (checkbox === undefined) {
+                return;
+            }
+            flipCheckbox(checkbox);
+        };
+
+        document.addEventListener("keydown", handleKeyPress);
+        return () => document.removeEventListener("keydown", handleKeyPress);
+    }, [checkboxes]);
+
     return (
         <>
             <TabBar
@@ -245,13 +312,42 @@ export function Application({
                     paging={paging}
                     sort={sort}
                     queryCallbacks={updateQueryCallbacks}
-                    checkboxSync={checkboxSync}
+                    checkboxes={checkboxes}
                     galleryUrl={galleryUrl}
                     galleryUrlCallbacks={galleryUrlCallbacks}
                     submit_annotations={(request) => {
                         updateAnnotationRequest(request);
                     }}
-                />
+                >
+                    <input
+                        type="checkbox"
+                        id="ShowTimeSelectionCheck"
+                        checked={checkboxes["ShowTimeSelection"]}
+                        onClick={updateCheckboxFromMouseEvent}
+                    />
+                    Show Time Selection
+                    <input
+                        type="checkbox"
+                        id="ShowDiffCheck"
+                        checked={checkboxes["ShowDiffCheck"]}
+                        onClick={updateCheckboxFromMouseEvent}
+                    />
+                    Show Diff
+                    <input
+                        type="checkbox"
+                        id="ShowMetadataCheck"
+                        checked={checkboxes["ShowMetadataCheck"]}
+                        onClick={updateCheckboxFromMouseEvent}
+                    />
+                    Show Metadata
+                    <input
+                        type="checkbox"
+                        id="LocPredCheck"
+                        checked={checkboxes["LocPredCheck"]}
+                        onClick={updateCheckboxFromMouseEvent}
+                    />
+                    Show Location Interpolation
+                </GalleryComponent>
             </Switchable>
         </>
     );
@@ -284,7 +380,6 @@ export function init_fun(divId: string) {
                 sortSync={sortSync}
                 galleryUrlSync={galleryUrlSync}
                 tabBarSync={tabBarSync}
-                checkboxSync={new CheckboxSync()}
             />
         </React.StrictMode>,
     );

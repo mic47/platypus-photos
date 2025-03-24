@@ -7,7 +7,6 @@ import {
     SearchQuery,
     SortParams,
 } from "./pygallery.generated/types.gen.ts";
-import { CheckboxesParams, CheckboxSync } from "./state.ts";
 import * as pygallery_service from "./pygallery.generated/sdk.gen.ts";
 import { GalleryImage, ImageCallbacks } from "./gallery_image.tsx";
 import { AnnotationOverlayRequest } from "./annotations.tsx";
@@ -30,19 +29,19 @@ interface GalleryComponentProps {
     galleryUrl: GalleryUrlParams;
     galleryUrlCallbacks: UpdateCallbacks<GalleryUrlParams>;
     submit_annotations: (request: AnnotationOverlayRequest) => void;
-    // TODO: remove folllowing 2, they are not done in react way
-    checkboxSync: CheckboxSync;
+    checkboxes: { [name: string]: boolean };
 }
 export function GalleryComponent({
+    children,
     query,
     paging,
     sort,
     queryCallbacks,
     galleryUrl,
     galleryUrlCallbacks,
-    checkboxSync,
+    checkboxes,
     submit_annotations,
-}: GalleryComponentProps) {
+}: React.PropsWithChildren<GalleryComponentProps>) {
     const [data, updateData] = React.useState<GalleryComponentFetchState>({
         query,
         response: {
@@ -83,9 +82,6 @@ export function GalleryComponent({
         galleryUrlCallbacks.update({ oi: overlayIndex });
     }, [overlayIndex]);
 
-    const [checkboxes, updateCheckboxes] = React.useState<{
-        [name: string]: boolean;
-    }>(checkboxSync.get());
     React.useEffect(() => {
         let ignore = false;
         const requestBody = {
@@ -160,10 +156,6 @@ export function GalleryComponent({
                 query,
             });
         },
-        update_checkbox_from_element: (element: HTMLInputElement) => {
-            checkboxSync.update_from_element(element);
-            updateCheckboxes(checkboxSync.get());
-        },
         ...queryCallbacks,
     };
     const overlayMovementCallbacks = {
@@ -194,7 +186,9 @@ export function GalleryComponent({
             overlay_index={overlayIndex}
             callbacks={callbacks}
             overlayMovementCallbacks={overlayMovementCallbacks}
-        />
+        >
+            {children}
+        </GalleryView>
     );
 }
 
@@ -208,22 +202,22 @@ type GalleryComponentFetchState = {
 interface GalleryViewProps {
     sort: SortParams;
     data: ImageResponse;
-    checkboxes: CheckboxesParams;
+    checkboxes: { [name: string]: boolean };
     overlay_index: number | null;
     callbacks: ImageCallbacks & {
         annotation_overlay_interpolated: (location: ManualLocation) => void;
-        update_checkbox_from_element: (element: HTMLInputElement) => void;
     };
     overlayMovementCallbacks: OverlayMovementCallbacks;
 }
 function GalleryView({
+    children,
     sort,
     data,
     checkboxes,
     overlay_index,
     callbacks,
     overlayMovementCallbacks,
-}: GalleryViewProps) {
+}: React.PropsWithChildren<GalleryViewProps>) {
     let prev_date: string | null = null;
     const overlayItem =
         overlay_index === null || overlay_index >= data.omgs.length ? null : (
@@ -295,42 +289,7 @@ function GalleryView({
         );
     return (
         <>
-            <input
-                type="checkbox"
-                id="ShowTimeSelectionCheck"
-                checked={checkboxes["ShowTimeSelection"]}
-                onClick={(event) =>
-                    callbacks.update_checkbox_from_element(event.currentTarget)
-                }
-            />
-            Show Time Selection
-            <input
-                type="checkbox"
-                id="ShowDiffCheck"
-                checked={checkboxes["ShowDiffCheck"]}
-                onClick={(event) =>
-                    callbacks.update_checkbox_from_element(event.currentTarget)
-                }
-            />
-            Show Diff
-            <input
-                type="checkbox"
-                id="ShowMetadataCheck"
-                checked={checkboxes["ShowMetadataCheck"]}
-                onClick={(event) =>
-                    callbacks.update_checkbox_from_element(event.currentTarget)
-                }
-            />
-            Show Metadata
-            <input
-                type="checkbox"
-                id="LocPredCheck"
-                checked={checkboxes["LocPredCheck"]}
-                onClick={(event) =>
-                    callbacks.update_checkbox_from_element(event.currentTarget)
-                }
-            />
-            Show Location Interpolation
+            {children}
             {locInterpolation}
             <div>
                 {overlayItem} {galleryItems}

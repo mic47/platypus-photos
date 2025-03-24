@@ -7,22 +7,6 @@ import {
 } from "./pygallery.generated/types.gen";
 import { impissible, parse_float_or_null, parse_string_or_null } from "./utils";
 
-export type CheckboxesParams = { [key4: string]: boolean };
-
-export class CheckboxSync {
-    private state: { [id: string]: boolean };
-    constructor() {
-        this.state = {};
-    }
-    get(): { [id: string]: boolean } {
-        return this.state;
-    }
-    update_from_element(element: HTMLInputElement) {
-        this.state = { ...this.state };
-        this.state[element.id] = element.checked;
-    }
-}
-
 export class URLSetSync {
     private sync: UrlSync;
     constructor(
