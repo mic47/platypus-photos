@@ -639,7 +639,13 @@ class Exif:
             if tag in IGNORED_IMAGE_TAGS:
                 continue
             # Just temporary until I find all the tags
-            value = img.get(tag)
+            try:
+                value = img.get(tag)
+            # pylint: disable-next = broad-exception-caught
+            except Exception as e:
+                traceback.print_exc()
+                print("Error while getting exif tag", tag, e, file=sys.stderr)
+                continue
             if value is None:
                 continue
             if tag not in EXTRACT_IMAGE_TAGS:
