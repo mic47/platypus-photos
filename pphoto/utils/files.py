@@ -18,11 +18,14 @@ class SupportedMedia(enum.Enum):
     WMV = 7
     WEBM = 8
     BMP = 9
+    MP3 = 10
+    M4A = 11
 
 
 class SupportedMediaClass(enum.Enum):
     IMAGE = 0
     VIDEO = 1
+    AUDIO = 2
 
 
 _EXTENSIONS = {
@@ -37,6 +40,8 @@ _EXTENSIONS = {
     "avi": SupportedMedia.AVI,
     "wmv": SupportedMedia.WMV,
     "webm": SupportedMedia.WEBM,
+    "mp3": SupportedMedia.MP3,
+    "m4a": SupportedMedia.M4A,
 }
 
 
@@ -65,6 +70,12 @@ def supported_media_class(path: str) -> t.Optional[SupportedMediaClass]:
         or media == SupportedMedia.WEBM
     ):
         return SupportedMediaClass.VIDEO
+    if (
+        # pylint: disable-next = consider-using-in
+        media == SupportedMedia.M4A
+        or media == SupportedMedia.MP3
+    ):
+        return SupportedMediaClass.AUDIO
     if media is None:
         return None
     assert_never(media)
