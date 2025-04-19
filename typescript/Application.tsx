@@ -203,6 +203,13 @@ export function Application({
     }
     React.useEffect(() => {
         const handleKeyPress = (e: KeyboardEvent) => {
+            if (
+                e.target !== null &&
+                e.target instanceof HTMLElement &&
+                e.target.tagName === "INPUT"
+            ) {
+                return;
+            }
             const checkbox = checkboxesShortcuts[e.key];
             if (checkbox === undefined) {
                 return;
