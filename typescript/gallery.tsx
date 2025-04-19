@@ -241,38 +241,43 @@ function GalleryView({
     callbacks,
     overlayMovementCallbacks,
 }: React.PropsWithChildren<GalleryViewProps>) {
+    if (overlay_index !== null) {
+        if (overlay_index < data.omgs.length) {
+            return (
+                <GalleryImage
+                    image={data.omgs[overlay_index]}
+                    sort={sort}
+                    previous_timestamp={null}
+                    isOverlay={true}
+                    showLocationIterpolation={
+                        checkboxes["LocPredCheck"] === true
+                    }
+                    showDiffInfo={
+                        checkboxes["LocPredCheck"] === true ||
+                        checkboxes["ShowDiffCheck"] === true
+                    }
+                    showTimeSelection={
+                        checkboxes["ShowTimeSelectionCheck"] === true
+                    }
+                    showMetadata={checkboxes["ShowMetadataCheck"] === true}
+                    showFaces={checkboxes["ShowFaceMetadata"] === true}
+                    callbacks={callbacks}
+                >
+                    {callbacks !== null ? (
+                        <OverlayMovementUx
+                            index={overlay_index}
+                            md5={data.omgs[overlay_index].omg.md5}
+                            has_next_page={data.has_next_page}
+                            callbacks={overlayMovementCallbacks}
+                        />
+                    ) : null}
+                </GalleryImage>
+            );
+        } else {
+            return <div>Please wait while data is loading...</div>;
+        }
+    }
     let prev_date: string | null = null;
-    const overlayItem =
-        overlay_index === null || overlay_index >= data.omgs.length ? null : (
-            <GalleryImage
-                image={data.omgs[overlay_index]}
-                sort={sort}
-                previous_timestamp={
-                    prev_date === null ? null : Date.parse(prev_date) / 1000
-                }
-                isOverlay={true}
-                showLocationIterpolation={checkboxes["LocPredCheck"] === true}
-                showDiffInfo={
-                    checkboxes["LocPredCheck"] === true ||
-                    checkboxes["ShowDiffCheck"] === true
-                }
-                showTimeSelection={
-                    checkboxes["ShowTimeSelectionCheck"] === true
-                }
-                showMetadata={checkboxes["ShowMetadataCheck"] === true}
-                showFaces={checkboxes["ShowFaceMetadata"] === true}
-                callbacks={callbacks}
-            >
-                {callbacks !== null ? (
-                    <OverlayMovementUx
-                        index={overlay_index}
-                        md5={data.omgs[overlay_index].omg.md5}
-                        has_next_page={data.has_next_page}
-                        callbacks={overlayMovementCallbacks}
-                    />
-                ) : null}
-            </GalleryImage>
-        );
     const galleryItems = data.omgs.map((image) => {
         const ret = (
             <GalleryImage
@@ -315,9 +320,7 @@ function GalleryView({
         <>
             {children}
             {locInterpolation}
-            <div>
-                {overlayItem} {galleryItems}
-            </div>
+            <div>{galleryItems}</div>
         </>
     );
 }
