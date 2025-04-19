@@ -260,6 +260,7 @@ function GalleryView({
                     checkboxes["ShowTimeSelectionCheck"] === true
                 }
                 showMetadata={checkboxes["ShowMetadataCheck"] === true}
+                showFaces={checkboxes["ShowFaceMetadata"] === true}
                 callbacks={callbacks}
             >
                 {callbacks !== null ? (

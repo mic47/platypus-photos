@@ -36,6 +36,7 @@ export type ImageCallbacks = {
 export type GalleryImageFeatures = {
     showDiffInfo?: boolean;
     showMetadata?: boolean;
+    showFaces?: boolean;
     showTimeSelection?: boolean;
 };
 
@@ -49,6 +50,7 @@ export function GalleryImage({
     showDiffInfo,
     showMetadata,
     showTimeSelection,
+    showFaces,
     children,
 }: React.PropsWithChildren<GalleryImageProps & GalleryImageFeatures>) {
     const imgRef = React.useRef<null | HTMLImageElement>(null);
@@ -138,7 +140,7 @@ export function GalleryImage({
                     }
                 }}
             >
-                {isOverlay ? (
+                {isOverlay && showFaces ? (
                     <AnnotableImage
                         md5={omg.md5}
                         extension={omg.extension}

@@ -58,6 +58,10 @@ const checkboxesConfig = {
         shortcut: "l",
         activated: false,
     },
+    ShowFaceMetadata: {
+        shortcut: "f",
+        activated: false,
+    },
 };
 type ValidCheckboxes = keyof typeof checkboxesConfig;
 const checkboxesShortcuts: {
@@ -354,6 +358,13 @@ export function Application({
                         onClick={updateCheckboxFromMouseEvent}
                     />
                     Show Location Interpolation
+                    <input
+                        type="checkbox"
+                        id="ShowFaceMetadata"
+                        checked={checkboxes["ShowFaceMetadata"]}
+                        onClick={updateCheckboxFromMouseEvent}
+                    />
+                    Show Faces
                 </GalleryComponent>
             </Switchable>
         </>
