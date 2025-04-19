@@ -42,7 +42,7 @@ export type GalleryImageFeatures = {
 };
 
 export function GalleryImage({
-    image: { omg, media_class, predicted_location, paths },
+    image: { omg, uris, predicted_location, paths },
     sort,
     previous_timestamp,
     isOverlay,
@@ -90,10 +90,10 @@ export function GalleryImage({
         : "15em";
 
     const img =
-        media_class === "VIDEO" && isOverlay ? (
+        uris.class_ === "VIDEO" && isOverlay ? (
             <div className="gallery_video">
                 <ReactPlayer
-                    url={`/video/${omg.md5}.${omg.extension}`}
+                    url={uris.original}
                     playing={true}
                     controls={true}
                     width="100%"
@@ -104,7 +104,7 @@ export function GalleryImage({
             <img
                 ref={imgRef}
                 loading="lazy"
-                src={`/img/${isOverlay ? "original" : "preview"}/${omg.md5}.${omg.extension}`}
+                src={isOverlay ? uris.original : uris.preview}
                 className="gallery_image"
                 alt={omg.classifications || ""}
                 title={omg.classifications || ""}

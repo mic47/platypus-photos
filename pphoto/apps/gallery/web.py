@@ -102,9 +102,29 @@ class PathSplit:
 
 
 @dataclass
+class MediaURIs:
+    class_: t.Optional[SupportedMediaClass]  # noqa: F841
+    original: str  # noqa: F841
+    preview: str  # noqa: F841
+
+    @staticmethod
+    def urls_from_filename(filename: t.Optional[str], md5: str, extension: str) -> MediaURIs:
+        media_class = None if not filename else supported_media_class(filename)
+        return MediaURIs(
+            media_class,
+            (
+                f"/video/{md5}.{extension}"
+                if media_class == SupportedMediaClass.VIDEO
+                else f"/img/original/{md5}.{extension}"
+            ),
+            f"/img/preview/{md5}.{extension}",
+        )
+
+
+@dataclass
 class ImageWithMeta:
     omg: ImageRow
-    media_class: t.Optional[SupportedMediaClass]
+    uris: MediaURIs  # noqa: F841
     predicted_location: t.Optional[PredictedLocation]
     paths: t.List[PathSplit]
 
@@ -137,11 +157,14 @@ async def image_page(params: GalleryRequest) -> ImageResponse:
                 omg.address.country,
             )
         predicted_location = predict_location(omg, fwdbwd[index][0], fwdbwd[index][1])
-        if len(paths) > 0:
-            media_class = supported_media_class(paths[0].file)
-        else:
-            media_class = SupportedMediaClass.IMAGE
-        images.append(ImageWithMeta(omg, media_class, predicted_location, paths))
+        images.append(
+            ImageWithMeta(
+                omg,
+                MediaURIs.urls_from_filename(None if not paths else paths[0].file, omg.md5, omg.extension),
+                predicted_location,
+                paths,
+            )
+        )
     return ImageResponse(has_next_page, images, some_location)
 
 

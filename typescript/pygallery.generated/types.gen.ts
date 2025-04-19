@@ -187,7 +187,7 @@ export type ImageSize = 'original' | 'medium' | 'preview';
 
 export type ImageWithMeta = {
     omg: Image;
-    media_class: (SupportedMediaClass | null);
+    uris: MediaURIs;
     predicted_location: (PredictedLocation | null);
     paths: Array<PathSplit>;
 };
@@ -308,6 +308,12 @@ export type MassLocationAndTextAnnotation_Output = {
     location: (LocationQueryFixedLocation | AnnotationOverlayInterpolateLocation | AnnotationOverlayNoLocation);
     text: TextQueryFixedText;
     date: TransDate;
+};
+
+export type MediaURIs = {
+    class_: (SupportedMediaClass | null);
+    original: string;
+    preview: string;
 };
 
 export type PathSplit = {

@@ -254,13 +254,13 @@ function AnnotationOverlayView({
     const exampleImages =
         images === null
             ? "(loading)"
-            : images.map(({ omg, paths }) => (
+            : images.map(({ omg, uris, paths }) => (
                   <GalleryImage
                       key={omg.md5}
                       image={{
                           omg,
                           paths,
-                          media_class: null,
+                          uris,
                           predicted_location: null,
                       }}
                       sort={{ order: "ASC", sort_by: "RANDOM" }}

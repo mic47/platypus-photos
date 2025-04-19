@@ -1832,15 +1832,8 @@
           "omg": {
             "$ref": "#/components/schemas/Image"
           },
-          "media_class": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/SupportedMediaClass"
-              },
-              {
-                "type": "null"
-              }
-            ]
+          "uris": {
+            "$ref": "#/components/schemas/MediaURIs"
           },
           "predicted_location": {
             "anyOf": [
@@ -1863,7 +1856,7 @@
         "type": "object",
         "required": [
           "omg",
-          "media_class",
+          "uris",
           "predicted_location",
           "paths"
         ],
@@ -2501,6 +2494,35 @@
           "date"
         ],
         "title": "MassLocationAndTextAnnotation"
+      },
+      "MediaURIs": {
+        "properties": {
+          "class_": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SupportedMediaClass"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "original": {
+            "type": "string",
+            "title": "Original"
+          },
+          "preview": {
+            "type": "string",
+            "title": "Preview"
+          }
+        },
+        "type": "object",
+        "required": [
+          "class_",
+          "original",
+          "preview"
+        ],
+        "title": "MediaURIs"
       },
       "PathSplit": {
         "properties": {
