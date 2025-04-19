@@ -16,6 +16,7 @@ import {
 } from "./utils";
 import { MaybeA } from "./jsx/maybea";
 import { AnnotableImage } from "./annotable_image";
+import ReactPlayer from "react-player";
 
 interface GalleryImageProps {
     image: ImageWithMeta;
@@ -41,7 +42,7 @@ export type GalleryImageFeatures = {
 };
 
 export function GalleryImage({
-    image: { omg, predicted_location, paths },
+    image: { omg, media_class, predicted_location, paths },
     sort,
     previous_timestamp,
     isOverlay,
@@ -88,16 +89,27 @@ export function GalleryImage({
             : "100%"
         : "15em";
 
-    const img = (
-        <img
-            ref={imgRef}
-            loading="lazy"
-            src={`/img/${isOverlay ? "original" : "preview"}/${omg.md5}.${omg.extension}`}
-            className="gallery_image"
-            alt={omg.classifications || ""}
-            title={omg.classifications || ""}
-        />
-    );
+    const img =
+        media_class === "VIDEO" && isOverlay ? (
+            <div className="gallery_video">
+                <ReactPlayer
+                    url={`/video/${omg.md5}.${omg.extension}`}
+                    playing={true}
+                    controls={true}
+                    width="100%"
+                    height="100%"
+                />
+            </div>
+        ) : (
+            <img
+                ref={imgRef}
+                loading="lazy"
+                src={`/img/${isOverlay ? "original" : "preview"}/${omg.md5}.${omg.extension}`}
+                className="gallery_image"
+                alt={omg.classifications || ""}
+                title={omg.classifications || ""}
+            />
+        );
     return (
         <div
             className={className}

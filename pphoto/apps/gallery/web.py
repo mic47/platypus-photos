@@ -13,6 +13,7 @@ from pphoto.data_model.manual import ManualIdentity, IdentitySkipReason
 from pphoto.db.types_location import LocationCluster, LocPoint, LocationBounds
 from pphoto.db.types_date import DateCluster, DateClusterGroupBy
 from pphoto.db.types_directory import DirectoryStats
+from pphoto.utils.files import SupportedMediaClass, supported_media_class
 from pphoto.db.types_image import ImageAggregation
 from pphoto.db.types_identity import IdentityRowPayload
 from pphoto.remote_jobs.types import (
@@ -103,6 +104,7 @@ class PathSplit:
 @dataclass
 class ImageWithMeta:
     omg: ImageRow
+    media_class: t.Optional[SupportedMediaClass]
     predicted_location: t.Optional[PredictedLocation]
     paths: t.List[PathSplit]
 
@@ -135,7 +137,11 @@ async def image_page(params: GalleryRequest) -> ImageResponse:
                 omg.address.country,
             )
         predicted_location = predict_location(omg, fwdbwd[index][0], fwdbwd[index][1])
-        images.append(ImageWithMeta(omg, predicted_location, paths))
+        if len(paths) > 0:
+            media_class = supported_media_class(paths[0].file)
+        else:
+            media_class = SupportedMediaClass.IMAGE
+        images.append(ImageWithMeta(omg, media_class, predicted_location, paths))
     return ImageResponse(has_next_page, images, some_location)
 
 

@@ -21,8 +21,8 @@ class SupportedMedia(enum.Enum):
 
 
 class SupportedMediaClass(enum.Enum):
-    IMAGE = 0
-    VIDEO = 1
+    IMAGE = "IMAGE"
+    VIDEO = "VIDEO"
 
 
 _EXTENSIONS = {

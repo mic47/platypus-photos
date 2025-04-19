@@ -482,6 +482,60 @@
         }
       }
     },
+    "/video/{hsh}.{extension}": {
+      "get": {
+        "summary": "Video Endpoint",
+        "operationId": "video_endpoint-GET",
+        "parameters": [
+          {
+            "name": "hsh",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 7,
+              "maxLength": 40,
+              "pattern": "^[0-9a-zA-Z]+$",
+              "title": "Hsh"
+            }
+          },
+          {
+            "name": "extension",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 10,
+              "pattern": "^[0-9a-zA-Z]+$",
+              "title": "Extension"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "Response Video Endpoint-Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/web/location_clusters": {
       "post": {
         "summary": "Location Clusters Endpoint",
@@ -1778,6 +1832,16 @@
           "omg": {
             "$ref": "#/components/schemas/Image"
           },
+          "media_class": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SupportedMediaClass"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "predicted_location": {
             "anyOf": [
               {
@@ -1799,6 +1863,7 @@
         "type": "object",
         "required": [
           "omg",
+          "media_class",
           "predicted_location",
           "paths"
         ],
@@ -2843,6 +2908,14 @@
           "error"
         ],
         "title": "StateEnum"
+      },
+      "SupportedMediaClass": {
+        "type": "string",
+        "enum": [
+          "IMAGE",
+          "VIDEO"
+        ],
+        "title": "SupportedMediaClass"
       },
       "SystemStatus": {
         "properties": {

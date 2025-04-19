@@ -105,6 +105,23 @@ def image_endpoint(
     assert_never(media_class)
 
 
+@router.get(
+    "/video/{hsh}.{extension}",
+)
+def video_endpoint(
+    hsh: t.Annotated[str, PathParam(pattern="^[0-9a-zA-Z]+$", min_length=7, max_length=40)],
+    extension: t.Annotated[str, PathParam(pattern="^[0-9a-zA-Z]+$", min_length=1, max_length=10)],
+) -> t.Any:
+    media_class = supported_media_class(f"file.{extension}")
+    if media_class == SupportedMediaClass.VIDEO:
+        return _download_file_response(hsh)
+    if media_class == SupportedMediaClass.IMAGE:
+        return {"error": "Unsupported media type"}
+    if media_class is None:
+        return {"error": "Unsupported media type"}
+    assert_never(media_class)
+
+
 def get_image_preview(hsh: str, size: ImageSize, extension: str, position: t.Optional[str]) -> t.Any:
     resolution = sz_to_resolution(size)
     if resolution is not None or position is not None:

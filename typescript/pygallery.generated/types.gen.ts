@@ -187,6 +187,7 @@ export type ImageSize = 'original' | 'medium' | 'preview';
 
 export type ImageWithMeta = {
     omg: Image;
+    media_class: (SupportedMediaClass | null);
     predicted_location: (PredictedLocation | null);
     paths: Array<PathSplit>;
 };
@@ -387,6 +388,8 @@ export type State = {
 
 export type StateEnum = 'initialized' | 'running' | 'finished' | 'unexpected finish' | 'error';
 
+export type SupportedMediaClass = 'IMAGE' | 'VIDEO';
+
 export type SystemStatus = {
     progress_bars: Array<[
         number,
@@ -490,6 +493,13 @@ export type ImageEndpointGetData = {
 };
 
 export type ImageEndpointGetResponse = (unknown);
+
+export type VideoEndpointGetData = {
+    extension: string;
+    hsh: string;
+};
+
+export type VideoEndpointGetResponse = (unknown);
 
 export type LocationClustersEndpointPostData = {
     requestBody: LocClusterParams;

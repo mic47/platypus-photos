@@ -36,6 +36,9 @@ div.gallery_item:hover {
 .overlay .gallery_image {
   object-fit: contain;
 }
+.gallery_video {
+  object-fit: contain;
+}
 .gallery_feature {
   position: absolute;
   object-fit: contain;

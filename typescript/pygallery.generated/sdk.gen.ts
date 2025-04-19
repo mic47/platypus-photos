@@ -3,7 +3,7 @@
 import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
-import type { RecentLocationClustersFromManualAnnotationsEndpointGetResponse, MassManualAnnotationEndpointPostData, MassManualAnnotationEndpointPostResponse, ManualIdentityAnnotationEndpointPostData, ManualIdentityAnnotationEndpointPostResponse, JobProgressStatePostData, JobProgressStatePostResponse, RemoteJobsGetResponse, SystemStatusGetResponse, ConfigExportDirsEndpointGetResponse, ExportPhotosGetData, ExportPhotosGetResponse, ExportPhotosToDirGetData, ExportPhotosToDirGetResponse, FindLocationPostData, FindLocationPostResponse, GetAddressPostData, GetAddressPostResponse, ImageEndpointGetData, ImageEndpointGetResponse, LocationClustersEndpointPostData, LocationClustersEndpointPostResponse, LocationBoundsEndpointPostData, LocationBoundsEndpointPostResponse, DateClustersEndpointPostData, DateClustersEndpointPostResponse, ImagePagePostData, ImagePagePostResponse, MatchingDirectoriesPostData, MatchingDirectoriesPostResponse, TopIdentitiesPostResponse, AggregateImagesPostData, AggregateImagesPostResponse, FacesOnPagePostData, FacesOnPagePostResponse, FaceFeaturesForImagePostData, FaceFeaturesForImagePostResponse, ReadIndexGetResponse, ReadIndexGet1Response } from './types.gen';
+import type { RecentLocationClustersFromManualAnnotationsEndpointGetResponse, MassManualAnnotationEndpointPostData, MassManualAnnotationEndpointPostResponse, ManualIdentityAnnotationEndpointPostData, ManualIdentityAnnotationEndpointPostResponse, JobProgressStatePostData, JobProgressStatePostResponse, RemoteJobsGetResponse, SystemStatusGetResponse, ConfigExportDirsEndpointGetResponse, ExportPhotosGetData, ExportPhotosGetResponse, ExportPhotosToDirGetData, ExportPhotosToDirGetResponse, FindLocationPostData, FindLocationPostResponse, GetAddressPostData, GetAddressPostResponse, ImageEndpointGetData, ImageEndpointGetResponse, VideoEndpointGetData, VideoEndpointGetResponse, LocationClustersEndpointPostData, LocationClustersEndpointPostResponse, LocationBoundsEndpointPostData, LocationBoundsEndpointPostResponse, DateClustersEndpointPostData, DateClustersEndpointPostResponse, ImagePagePostData, ImagePagePostResponse, MatchingDirectoriesPostData, MatchingDirectoriesPostResponse, TopIdentitiesPostResponse, AggregateImagesPostData, AggregateImagesPostResponse, FacesOnPagePostData, FacesOnPagePostResponse, FaceFeaturesForImagePostData, FaceFeaturesForImagePostResponse, ReadIndexGetResponse, ReadIndexGet1Response } from './types.gen';
 
 /**
  * Recent Location Clusters From Manual Annotations Endpoint
@@ -216,6 +216,28 @@ export const imageEndpointGet = (data: ImageEndpointGetData): CancelablePromise<
         query: {
             position: data.position,
             frame: data.frame
+        },
+        errors: {
+            422: 'Validation Error'
+        }
+    });
+};
+
+/**
+ * Video Endpoint
+ * @param data The data for the request.
+ * @param data.hsh
+ * @param data.extension
+ * @returns unknown Successful Response
+ * @throws ApiError
+ */
+export const videoEndpointGet = (data: VideoEndpointGetData): CancelablePromise<VideoEndpointGetResponse> => {
+    return __request(OpenAPI, {
+        method: 'GET',
+        url: '/video/{hsh}.{extension}',
+        path: {
+            hsh: data.hsh,
+            extension: data.extension
         },
         errors: {
             422: 'Validation Error'

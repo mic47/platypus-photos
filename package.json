@@ -27,7 +27,8 @@
     "leaflet": "^1.9.4",
     "lodash": "^4.17.21",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "react-player": "^2.16.0"
   },
   "devDependencies": {
     "@eslint/compat": "^1.2.4",
