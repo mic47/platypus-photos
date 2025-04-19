@@ -135,6 +135,49 @@ export function GalleryComponent({
             updatePageToFetch(data.lastFetchedPage + 1);
         }
     }, [overlayIndex, data.lastFetchedPage]);
+    const overlayMovementCallbacks = {
+        close_overlay: () => {
+            updateOverlayIndex(null);
+        },
+        prev_item: (index: number) => {
+            const newIndex = index - 1;
+            if (newIndex >= 0) {
+                updateOverlayIndex(newIndex);
+            }
+        },
+        next_item: (index: number, has_next_page: boolean) => {
+            const newIndex = index + 1;
+            if (newIndex < data.response.omgs.length) {
+                updateOverlayIndex(newIndex);
+            } else if (has_next_page) {
+                updatePageToFetch(data.lastFetchedPage + 1);
+                updateOverlayIndex(newIndex);
+            }
+        },
+    };
+    React.useEffect(() => {
+        if (overlayIndex === null) {
+            return () => {};
+        }
+        const handleKeyPress = (e: KeyboardEvent) => {
+            if (overlayIndex === null) {
+                return;
+            }
+            if (e.key == "Escape") {
+                overlayMovementCallbacks.close_overlay();
+            } else if (e.key == "ArrowRight" || e.key == " ") {
+                overlayMovementCallbacks.next_item(
+                    overlayIndex,
+                    data.response.has_next_page,
+                );
+            } else if (e.key == "ArrowLeft" || e.key == "Backspace") {
+                overlayMovementCallbacks.prev_item(overlayIndex);
+            }
+        };
+
+        document.addEventListener("keydown", handleKeyPress);
+        return () => document.removeEventListener("keydown", handleKeyPress);
+    }, [overlayIndex, data.response.has_next_page]);
     const md5ToIndex = data.md5ToIndex;
     const callbacks = {
         updateOverlayMd5: (md5: string | null) => {
@@ -157,26 +200,6 @@ export function GalleryComponent({
             });
         },
         ...queryCallbacks,
-    };
-    const overlayMovementCallbacks = {
-        close_overlay: () => {
-            updateOverlayIndex(null);
-        },
-        prev_item: (index: number) => {
-            const newIndex = index - 1;
-            if (newIndex >= 0) {
-                updateOverlayIndex(newIndex);
-            }
-        },
-        next_item: (index: number, has_next_page: boolean) => {
-            const newIndex = index + 1;
-            if (newIndex < data.response.omgs.length) {
-                updateOverlayIndex(newIndex);
-            } else if (has_next_page) {
-                updatePageToFetch(data.lastFetchedPage + 1);
-                updateOverlayIndex(newIndex);
-            }
-        },
     };
     return (
         <GalleryView
