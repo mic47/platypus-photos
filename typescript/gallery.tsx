@@ -12,6 +12,13 @@ import { GalleryImage, ImageCallbacks } from "./gallery_image.tsx";
 import { AnnotationOverlayRequest } from "./annotations.tsx";
 import { UpdateCallbacks, QueryCallbacks } from "./types";
 
+type ValidCheckboxes =
+    | "LocPredCheck"
+    | "ShowDiffCheck"
+    | "ShowTimeSelectionCheck"
+    | "ShowFaceMetadata"
+    | "ShowMetadataCheck";
+
 export type GalleryUrlParams = {
     oi: null | number;
 };
@@ -29,7 +36,7 @@ interface GalleryComponentProps {
     galleryUrl: GalleryUrlParams;
     galleryUrlCallbacks: UpdateCallbacks<GalleryUrlParams>;
     submit_annotations: (request: AnnotationOverlayRequest) => void;
-    checkboxes: { [name: string]: boolean };
+    checkboxes: Record<ValidCheckboxes, boolean>;
 }
 export function GalleryComponent({
     children,
@@ -225,7 +232,7 @@ type GalleryComponentFetchState = {
 interface GalleryViewProps {
     sort: SortParams;
     data: ImageResponse;
-    checkboxes: { [name: string]: boolean };
+    checkboxes: Record<ValidCheckboxes, boolean>;
     overlay_index: number | null;
     callbacks: ImageCallbacks & {
         annotation_overlay_interpolated: (location: ManualLocation) => void;

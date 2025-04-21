@@ -32,6 +32,7 @@ import { FacesComponent } from "./faces";
 import { ExportFormComponent } from "./exporter";
 import { QueryCallbacks } from "./types";
 import { AggregateInfoComponent } from "./aggregate_info";
+import { Checkboxes, useCheckboxesShortcuts } from "./checkboxes";
 
 interface ApplicationProps {
     searchQuerySync: TypedUrlSync<SearchQuery>;
@@ -42,35 +43,33 @@ interface ApplicationProps {
 }
 
 const checkboxesConfig = {
-    ShowMetadataCheck: {
-        shortcut: "m",
-        activated: false,
-    },
     ShowTimeSelectionCheck: {
         shortcut: "t",
         activated: false,
+        text: "Show Time Selection",
     },
     ShowDiffCheck: {
         shortcut: "d",
         activated: false,
+        text: "Show Diff",
+    },
+    ShowMetadataCheck: {
+        shortcut: "m",
+        activated: false,
+        text: "Show Metadata",
     },
     LocPredCheck: {
         shortcut: "l",
         activated: false,
+        text: "Show Location Interpolation",
+        position: 4,
     },
     ShowFaceMetadata: {
         shortcut: "f",
         activated: false,
+        text: "Show Faces",
     },
 };
-type ValidCheckboxes = keyof typeof checkboxesConfig;
-const checkboxesShortcuts: {
-    [shortcut: string]: ValidCheckboxes;
-} = Object.fromEntries(
-    Object.entries(checkboxesConfig).map(([key, value]) => {
-        return [value.shortcut, key as ValidCheckboxes];
-    }),
-);
 
 export function Application({
     searchQuerySync,
@@ -176,54 +175,7 @@ export function Application({
         longitude: number;
     }>(null);
 
-    const [checkboxes, updateCheckboxes] = React.useState<{
-        [cb: string]: boolean;
-    }>(
-        Object.fromEntries(
-            Object.entries(checkboxesConfig).map(([key, value]) => {
-                return [key, value.activated];
-            }),
-        ),
-    );
-    function flipCheckbox(checkbox: string | undefined) {
-        if (checkbox === undefined) {
-            return;
-        }
-        const value = (checkboxes as { [name: string]: boolean })[checkbox];
-        if (value === undefined) {
-            return;
-        }
-        const newc = { ...checkboxes };
-        newc[checkbox] = !value;
-        updateCheckboxes(newc);
-    }
-    function updateCheckboxFromMouseEvent(
-        event: React.MouseEvent<HTMLInputElement, MouseEvent>,
-    ) {
-        const element = event.currentTarget;
-        const newc = { ...checkboxes };
-        newc[element.id] = element.checked;
-        updateCheckboxes(newc);
-    }
-    React.useEffect(() => {
-        const handleKeyPress = (e: KeyboardEvent) => {
-            if (
-                e.target !== null &&
-                e.target instanceof HTMLElement &&
-                e.target.tagName === "INPUT"
-            ) {
-                return;
-            }
-            const checkbox = checkboxesShortcuts[e.key];
-            if (checkbox === undefined) {
-                return;
-            }
-            flipCheckbox(checkbox);
-        };
-
-        document.addEventListener("keydown", handleKeyPress);
-        return () => document.removeEventListener("keydown", handleKeyPress);
-    }, [checkboxes]);
+    const checkboxes = useCheckboxesShortcuts(checkboxesConfig);
 
     return (
         <>
@@ -323,48 +275,14 @@ export function Application({
                     paging={paging}
                     sort={sort}
                     queryCallbacks={updateQueryCallbacks}
-                    checkboxes={checkboxes}
+                    checkboxes={checkboxes.checkboxes}
                     galleryUrl={galleryUrl}
                     galleryUrlCallbacks={galleryUrlCallbacks}
                     submit_annotations={(request) => {
                         updateAnnotationRequest(request);
                     }}
                 >
-                    <input
-                        type="checkbox"
-                        id="ShowTimeSelectionCheck"
-                        checked={checkboxes["ShowTimeSelectionCheck"]}
-                        onClick={updateCheckboxFromMouseEvent}
-                    />
-                    Show Time Selection
-                    <input
-                        type="checkbox"
-                        id="ShowDiffCheck"
-                        checked={checkboxes["ShowDiffCheck"]}
-                        onClick={updateCheckboxFromMouseEvent}
-                    />
-                    Show Diff
-                    <input
-                        type="checkbox"
-                        id="ShowMetadataCheck"
-                        checked={checkboxes["ShowMetadataCheck"]}
-                        onClick={updateCheckboxFromMouseEvent}
-                    />
-                    Show Metadata
-                    <input
-                        type="checkbox"
-                        id="LocPredCheck"
-                        checked={checkboxes["LocPredCheck"]}
-                        onClick={updateCheckboxFromMouseEvent}
-                    />
-                    Show Location Interpolation
-                    <input
-                        type="checkbox"
-                        id="ShowFaceMetadata"
-                        checked={checkboxes["ShowFaceMetadata"]}
-                        onClick={updateCheckboxFromMouseEvent}
-                    />
-                    Show Faces
+                    <Checkboxes materialized={checkboxes} />
                 </GalleryComponent>
             </Switchable>
         </>
