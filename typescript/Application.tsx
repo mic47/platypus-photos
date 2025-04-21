@@ -333,7 +333,7 @@ export function Application({
                     <input
                         type="checkbox"
                         id="ShowTimeSelectionCheck"
-                        checked={checkboxes["ShowTimeSelection"]}
+                        checked={checkboxes["ShowTimeSelectionCheck"]}
                         onClick={updateCheckboxFromMouseEvent}
                     />
                     Show Time Selection
