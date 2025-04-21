@@ -115,7 +115,7 @@ export function GalleryImage({
                     height: gallery_container_height,
                 }}
                 onClick={() => {
-                    if (callbacks !== null) {
+                    if (callbacks !== null && !isOverlay) {
                         callbacks.updateOverlayMd5(omg.md5);
                     }
                 }}
