@@ -18,17 +18,23 @@ div.gallery_item:hover {
 .gallery_container {
   display: flex;
   justify-content: center;
-
+  position: relative;
 }
 .overlay .gallery_container {
   display: flex;
   justify-content: center;
+  position: relative;
 }
 .gallery_item_fs{
   display: none;
 }
 .overlay .gallery_item_fs {
   display: block;
+}
+.gallery_overlary_ui {
+  position: absolute;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.6)
 }
 .gallery_image {
   object-fit: contain;

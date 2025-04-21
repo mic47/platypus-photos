@@ -75,19 +75,11 @@ export function GalleryImage({
             ? 15
             : Math.round((15 / omg.dimension.height) * omg.dimension.width) / 1;
     const gallery_item_width = isOverlay ? "100%" : `${width_em}em`;
-    const height_em =
-        15 +
-        (showTimeSelection === true ? 1 : 0) +
-        (showDiffInfo === true ? 2 : 0) +
-        (showMetadata === true ? 7 : 0);
+    const height_em = 15;
     const gallery_item_height = isOverlay ? "100%" : `${height_em}em`;
 
     const gallery_container_width = isOverlay ? "initial" : `${width_em}em`;
-    const gallery_container_height = isOverlay
-        ? showMetadata === true
-            ? "90%"
-            : "100%"
-        : "15em";
+    const gallery_container_height = isOverlay ? "100%" : "15em";
 
     const img =
         uris.class_ === "VIDEO" && isOverlay ? (
@@ -116,30 +108,6 @@ export function GalleryImage({
             style={{ width: gallery_item_width, height: gallery_item_height }}
         >
             <span id={`i${omg.md5}`}></span>
-            {children}
-            {showTimeSelection &&
-            timestamp !== null &&
-            !isOverlay &&
-            callbacks !== null ? (
-                <TimeUx
-                    timestamp={timestamp}
-                    timeicon={timeicon}
-                    iconsToShow={iconsToShow}
-                    sort={sort}
-                    callbacks={callbacks}
-                />
-            ) : (
-                <>{iconsToShow}</>
-            )}
-            {showDiffInfo === true ? (
-                <DiffInfo
-                    timestamp={timestamp}
-                    previous_timestamp={previous_timestamp}
-                    predicted_location={predicted_location}
-                    showLocationInterpolation={showLocationIterpolation}
-                    timeicon={timeicon}
-                />
-            ) : null}
             <div
                 className="gallery_container"
                 style={{
@@ -163,16 +131,55 @@ export function GalleryImage({
                 ) : (
                     img
                 )}
+
+                <div
+                    className="gallery_overlary_ui"
+                    style={{
+                        top: 0,
+                    }}
+                >
+                    {children}
+                    {showTimeSelection &&
+                    timestamp !== null &&
+                    !isOverlay &&
+                    callbacks !== null ? (
+                        <TimeUx
+                            timestamp={timestamp}
+                            timeicon={timeicon}
+                            iconsToShow={iconsToShow}
+                            sort={sort}
+                            callbacks={callbacks}
+                        />
+                    ) : (
+                        <>{iconsToShow}</>
+                    )}
+                    {showDiffInfo === true ? (
+                        <DiffInfo
+                            timestamp={timestamp}
+                            previous_timestamp={previous_timestamp}
+                            predicted_location={predicted_location}
+                            showLocationInterpolation={showLocationIterpolation}
+                            timeicon={timeicon}
+                        />
+                    ) : null}
+                </div>
+                <div
+                    className="gallery_overlary_ui"
+                    style={{
+                        bottom: 0,
+                    }}
+                >
+                    {showMetadata ? (
+                        <MetadataInfo
+                            omg={omg}
+                            paths={paths}
+                            isOverlay={isOverlay}
+                            timestamp={timestamp}
+                            callbacks={callbacks}
+                        />
+                    ) : null}
+                </div>
             </div>
-            {showMetadata ? (
-                <MetadataInfo
-                    omg={omg}
-                    paths={paths}
-                    isOverlay={isOverlay}
-                    timestamp={timestamp}
-                    callbacks={callbacks}
-                />
-            ) : null}
         </div>
     );
 }
