@@ -132,13 +132,13 @@ export function GalleryImage({
                     img
                 )}
 
+                {children}
                 <div
                     className="gallery_overlary_ui"
                     style={{
                         top: 0,
                     }}
                 >
-                    {children}
                     {showTimeSelection &&
                     timestamp !== null &&
                     !isOverlay &&

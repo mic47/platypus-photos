@@ -36,6 +36,19 @@ div.gallery_item:hover {
   justify-content: center;
   background: rgba(255, 255, 255, 0.6)
 }
+.gallery_overlay_button {
+  position: absolute;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.0);
+  color: rgba(255, 0, 0, 0.0);
+}
+.gallery_overlay_button:hover {
+  position: absolute;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.3);
+  color: rgb(0, 0, 0);
+  font-size: 500%;
+}
 .gallery_image {
   object-fit: contain;
 }

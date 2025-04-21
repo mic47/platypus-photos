@@ -273,7 +273,6 @@ function GalleryView({
                     {callbacks !== null ? (
                         <OverlayMovementUx
                             index={overlay_index}
-                            md5={data.omgs[overlay_index].omg.md5}
                             has_next_page={data.has_next_page}
                             callbacks={overlayMovementCallbacks}
                         />
@@ -340,38 +339,63 @@ type OverlayMovementCallbacks = {
 
 function OverlayMovementUx({
     index,
-    md5,
     has_next_page,
     callbacks,
 }: {
     index: number;
-    md5: string;
     has_next_page: boolean;
     callbacks: OverlayMovementCallbacks;
 }) {
     return (
-        <div>
-            <a
-                href={`#i${md5}`}
+        <>
+            <div
+                className="gallery_overlay_button"
+                style={{
+                    top: "10%",
+                    left: "0",
+                    right: "90%",
+                    bottom: "10%",
+                    alignItems: "center",
+                    display: "flex",
+                }}
                 onClick={(event) => {
                     event.preventDefault();
                     callbacks.prev_item(index);
                 }}
             >
-                prev
-            </a>{" "}
-            <a href={`#i${md5}`} onClick={() => callbacks.close_overlay()}>
-                close
-            </a>{" "}
-            <a
-                href={`#i${md5}`}
+                ⬅️
+            </div>
+            <div
+                className="gallery_overlay_button"
+                style={{
+                    top: 0,
+                    left: "10%",
+                    right: "10%",
+                    bottom: "90%",
+                    alignItems: "center",
+                    display: "flex",
+                }}
+                onClick={() => callbacks.close_overlay()}
+            >
+                ✖️
+            </div>
+            <div
+                className="gallery_overlay_button"
+                style={{
+                    top: "10%",
+                    left: "90%",
+                    right: "0",
+                    bottom: "10%",
+                    alignItems: "center",
+                    display: "flex",
+                }}
                 onClick={(event) => {
                     event.preventDefault();
                     callbacks.next_item(index, has_next_page);
                 }}
             >
-                next
-            </a>
-        </div>
+                ➡️
+            </div>
+        </>
     );
 }
