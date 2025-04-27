@@ -248,6 +248,7 @@ export function AnnotableImage({
             </svg>
             {addOrUpdateAnnotation === null ? null : (
                 <AnnotateFaceBox
+                    backend={backend}
                     request={addOrUpdateAnnotation}
                     availableIdentities={availableIdentities}
                     cancel={() => updateAddOrUpdateAnnotation(null)}
@@ -511,11 +512,13 @@ type AnnotateFaceBoxRequest = {
 };
 
 function AnnotateFaceBox({
+    backend,
     request: requestParam,
     availableIdentities,
     cancel,
     updatePendingAnnotations,
 }: {
+    backend: IdentityDatabaseInterface;
     request: AnnotateFaceBoxRequest;
     availableIdentities: string[];
     cancel: () => void;
@@ -628,7 +631,7 @@ function AnnotateFaceBox({
                     <button
                         onClick={() => {
                             const req = makeClusterRequest([face], request);
-                            submitAnnotationRequest([req]);
+                            submitAnnotationRequest(backend, [req]);
                             if (req !== null) {
                                 updatePendingAnnotations(req);
                             }

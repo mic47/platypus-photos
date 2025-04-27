@@ -1,6 +1,5 @@
 import React from "react";
 
-import * as pygallery_service from "./pygallery.generated/sdk.gen.ts";
 import {
     FaceIdentifier,
     FacesResponse,
@@ -13,13 +12,20 @@ import {
     SortParams,
 } from "./pygallery.generated";
 import { position_to_str } from "./utils.ts";
+import { IdentityDatabaseInterface } from "./database.ts";
 
 interface FacesComponentProps {
+    backend: IdentityDatabaseInterface;
     query: SearchQuery;
     paging: GalleryPaging;
     sort: SortParams;
 }
-export function FacesComponent({ query, paging, sort }: FacesComponentProps) {
+export function FacesComponent({
+    backend,
+    query,
+    paging,
+    sort,
+}: FacesComponentProps) {
     const [data, updateData] = React.useState<[SearchQuery, FacesResponse]>([
         query,
         {
@@ -38,8 +44,8 @@ export function FacesComponent({ query, paging, sort }: FacesComponentProps) {
             paging,
             sort,
         };
-        pygallery_service
-            .facesOnPagePost({
+        backend
+            .facesOnPage({
                 requestBody,
             })
             .then((data) => {
@@ -108,6 +114,7 @@ export function FacesComponent({ query, paging, sort }: FacesComponentProps) {
             Hide faces with assigned identities
             <br />
             <FacesView
+                backend={backend}
                 threshold={threshold}
                 availableIdentities={availableIdentities}
                 updatePendingAnnotations={(
@@ -170,6 +177,7 @@ function faceId(face: FaceWithMeta | FaceIdentifier): string {
 }
 
 interface FacesViewProps {
+    backend: IdentityDatabaseInterface;
     threshold: number;
     availableIdentities: string[];
     data: FaceWithMeta[];
@@ -178,6 +186,7 @@ interface FacesViewProps {
     ) => void;
 }
 function FacesView({
+    backend,
     threshold,
     availableIdentities,
     updatePendingAnnotations,
@@ -224,13 +233,14 @@ function FacesView({
                 return makeClusterRequest(faces, annotation);
             })
             .filter((x) => x !== null);
-        submitAnnotationRequest(req);
+        submitAnnotationRequest(backend, req);
         updatePendingAnnotations(req);
     };
     const items = clusters.map(({ id, faces }) => {
         return (
             <FaceCluster
                 key={id}
+                backend={backend}
                 faces={faces}
                 availableIdentities={availableIdentities}
                 updatePendingAnnotations={updatePendingAnnotations}
@@ -268,12 +278,14 @@ export type IdentityAnnotation = {
 };
 
 function FaceCluster({
+    backend,
     faces,
     availableIdentities,
     submitAllFaceAnnotations,
     updateAnnotations,
     updatePendingAnnotations,
 }: {
+    backend: IdentityDatabaseInterface;
     faces: FaceWithMeta[];
     availableIdentities: string[];
     submitAllFaceAnnotations: () => void;
@@ -391,7 +403,7 @@ function FaceCluster({
                     <button
                         onClick={() => {
                             const req = makeClusterRequest(faces, request);
-                            submitAnnotationRequest([req]);
+                            submitAnnotationRequest(backend, [req]);
                             if (req !== null) {
                                 updatePendingAnnotations([req]);
                             }
@@ -432,15 +444,14 @@ export function makeClusterRequest(
     };
 }
 export function submitAnnotationRequest(
+    backend: IdentityDatabaseInterface,
     maybe_requests: Array<ManualIdentityClusterRequest_Input | null>,
 ) {
     const request = maybe_requests.filter((x) => x !== null);
     if (request.length === 0) {
         return;
     }
-    pygallery_service.manualIdentityAnnotationEndpointPost({
-        requestBody: request,
-    });
+    backend.submitManualAnnotation(request);
 }
 
 function doClustering(

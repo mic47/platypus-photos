@@ -263,6 +263,7 @@ export function Application({
             </Switchable>
             <Switchable switchedOn={activeTabs.faces.active}>
                 <FacesComponent
+                    backend={backend}
                     query={searchQueryWithTs.q}
                     paging={paging}
                     sort={sort}
