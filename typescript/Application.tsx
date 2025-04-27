@@ -33,6 +33,7 @@ import { ExportFormComponent } from "./exporter";
 import { QueryCallbacks } from "./types";
 import { AggregateInfoComponent } from "./aggregate_info";
 import { Checkboxes, useCheckboxesShortcuts } from "./checkboxes";
+import { GalleryBackend } from "./database";
 
 interface ApplicationProps {
     searchQuerySync: TypedUrlSync<SearchQuery>;
@@ -176,6 +177,9 @@ export function Application({
     }>(null);
 
     const checkboxes = useCheckboxesShortcuts(checkboxesConfig);
+    const backend = React.useMemo(() => {
+        return new GalleryBackend();
+    }, []);
 
     return (
         <>
@@ -272,6 +276,7 @@ export function Application({
             <Switchable switchedOn={activeTabs.gallery.active}>
                 <GalleryComponent
                     query={searchQueryWithTs.q}
+                    backend={backend}
                     paging={paging}
                     sort={sort}
                     queryCallbacks={updateQueryCallbacks}

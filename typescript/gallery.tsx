@@ -7,10 +7,10 @@ import {
     SearchQuery,
     SortParams,
 } from "./pygallery.generated/types.gen.ts";
-import * as pygallery_service from "./pygallery.generated/sdk.gen.ts";
 import { GalleryImage, ImageCallbacks } from "./gallery_image.tsx";
 import { AnnotationOverlayRequest } from "./annotations.tsx";
 import { UpdateCallbacks, QueryCallbacks } from "./types";
+import { ImageDatabaseInterface } from "./database.ts";
 
 type ValidCheckboxes =
     | "LocPredCheck"
@@ -29,6 +29,7 @@ export function parse_gallery_url(data: {
     return { oi: oi === undefined || oi != oi ? null : oi };
 }
 interface GalleryComponentProps {
+    backend: ImageDatabaseInterface;
     query: SearchQuery;
     queryCallbacks: QueryCallbacks;
     paging: GalleryPaging;
@@ -40,6 +41,7 @@ interface GalleryComponentProps {
 }
 export function GalleryComponent({
     children,
+    backend,
     query,
     paging,
     sort,
@@ -96,10 +98,8 @@ export function GalleryComponent({
             paging: { paging: paging.paging, page: pageToFetch },
             sort,
         };
-        pygallery_service
-            .imagePagePost({
-                requestBody,
-            })
+        backend
+            .fetchImages(requestBody)
             .then(({ has_next_page, omgs, some_location }) => {
                 if (!ignore) {
                     const response =
