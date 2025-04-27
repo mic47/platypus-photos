@@ -7,22 +7,24 @@ import {
     IdentitySkipReason,
     ManualIdentityClusterRequest_Input,
     Position,
-} from "./pygallery.generated";
-import * as pygallery_service from "./pygallery.generated/sdk.gen.ts";
+} from "./pygallery.generated/types.gen";
 import {
     IdentityAnnotation,
     makeClusterRequest,
     submitAnnotationRequest,
 } from "./faces.tsx";
 import { position_to_str } from "./utils.ts";
+import { IdentityDatabaseInterface } from "./database.ts";
 
 export function AnnotableImage({
     md5,
+    backend,
     extension,
     imgRef,
     children,
 }: React.PropsWithChildren<{
     md5: string;
+    backend: IdentityDatabaseInterface;
     extension: string;
     imgRef: React.MutableRefObject<HTMLImageElement | null>;
 }>) {
@@ -48,9 +50,7 @@ export function AnnotableImage({
         IdentityRowPayload[]
     >([]);
     React.useEffect(() => {
-        pygallery_service
-            .topIdentitiesPost()
-            .then((data) => updateTopIdentities(data));
+        backend.topIdentities().then((data) => updateTopIdentities(data));
     }, []);
     const availableIdentities = [
         ...pendingRequest.map((x) => x.identity).filter((x) => x !== null),
@@ -67,13 +67,9 @@ export function AnnotableImage({
     });
     React.useEffect(() => {
         let shouldUpdate = true;
-        pygallery_service
-            .faceFeaturesForImagePost({
-                requestBody: { md5: md5, extension: extension },
-            })
-            .then((faces) => {
-                if (shouldUpdate) updateFaceFeatures(faces);
-            });
+        backend.faceFeaturesForImage(md5, extension).then((faces) => {
+            if (shouldUpdate) updateFaceFeatures(faces);
+        });
         return () => {
             shouldUpdate = false;
         };

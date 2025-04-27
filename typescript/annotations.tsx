@@ -20,6 +20,7 @@ import * as pygallery_service from "./pygallery.generated/sdk.gen.ts";
 import { shift_float_params } from "./input.tsx";
 import { DirectoryTable } from "./directories.tsx";
 import { UpdateCallbacks } from "./types.ts";
+import { IdentityDatabaseInterface } from "./database.ts";
 
 export type AnnotationOverlayFixedLocation = {
     t: "FixedLocation";
@@ -67,12 +68,14 @@ export function getFixedLocationAnnotationOverlayRequest(
         });
 }
 interface AnnotationOverlayComponentProps {
+    backend: IdentityDatabaseInterface;
     request: null | AnnotationOverlayRequest;
     queryCallbacks: UpdateCallbacks<SearchQuery>;
     reset: () => void;
 }
 
 export function AnnotationOverlayComponent({
+    backend,
     request,
     queryCallbacks,
     reset,
@@ -162,6 +165,7 @@ export function AnnotationOverlayComponent({
 
     return (
         <AnnotationOverlayView
+            backend={backend}
             request={request}
             images={images === null ? null : images.omgs}
             aggr={aggr}
@@ -200,6 +204,7 @@ export function AnnotationOverlayComponent({
 }
 
 interface AnnotationOverlayViewProps {
+    backend: IdentityDatabaseInterface;
     request: AnnotationOverlayRequest;
     images: ImageWithMeta[] | null;
     aggr: ImageAggregation | null;
@@ -216,6 +221,7 @@ interface AnnotationOverlayViewProps {
 }
 
 function AnnotationOverlayView({
+    backend,
     request,
     images,
     aggr,
@@ -257,6 +263,7 @@ function AnnotationOverlayView({
             : images.map(({ omg, uris, paths }) => (
                   <GalleryImage
                       key={omg.md5}
+                      backend={backend}
                       image={{
                           omg,
                           paths,

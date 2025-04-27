@@ -219,6 +219,7 @@ export function Application({
                 />
             </Switchable>
             <AnnotationOverlayComponent
+                backend={backend}
                 request={annotationRequest}
                 queryCallbacks={queryCallbacks}
                 reset={() => updateAnnotationRequest(null)}

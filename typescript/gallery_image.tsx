@@ -7,7 +7,7 @@ import {
     SortParams,
     Image,
     PathSplit,
-} from "./pygallery.generated";
+} from "./pygallery.generated/types.gen";
 import {
     append_flag,
     format_seconds_to_duration,
@@ -17,8 +17,10 @@ import {
 import { MaybeA } from "./jsx/maybea";
 import { AnnotableImage } from "./annotable_image";
 import ReactPlayer from "react-player";
+import { IdentityDatabaseInterface } from "./database";
 
 interface GalleryImageProps {
+    backend: IdentityDatabaseInterface;
     image: ImageWithMeta;
     sort: SortParams;
     previous_timestamp: number | null;
@@ -42,6 +44,7 @@ export type GalleryImageFeatures = {
 };
 
 export function GalleryImage({
+    backend,
     image: { omg, uris, predicted_location, paths },
     sort,
     previous_timestamp,
@@ -123,6 +126,7 @@ export function GalleryImage({
                 {isOverlay && showFaces ? (
                     <AnnotableImage
                         md5={omg.md5}
+                        backend={backend}
                         extension={omg.extension}
                         imgRef={imgRef}
                     >

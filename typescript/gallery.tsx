@@ -10,7 +10,10 @@ import {
 import { GalleryImage, ImageCallbacks } from "./gallery_image.tsx";
 import { AnnotationOverlayRequest } from "./annotations.tsx";
 import { UpdateCallbacks, QueryCallbacks } from "./types";
-import { ImageDatabaseInterface } from "./database.ts";
+import {
+    IdentityDatabaseInterface,
+    ImageDatabaseInterface,
+} from "./database.ts";
 
 type ValidCheckboxes =
     | "LocPredCheck"
@@ -29,7 +32,7 @@ export function parse_gallery_url(data: {
     return { oi: oi === undefined || oi != oi ? null : oi };
 }
 interface GalleryComponentProps {
-    backend: ImageDatabaseInterface;
+    backend: ImageDatabaseInterface & IdentityDatabaseInterface;
     query: SearchQuery;
     queryCallbacks: QueryCallbacks;
     paging: GalleryPaging;
@@ -210,6 +213,7 @@ export function GalleryComponent({
     };
     return (
         <GalleryView
+            backend={backend}
             sort={sort}
             data={data.response}
             checkboxes={checkboxes}
@@ -230,6 +234,7 @@ type GalleryComponentFetchState = {
 };
 
 interface GalleryViewProps {
+    backend: IdentityDatabaseInterface;
     sort: SortParams;
     data: ImageResponse;
     checkboxes: Record<ValidCheckboxes, boolean>;
@@ -240,6 +245,7 @@ interface GalleryViewProps {
     overlayMovementCallbacks: OverlayMovementCallbacks;
 }
 function GalleryView({
+    backend,
     children,
     sort,
     data,
@@ -252,6 +258,7 @@ function GalleryView({
         if (overlay_index < data.omgs.length) {
             return (
                 <GalleryImage
+                    backend={backend}
                     image={data.omgs[overlay_index]}
                     sort={sort}
                     previous_timestamp={null}
@@ -288,6 +295,7 @@ function GalleryView({
         const ret = (
             <GalleryImage
                 key={image.omg.md5}
+                backend={backend}
                 image={image}
                 sort={sort}
                 previous_timestamp={
