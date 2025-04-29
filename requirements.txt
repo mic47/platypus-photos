@@ -19,7 +19,7 @@ types-tqdm==4.67.0.20241221
 ultralytics==8.3.91
 
 # Dev
-black==24.10.0
+black==25.1.0
 coverage==7.6.9
 mypy==1.14.1
 pylint==3.3.3
