@@ -31,7 +31,7 @@ export function ExportFormView({ baseOptions, query }: ExportFormViewProps) {
     const [subdir, updateSubdir] = React.useState<string>("");
     return (
         <>
-            <form action="/export" method="get">
+            <form action="/api/export/tar" method="get">
                 <input
                     type="hidden"
                     name="query"
@@ -44,7 +44,7 @@ export function ExportFormView({ baseOptions, query }: ExportFormViewProps) {
                 />
             </form>
             <br />
-            <form action="/export_to_dir" method="get">
+            <form action="/api/export/dir" method="get">
                 <input
                     type="hidden"
                     name="query"
