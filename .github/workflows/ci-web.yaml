@@ -1,5 +1,7 @@
 ---
 name: Platypul Photos CI Web
+permissions:
+  contents: read
 run-name: ${{ github.actor }} is running CI🚀
 on:
   push:
