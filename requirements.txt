@@ -15,7 +15,7 @@ pillow==11.0.0
 pyexiftool==0.5.6
 tqdm==4.67.1
 transformers==4.56.0
-types-tqdm==4.67.0.20241221
+types-tqdm==4.67.0.20250809
 ultralytics==8.3.91
 
 # Dev
