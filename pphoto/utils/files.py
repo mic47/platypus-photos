@@ -77,7 +77,7 @@ def walk_tree(path: str) -> t.Iterable[str]:
 
 def get_paths(input_patterns: t.List[str], input_directories: t.List[str]) -> t.Iterable[str]:
     for pattern in input_patterns:
-        yield from glob.glob(expand_vars_in_path(pattern))
+        yield from glob.glob(expand_vars_in_path(pattern), recursive=True)
     for directory in input_directories:
         yield from walk_tree(expand_vars_in_path(directory))
 
